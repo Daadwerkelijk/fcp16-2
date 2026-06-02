@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1200">
+<title>Oefeningen — FCP 16-2</title>
+<link rel="manifest" id="manifest-link">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-btn" href="index.html"><span class="nav-icon">⚡</span><span>Start</span></a>
+  <a class="nav-btn" href="opstelling.html"><span class="nav-icon">🟢</span><span>Opstelling</span></a>
+  <a class="nav-btn" href="selectie.html"><span class="nav-icon">👥</span><span>Selectie</span></a>
+  <a class="nav-btn" href="schema.html"><span class="nav-icon">📅</span><span>Schema</span></a>
+  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">🏆</span><span>Wedstrijden</span></a>
+  <a class="nav-btn" href="team.html"><span class="nav-icon">📊</span><span>Team</span></a>
+  <a class="nav-btn active" href="oefeningen.html"><span class="nav-icon">📚</span><span>Oefeningen</span></a>
+</nav>
+<div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+<div class="toast" id="toast"></div>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="page-title">Oefeningen</div>
+      <button class="add-btn" onclick="openOefModal(null)">+ Nieuw</button>
+    </div>
+  </div>
+  <div class="filter-scroll" id="cat-filters"></div>
+  <div class="oef-toolbar">
+    <span class="oef-count" id="oef-count"></span>
+  </div>
+  <div class="oef-list" id="oef-list"></div>
+</div>
+
+<!-- Oefening modal -->
+<div class="bmodal-overlay" id="bmodalOef" onclick="if(event.target===this)closeBModalOef()">
+  <div class="bmodal">
+    <div class="bmodal-title" id="bmodalOefTitle">Oefening toevoegen</div>
+    <div class="bmodal-label">Naam</div>
+    <input class="bmodal-input" id="oef-f-title" placeholder="Naam oefening">
+    <div class="bmodal-label">Categorie</div>
+    <select class="bmodal-select" id="oef-f-cat"></select>
+    <div class="bmodal-label">Aantal spelers</div>
+    <input class="bmodal-input" id="oef-f-spelers" placeholder="Bijv: 8–12">
+    <div class="bmodal-label">Omschrijving</div>
+    <textarea class="bmodal-textarea" id="oef-f-desc" placeholder="Korte beschrijving..."></textarea>
+    <div class="bmodal-label">Tip / coaching punt</div>
+    <input class="bmodal-input" id="oef-f-tip" placeholder="Bijv: Altijd doorlopen na de pas">
+    <div class="bmodal-label">URL / YouTube</div>
+    <input class="bmodal-input" id="oef-f-url" placeholder="https://..." type="url">
+    <div class="bmodal-label">Stappen</div>
+    <div class="bmodal-stappen" id="oef-f-stappen"></div>
+    <button class="bmodal-add-stap" onclick="addStap()">+ Stap toevoegen</button>
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeBModalOef()">Annuleer</button>
+      <button class="bmodal-save" onclick="saveOef()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Categorie modal -->
+<div class="bmodal-overlay" id="bmodalCat" onclick="if(event.target===this)closeCatModal()">
+  <div class="bmodal">
+    <div class="bmodal-title">Categorieën beheren</div>
+    <div id="cat-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:7px">
+      <input class="bmodal-input" id="new-cat-input" placeholder="Nieuwe categorie..." style="flex:1;margin-bottom:0">
+      <button class="bmodal-save" style="flex:0 0 auto;padding:9px 14px" onclick="addCat()">+</button>
+    </div>
+    <div class="bmodal-actions">
+      <button class="bmodal-save" onclick="closeCatModal()">Klaar</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+
+const state = loadState();
+let customOef  = state.customOef;
+let categories = state.categories;
+let activeFilter = 'alle';
+let editingOefId = null;
+
+function getCatStyle(cat) {
+  return CAT_BG[cat] || { bg:'#181818', c:'#888' };
+}
+
+function renderCatFilters() {
+  const cont = document.getElementById('cat-filters'); cont.innerHTML = '';
+  const all = document.createElement('button');
+  all.className = 'filter-btn' + (activeFilter === 'alle' ? ' active' : '');
+  all.textContent = 'Alle'; all.onclick = () => { activeFilter = 'alle'; renderCatFilters(); renderOef(); };
+  cont.appendChild(all);
+  categories.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (activeFilter === c ? ' active' : '');
+    btn.textContent = c; btn.onclick = () => { activeFilter = c; renderCatFilters(); renderOef(); };
+    cont.appendChild(btn);
+  });
+  const mgr = document.createElement('button');
+  mgr.className = 'filter-btn'; mgr.textContent = '⚙️ Categorieën'; mgr.onclick = openCatModal;
+  cont.appendChild(mgr);
+}
+
+function renderOef() {
+  const all = [...BUILTIN_OEF, ...customOef];
+  const filtered = activeFilter === 'alle' ? all : all.filter(o => o.cat === activeFilter);
+  document.getElementById('oef-count').textContent = filtered.length + ' oefeningen';
+  const list = document.getElementById('oef-list'); list.innerHTML = '';
+  filtered.forEach(o => {
+    const isCustom = !o.id.startsWith('b');
+    const col = getCatStyle(o.cat);
+    const card = document.createElement('div');
+    card.className = 'oef-card'; card.id = 'ocard-' + o.id;
+    const tagsHtml = (o.pr || []).map(p => { const t = PR_TAGS[p]; return t ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${t.bg};color:${t.c}">${p}</span>` : ''; }).join('');
+    card.innerHTML = `
+      <div class="oef-hdr" onclick="this.closest('.oef-card').classList.toggle('open')">
+        <div class="oef-dot" style="background:${col.c}"></div>
+        <div class="oef-meta">
+          <div class="oef-title">${o.title}</div>
+          <div class="oef-sub">${o.cat}${o.spelers ? ' · ' + o.spelers + ' spelers' : ''}${o.duur ? ' · ' + o.duur : ''}</div>
+          ${tagsHtml ? `<div class="oef-tags">${tagsHtml}</div>` : ''}
+        </div>
+        <span class="oef-chev">▾</span>
+      </div>
+      <div class="oef-body">
+        ${o.desc   ? `<div class="oef-section">Omschrijving</div><div class="oef-desc">${o.desc}</div>` : ''}
+        ${o.stappen?.length ? `<div class="oef-section">Stappen</div><ul class="oef-steps">${o.stappen.filter(s=>s).map(s=>`<li>${s}</li>`).join('')}</ul>` : ''}
+        ${o.tip    ? `<div class="oef-tip">💡 ${o.tip}</div>` : ''}
+        ${o.url    ? `<div style="margin-top:10px"><a href="${o.url}" target="_blank" rel="noopener" class="form-btn" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:11px">▶️ Bekijk video</a></div>`
+                   : `<div style="margin-top:8px"><a href="https://www.youtube.com/results?search_query=voetbal+oefening+${encodeURIComponent(o.title)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--text3);text-decoration:none;border:1px solid var(--line2);padding:4px 10px;border-radius:var(--rsm);display:inline-block">🔍 Zoek op YouTube</a></div>`}
+        ${isCustom ? `<div class="player-actions" style="margin-top:10px">
+          <button class="save-btn" onclick="openOefModal('${o.id}')">✏️ Bewerken</button>
+          <button class="del-btn" onclick="deleteOef('${o.id}')">Verwijder</button>
+        </div>` : ''}
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function openOefModal(id, defaultCat) {
+  editingOefId = id;
+  const o = id ? customOef.find(x => x.id === id) : null;
+  document.getElementById('bmodalOefTitle').textContent = o ? 'Oefening bewerken' : 'Oefening toevoegen';
+  document.getElementById('oef-f-title').value   = o?.title   || '';
+  document.getElementById('oef-f-spelers').value = o?.spelers || '';
+  document.getElementById('oef-f-desc').value    = o?.desc    || '';
+  document.getElementById('oef-f-tip').value     = o?.tip     || '';
+  document.getElementById('oef-f-url').value     = o?.url     || '';
+  const sel = document.getElementById('oef-f-cat'); sel.innerHTML = '';
+  const useCat = o?.cat || defaultCat || categories[0] || '';
+  categories.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; if (c === useCat) opt.selected = true; sel.appendChild(opt); });
+  const sc = document.getElementById('oef-f-stappen'); sc.innerHTML = '';
+  (o?.stappen?.length ? o.stappen : ['', '']).forEach(s => addStapWith(s));
+  document.getElementById('bmodalOef').classList.add('open');
+}
+
+function addStap()          { addStapWith(''); }
+function addStapWith(val)   {
+  const row = document.createElement('div'); row.className = 'bmodal-stap-row';
+  row.innerHTML = `<input class="bmodal-stap-input" value="${val.replace(/"/g,'&quot;')}" placeholder="Stap omschrijving...">
+    <button class="bmodal-stap-del" onclick="this.closest('.bmodal-stap-row').remove()">✕</button>`;
+  document.getElementById('oef-f-stappen').appendChild(row);
+}
+
+async function saveOef() {
+  const title = document.getElementById('oef-f-title').value.trim(); if (!title) { showToast('Vul een naam in'); return; }
+  const stappen = [...document.querySelectorAll('#oef-f-stappen .bmodal-stap-input')].map(i => i.value.trim()).filter(Boolean);
+  const oef = {
+    id: editingOefId || genId(),
+    title,
+    cat:     document.getElementById('oef-f-cat').value,
+    spelers: document.getElementById('oef-f-spelers').value.trim(),
+    desc:    document.getElementById('oef-f-desc').value.trim(),
+    tip:     document.getElementById('oef-f-tip').value.trim(),
+    url:     document.getElementById('oef-f-url').value.trim(),
+    stappen, pr: [], duur: '',
+  };
+  if (editingOefId) {
+    const idx = customOef.findIndex(x => x.id === editingOefId);
+    if (idx >= 0) { customOef[idx] = oef; if (supabaseReady) await sbFetch('custom_oef?id=eq.' + editingOefId, 'PATCH', oef); }
+  } else {
+    customOef.push(oef);
+    if (supabaseReady) await sbFetch('custom_oef', 'POST', oef);
+  }
+  saveCustomOef(customOef);
+  closeBModalOef(); renderCatFilters(); renderOef();
+  showToast(title + ' opgeslagen');
+}
+
+async function deleteOef(id) {
+  const o = customOef.find(x => x.id === id);
+  if (!confirm('Verwijder "' + (o?.title || 'oefening') + '"?')) return;
+  customOef = customOef.filter(x => x.id !== id);
+  saveCustomOef(customOef);
+  if (supabaseReady) await sbFetch('custom_oef?id=eq.' + id, 'DELETE');
+  renderCatFilters(); renderOef();
+  showToast('Oefening verwijderd');
+}
+
+function closeBModalOef() { document.getElementById('bmodalOef').classList.remove('open'); }
+
+function openCatModal() {
+  renderCatList();
+  document.getElementById('bmodalCat').classList.add('open');
+}
+function closeCatModal() { document.getElementById('bmodalCat').classList.remove('open'); renderCatFilters(); renderOef(); }
+
+function renderCatList() {
+  const cont = document.getElementById('cat-list'); cont.innerHTML = '';
+  categories.forEach((c, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm)';
+    row.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text)">${c}</span>
+      <button onclick="deleteCat(${i})" style="padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:11px;cursor:pointer">✕</button>`;
+    cont.appendChild(row);
+  });
+}
+
+function addCat() {
+  const val = document.getElementById('new-cat-input').value.trim();
+  if (!val || categories.includes(val)) { showToast(val ? 'Bestaat al' : 'Vul een naam in'); return; }
+  categories.push(val); saveCategories(categories);
+  document.getElementById('new-cat-input').value = '';
+  renderCatList(); showToast(val + ' toegevoegd');
+  if (supabaseReady) sbFetch('categories', 'POST', { id:genId(), naam:val, sort_order:categories.length });
+}
+
+function deleteCat(i) {
+  if (!confirm('Verwijder categorie "' + categories[i] + '"?')) return;
+  const naam = categories[i];
+  categories.splice(i, 1); saveCategories(categories);
+  renderCatList(); showToast(naam + ' verwijderd');
+  if (supabaseReady) sbFetch('categories?naam=eq.' + encodeURIComponent(naam), 'DELETE');
+}
+
+async function onSupabaseReady() {
+  const data = await loadFromSupabase();
+  if (data.customOef)  customOef  = data.customOef;
+  if (data.categories) categories = data.categories;
+  renderCatFilters(); renderOef();
+}
+
+renderCatFilters(); renderOef();
+initScrollTop(); initManifest();
+initSupabase().then(ok => { if (ok) onSupabaseReady(); });
+</script>
+</body>
+</html>

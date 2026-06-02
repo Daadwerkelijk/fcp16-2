@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1200">
+<title>Opstelling — FCP 16-2</title>
+<link rel="manifest" id="manifest-link">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-btn" href="index.html"><span class="nav-icon">⚡</span><span>Start</span></a>
+  <a class="nav-btn active" href="opstelling.html"><span class="nav-icon">🟢</span><span>Opstelling</span></a>
+  <a class="nav-btn" href="selectie.html"><span class="nav-icon">👥</span><span>Selectie</span></a>
+  <a class="nav-btn" href="schema.html"><span class="nav-icon">📅</span><span>Schema</span></a>
+  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">🏆</span><span>Wedstrijden</span></a>
+  <a class="nav-btn" href="team.html"><span class="nav-icon">📊</span><span>Team</span></a>
+  <a class="nav-btn" href="oefeningen.html"><span class="nav-icon">📚</span><span>Oefeningen</span></a>
+</nav>
+<div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+<div class="toast" id="toast"></div>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <div class="page-title">Opstelling</div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="thu-uit-btn active" id="btn-f-4222" onclick="setFormatie('4222')">4-2-2-2</button>
+      <button class="thu-uit-btn" id="btn-f-4231" onclick="setFormatie('4231')">4-2-3-1</button>
+      <button class="thu-uit-btn" id="btn-f-442"  onclick="setFormatie('442')">4-4-2 ruit</button>
+    </div>
+  </div>
+
+  <div class="field-wrap">
+    <div class="field-container" id="fieldContainer">
+      <svg class="field-svg" viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg">
+        <rect width="400" height="280" fill="#1a4020"/>
+        <rect x="0" y="0"   width="400" height="28" fill="rgba(0,0,0,0.06)"/>
+        <rect x="0" y="56"  width="400" height="28" fill="rgba(0,0,0,0.06)"/>
+        <rect x="0" y="112" width="400" height="28" fill="rgba(0,0,0,0.06)"/>
+        <rect x="0" y="168" width="400" height="28" fill="rgba(0,0,0,0.06)"/>
+        <rect x="0" y="224" width="400" height="28" fill="rgba(0,0,0,0.06)"/>
+        <rect x="8" y="8" width="384" height="264" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+        <line x1="8" y1="140" x2="392" y2="140" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+        <circle cx="200" cy="140" r="32" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+        <circle cx="200" cy="140" r="2" fill="rgba(255,255,255,0.4)"/>
+        <rect x="128" y="8"   width="144" height="52" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+        <rect x="164" y="8"   width="72"  height="26" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <rect x="172" y="3"   width="56"  height="8"  fill="none" stroke="rgba(255,255,255,0.5)"  stroke-width="1.5"/>
+        <rect x="128" y="220" width="144" height="52" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+        <rect x="164" y="246" width="72"  height="26" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <rect x="172" y="269" width="56"  height="8"  fill="none" stroke="rgba(255,255,255,0.5)"  stroke-width="1.5"/>
+        <circle cx="200" cy="44"  r="2" fill="rgba(255,255,255,0.35)"/>
+        <circle cx="200" cy="236" r="2" fill="rgba(255,255,255,0.35)"/>
+        <path d="M 166 60 A 34 34 0 0 1 234 60"  fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <path d="M 166 220 A 34 34 0 0 0 234 220" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+      </svg>
+      <div class="field-positions" id="fieldPositions"></div>
+    </div>
+    <div class="field-actions">
+      <button class="field-btn" onclick="clearLineup()">🗑 Wis</button>
+      <button class="field-btn" onclick="shareWhatsApp()">📲 Delen</button>
+      <button class="field-btn primary" onclick="saveLineupAction()">💾 Opslaan</button>
+    </div>
+  </div>
+  <div style="margin:0 16px 12px;font-size:11px;color:var(--text3);line-height:1.6;background:var(--bg2);border:1px solid var(--line);border-radius:var(--rsm);padding:9px 12px">
+    Tap een positie om een speler toe te wijzen. Spelers blijven behouden bij wisselen van formatie.
+  </div>
+</div>
+
+<!-- Modal: speler kiezen -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Kies speler</div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div class="modal-list" id="modal-list"></div>
+    <button class="modal-cancel" onclick="closeModal()">Annuleer</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const state = loadState();
+let players  = state.players;
+let lineup   = state.lineup;
+let activeFormatie = state.formatie;
+let currentPosId = null;
+
+function setFormatie(f) {
+  activeFormatie = f;
+  localStorage.setItem('fcp_formatie', f);
+  ['4222','4231','442'].forEach(k => document.getElementById('btn-f-'+k).classList.toggle('active', k === f));
+  buildField();
+}
+
+function getPositions() { return FORMATIES[activeFormatie].pos; }
+
+function buildField() {
+  const cont = document.getElementById('fieldPositions');
+  cont.innerHTML = '';
+  getPositions().forEach(pos => {
+    const slot = document.createElement('div');
+    slot.className = 'pos-slot'; slot.id = 'slot-' + pos.id;
+    slot.style.left = pos.x + '%'; slot.style.top = pos.y + '%';
+    slot.onclick = () => openModal(pos);
+    const circle = document.createElement('div');
+    circle.className = 'pos-circle' + (pos.role === 'keeper' ? ' keeper' : '');
+    const init  = document.createElement('div'); init.className  = 'pos-initials'; init.id  = 'init-' + pos.id;
+    const badge = document.createElement('div'); badge.className = 'pos-badge';    badge.textContent = pos.label;
+    const name  = document.createElement('div'); name.className  = 'pos-name';     name.id  = 'name-' + pos.id;
+    circle.appendChild(init); slot.appendChild(circle); slot.appendChild(badge); slot.appendChild(name);
+    cont.appendChild(slot);
+  });
+  renderLineup();
+}
+
+function renderLineup() {
+  getPositions().forEach(pos => {
+    const pid     = lineup[pos.id];
+    const circle  = document.querySelector('#slot-' + pos.id + ' .pos-circle');
+    const initEl  = document.getElementById('init-' + pos.id);
+    const nameEl  = document.getElementById('name-' + pos.id);
+    if (!circle || !initEl || !nameEl) return;
+    if (pid != null) {
+      const p = players.find(pl => pl.id === pid);
+      if (p) {
+        circle.classList.add('filled');
+        const parts = p.naam.trim().split(' ');
+        initEl.textContent = parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : p.naam.slice(0,2).toUpperCase();
+        nameEl.textContent = parts[0];
+        return;
+      }
+    }
+    circle.classList.remove('filled'); initEl.textContent = '+'; nameEl.textContent = '';
+  });
+}
+
+function openModal(pos) {
+  currentPosId = pos.id;
+  document.getElementById('modal-title').textContent = pos.label;
+  document.getElementById('modal-sub').textContent   = POS_LABELS[pos.role] + ' — kies een speler';
+  const list = document.getElementById('modal-list'); list.innerHTML = '';
+  const emptyBtn = document.createElement('button');
+  emptyBtn.className = 'modal-btn';
+  emptyBtn.textContent = '— Positie leeg laten';
+  emptyBtn.onclick = () => { assign(pos.id, null); closeModal(); };
+  list.appendChild(emptyBtn);
+  if (!players.length) {
+    const d = document.createElement('div');
+    d.style.cssText = 'font-size:12px;color:var(--text3);padding:8px 0';
+    d.textContent = 'Geen spelers. Voeg toe via Selectie.';
+    list.appendChild(d);
+  } else {
+    // Sorteer: spelers met passende positie eerst, dan de rest
+    const posLabel = pos.label.replace('-','').toLowerCase(); // bijv 'lbl', 'cbr'
+    const matched = [];
+    const rest    = [];
+    sortedPlayers(players).forEach(p => {
+      const posities = (p.posities||[]).map(x=>x.toLowerCase().replace('-',''));
+      if (posities.includes(posLabel) || posities.includes(pos.label.toLowerCase())) matched.push(p);
+      else rest.push(p);
+    });
+
+    if (matched.length) {
+      const hdr = document.createElement('div');
+      hdr.style.cssText = 'font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:.07em;padding:4px 0 6px';
+      hdr.textContent = 'Passende positie';
+      list.appendChild(hdr);
+      matched.forEach(p => addPlayerBtn(list, p, pos, lineup));
+      if (rest.length) {
+        const sep = document.createElement('div');
+        sep.style.cssText = 'border-top:1px solid var(--line2);margin:6px 0';
+        list.appendChild(sep);
+      }
+    }
+    rest.forEach(p => addPlayerBtn(list, p, pos, lineup));
+  }
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function addPlayerBtn(list, p, pos, lineup) {
+  const btn = document.createElement('button');
+  const assignedTo = Object.entries(lineup).find(([k, v]) => v === p.id && k !== pos.id);
+  const assignedLabel = assignedTo ? getPositions().find(ps => ps.id === assignedTo[0])?.label : '';
+  btn.className = 'modal-btn' + (lineup[pos.id] === p.id ? ' current' : '');
+  if (assignedTo && lineup[pos.id] !== p.id) btn.style.opacity = '0.45';
+  btn.innerHTML = `<span>${p.naam}</span><span style="font-size:11px;color:var(--text3)">${lineup[pos.id]===p.id?'✓':assignedLabel?'→ '+assignedLabel:''}</span>`;
+  btn.onclick = () => {
+    if (assignedTo && lineup[pos.id] !== p.id) { showToast(p.naam + ' staat al op ' + assignedLabel); return; }
+    assign(pos.id, p.id); closeModal();
+  };
+  list.appendChild(btn);
+}
+
+async function assign(posId, playerId) {
+  lineup[posId] = playerId;
+  saveLineup(lineup);
+  renderLineup();
+  if (supabaseReady) {
+    await sbFetch('lineup?pos_id=eq.' + posId, 'DELETE');
+    if (playerId) await sbFetch('lineup', 'POST', { pos_id:posId, player_id:playerId });
+  }
+  const pos = getPositions().find(ps => ps.id === posId);
+  const p   = players.find(pl => pl.id === playerId);
+  showToast(p ? p.naam + ' → ' + pos?.label : 'Positie leeggemaakt');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+function clearLineup() {
+  if (!confirm('Wis de volledige opstelling?')) return;
+  lineup = {}; saveLineup(lineup); renderLineup();
+  if (supabaseReady) sbFetch('lineup', 'DELETE');
+  showToast('Opstelling gewist');
+}
+
+function shareWhatsApp() {
+  const f = FORMATIES[activeFormatie];
+  let tekst = '⚽ FCP 16-2 — Opstelling ' + f.label + '\n\n';
+  f.pos.forEach(pos => {
+    const p = players.find(pl => pl.id === lineup[pos.id]);
+    tekst += pos.label + ': ' + (p ? p.naam : '—') + '\n';
+  });
+  window.open('https://wa.me/?text=' + encodeURIComponent(tekst), '_blank');
+}
+
+function saveLineupAction() {
+  saveLineup(lineup);
+  const f = getPositions().filter(p => lineup[p.id] != null).length;
+  showToast('Opgeslagen · ' + f + '/11 posities');
+}
+
+async function onSupabaseReady() {
+  const data = await loadFromSupabase();
+  if (data.players) players = data.players;
+  if (data.lineup)  lineup  = data.lineup;
+  renderLineup();
+}
+
+// Init
+document.getElementById('btn-f-' + activeFormatie).classList.add('active');
+buildField();
+initScrollTop();
+initManifest();
+initSupabase().then(ok => { if (ok) onSupabaseReady(); });
+</script>
+</body>
+</html>

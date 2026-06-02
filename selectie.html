@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1200">
+<title>Selectie — FCP 16-2</title>
+<link rel="manifest" id="manifest-link">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-btn" href="index.html"><span class="nav-icon">⚡</span><span>Start</span></a>
+  <a class="nav-btn" href="opstelling.html"><span class="nav-icon">🟢</span><span>Opstelling</span></a>
+  <a class="nav-btn active" href="selectie.html"><span class="nav-icon">👥</span><span>Selectie</span></a>
+  <a class="nav-btn" href="schema.html"><span class="nav-icon">📅</span><span>Schema</span></a>
+  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">🏆</span><span>Wedstrijden</span></a>
+  <a class="nav-btn" href="team.html"><span class="nav-icon">📊</span><span>Team</span></a>
+  <a class="nav-btn" href="oefeningen.html"><span class="nav-icon">📚</span><span>Oefeningen</span></a>
+</nav>
+<div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+<div class="toast" id="toast"></div>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <div class="page-title">Selectie</div>
+    <div class="page-sub">Spelers beheren</div>
+  </div>
+  <div class="form-wrap" style="padding-top:12px">
+    <div class="add-form">
+      <div class="form-title">+ Nieuwe speler</div>
+      <div class="form-row">
+        <input class="form-input" id="input-naam" placeholder="Naam speler" type="text" maxlength="30">
+      </div>
+      <div class="form-row">
+        <button class="form-btn" onclick="addPlayer()" style="width:100%">Toevoegen</button>
+      </div>
+    </div>
+    <div id="player-list"><div style="font-size:12px;color:var(--text3)">Nog geen spelers.</div></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let players = loadState().players;
+
+async function addPlayer() {
+  const naam = document.getElementById('input-naam').value.trim();
+  if (!naam) { showToast('Vul een naam in'); return; }
+  const p = { id:genId(), naam, omschrijving:'', posities:[], opmerkingen:'', ontwikkeling:'', skills:null };
+  if (supabaseReady) {
+    const res = await sbFetch('players', 'POST', p);
+    if (!res || res._error) { showToast('Opslaan mislukt'); return; }
+  }
+  players.push(p);
+  savePlayers(players);
+  renderPlayerList();
+  document.getElementById('input-naam').value = '';
+  showToast(naam + ' toegevoegd');
+}
+
+async function deletePlayer(id) {
+  const p = players.find(pl => pl.id === id);
+  if (!confirm('Verwijder ' + (p ? p.naam : 'speler') + '?')) return;
+  players = players.filter(pl => pl.id !== id);
+  const lineup = loadState().lineup;
+  Object.keys(lineup).forEach(k => { if (lineup[k] === id) delete lineup[k]; });
+  savePlayers(players);
+  saveLineup(lineup);
+  if (supabaseReady) await sbFetch('players?id=eq.' + id, 'DELETE');
+  renderPlayerList();
+  showToast('Speler verwijderd');
+}
+
+async function savePlayerData(id) {
+  const p = players.find(pl => pl.id === id); if (!p) return;
+  p.omschrijving  = document.getElementById('omschr-' + id).value;
+  p.opmerkingen   = document.getElementById('opm-' + id).value;
+  p.ontwikkeling  = document.getElementById('ontw-' + id).value;
+  savePlayers(players);
+  if (supabaseReady) await sbFetch('players?id=eq.' + id, 'PATCH', { omschrijving:p.omschrijving, opmerkingen:p.opmerkingen, ontwikkeling:p.ontwikkeling });
+  showToast(p.naam + ' opgeslagen');
+}
+
+function togglePosTag(pid, pos, el) {
+  const p = players.find(pl => pl.id === pid); if (!p) return;
+  if (!p.posities) p.posities = [];
+  if (el.classList.contains('active')) { p.posities = p.posities.filter(x => x !== pos); el.classList.remove('active'); }
+  else { p.posities.push(pos); el.classList.add('active'); }
+  savePlayers(players);
+  if (supabaseReady) sbFetch('players?id=eq.' + pid, 'PATCH', { posities: p.posities });
+}
+
+async function loadPlayerSkills(event, playerId) {
+  const file = event.target.files[0]; if (!file) return;
+  try {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    const skills = parseSkillsFromRows(rows);
+    const p = players.find(pl => pl.id === playerId); if (!p) return;
+    p.skills = skills;
+    savePlayers(players);
+    if (supabaseReady) await sbFetch('players?id=eq.' + playerId, 'PATCH', { skills: JSON.stringify(skills) });
+    renderPlayerList();
+    showToast(p.naam + ' — skills ingeladen');
+  } catch(e) { showToast('Fout: ' + e.message); }
+}
+
+function parseSkillsFromRows(rows) {
+  const skills = {};
+  const allSkills = SKILL_CATS.flatMap(sc => sc.skills);
+  rows.forEach(row => {
+    const label = String(row[0] || '').trim();
+    if (allSkills.includes(label)) {
+      for (let c = 1; c <= 4; c++) {
+        const v = String(row[c] || '').trim();
+        if (v) { skills[label] = SKILL_LEVELS[c - 1]; break; }
+      }
+    }
+    if (label === 'Waar wil je dit seizoen aan werken' || label === 'Wens') {
+      const val = String(row[1] || '').trim();
+      if (val) skills['Wens'] = val;
+    }
+    if (label === 'Bijzonderheden') {
+      const val = String(row[1] || '').trim();
+      if (val) skills['Bijzonderheden'] = val;
+    }
+  });
+  return skills;
+}
+
+function renderSkillsCard(skills) {
+  if (!skills) return '';
+  let html = '<div style="margin-top:10px">';
+  SKILL_CATS.forEach(sc => {
+    html += `<div class="player-section">${sc.cat}</div>`;
+    sc.skills.forEach(skill => {
+      const val = skills[skill] || '';
+      const col = SKILL_COLORS[val] || { bg:'var(--bg3)', c:'var(--text3)' };
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)">
+        <span style="font-size:12px;color:var(--text2)">${skill}</span>
+        <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:8px;background:${col.bg};color:${col.c}">${val || '—'}</span>
+      </div>`;
+    });
+  });
+  if (skills['Wens']) html += `<div class="player-section">Wens</div><div style="font-size:12px;color:var(--text2)">${skills['Wens']}</div>`;
+  html += '</div>';
+  return html;
+}
+
+function renderPlayerList() {
+  const list = document.getElementById('player-list');
+  if (!players.length) { list.innerHTML = '<div style="font-size:12px;color:var(--text3)">Nog geen spelers.</div>'; return; }
+  list.innerHTML = '';
+  sortedPlayers(players).forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'pcard-' + p.id;
+    const posTagsHtml = ALL_POS_OPTS.map(pos => {
+      const active = p.posities && p.posities.includes(pos) ? ' active' : '';
+      return `<span class="pos-tag${active}" onclick="togglePosTag('${p.id}','${pos}',this)">${pos}</span>`;
+    }).join('');
+    card.innerHTML = `
+      <div class="card-hdr" onclick="this.closest('.card').classList.toggle('open')">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">⚽</div>
+        <div class="card-info">
+          <div class="card-title">${p.naam}</div>
+          <div class="card-sub">${p.omschrijving || 'Geen omschrijving'}</div>
+        </div>
+        <span class="card-chev">▾</span>
+      </div>
+      <div class="card-body">
+        <div class="player-section">Omschrijving</div>
+        <input class="player-input" id="omschr-${p.id}" placeholder="Bijv: snelle back..." value="${(p.omschrijving||'').replace(/"/g,'&quot;')}">
+        <div class="player-section">Posities</div>
+        <div class="pos-tags">${posTagsHtml}</div>
+        <div class="player-section">Eigenschappen / aantekeningen</div>
+        <textarea class="player-textarea" id="opm-${p.id}" placeholder="Sterktes, aandachtspunten...">${p.opmerkingen||''}</textarea>
+        <div class="player-section">Ontwikkeling gedurende seizoen</div>
+        <textarea class="player-textarea" id="ontw-${p.id}" placeholder="Week 5 — positiespel gaat beter...">${p.ontwikkeling||''}</textarea>
+        <div class="player-section">Skills formulier</div>
+        <label style="display:inline-flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer">
+          <span style="font-size:11px;color:var(--text2)">${p.skills ? '✓ Ingeladen — opnieuw laden' : '📂 Excel inladen'}</span>
+          <input type="file" accept=".xlsx,.xls" onchange="loadPlayerSkills(event,'${p.id}')" style="display:none">
+        </label>
+        ${p.skills ? renderSkillsCard(p.skills) : ''}
+        <div class="player-actions">
+          <button class="save-btn" onclick="savePlayerData('${p.id}')">💾 Opslaan</button>
+          <button class="del-btn" onclick="deletePlayer('${p.id}')">Verwijder</button>
+        </div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+async function onSupabaseReady() {
+  const data = await loadFromSupabase();
+  if (data.players) players = data.players;
+  renderPlayerList();
+}
+
+renderPlayerList();
+initScrollTop();
+initManifest();
+initSupabase().then(ok => { if (ok) onSupabaseReady(); });
+</script>
+</body>
+</html>

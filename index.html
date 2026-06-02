@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FCP 16-2">
+<meta name="theme-color" content="#0a1200">
+<title>FCP 16-2</title>
+<link rel="manifest" id="manifest-link">
+<link rel="stylesheet" href="style.css">
+<script>
+if(localStorage.getItem('sb_url')&&localStorage.getItem('sb_key')){
+  document.addEventListener('DOMContentLoaded',()=>{
+    const b=document.getElementById('config-banner');
+    const s=document.getElementById('sync-bar');
+    if(b)b.style.display='none';
+    if(s)s.style.display='flex';
+  });
+}
+</script>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-btn active" href="index.html"><span class="nav-icon">⚡</span><span>Start</span></a>
+  <a class="nav-btn" href="opstelling.html"><span class="nav-icon">🟢</span><span>Opstelling</span></a>
+  <a class="nav-btn" href="selectie.html"><span class="nav-icon">👥</span><span>Selectie</span></a>
+  <a class="nav-btn" href="schema.html"><span class="nav-icon">📅</span><span>Schema</span></a>
+  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">🏆</span><span>Wedstrijden</span></a>
+  <a class="nav-btn" href="team.html"><span class="nav-icon">📊</span><span>Team</span></a>
+  <a class="nav-btn" href="oefeningen.html"><span class="nav-icon">📚</span><span>Oefeningen</span></a>
+</nav>
+<div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+<div class="toast" id="toast"></div>
+
+<div class="page-wrap">
+  <div class="home-hero">
+    <div style="padding:48px 16px 16px">
+      <h1 class="home-title">FCP <em>16-2</em></h1>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
+        <a href="schema.html"      class="form-btn" style="text-align:center;text-decoration:none;padding:11px 8px;font-size:12px">📅 Schema</a>
+        <a href="opstelling.html"  class="form-btn" style="text-align:center;text-decoration:none;padding:11px 8px;font-size:12px;background:var(--bg3);border-color:var(--line2);color:var(--text2)">🟢 Opstelling</a>
+        <a href="wedstrijden.html" class="form-btn" style="text-align:center;text-decoration:none;padding:11px 8px;font-size:12px;background:var(--bg3);border-color:var(--line2);color:var(--text2)">🏆 Wedstrijden</a>
+        <a href="selectie.html"    class="form-btn" style="text-align:center;text-decoration:none;padding:11px 8px;font-size:12px;background:var(--bg3);border-color:var(--line2);color:var(--text2)">👥 Selectie</a>
+        <a href="team.html"        class="form-btn" style="text-align:center;text-decoration:none;padding:11px 8px;font-size:12px;background:var(--bg3);border-color:var(--line2);color:var(--text2)">📊 Team</a>
+        <a href="oefeningen.html"  class="form-btn" style="text-align:center;text-decoration:none;padding:11px 8px;font-size:12px;background:var(--bg3);border-color:var(--line2);color:var(--text2)">📚 Oefeningen</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:12px 16px 0">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <a href="wedstrijden.html" class="stat-card" style="text-decoration:none;display:block"><div class="stat-num" id="stat-wedstrijden">0</div><div class="stat-label">Wedstrijden</div></a>
+      <a href="oefeningen.html"  class="stat-card" style="text-decoration:none;display:block"><div class="stat-num" id="stat-oef">49</div><div class="stat-label">Oefeningen</div></a>
+      <a href="selectie.html"    class="stat-card" style="text-decoration:none;display:block"><div class="stat-num" id="stat-spelers">0</div><div class="stat-label">Spelers</div></a>
+      <a href="wedstrijden.html" class="stat-card" style="text-decoration:none;display:block"><div class="stat-num" id="stat-wins">0</div><div class="stat-label">Gewonnen</div></a>
+    </div>
+  </div>
+
+  <div class="principle-section">
+    <div class="section-label">Kernprincipes — tap voor detail</div>
+    <div class="principle-grid" id="principle-grid"></div>
+  </div>
+
+  <!-- Supabase config -->
+  <div class="config-banner" id="config-banner">
+    <strong>🔗 Koppel Supabase voor gedeeld gebruik</strong><br>
+    Maak een gratis account op <strong>supabase.com</strong>, maak een project aan en voer de SQL-bestanden uit.<br>
+    Vind URL en key via: <code>Project Settings → API → Legacy anon key</code>
+    <div class="config-inputs">
+      <input class="config-input" id="sb-url" placeholder="https://xxxx.supabase.co" type="url">
+      <input class="config-input" id="sb-key" placeholder="anon public key (eyJ...)">
+      <button class="config-save-btn" onclick="saveSupabaseConfig()">Verbinding opslaan en testen</button>
+    </div>
+  </div>
+  <div class="sync-bar sync-loading" id="sync-bar" style="display:none">
+    <span id="sync-msg" style="flex:1">Verbinden...</span>
+    <button onclick="resetSupabaseConfig()" style="padding:3px 9px;background:transparent;border:1px solid currentColor;border-radius:4px;color:inherit;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer">✏️ Wijzig</button>
+  </div>
+</div>
+
+<!-- Principe modal -->
+<div class="pr-modal-overlay" id="prModalOverlay" onclick="if(event.target===this)closePrModal()">
+  <div class="pr-modal" id="prModal">
+    <div class="pr-modal-code" id="pr-code"></div>
+    <div class="pr-modal-naam" id="pr-naam"></div>
+    <div class="pr-modal-section">Beschrijving</div>
+    <div class="pr-modal-text" id="pr-desc"></div>
+    <div class="pr-modal-section">Voorbeeld in het spel</div>
+    <div class="pr-modal-text" id="pr-voorbeeld"></div>
+    <div class="pr-modal-actions">
+      <button class="pr-modal-edit" id="pr-edit-btn" onclick="openPrEdit()">✏️ Bewerken</button>
+      <button class="pr-modal-close" onclick="closePrModal()">Sluiten</button>
+    </div>
+  </div>
+</div>
+
+<!-- Principe bewerken modal -->
+<div class="bmodal-overlay" id="bmodalPr" onclick="if(event.target===this)closePrEdit()">
+  <div class="bmodal">
+    <div class="bmodal-title" id="pr-edit-title">Principe bewerken</div>
+    <div class="bmodal-label">Naam</div>
+    <input class="bmodal-input" id="pr-f-naam">
+    <div class="bmodal-label">Beschrijving</div>
+    <textarea class="bmodal-textarea" id="pr-f-desc"></textarea>
+    <div class="bmodal-label">Voorbeeld in het spel</div>
+    <textarea class="bmodal-textarea" id="pr-f-voorbeeld"></textarea>
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closePrEdit()">Annuleer</button>
+      <button class="bmodal-save" onclick="savePr()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const state = loadState();
+let principes = state.principes || DEFAULT_PRINCIPES;
+let activePrId = null;
+
+function updateStats() {
+  const wed = JSON.parse(localStorage.getItem('fcp_wed')||'[]');
+  const pl  = JSON.parse(localStorage.getItem('fcp_players')||'[]');
+  const oef = JSON.parse(localStorage.getItem('fcp_oef')||'[]');
+  document.getElementById('stat-wedstrijden').textContent = wed.length;
+  document.getElementById('stat-spelers').textContent     = pl.length;
+  document.getElementById('stat-oef').textContent         = 49 + oef.length;
+  document.getElementById('stat-wins').textContent        = wed.filter(w=>w.score_eigen>w.score_tegen).length;
+}
+
+function renderPrincipes() {
+  const grid = document.getElementById('principle-grid');
+  grid.innerHTML = '';
+  principes.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'pr-card';
+    card.style.cssText = `background:${p.kleur_bg};border:1px solid ${p.kleur_border};color:${p.kleur_text}`;
+    card.textContent = p.code + ' · ' + p.naam;
+    card.onclick = () => openPrModal(p.id);
+    grid.appendChild(card);
+  });
+}
+
+function openPrModal(id) {
+  const p = principes.find(x => x.id === id); if (!p) return;
+  activePrId = id;
+  const modal = document.getElementById('prModal');
+  modal.style.cssText = `background:${p.kleur_bg};border-color:${p.kleur_border};color:${p.kleur_text}`;
+  document.getElementById('pr-code').textContent     = p.code;
+  document.getElementById('pr-naam').textContent     = p.naam;
+  document.getElementById('pr-desc').textContent     = p.beschrijving;
+  document.getElementById('pr-voorbeeld').textContent = p.voorbeeld;
+  const editBtn = document.getElementById('pr-edit-btn');
+  editBtn.style.cssText = `background:${p.kleur_border};border-color:${p.kleur_text};color:${p.kleur_text}`;
+  document.getElementById('prModalOverlay').classList.add('open');
+}
+function closePrModal() { document.getElementById('prModalOverlay').classList.remove('open'); }
+
+function openPrEdit() {
+  const p = principes.find(x => x.id === activePrId); if (!p) return;
+  document.getElementById('pr-edit-title').textContent = p.code + ' bewerken';
+  document.getElementById('pr-f-naam').value      = p.naam;
+  document.getElementById('pr-f-desc').value      = p.beschrijving;
+  document.getElementById('pr-f-voorbeeld').value = p.voorbeeld;
+  closePrModal();
+  document.getElementById('bmodalPr').classList.add('open');
+}
+function closePrEdit() { document.getElementById('bmodalPr').classList.remove('open'); }
+
+async function savePr() {
+  const p = principes.find(x => x.id === activePrId); if (!p) return;
+  p.naam        = document.getElementById('pr-f-naam').value;
+  p.beschrijving = document.getElementById('pr-f-desc').value;
+  p.voorbeeld   = document.getElementById('pr-f-voorbeeld').value;
+  localStorage.setItem('fcp_principes', JSON.stringify(principes));
+  if (supabaseReady) await sbFetch('principes?id=eq.'+p.id, 'PATCH', { naam:p.naam, beschrijving:p.beschrijving, voorbeeld:p.voorbeeld });
+  renderPrincipes();
+  closePrEdit();
+  showToast(p.code + ' opgeslagen');
+}
+
+async function onSupabaseReady() {
+  const data = await loadFromSupabase();
+  if (data.principes) { principes = data.principes; localStorage.setItem('fcp_principes', JSON.stringify(principes)); }
+  renderPrincipes();
+  updateStats();
+}
+
+// Init
+principes = JSON.parse(localStorage.getItem('fcp_principes') || JSON.stringify(DEFAULT_PRINCIPES));
+renderPrincipes();
+updateStats();
+initScrollTop();
+initManifest();
+initSupabase().then(ok => { if (ok) onSupabaseReady(); });
+</script>
+</body>
+</html>

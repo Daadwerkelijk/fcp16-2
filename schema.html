@@ -207,12 +207,19 @@ function buildWeekHtml(w, type, wi) {
       const ct = CAT_STYLES[b.cat] || (CAT_BG[normaliseerCat(b.cat)] ? { bg:CAT_BG[normaliseerCat(b.cat)].bg, c:CAT_BG[normaliseerCat(b.cat)].c, label:normaliseerCat(b.cat) } : { bg:'#181818', c:'#888', label:normaliseerCat(b.cat) });
       const urlKey = nk + '_b' + bi;
       const savedUrl = sessionNotes[urlKey] || b.url || '';
+      const totaal = (sess.blokken || []).length;
+      const isFirst = bi === 0;
+      const isLast  = bi === totaal - 1;
       html += `<div class="block-row">
         <span class="btag" style="background:${ct.bg};color:${ct.c}">${ct.label}</span>
         <div class="block-info">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div style="flex:1"><div class="block-name">${b.n}</div>${b.tip ? `<div class="block-tip">${b.tip}</div>` : ''}</div>
-            <button onclick="removeBlok('${nk}',${bi})" style="padding:2px 6px;background:transparent;border:1px solid var(--red);border-radius:3px;color:var(--red);font-size:10px;cursor:pointer;margin-left:6px;flex-shrink:0">✕</button>
+            <div style="display:flex;flex-direction:column;gap:2px;margin-left:6px;flex-shrink:0">
+              <button onclick="moveBlok('${nk}',${bi},-1)" ${isFirst?'disabled':''} style="padding:1px 5px;background:transparent;border:1px solid var(--line2);border-radius:3px;color:${isFirst?'var(--text3)':'var(--text2)'};font-size:9px;cursor:${isFirst?'default':'pointer'};line-height:1">▲</button>
+              <button onclick="moveBlok('${nk}',${bi},1)"  ${isLast ?'disabled':''} style="padding:1px 5px;background:transparent;border:1px solid var(--line2);border-radius:3px;color:${isLast ?'var(--text3)':'var(--text2)'};font-size:9px;cursor:${isLast ?'default':'pointer'};line-height:1">▼</button>
+            </div>
+            <button onclick="removeBlok('${nk}',${bi})" style="padding:2px 6px;background:transparent;border:1px solid var(--red);border-radius:3px;color:var(--red);font-size:10px;cursor:pointer;margin-left:4px;flex-shrink:0">✕</button>
           </div>
           <div style="display:flex;gap:5px;margin-top:5px;align-items:center">
             <input style="flex:1;padding:4px 8px;background:var(--bg3);border:1px solid var(--line2);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none" placeholder="URL / YouTube..." value="${savedUrl.replace(/"/g,'&quot;')}" id="url-${urlKey}" onblur="saveUrl('${urlKey}')">
@@ -239,15 +246,33 @@ function toggleWeek(id)    { document.getElementById(id).classList.toggle('open'
 function toggleSession(id) { document.getElementById(id).classList.toggle('open'); }
 
 function removeBlok(nk, bi) {
+  const blokken = getBlokken(nk);
+  if (!blokken) return;
+  blokken.splice(bi, 1);
+  persistBlokken(nk); buildSchema();
+}
+
+function moveBlok(nk, bi, dir) {
+  const blokken = getBlokken(nk);
+  if (!blokken) return;
+  const ni = bi + dir;
+  if (ni < 0 || ni >= blokken.length) return;
+  [blokken[bi], blokken[ni]] = [blokken[ni], blokken[bi]];
+  persistBlokken(nk); buildSchema();
+}
+
+function getBlokken(nk) {
   if (nk.startsWith('cw')) {
     const [wi, si] = nk.replace('cw','').split('_').map(Number);
-    if (customWeken[wi]?.sessies[si]) { customWeken[wi].sessies[si].blokken.splice(bi, 1); saveCustomWeken(customWeken); }
+    return customWeken[wi]?.sessies[si]?.blokken;
   } else {
     const [wn, si] = nk.replace('w','').split('_').map(Number);
-    const week = SCHEMA.find(w => w.week === wn);
-    if (week?.sessies[si]) week.sessies[si].blokken.splice(bi, 1);
+    return SCHEMA.find(w => w.week === wn)?.sessies[si]?.blokken;
   }
-  buildSchema();
+}
+
+function persistBlokken(nk) {
+  if (nk.startsWith('cw')) saveCustomWeken(customWeken);
 }
 
 function saveUrl(key) {
@@ -344,16 +369,29 @@ function renderWeekBlokken(ti) {
   const cont = document.getElementById('tr' + (ti+1) + '-blokken'); cont.innerHTML = '';
   weekBlokken[ti].forEach((b, bi) => {
     const ct = CAT_STYLES[b.cat] || (CAT_BG[b.cat] ? { bg:CAT_BG[b.cat].bg, c:CAT_BG[b.cat].c, label:b.cat } : { bg:'#181818', c:'#888', label:b.cat });
-    // b.cat is al genormaliseerd via openNieuweWeekModal → normaliseerCat
+    const isFirst = bi === 0;
+    const isLast  = bi === weekBlokken[ti].length - 1;
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg2);border:1px solid var(--line2);border-radius:4px';
-    row.innerHTML = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${ct.bg};color:${ct.c};flex-shrink:0">${ct.label}</span>
+    row.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+        <button onclick="moveWeekBlok(${ti},${bi},-1)" ${isFirst?'disabled':''} style="padding:1px 5px;background:transparent;border:1px solid var(--line2);border-radius:3px;color:${isFirst?'var(--text3)':'var(--text2)'};font-size:9px;cursor:${isFirst?'default':'pointer'};line-height:1">▲</button>
+        <button onclick="moveWeekBlok(${ti},${bi},1)"  ${isLast ?'disabled':''} style="padding:1px 5px;background:transparent;border:1px solid var(--line2);border-radius:3px;color:${isLast ?'var(--text3)':'var(--text2)'};font-size:9px;cursor:${isLast ?'default':'pointer'};line-height:1">▼</button>
+      </div>
+      <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${ct.bg};color:${ct.c};flex-shrink:0">${ct.label}</span>
       <span style="flex:1;font-size:12px;color:var(--text2)">${b.oefNaam}</span>
       <button onclick="removeWeekBlok(${ti},${bi})" style="padding:2px 6px;background:transparent;border:1px solid var(--red);border-radius:3px;color:var(--red);font-size:10px;cursor:pointer">✕</button>`;
     cont.appendChild(row);
   });
 }
 function removeWeekBlok(ti, bi) { weekBlokken[ti].splice(bi, 1); renderWeekBlokken(ti); }
+function moveWeekBlok(ti, bi, dir) {
+  const arr = weekBlokken[ti];
+  const ni = bi + dir;
+  if (ni < 0 || ni >= arr.length) return;
+  [arr[bi], arr[ni]] = [arr[ni], arr[bi]];
+  renderWeekBlokken(ti);
+}
 
 function openPickOef(ti) {
   activePickTi = ti;

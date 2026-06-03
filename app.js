@@ -342,7 +342,7 @@ function initScrollTop() {
 function initManifest() {
   const manifest = {
     name:'FCP 16-2', short_name:'FCP 16-2', display:'standalone',
-    background_color:'#0a1200', theme_color:'#0a1200', start_url:'index.html',
+    background_color:'#0a1200', theme_color:'#0a1200', start_url:'./',
     icons:[{ src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a1200'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='%23a8e040'>⚽</text></svg>", sizes:'192x192', type:'image/svg+xml' }]
   };
   const el = document.getElementById('manifest-link');

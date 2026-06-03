@@ -109,19 +109,9 @@ function renderAanwOverzicht() {
   // Samenvatting: totaal aantal trainingen met opgeslagen aanwezigheid
   const metData = trainingen.filter(t => aanwezigheid[t.nk] && Object.keys(aanwezigheid[t.nk]).length > 0);
   document.getElementById('aanw-samenvatting').innerHTML = `
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <div style="flex:1;min-width:120px;padding:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)">
-        <div style="font-size:22px;font-weight:700;color:var(--accent)">${trainingen.length}</div>
-        <div style="font-size:11px;color:var(--text3)">Trainingen totaal</div>
-      </div>
-      <div style="flex:1;min-width:120px;padding:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)">
-        <div style="font-size:22px;font-weight:700;color:var(--accent)">${metData.length}</div>
-        <div style="font-size:11px;color:var(--text3)">Met aanwezigheid</div>
-      </div>
-      <div style="flex:1;min-width:120px;padding:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)">
-        <div style="font-size:22px;font-weight:700;color:var(--accent)">${sorted.length}</div>
-        <div style="font-size:11px;color:var(--text3)">Spelers</div>
-      </div>
+    <div style="padding:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm);display:inline-block;min-width:120px">
+      <div style="font-size:28px;font-weight:700;color:var(--accent)">${trainingen.length}</div>
+      <div style="font-size:11px;color:var(--text3)">Trainingen dit seizoen</div>
     </div>`;
 
   // Tabel: spelers als rijen, trainingen als kolommen

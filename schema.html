@@ -35,15 +35,31 @@
   <div id="schema-content"></div>
 </div>
 
+<!-- Afwezigheid toevoegen modal -->
+<div class="bmodal-overlay" id="bmodalAanw" onclick="if(event.target===this)closeAanwPicker()">
+  <div class="bmodal">
+    <div class="bmodal-title">Afwezig toevoegen</div>
+    <div class="bmodal-label">Speler</div>
+    <select class="bmodal-select" id="aanwpick-speler"></select>
+    <div class="bmodal-label">Reden</div>
+    <select class="bmodal-select" id="aanwpick-reden"></select>
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeAanwPicker()">Annuleer</button>
+      <button class="bmodal-save" onclick="saveAanwPicker()">Toevoegen</button>
+    </div>
+  </div>
+</div>
+
 <!-- Week aanmaken modal -->
 <div class="bmodal-overlay" id="bmodalWeek" onclick="if(event.target===this)closeBModalWeekDirect()">
   <div class="bmodal">
     <div class="bmodal-title" id="bmodalWeekTitle">Trainingsweek aanmaken</div>
     <div class="bmodal-label">Startdatum week (maandag)</div>
-    <input class="bmodal-input" id="week-f-datum" type="date" onchange="onWeekDatumChange(this.value)">
-    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;margin-bottom:8px">
+    <input class="bmodal-input" id="week-f-datum" type="date" onchange="onWeekDatumChange(this.value)"
+      style="font-size:16px;padding:12px;background:var(--bg3);border:2px solid var(--accent);color:var(--text);border-radius:var(--rsm)">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:6px;margin-bottom:12px;padding:8px 10px;background:var(--bg3);border-radius:var(--rsm)">
       <span style="font-size:11px;color:var(--text3)">Weeknummer:</span>
-      <span id="week-f-nr" style="font-size:13px;font-weight:500;color:var(--accent)">—</span>
+      <span id="week-f-nr" style="font-size:14px;font-weight:700;color:var(--accent)">—</span>
     </div>
     <div class="bmodal-label">Focus / naam week</div>
     <input class="bmodal-input" id="week-f-focus" placeholder="Bijv: Counterpressing verdieping">
@@ -331,17 +347,7 @@ async function saveNote(nk) {
 async function saveAanwezigheid(nk) {
   if (typeof nk !== 'string' || !nk) { console.warn('saveAanwezigheid: ongeldige nk', nk); return; }
   if (!aanwezigheid[nk]) aanwezigheid[nk] = {};
-  players.forEach(p => {
-    const cb    = document.getElementById('aanwtag-'   + nk + '-' + p.id);
-    const reden = document.getElementById('aanwreden-' + nk + '-' + p.id);
-    if (cb) {
-      if (cb.checked) {
-        aanwezigheid[nk][p.id] = { afwezig: true, reden: reden?.value || '' };
-      } else {
-        aanwezigheid[nk][p.id] = { afwezig: false, reden: '' };
-      }
-    }
-  });
+  // State is al bijgewerkt via saveAanwPicker / removeAfwezig - direct opslaan
   localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
   if (supabaseReady) {
     await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(nk), 'DELETE');
@@ -357,49 +363,65 @@ async function saveAanwezigheid(nk) {
   showToast(afw.length ? 'Afwezig: ' + afw.join(', ') : 'Iedereen aanwezig ✓');
 }
 
+// ─── AFWEZIGHEID + KNOP MODEL ───
 function renderAanw(nk) {
   const cont = document.getElementById('aanw-' + nk); if (!cont) return;
   if (!players.length) { cont.innerHTML = '<div style="font-size:11px;color:var(--text3)">Voeg eerst spelers toe via Selectie.</div>'; return; }
   const afwObj = aanwezigheid[nk] || {};
-  const sorted = sortedPlayers(players);
-  let html = '<div style="display:flex;flex-direction:column;gap:6px">';
-  sorted.forEach(p => {
-    const isAfw = afwObj[p.id] === false || (afwObj[p.id] && afwObj[p.id].afwezig === true);
-    const reden = (afwObj[p.id] && afwObj[p.id].reden) || '';
-    const afwChecked = isAfw ? 'checked' : '';
-    const redenOpties = absRedenen.map(r =>
-      `<option value="${r}" ${r===reden?'selected':''}>${r}</option>`
-    ).join('');
-    html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg3);border:1px solid ${isAfw?'var(--red)':'var(--line2)'};border-radius:var(--rsm)" id="aanwrow-${nk}-${p.id}">
-      <label style="display:flex;align-items:center;gap:6px;flex:1;cursor:pointer">
-        <input type="checkbox" id="aanwtag-${nk}-${p.id}" ${afwChecked}
-          onchange="onAanwToggle('${nk}','${p.id}')"
-          style="width:15px;height:15px;accent-color:var(--red);cursor:pointer">
-        <span style="font-size:12px;color:${isAfw?'var(--red)':'var(--text)'}">${p.naam}</span>
-      </label>
-      <select id="aanwreden-${nk}-${p.id}"
-        style="display:${isAfw?'block':'none'};padding:3px 6px;background:var(--bg2);border:1px solid var(--line2);border-radius:4px;color:var(--text2);font-family:'DM Mono',monospace;font-size:11px;max-width:120px"
-        onchange="onRedenChange('${nk}','${p.id}')">
-        <option value="">Reden...</option>${redenOpties}
-      </select>
-    </div>`;
+  // Verzamel huidige afwezigen
+  const afwezigen = players.filter(p => {
+    const e = afwObj[p.id];
+    return e === false || (e && e.afwezig === true);
   });
+  // Badges van afwezigen + + knop
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">';
+  afwezigen.forEach(p => {
+    const e = afwObj[p.id];
+    const reden = (e && e.reden) ? e.reden : '';
+    html += `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;background:var(--bg3);border:1px solid var(--red);border-radius:20px;font-size:11px;color:var(--red)">
+      ${p.naam}${reden ? ' · ' + reden : ''}
+      <button onclick="removeAfwezig('${nk}','${p.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:0;line-height:1">✕</button>
+    </span>`;
+  });
+  html += `<button onclick="openAanwPicker('${nk}')" style="padding:4px 10px;background:transparent;border:1px solid var(--accent);border-radius:20px;color:var(--accent);font-size:11px;cursor:pointer">+ Afwezig</button>`;
   html += '</div>';
   cont.innerHTML = html;
 }
 
-function onAanwToggle(nk, pid) {
-  const cb  = document.getElementById('aanwtag-'   + nk + '-' + pid);
-  const sel = document.getElementById('aanwreden-' + nk + '-' + pid);
-  const row = document.getElementById('aanwrow-'   + nk + '-' + pid);
-  const isAfw = cb.checked;
-  if (sel) sel.style.display = isAfw ? 'block' : 'none';
-  if (row) row.style.borderColor = isAfw ? 'var(--red)' : 'var(--line2)';
-  const naam = row?.querySelector('span');
-  if (naam) naam.style.color = isAfw ? 'var(--red)' : 'var(--text)';
+let aanwPickerNk = null;
+function openAanwPicker(nk) {
+  aanwPickerNk = nk;
+  const afwObj = aanwezigheid[nk] || {};
+  // Spelers die nog niet afwezig zijn
+  const beschikbaar = sortedPlayers(players).filter(p => {
+    const e = afwObj[p.id];
+    return e !== false && !(e && e.afwezig === true);
+  });
+  if (!beschikbaar.length) { showToast('Alle spelers zijn al gemarkeerd'); return; }
+  const selSpeler = document.getElementById('aanwpick-speler');
+  const selReden  = document.getElementById('aanwpick-reden');
+  selSpeler.innerHTML = beschikbaar.map(p => `<option value="${p.id}">${p.naam}</option>`).join('');
+  selReden.innerHTML  = absRedenen.map(r => `<option value="${r}">${r}</option>`).join('');
+  document.getElementById('bmodalAanw').classList.add('open');
+}
+function closeAanwPicker() { document.getElementById('bmodalAanw').classList.remove('open'); }
+
+function saveAanwPicker() {
+  const pid   = document.getElementById('aanwpick-speler').value;
+  const reden = document.getElementById('aanwpick-reden').value;
+  if (!aanwezigheid[aanwPickerNk]) aanwezigheid[aanwPickerNk] = {};
+  aanwezigheid[aanwPickerNk][pid] = { afwezig: true, reden };
+  localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
+  closeAanwPicker();
+  renderAanw(aanwPickerNk);
 }
 
-function onRedenChange(nk, pid) { /* reden opgeslagen bij saveAanwezigheid */ }
+function removeAfwezig(nk, pid) {
+  if (!aanwezigheid[nk]) return;
+  aanwezigheid[nk][pid] = { afwezig: false, reden: '' };
+  localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
+  renderAanw(nk);
+}
 
 function addExtraTraining(wid, customIdx) {
   const naam = prompt('Naam extra training:', 'Extra training'); if (!naam) return;

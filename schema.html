@@ -339,7 +339,7 @@ function onWeekDatumChange(val) {
 function renderWeekBlokken(ti) {
   const cont = document.getElementById('tr' + (ti+1) + '-blokken'); cont.innerHTML = '';
   weekBlokken[ti].forEach((b, bi) => {
-    const ct = CAT_STYLES[b.cat] || CAT_STYLES.POS;
+    const ct = CAT_STYLES[b.cat] || (CAT_BG[b.cat] ? { bg:CAT_BG[b.cat].bg, c:CAT_BG[b.cat].c, label:b.cat } : { bg:'#181818', c:'#888', label:b.cat });
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg2);border:1px solid var(--line2);border-radius:4px';
     row.innerHTML = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${ct.bg};color:${ct.c};flex-shrink:0">${ct.label}</span>

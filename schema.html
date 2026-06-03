@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a1200">
-<title>Schema — FCP 16-2</title>
+<title>Trainen — FCP 16-2</title>
 <link rel="manifest" id="manifest-link">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 <link rel="stylesheet" href="style.css">
@@ -16,10 +16,10 @@
   <a class="nav-btn" href="index.html"><span class="nav-icon">⚡</span><span>Start</span></a>
   <a class="nav-btn" href="opstelling.html"><span class="nav-icon">🟢</span><span>Opstelling</span></a>
   <a class="nav-btn" href="selectie.html"><span class="nav-icon">👥</span><span>Selectie</span></a>
-  <a class="nav-btn active" href="schema.html"><span class="nav-icon">📅</span><span>Schema</span></a>
-  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">🏆</span><span>Wedstrijden</span></a>
-  <a class="nav-btn" href="team.html"><span class="nav-icon">📊</span><span>Team</span></a>
+  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">⚽</span><span>Wedstrijden</span></a>
+  <a class="nav-btn active" href="schema.html"><span class="nav-icon">📅</span><span>Trainen</span></a>
   <a class="nav-btn" href="oefeningen.html"><span class="nav-icon">📚</span><span>Oefeningen</span></a>
+  <a class="nav-btn" href="team.html"><span class="nav-icon">📊</span><span>Dashboard</span></a>
 </nav>
 <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
 <div class="toast" id="toast"></div>
@@ -27,10 +27,10 @@
 <div class="page-wrap">
   <div class="page-header">
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <div class="page-title">Schema</div>
+      <div class="page-title">Trainen</div>
       <button class="add-btn" onclick="openNieuweWeekModal()">+ Week</button>
     </div>
-    <div class="page-sub">Augustus · September · Oktober 2026</div>
+    
   </div>
   <div id="schema-content"></div>
 </div>
@@ -143,6 +143,8 @@ let aanwezigheid = state.aanwezigheid;
 let customWeken  = state.customWeken;
 let customOef    = state.customOef;
 let categories   = state.categories;
+let absRedenen   = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]');
+function saveAbsRedenen(r) { localStorage.setItem('fcp_abs_redenen', JSON.stringify(r)); }
 
 // Week builder state
 let weekBlokken   = [[], []];
@@ -177,21 +179,35 @@ function buildSchema() {
   customWeken.forEach((w, wi) => w.sessies.forEach((_, si) => renderAanw('cw' + wi + '_' + si)));
 }
 
+function isHuidigeWeek(w) {
+  if (!w.isoDate) return false;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const start = new Date(w.isoDate);
+  const eind  = new Date(start); eind.setDate(eind.getDate() + 6);
+  return now >= start && now <= eind;
+}
+
 function buildWeekHtml(w, type, wi) {
   const wid = type === 'custom' ? 'cw' + wi : 'w' + w.week;
   const isoDate = type === 'schema' ? SCHEMA_DATES[w.week] : null;
   const weekNr  = type === 'schema' ? SCHEMA_WEEKNR[w.week] : null;
   const datumStr = isoDate ? formatDatumShort(isoDate) : (w.datum || '');
+  const huidig  = isHuidigeWeek(w);
   const weekLabel = type === 'custom'
-    ? `<span style="font-size:10px;background:#1a1028;border:1px solid #a060e0;color:#c080f8;padding:1px 7px;border-radius:8px">${w.weekNr || 'Eigen week'}</span>`
+    ? `<span style="font-size:10px;background:${huidig?'#163a10':'#1a1028'};border:1px solid ${huidig?'#4aaa30':'#a060e0'};color:${huidig?'#7fe860':'#c080f8'};padding:1px 7px;border-radius:8px">${w.weekNr || 'Eigen week'}${huidig?' \u25CF Nu':''}</span>`
     : `Week ${weekNr} · ${datumStr}`;
+  const btnS = 'font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text3);cursor:pointer;line-height:1.4;vertical-align:middle';
+  const btnR = 'font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);cursor:pointer;line-height:1.4;vertical-align:middle';
   const editDel = type === 'custom'
-    ? `<button onclick="openNieuweWeekModal(${wi});event.stopPropagation()" style="font-size:11px;padding:2px 7px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text3);cursor:pointer;margin-left:6px">✏️</button>
-       <button onclick="kopieerWeek(${wi});event.stopPropagation()" style="font-size:11px;padding:2px 7px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text3);cursor:pointer;margin-left:4px">⎘</button>
-       <button onclick="deleteCustomWeek(${wi})" style="font-size:11px;padding:2px 7px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);cursor:pointer;margin-left:4px">✕</button>`
+    ? ` <span style="display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle">
+         <button onclick="openNieuweWeekModal(${wi});event.stopPropagation()" style="${btnS}">✏️</button>
+         <button onclick="kopieerWeek(${wi});event.stopPropagation()" style="${btnS}">⎘</button>
+         <button onclick="deleteCustomWeek(${wi});event.stopPropagation()" style="${btnR}">✕</button>
+       </span>`
     : '';
+  const hdrStyle = huidig ? 'background:linear-gradient(90deg,#0e2a0a 0%,#0a1200 100%);border-left:3px solid #4aaa30;padding-left:13px;' : '';
   let html = `<div class="week-item" id="${wid}">
-    <div class="week-hdr" onclick="toggleWeek('${wid}')">
+    <div class="week-hdr" onclick="toggleWeek('${wid}')" style="${hdrStyle}">
       <div style="flex:1"><div class="week-num">${weekLabel}</div><div class="week-focus">${w.focus}${editDel}</div></div>
       <span class="week-chev">▾</span>
     </div><div class="week-body">`;
@@ -200,17 +216,22 @@ function buildWeekHtml(w, type, wi) {
     const nk  = wid + '_' + si;
     const sn  = sessionNotes[nk] || '';
     const prs = (sess.pr || []).map(p => { const t = PR_TAGS[p]; return t ? `<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:4px;background:${t.bg};color:${t.c}">${p}</span>` : ''; }).join('');
+    const sessNr = si + 1;
     html += `<div class="session-item" id="${sid}">
       <div class="session-hdr" onclick="toggleSession('${sid}')">
-        <div><div class="session-day">${sess.dag}</div><div class="session-prs">${prs}</div></div>
+        <div>
+          <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:2px">Training ${sessNr}</div>
+          <div class="session-day">${sess.dag}</div>
+          <div class="session-prs">${prs}</div>
+        </div>
         <span class="session-chev">▾</span>
       </div><div class="session-body">`;
     html += buildBlokkenHtml(nk, sess.blokken || []);
     html += `<div class="session-extra">
-      <button onclick="shareTraining('${nk}')" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;margin-bottom:8px">📲 Delen via WhatsApp</button>
-      <div class="session-extra-label">Afwezig</div>
-      <div class="aanw-grid" id="aanw-${nk}"></div>
-      <button class="session-save-btn" style="margin-bottom:8px" onclick="saveAanwezigheid('${nk}')">💾 Aanwezigheid opslaan</button>
+      <button onclick="shareTraining('${nk}')" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;margin-bottom:12px">📲 Delen via WhatsApp</button>
+      <div class="session-extra-label" style="margin-bottom:6px">Afwezigheid</div>
+      <div id="aanw-${nk}"></div>
+      <button class="session-save-btn" style="margin-bottom:12px" onclick="saveAanwezigheid('${nk}')">💾 Aanwezigheid opslaan</button>
       <div class="session-extra-label">Aantekeningen</div>
       <textarea class="session-notes-ta" id="notes-${nk}" placeholder="Notities...">${sn}</textarea>
       <button class="session-save-btn" onclick="saveNote('${nk}')">💾 Opslaan</button>
@@ -311,35 +332,74 @@ async function saveAanwezigheid(nk) {
   if (typeof nk !== 'string' || !nk) { console.warn('saveAanwezigheid: ongeldige nk', nk); return; }
   if (!aanwezigheid[nk]) aanwezigheid[nk] = {};
   players.forEach(p => {
-    const tag = document.getElementById('aanwtag-' + nk + '-' + p.id);
-    if (tag) aanwezigheid[nk][p.id] = !tag.classList.contains('afwezig');
+    const cb    = document.getElementById('aanwtag-'   + nk + '-' + p.id);
+    const reden = document.getElementById('aanwreden-' + nk + '-' + p.id);
+    if (cb) {
+      if (cb.checked) {
+        aanwezigheid[nk][p.id] = { afwezig: true, reden: reden?.value || '' };
+      } else {
+        aanwezigheid[nk][p.id] = { afwezig: false, reden: '' };
+      }
+    }
   });
-  // Sla op in localStorage via app.js functie (andere naam om recursie te voorkomen)
   localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
   if (supabaseReady) {
     await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(nk), 'DELETE');
     const nkData = aanwezigheid[nk] || {};
-    for (const p of players) await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:nk, player_id:p.id, aanwezig:nkData[p.id] !== false });
+    for (const p of players) {
+      const entry = nkData[p.id] || {};
+      const isAfw = entry.afwezig === true;
+      await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:nk, player_id:p.id, aanwezig:!isAfw, reden:entry.reden||'' });
+    }
   }
   const nkData2 = aanwezigheid[nk] || {};
-  const afw = players.filter(p => nkData2[p.id] === false).map(p => p.naam);
-  showToast(afw.length ? 'Afwezig: ' + afw.join(', ') : 'Iedereen aanwezig');
+  const afw = players.filter(p => nkData2[p.id]?.afwezig === true).map(p => p.naam);
+  showToast(afw.length ? 'Afwezig: ' + afw.join(', ') : 'Iedereen aanwezig ✓');
 }
 
 function renderAanw(nk) {
   const cont = document.getElementById('aanw-' + nk); if (!cont) return;
-  if (!players.length) { cont.innerHTML = '<span style="font-size:11px;color:var(--text3)">Voeg eerst spelers toe.</span>'; return; }
-  cont.innerHTML = '';
+  if (!players.length) { cont.innerHTML = '<div style="font-size:11px;color:var(--text3)">Voeg eerst spelers toe via Selectie.</div>'; return; }
   const afwObj = aanwezigheid[nk] || {};
-  players.forEach(p => {
-    const tag = document.createElement('span');
-    tag.className = 'aanw-tag' + (afwObj[p.id] === false ? ' afwezig' : '');
-    tag.textContent = p.naam;
-    tag.id = 'aanwtag-' + nk + '-' + p.id;
-    tag.onclick = () => tag.classList.toggle('afwezig');
-    cont.appendChild(tag);
+  const sorted = sortedPlayers(players);
+  let html = '<div style="display:flex;flex-direction:column;gap:6px">';
+  sorted.forEach(p => {
+    const isAfw = afwObj[p.id] === false || (afwObj[p.id] && afwObj[p.id].afwezig === true);
+    const reden = (afwObj[p.id] && afwObj[p.id].reden) || '';
+    const afwChecked = isAfw ? 'checked' : '';
+    const redenOpties = absRedenen.map(r =>
+      `<option value="${r}" ${r===reden?'selected':''}>${r}</option>`
+    ).join('');
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg3);border:1px solid ${isAfw?'var(--red)':'var(--line2)'};border-radius:var(--rsm)" id="aanwrow-${nk}-${p.id}">
+      <label style="display:flex;align-items:center;gap:6px;flex:1;cursor:pointer">
+        <input type="checkbox" id="aanwtag-${nk}-${p.id}" ${afwChecked}
+          onchange="onAanwToggle('${nk}','${p.id}')"
+          style="width:15px;height:15px;accent-color:var(--red);cursor:pointer">
+        <span style="font-size:12px;color:${isAfw?'var(--red)':'var(--text)'}">${p.naam}</span>
+      </label>
+      <select id="aanwreden-${nk}-${p.id}"
+        style="display:${isAfw?'block':'none'};padding:3px 6px;background:var(--bg2);border:1px solid var(--line2);border-radius:4px;color:var(--text2);font-family:'DM Mono',monospace;font-size:11px;max-width:120px"
+        onchange="onRedenChange('${nk}','${p.id}')">
+        <option value="">Reden...</option>${redenOpties}
+      </select>
+    </div>`;
   });
+  html += '</div>';
+  cont.innerHTML = html;
 }
+
+function onAanwToggle(nk, pid) {
+  const cb  = document.getElementById('aanwtag-'   + nk + '-' + pid);
+  const sel = document.getElementById('aanwreden-' + nk + '-' + pid);
+  const row = document.getElementById('aanwrow-'   + nk + '-' + pid);
+  const isAfw = cb.checked;
+  if (sel) sel.style.display = isAfw ? 'block' : 'none';
+  if (row) row.style.borderColor = isAfw ? 'var(--red)' : 'var(--line2)';
+  const naam = row?.querySelector('span');
+  if (naam) naam.style.color = isAfw ? 'var(--red)' : 'var(--text)';
+}
+
+function onRedenChange(nk, pid) { /* reden opgeslagen bij saveAanwezigheid */ }
 
 function addExtraTraining(wid, customIdx) {
   const naam = prompt('Naam extra training:', 'Extra training'); if (!naam) return;
@@ -560,6 +620,7 @@ async function onSupabaseReady() {
   if (data.sessionNotes) sessionNotes = data.sessionNotes;
   if (data.aanwezigheid) aanwezigheid = data.aanwezigheid;
   if (data.customWeken)  customWeken  = data.customWeken;
+  if (data.absRedenen)   absRedenen   = data.absRedenen;
   buildSchema();
 }
 

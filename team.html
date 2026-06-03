@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a1200">
-<title>Team — FCP 16-2</title>
+<title>Dashboard — FCP 16-2</title>
 <link rel="manifest" id="manifest-link">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 <link rel="stylesheet" href="style.css">
@@ -16,29 +16,57 @@
   <a class="nav-btn" href="index.html"><span class="nav-icon">⚡</span><span>Start</span></a>
   <a class="nav-btn" href="opstelling.html"><span class="nav-icon">🟢</span><span>Opstelling</span></a>
   <a class="nav-btn" href="selectie.html"><span class="nav-icon">👥</span><span>Selectie</span></a>
-  <a class="nav-btn" href="schema.html"><span class="nav-icon">📅</span><span>Schema</span></a>
-  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">🏆</span><span>Wedstrijden</span></a>
-  <a class="nav-btn active" href="team.html"><span class="nav-icon">📊</span><span>Team</span></a>
+  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">⚽</span><span>Wedstrijden</span></a>
+  <a class="nav-btn" href="schema.html"><span class="nav-icon">📅</span><span>Trainen</span></a>
   <a class="nav-btn" href="oefeningen.html"><span class="nav-icon">📚</span><span>Oefeningen</span></a>
+  <a class="nav-btn active" href="team.html"><span class="nav-icon">📊</span><span>Dashboard</span></a>
 </nav>
 <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
 <div class="toast" id="toast"></div>
 
+<!-- Reden beheren modal -->
+<div class="bmodal-overlay" id="bmodalRedenen" onclick="if(event.target===this)closeRedenModal()">
+  <div class="bmodal">
+    <div class="bmodal-title">Afwezigheidsredenen</div>
+    <div id="reden-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:7px">
+      <input class="bmodal-input" id="new-reden-input" placeholder="Nieuwe reden..." style="flex:1;margin-bottom:0">
+      <button class="bmodal-save" style="flex:0 0 auto;padding:9px 14px" onclick="addReden()">+</button>
+    </div>
+    <div class="bmodal-actions">
+      <button class="bmodal-save" onclick="closeRedenModal()">Klaar</button>
+    </div>
+  </div>
+</div>
+
 <div class="page-wrap">
   <div class="page-header">
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <div class="page-title">Team Profiel</div>
-      <label class="add-btn" style="cursor:pointer">
+      <div class="page-title">Dashboard</div>
+      <button class="add-btn" onclick="openRedenModal()">⚙️ Redenen</button>
+    </div>
+    <div class="page-sub">Aanwezigheidsoverzicht seizoen 2026/2027</div>
+  </div>
+
+  <div style="padding:16px">
+    <!-- Samenvatting -->
+    <div id="aanw-samenvatting" style="margin-bottom:20px"></div>
+
+    <!-- Per speler tabel -->
+    <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px">Overzicht per speler</div>
+    <div id="aanw-tabel" style="overflow-x:auto"></div>
+
+    <!-- Speler skills -->
+    <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin:24px 0 10px;padding-top:16px;border-top:1px solid var(--line2)">
+      Skills overzicht
+      <label class="add-btn" style="cursor:pointer;font-size:11px;float:right;margin-top:2px">
         📂 Laad Excel
         <input type="file" accept=".xlsx,.xls" onchange="loadTeamExcel(event)" style="display:none">
       </label>
     </div>
-    <div class="page-sub">Skills overzicht — tap score voor detail</div>
-  </div>
-  <div id="profiel-content" style="padding:12px 16px 16px">
-    <div style="font-size:12px;color:var(--text3);line-height:1.7">
+    <div id="profiel-content" style="font-size:12px;color:var(--text3);line-height:1.7">
       Laad een ingevuld Excel-formulier per speler om het teamoverzicht te zien.<br><br>
-      <strong style="color:var(--text2)">Tip:</strong> Noem het bestand exact naar de spelernaam (bijv. <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">Jesse.xlsx</code>) zodat de app automatisch koppelt. Of laad het Excel-bestand per speler in via de Selectie pagina.
+      <strong style="color:var(--text2)">Tip:</strong> Noem het bestand exact naar de spelernaam (bijv. <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">Jesse.xlsx</code>).
     </div>
   </div>
 </div>
@@ -46,8 +74,170 @@
 <script src="app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-let players = loadState().players;
+const state = loadState();
+let players      = state.players;
+let aanwezigheid = state.aanwezigheid;
+let customWeken  = state.customWeken;
+let absRedenen   = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]');
+function saveAbsRedenen(r) {
+  localStorage.setItem('fcp_abs_redenen', JSON.stringify(r));
+  if (supabaseReady) {
+    sbFetch('session_notes?note_key=eq.abs_redenen', 'DELETE').then(() =>
+      sbFetch('session_notes', 'POST', { note_key:'abs_redenen', content:JSON.stringify(r) })
+    );
+  }
+}
 
+// ─── AANWEZIGHEID OVERZICHT ───
+function renderAanwOverzicht() {
+  // Verzamel alle trainingen uit customWeken
+  const trainingen = [];
+  customWeken.forEach((w, wi) => {
+    w.sessies.forEach((s, si) => {
+      trainingen.push({ nk: 'cw' + wi + '_' + si, label: s.dag, week: w.focus, datum: w.datum || w.weekNr || '' });
+    });
+  });
+
+  if (!trainingen.length || !players.length) {
+    document.getElementById('aanw-samenvatting').innerHTML = '<div style="font-size:12px;color:var(--text3)">Nog geen trainingen of spelers aangemaakt.</div>';
+    document.getElementById('aanw-tabel').innerHTML = '';
+    return;
+  }
+
+  const sorted = sortedPlayers(players);
+
+  // Samenvatting: totaal aantal trainingen met opgeslagen aanwezigheid
+  const metData = trainingen.filter(t => aanwezigheid[t.nk] && Object.keys(aanwezigheid[t.nk]).length > 0);
+  document.getElementById('aanw-samenvatting').innerHTML = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px;padding:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)">
+        <div style="font-size:22px;font-weight:700;color:var(--accent)">${trainingen.length}</div>
+        <div style="font-size:11px;color:var(--text3)">Trainingen totaal</div>
+      </div>
+      <div style="flex:1;min-width:120px;padding:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)">
+        <div style="font-size:22px;font-weight:700;color:var(--accent)">${metData.length}</div>
+        <div style="font-size:11px;color:var(--text3)">Met aanwezigheid</div>
+      </div>
+      <div style="flex:1;min-width:120px;padding:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)">
+        <div style="font-size:22px;font-weight:700;color:var(--accent)">${sorted.length}</div>
+        <div style="font-size:11px;color:var(--text3)">Spelers</div>
+      </div>
+    </div>`;
+
+  // Tabel: spelers als rijen, trainingen als kolommen
+  // Compactere weergave: per speler totaal afwezig + per reden telling + per training symbool
+  let html = '';
+
+  // Per speler samenvatting
+  html += '<div style="display:flex;flex-direction:column;gap:8px">';
+  sorted.forEach(p => {
+    let totaalAfw = 0;
+    const redenTelling = {};
+    const trainingsDetails = [];
+
+    trainingen.forEach(t => {
+      const entry = aanwezigheid[t.nk]?.[p.id];
+      let isAfw = false;
+      let reden = '';
+      if (entry === false) { isAfw = true; } // oud formaat
+      else if (entry && entry.afwezig === true) { isAfw = true; reden = entry.reden || ''; }
+      if (isAfw) {
+        totaalAfw++;
+        redenTelling[reden || 'Onbekend'] = (redenTelling[reden || 'Onbekend'] || 0) + 1;
+      }
+      trainingsDetails.push({ label: t.label, week: t.week, isAfw, reden });
+    });
+
+    if (totaalAfw === 0) return; // Toon alleen spelers met minstens 1 afwezigheid
+
+    const redenBadges = Object.entries(redenTelling).map(([r, n]) =>
+      `<span style="font-size:10px;padding:1px 6px;background:var(--bg3);border:1px solid var(--line2);border-radius:10px;color:var(--text3)">${r}: ${n}x</span>`
+    ).join('');
+
+    const detailRows = trainingsDetails.filter(d => d.isAfw).map(d =>
+      `<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line2)">
+        <span style="font-size:11px;color:var(--text3);flex:1">${d.week} · ${d.label}</span>
+        <span style="font-size:11px;color:var(--red)">${d.reden || '—'}</span>
+      </div>`
+    ).join('');
+
+    html += `<div style="background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm);overflow:hidden">
+      <div onclick="toggleSpelerDetail('detail-${p.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer">
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--text);font-weight:500">${p.naam}</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${redenBadges}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:18px;font-weight:700;color:${totaalAfw>3?'var(--red)':'var(--text2)'}">${totaalAfw}×</div>
+          <div style="font-size:10px;color:var(--text3)">afwezig</div>
+        </div>
+      </div>
+      <div id="detail-${p.id}" style="display:none;padding:0 12px 10px;border-top:1px solid var(--line2)">
+        ${detailRows}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Als geen spelers afwezig zijn geweest
+  if (!sorted.some(p => {
+    return trainingen.some(t => {
+      const e = aanwezigheid[t.nk]?.[p.id];
+      return e === false || (e && e.afwezig === true);
+    });
+  })) {
+    html = '<div style="font-size:12px;color:var(--text3);padding:12px 0">Nog geen afwezigheid geregistreerd.</div>';
+  }
+
+  document.getElementById('aanw-tabel').innerHTML = html;
+}
+
+function toggleSpelerDetail(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ─── REDENEN BEHEREN ───
+function openRedenModal() {
+  renderRedenList();
+  document.getElementById('bmodalRedenen').classList.add('open');
+}
+function closeRedenModal() {
+  document.getElementById('bmodalRedenen').classList.remove('open');
+  renderAanwOverzicht();
+}
+
+function renderRedenList() {
+  const cont = document.getElementById('reden-list'); cont.innerHTML = '';
+  absRedenen.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm)';
+    row.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text)">${r}</span>
+      <button onclick="deleteReden(${i})" style="padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:11px;cursor:pointer">✕</button>`;
+    cont.appendChild(row);
+  });
+}
+
+function addReden() {
+  const val = document.getElementById('new-reden-input').value.trim();
+  if (!val || absRedenen.includes(val)) { showToast(val ? 'Bestaat al' : 'Vul een reden in'); return; }
+  absRedenen.push(val);
+  saveAbsRedenen(absRedenen);
+  document.getElementById('new-reden-input').value = '';
+  renderRedenList();
+  showToast(val + ' toegevoegd');
+}
+
+function deleteReden(i) {
+  if (!confirm('Verwijder reden "' + absRedenen[i] + '"?')) return;
+  const naam = absRedenen[i];
+  absRedenen.splice(i, 1);
+  saveAbsRedenen(absRedenen);
+  renderRedenList();
+  showToast(naam + ' verwijderd');
+}
+
+// ─── SKILLS (bestaande functionaliteit) ───
 async function loadTeamExcel(event) {
   const file = event.target.files[0]; if (!file) return;
   const naam = file.name.replace(/\.(xlsx|xls)$/i, '').trim();
@@ -89,21 +279,18 @@ function renderTeamProfiel() {
   const cont = document.getElementById('profiel-content');
   const withSkills = sortedPlayers(players).filter(p => p.skills && Object.keys(p.skills).length > 0);
   if (!withSkills.length) {
-    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);line-height:1.7">Geen spelers met ingeladen formulier.<br><br><strong style="color:var(--text2)">Tip:</strong> Noem het Excel-bestand exact naar de spelernaam (bijv. <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">Jesse.xlsx</code>) en laad bovenaan in.</div>';
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);line-height:1.7">Geen spelers met ingeladen formulier.<br><br><strong style="color:var(--text2)">Tip:</strong> Noem het Excel-bestand exact naar de spelernaam.</div>';
     return;
   }
-
   let html = `<div style="font-size:11px;color:var(--text3);margin-bottom:12px">${withSkills.length} spelers met formulier · Tap een score voor detail</div>`;
-
   SKILL_CATS.forEach(sc => {
-    html += `<div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin:16px 0 8px;padding-top:8px;border-top:1px solid var(--line2)">${sc.cat}</div>`;
+    html += `<div style="font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--text);margin:16px 0 8px;padding-top:8px;border-top:1px solid var(--line2)">${sc.cat}</div>`;
     sc.skills.forEach(skill => {
       const counts = [[], [], [], []];
       withSkills.forEach(p => {
         const i = SKILL_LEVELS.indexOf(p.skills[skill]);
         if (i >= 0) counts[i].push(p.naam);
       });
-      const total = withSkills.length;
       const sid = 'sk-' + skill.replace(/\s+/g,'_');
       html += `<div style="margin-bottom:12px">
         <div style="font-size:12px;color:var(--text);margin-bottom:5px">${skill}</div>
@@ -113,9 +300,6 @@ function renderTeamProfiel() {
             const col = SKILL_COLORS[lv];
             return `<div onclick="toggleDetail('${sid}-${i}')" style="flex:${counts[i].length};background:${col.bg};border:1px solid ${col.c};border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;color:${col.c};font-weight:500;cursor:pointer">${counts[i].length}</div>`;
           }).join('')}
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
-          ${SKILL_LEVELS.map((lv,i) => counts[i].length ? `<span onclick="toggleDetail('${sid}-${i}')" style="font-size:10px;color:${SKILL_COLORS[lv].c};cursor:pointer">${lv}: ${counts[i].length}</span>` : '').join('')}
         </div>
         ${SKILL_LEVELS.map((lv,i) => {
           if (!counts[i].length) return '';
@@ -128,7 +312,6 @@ function renderTeamProfiel() {
       </div>`;
     });
   });
-
   cont.innerHTML = html;
 }
 
@@ -139,9 +322,15 @@ function toggleDetail(id) {
 
 async function onSupabaseReady() {
   const data = await loadFromSupabase();
-  if (data.players) { players = data.players; renderTeamProfiel(); }
+  if (data.players)      { players      = data.players; }
+  if (data.aanwezigheid) { aanwezigheid = data.aanwezigheid; }
+  if (data.customWeken)  { customWeken  = data.customWeken; }
+  if (data.absRedenen)   { absRedenen   = data.absRedenen; }
+  renderAanwOverzicht();
+  renderTeamProfiel();
 }
 
+renderAanwOverzicht();
 renderTeamProfiel();
 initScrollTop(); initManifest();
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });

@@ -147,6 +147,16 @@ async function loadFromSupabase() {
     const notes = {};
     sn.forEach(r => { notes[r.note_key] = r.content; });
     result.sessionNotes = notes; saveSessionNotes(notes);
+    // absRedenen laden als die in session_notes staan
+    if (notes['abs_redenen']) {
+      try {
+        const redenen = JSON.parse(notes['abs_redenen']);
+        if (Array.isArray(redenen)) {
+          result.absRedenen = redenen;
+          localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen));
+        }
+      } catch(e) {}
+    }
   }
   if (oe && !oe._error) {
     const oef = oe.map(o => ({ ...o, desc: o.desc || o.beschrijving || '', stappen: o.stappen || [], pr: [] }));
@@ -169,7 +179,12 @@ async function loadFromSupabase() {
     const aanwObj = {};
     aanw.filter(r => r.training_key && r.training_key !== '[object Object]').forEach(r => {
       if (!aanwObj[r.training_key]) aanwObj[r.training_key] = {};
-      aanwObj[r.training_key][r.player_id] = r.aanwezig;
+      // Ondersteuning voor oud formaat (boolean) en nieuw formaat ({afwezig, reden})
+      if (typeof r.aanwezig === 'boolean') {
+        aanwObj[r.training_key][r.player_id] = { afwezig: !r.aanwezig, reden: r.reden || '' };
+      } else {
+        aanwObj[r.training_key][r.player_id] = r.aanwezig;
+      }
     });
     result.aanwezigheid = aanwObj; localStorage.setItem('fcp_aanw', JSON.stringify(aanwObj));
   }

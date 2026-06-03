@@ -167,7 +167,7 @@ async function loadFromSupabase() {
   if (pr && !pr._error && pr.length) { result.principes = pr; }
   if (aanw && !aanw._error) {
     const aanwObj = {};
-    aanw.forEach(r => {
+    aanw.filter(r => r.training_key && r.training_key !== '[object Object]').forEach(r => {
       if (!aanwObj[r.training_key]) aanwObj[r.training_key] = {};
       aanwObj[r.training_key][r.player_id] = r.aanwezig;
     });

@@ -183,10 +183,19 @@ async function saveOef() {
   };
   if (editingOefId) {
     const idx = customOef.findIndex(x => x.id === editingOefId);
-    if (idx >= 0) { customOef[idx] = oef; if (supabaseReady) await sbFetch('custom_oef?id=eq.' + editingOefId, 'PATCH', oef); }
+    if (idx >= 0) {
+      customOef[idx] = oef;
+      if (supabaseReady) {
+        const res = await sbFetch('custom_oef?id=eq.' + editingOefId, 'PATCH', oef);
+        if (res && res._error) showToast('⚠️ Supabase: opslaan mislukt (wordt alleen lokaal bewaard)');
+      }
+    }
   } else {
     customOef.push(oef);
-    if (supabaseReady) await sbFetch('custom_oef', 'POST', oef);
+    if (supabaseReady) {
+      const res = await sbFetch('custom_oef', 'POST', oef);
+      if (res && res._error) showToast('⚠️ Supabase: opslaan mislukt (wordt alleen lokaal bewaard)');
+    }
   }
   saveCustomOef(customOef);
   closeBModalOef(); renderCatFilters(); renderOef();
@@ -222,27 +231,38 @@ function renderCatList() {
   });
 }
 
-function addCat() {
+async function addCat() {
   const val = document.getElementById('new-cat-input').value.trim();
   if (!val || categories.includes(val)) { showToast(val ? 'Bestaat al' : 'Vul een naam in'); return; }
   categories.push(val); saveCategories(categories);
   document.getElementById('new-cat-input').value = '';
   renderCatList(); showToast(val + ' toegevoegd');
-  if (supabaseReady) sbFetch('categories', 'POST', { id:genId(), naam:val, sort_order:categories.length });
+  if (supabaseReady) {
+    const res = await sbFetch('categories', 'POST', { id:genId(), naam:val, sort_order:categories.length });
+    if (res && res._error) showToast('⚠️ Supabase: categorie niet opgeslagen in cloud');
+  }
 }
 
-function deleteCat(i) {
+async function deleteCat(i) {
   if (!confirm('Verwijder categorie "' + categories[i] + '"?')) return;
   const naam = categories[i];
   categories.splice(i, 1); saveCategories(categories);
   renderCatList(); showToast(naam + ' verwijderd');
-  if (supabaseReady) sbFetch('categories?naam=eq.' + encodeURIComponent(naam), 'DELETE');
+  if (supabaseReady) await sbFetch('categories?naam=eq.' + encodeURIComponent(naam), 'DELETE');
 }
 
 async function onSupabaseReady() {
   const data = await loadFromSupabase();
   if (data.customOef)  customOef  = data.customOef;
-  if (data.categories) categories = data.categories;
+  if (data.categories) {
+    categories = data.categories;
+  } else {
+    // Supabase categories tabel is leeg — seed de huidige (lokale) categorieën eenmalig
+    const seedAll = categories.map((naam, i) =>
+      sbFetch('categories', 'POST', { id:genId(), naam, sort_order:i + 1 })
+    );
+    await Promise.all(seedAll);
+  }
   renderCatFilters(); renderOef();
 }
 

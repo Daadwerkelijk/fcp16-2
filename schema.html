@@ -315,9 +315,11 @@ async function saveAanwezigheid(nk) {
   localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
   if (supabaseReady) {
     await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(nk), 'DELETE');
-    for (const p of players) await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:nk, player_id:p.id, aanwezig:aanwezigheid[nk][p.id] !== false });
+    const nkData = aanwezigheid[nk] || {};
+    for (const p of players) await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:nk, player_id:p.id, aanwezig:nkData[p.id] !== false });
   }
-  const afw = players.filter(p => aanwezigheid[nk][p.id] === false).map(p => p.naam);
+  const nkData2 = aanwezigheid[nk] || {};
+  const afw = players.filter(p => nkData2[p.id] === false).map(p => p.naam);
   showToast(afw.length ? 'Afwezig: ' + afw.join(', ') : 'Iedereen aanwezig');
 }
 

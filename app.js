@@ -171,7 +171,7 @@ async function loadFromSupabase() {
       if (!aanwObj[r.training_key]) aanwObj[r.training_key] = {};
       aanwObj[r.training_key][r.player_id] = r.aanwezig;
     });
-    result.aanwezigheid = aanwObj; saveAanwezigheid(aanwObj);
+    result.aanwezigheid = aanwObj; localStorage.setItem('fcp_aanw', JSON.stringify(aanwObj));
   }
   if (cw && !cw._error && cw.length) {
     const weken = typeof cw[0].data === 'string' ? JSON.parse(cw[0].data) : cw[0].data;

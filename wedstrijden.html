@@ -106,6 +106,8 @@ async function saveWedstrijd(id) {
       score_eigen: w.score_eigen,
       score_tegen: w.score_tegen,
       opmerkingen: w.opmerkingen,
+      ratings:     JSON.stringify(w.ratings || {}),
+      motm:        w.motm || null,
     });
   }
   renderRanking();
@@ -126,7 +128,7 @@ function setMotm(wedId, playerId) {
   const w = wedstrijden.find(x => x.id === wedId); if (!w) return;
   w.motm = w.motm === playerId ? null : playerId;
   saveWedstrijden(wedstrijden);
-  // motm en ratings worden alleen lokaal opgeslagen (kolommen bestaan niet in Supabase)
+  if (supabaseReady) sbFetch('wedstrijden?id=eq.' + wedId, 'PATCH', { motm: w.motm || null });
   renderWedstrijden();
   renderRanking();
   const p = players.find(pl => pl.id === playerId);

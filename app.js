@@ -142,14 +142,21 @@ async function loadFromSupabase() {
     result.sessionNotes = notes; saveSessionNotes(notes);
   }
   if (oe && !oe._error) {
-    const oef = oe.map(o => ({ ...o, stappen: o.stappen || [], pr: [] }));
+    const oef = oe.map(o => ({ ...o, desc: o.desc || o.beschrijving || '', stappen: o.stappen || [], pr: [] }));
     result.customOef = oef; saveCustomOef(oef);
   }
   if (ca && !ca._error && ca.length) {
     const cats = ca.map(c => c.naam);
     result.categories = cats; saveCategories(cats);
   }
-  if (wd && !wd._error) { result.wedstrijden = wd; saveWedstrijden(wd); }
+  if (wd && !wd._error) {
+    const wedstrijden = wd.map(w => ({
+      ...w,
+      ratings: typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
+      motm: w.motm || null,
+    }));
+    result.wedstrijden = wedstrijden; saveWedstrijden(wedstrijden);
+  }
   if (pr && !pr._error && pr.length) { result.principes = pr; }
   if (aanw && !aanw._error) {
     const aanwObj = {};

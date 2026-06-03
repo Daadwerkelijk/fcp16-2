@@ -204,7 +204,7 @@ function buildWeekHtml(w, type, wi) {
         <span class="session-chev">▾</span>
       </div><div class="session-body">`;
     (sess.blokken || []).forEach((b, bi) => {
-      const ct = CAT_STYLES[b.cat] || { bg:'#181818', c:'#888', label:b.cat };
+      const ct = CAT_STYLES[b.cat] || (CAT_BG[normaliseerCat(b.cat)] ? { bg:CAT_BG[normaliseerCat(b.cat)].bg, c:CAT_BG[normaliseerCat(b.cat)].c, label:normaliseerCat(b.cat) } : { bg:'#181818', c:'#888', label:normaliseerCat(b.cat) });
       const urlKey = nk + '_b' + bi;
       const savedUrl = sessionNotes[urlKey] || b.url || '';
       html += `<div class="block-row">
@@ -311,6 +311,10 @@ function addExtraTraining(wid, customIdx) {
 }
 
 // ─── WEEK BUILDER ───
+// Vertaal oude CAT_STYLES afkortingen naar volledige categorienamen
+const CAT_AFKORTING_MAP = { OPW:'opwarmen', CON:'conditie', TEC:'techniek', POS:'positiespel', CPR:'counterpressing', PAR:'partijvorm', EVA:'evaluatie' };
+function normaliseerCat(cat) { return CAT_AFKORTING_MAP[cat] || cat; }
+
 function openNieuweWeekModal(wi) {
   editingWeekIdx = (wi !== undefined && wi !== null) ? wi : null;
   const existing = editingWeekIdx !== null ? customWeken[editingWeekIdx] : null;
@@ -323,7 +327,7 @@ function openNieuweWeekModal(wi) {
   document.getElementById('tr2-naam').value = existing?.sessies[1]?.dag || 'Training 2';
   if (existing) {
     [0,1].forEach(ti => {
-      if (existing.sessies[ti]) weekBlokken[ti] = existing.sessies[ti].blokken.map(b => ({ cat:b.cat, oefNaam:b.n, tip:b.tip||''  , url:b.url||'' }));
+      if (existing.sessies[ti]) weekBlokken[ti] = existing.sessies[ti].blokken.map(b => ({ cat:normaliseerCat(b.cat), oefNaam:b.n, tip:b.tip||'', url:b.url||'' }));
     });
   }
   if (existing?.isoDate) onWeekDatumChange(existing.isoDate);

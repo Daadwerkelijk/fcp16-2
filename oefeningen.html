@@ -238,8 +238,8 @@ async function addCat() {
   document.getElementById('new-cat-input').value = '';
   renderCatList(); showToast(val + ' toegevoegd');
   if (supabaseReady) {
-    const res = await sbFetch('categories', 'POST', { id:genId(), naam:val, sort_order:categories.length });
-    if (res && res._error) showToast('⚠️ Supabase: categorie niet opgeslagen in cloud');
+    const res = await sbFetch('categories', 'POST', { naam:val, sort_order:categories.length });
+    if (res && res._error) showToast('⚠️ Supabase: categorie niet opgeslagen (' + (res.message||res.status) + ')');
   }
 }
 
@@ -259,7 +259,7 @@ async function onSupabaseReady() {
   } else {
     // Supabase categories tabel is leeg — seed de huidige (lokale) categorieën eenmalig
     const seedAll = categories.map((naam, i) =>
-      sbFetch('categories', 'POST', { id:genId(), naam, sort_order:i + 1 })
+      sbFetch('categories', 'POST', { naam, sort_order:i + 1 })
     );
     await Promise.all(seedAll);
   }

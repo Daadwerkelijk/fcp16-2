@@ -311,7 +311,8 @@ async function saveAanwezigheid(nk) {
     const tag = document.getElementById('aanwtag-' + nk + '-' + p.id);
     if (tag) aanwezigheid[nk][p.id] = !tag.classList.contains('afwezig');
   });
-  saveAanwezigheid(aanwezigheid);
+  // Sla op in localStorage via app.js functie (andere naam om recursie te voorkomen)
+  localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
   if (supabaseReady) {
     await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(nk), 'DELETE');
     for (const p of players) await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:nk, player_id:p.id, aanwezig:aanwezigheid[nk][p.id] !== false });

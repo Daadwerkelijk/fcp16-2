@@ -116,10 +116,16 @@ function saveCategories(cats)      { localStorage.setItem('fcp_cats',         JS
 function saveWedstrijden(wed)      { localStorage.setItem('fcp_wed',          JSON.stringify(wed)); }
 function saveAanwezigheid(aanw)    { localStorage.setItem('fcp_aanw',         JSON.stringify(aanw)); }
 function saveCustomWeken(weken)    { localStorage.setItem('fcp_custom_weken', JSON.stringify(weken)); }
+async function syncCustomWeken(weken) {
+  saveCustomWeken(weken);
+  if (!supabaseReady) return;
+  await sbFetch('custom_weken?id=eq.singleton', 'DELETE');
+  await sbFetch('custom_weken', 'POST', { id:'singleton', data: JSON.stringify(weken) });
+}
 
 // ─── SUPABASE LOAD ALL ───
 async function loadFromSupabase() {
-  const [pl, lu, sn, oe, ca, wd, pr, aanw] = await Promise.all([
+  const [pl, lu, sn, oe, ca, wd, pr, aanw, cw] = await Promise.all([
     sbFetch('players?select=*&order=created_at'),
     sbFetch('lineup?select=*'),
     sbFetch('session_notes?select=*'),
@@ -127,7 +133,8 @@ async function loadFromSupabase() {
     sbFetch('categories?select=*&order=sort_order'),
     sbFetch('wedstrijden?select=*&order=created_at'),
     sbFetch('principes?select=*&order=sort_order'),
-    sbFetch('aanwezigheid?select=*')
+    sbFetch('aanwezigheid?select=*'),
+    sbFetch('custom_weken?id=eq.singleton&select=*'),
   ]);
   const result = {};
   if (pl && !pl._error) { result.players = pl; savePlayers(pl); }
@@ -165,6 +172,10 @@ async function loadFromSupabase() {
       aanwObj[r.training_key][r.player_id] = r.aanwezig;
     });
     result.aanwezigheid = aanwObj; saveAanwezigheid(aanwObj);
+  }
+  if (cw && !cw._error && cw.length) {
+    const weken = typeof cw[0].data === 'string' ? JSON.parse(cw[0].data) : cw[0].data;
+    result.customWeken = weken; saveCustomWeken(weken);
   }
   return result;
 }

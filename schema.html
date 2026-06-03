@@ -285,7 +285,7 @@ function getBlokken(nk) {
 }
 
 function persistBlokken(nk) {
-  if (nk.startsWith('cw')) saveCustomWeken(customWeken);
+  if (nk.startsWith('cw')) syncCustomWeken(customWeken);
 }
 
 function saveUrl(key) {
@@ -339,7 +339,7 @@ function addExtraTraining(wid, customIdx) {
   const naam = prompt('Naam extra training:', 'Extra training'); if (!naam) return;
   const newSess = { dag:naam, pr:['P6'], blokken:[] };
   if (customIdx !== null && customIdx !== undefined) {
-    customWeken[customIdx].sessies.push(newSess); saveCustomWeken(customWeken);
+    customWeken[customIdx].sessies.push(newSess); syncCustomWeken(customWeken);
   } else {
     const weekNum = parseInt(wid.replace('w','')); const week = SCHEMA.find(w => w.week === weekNum);
     if (week) week.sessies.push(newSess);
@@ -477,7 +477,7 @@ function saveNieuweWeek() {
   const week = { focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
   if (editingWeekIdx !== null) { customWeken[editingWeekIdx] = week; showToast('Week bijgewerkt'); }
   else { customWeken.push(week); showToast('Week aangemaakt: ' + focus); }
-  saveCustomWeken(customWeken);
+  syncCustomWeken(customWeken);
   closeBModalWeekDirect();
   buildSchema();
 }
@@ -523,7 +523,7 @@ function saveKopieerWeek() {
   }));
   const nieuw = { focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
   customWeken.push(nieuw);
-  saveCustomWeken(customWeken);
+  syncCustomWeken(customWeken);
   closeBModalKopieer();
   buildSchema();
   showToast('Week gekopieerd: ' + focus);
@@ -531,7 +531,7 @@ function saveKopieerWeek() {
 
 function deleteCustomWeek(wi) {
   if (!confirm('Verwijder deze week?')) return;
-  customWeken.splice(wi, 1); saveCustomWeken(customWeken); buildSchema(); showToast('Week verwijderd');
+  customWeken.splice(wi, 1); syncCustomWeken(customWeken); buildSchema(); showToast('Week verwijderd');
 }
 
 async function onSupabaseReady() {
@@ -539,6 +539,7 @@ async function onSupabaseReady() {
   if (data.players)      players      = data.players;
   if (data.sessionNotes) sessionNotes = data.sessionNotes;
   if (data.aanwezigheid) aanwezigheid = data.aanwezigheid;
+  if (data.customWeken)  customWeken  = data.customWeken;
   buildSchema();
 }
 

@@ -370,9 +370,9 @@ function openNieuweOef() {
 async function saveQuickOef() {
   const naam = document.getElementById('qoef-naam').value.trim(); if (!naam) { showToast('Vul een naam in'); return; }
   const cat  = document.getElementById('qoef-cat').value;
-  const oef  = { id:genId(), title:naam, cat, tip:document.getElementById('qoef-tip').value, url:document.getElementById('qoef-url').value, stappen:[], pr:[], duur:'', spelers:'', desc:'' };
+  const oef  = { id:genId(), title:naam, cat, tip:document.getElementById('qoef-tip').value, url:document.getElementById('qoef-url').value, stappen:[], pr:[], duur:'', spelers:'', desc:document.getElementById('qoef-tip').value };
   customOef.push(oef); saveCustomOef(customOef);
-  if (supabaseReady) await sbFetch('custom_oef', 'POST', oef);
+  if (supabaseReady) await sbFetch('custom_oef', 'POST', { id:oef.id, title:oef.title, cat:oef.cat, tip:oef.tip, url:oef.url, stappen:oef.stappen, spelers:oef.spelers, duur:oef.duur, beschrijving:oef.tip });
   showToast(naam + ' aangemaakt');
   closeQuickOef();
   // Reopen picker with new oefening selected

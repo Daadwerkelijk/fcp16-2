@@ -51,7 +51,7 @@ async function addPlayer() {
   if (!naam) { showToast('Vul een naam in'); return; }
   const p = { id:genId(), naam, omschrijving:'', posities:[], opmerkingen:'', ontwikkeling:'', skills:null };
   if (supabaseReady) {
-    const res = await sbFetch('players', 'POST', p);
+    const res = await sbFetch('players', 'POST', { id:p.id, naam:p.naam, omschrijving:p.omschrijving, posities:p.posities, opmerkingen:p.opmerkingen, ontwikkeling:p.ontwikkeling });
     if (!res || res._error) { showToast('Opslaan mislukt'); return; }
   }
   players.push(p);

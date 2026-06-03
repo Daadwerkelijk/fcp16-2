@@ -168,32 +168,39 @@ function addStapWith(val)   {
   document.getElementById('oef-f-stappen').appendChild(row);
 }
 
+// Zet lokaal oef-object om naar alleen de kolommen die in Supabase bestaan
+function toSbOef(o) {
+  return { id:o.id, cat:o.cat, title:o.title, duur:o.duur||'', spelers:o.spelers||'', beschrijving:o.desc||o.beschrijving||'', stappen:o.stappen||[], tip:o.tip||'', url:o.url||'' };
+}
+
 async function saveOef() {
   const title = document.getElementById('oef-f-title').value.trim(); if (!title) { showToast('Vul een naam in'); return; }
   const stappen = [...document.querySelectorAll('#oef-f-stappen .bmodal-stap-input')].map(i => i.value.trim()).filter(Boolean);
   const oef = {
-    id: editingOefId || genId(),
+    id:           editingOefId || genId(),
     title,
-    cat:     document.getElementById('oef-f-cat').value,
-    spelers: document.getElementById('oef-f-spelers').value.trim(),
-    desc:    document.getElementById('oef-f-desc').value.trim(),
-    tip:     document.getElementById('oef-f-tip').value.trim(),
-    url:     document.getElementById('oef-f-url').value.trim(),
-    stappen, pr: [], duur: '',
+    cat:          document.getElementById('oef-f-cat').value,
+    spelers:      document.getElementById('oef-f-spelers').value.trim(),
+    desc:         document.getElementById('oef-f-desc').value.trim(),
+    beschrijving: document.getElementById('oef-f-desc').value.trim(),
+    tip:          document.getElementById('oef-f-tip').value.trim(),
+    url:          document.getElementById('oef-f-url').value.trim(),
+    duur:         '',
+    stappen,      pr: [],
   };
   if (editingOefId) {
     const idx = customOef.findIndex(x => x.id === editingOefId);
     if (idx >= 0) {
       customOef[idx] = oef;
       if (supabaseReady) {
-        const res = await sbFetch('custom_oef?id=eq.' + editingOefId, 'PATCH', oef);
+        const res = await sbFetch('custom_oef?id=eq.' + editingOefId, 'PATCH', toSbOef(oef));
         if (res && res._error) showToast('⚠️ Supabase: opslaan mislukt (wordt alleen lokaal bewaard)');
       }
     }
   } else {
     customOef.push(oef);
     if (supabaseReady) {
-      const res = await sbFetch('custom_oef', 'POST', oef);
+      const res = await sbFetch('custom_oef', 'POST', toSbOef(oef));
       if (res && res._error) showToast('⚠️ Supabase: opslaan mislukt (wordt alleen lokaal bewaard)');
     }
   }

@@ -251,17 +251,13 @@ function buildBlokkenHtml(nk, blokken) {
 }
 
 function renderSessieBlokken(nk) {
-  const blokken = getBlokken(nk); if (!blokken) return;
-  // Vervang alleen de block-rows binnen de session-body, open/dicht staat blijft behouden
-  const sessBody = document.querySelector(`#${nk.replace('_','s')} .session-body`);
-  if (!sessBody) { buildSchema(); return; }
-  // Verwijder bestaande block-rows
-  sessBody.querySelectorAll('.block-row').forEach(el => el.remove());
-  // Voeg nieuwe in vóór session-extra
-  const extra = sessBody.querySelector('.session-extra');
-  const tmp = document.createElement('div');
-  tmp.innerHTML = buildBlokkenHtml(nk, blokken);
-  while (tmp.firstChild) sessBody.insertBefore(tmp.firstChild, extra);
+  // Bewaar welke weken en sessies open zijn
+  const openWeken   = [...document.querySelectorAll('.week-item.open')].map(el => el.id);
+  const openSessies = [...document.querySelectorAll('.session-item.open')].map(el => el.id);
+  buildSchema();
+  // Herstel open staat
+  openWeken.forEach(id   => { const el = document.getElementById(id);   if (el) el.classList.add('open'); });
+  openSessies.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('open'); });
 }
 
 function removeBlok(nk, bi) {

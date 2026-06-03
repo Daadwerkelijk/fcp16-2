@@ -506,7 +506,7 @@ function shareTraining(nk) {
   if (blokken.length) {
     blokken.forEach(b => { tekst += '• ' + b.n + (b.tip ? ' — ' + b.tip : '') + '\n'; });
   } else { tekst += 'Nog geen oefeningen ingepland.'; }
-  window.open('https://wa.me/?text=' + encodeURIComponent(tekst), '_blank');
+  window.location.href = 'https://wa.me/?text=' + encodeURIComponent(tekst);
 }
 
 let kopieerBronIdx = null;

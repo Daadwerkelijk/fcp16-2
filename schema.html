@@ -344,6 +344,7 @@ function renderWeekBlokken(ti) {
   const cont = document.getElementById('tr' + (ti+1) + '-blokken'); cont.innerHTML = '';
   weekBlokken[ti].forEach((b, bi) => {
     const ct = CAT_STYLES[b.cat] || (CAT_BG[b.cat] ? { bg:CAT_BG[b.cat].bg, c:CAT_BG[b.cat].c, label:b.cat } : { bg:'#181818', c:'#888', label:b.cat });
+    // b.cat is al genormaliseerd via openNieuweWeekModal → normaliseerCat
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg2);border:1px solid var(--line2);border-radius:4px';
     row.innerHTML = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${ct.bg};color:${ct.c};flex-shrink:0">${ct.label}</span>
@@ -419,8 +420,8 @@ function saveNieuweWeek() {
   const tr1naam = document.getElementById('tr1-naam').value.trim() || 'Training 1';
   const tr2naam = document.getElementById('tr2-naam').value.trim() || 'Training 2';
   const sessies = [
-    { dag:tr1naam, pr:['P6'], blokken:weekBlokken[0].map(b => ({ t:'', cat:b.cat, n:b.oefNaam, tip:b.tip, url:b.url })) },
-    { dag:tr2naam, pr:['P6'], blokken:weekBlokken[1].map(b => ({ t:'', cat:b.cat, n:b.oefNaam, tip:b.tip, url:b.url })) },
+    { dag:tr1naam, pr:['P6'], blokken:weekBlokken[0].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
+    { dag:tr2naam, pr:['P6'], blokken:weekBlokken[1].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
   ];
   const week = { focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
   if (editingWeekIdx !== null) { customWeken[editingWeekIdx] = week; showToast('Week bijgewerkt'); }
@@ -467,7 +468,7 @@ function saveKopieerWeek() {
   const sessies = bron.sessies.map(s => ({
     dag:    s.dag,
     pr:     [...(s.pr || [])],
-    blokken: (s.blokken || []).map(b => ({ t:b.t||'', cat:b.cat, n:b.n, tip:b.tip||'', url:b.url||'' }))
+    blokken: (s.blokken || []).map(b => ({ t:b.t||'', cat:normaliseerCat(b.cat), n:b.n, tip:b.tip||'', url:b.url||'' }))
   }));
   const nieuw = { focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
   customWeken.push(nieuw);

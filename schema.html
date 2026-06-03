@@ -97,6 +97,26 @@
   </div>
 </div>
 
+<!-- Week kopiëren modal -->
+<div class="bmodal-overlay" id="bmodalKopieer" onclick="if(event.target===this)closeBModalKopieer()">
+  <div class="bmodal">
+    <div class="bmodal-title">Week kopiëren</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">De oefeningen en trainingsopzet worden gekopieerd. Aanwezigheid en aantekeningen niet.</div>
+    <div class="bmodal-label">Startdatum nieuwe week (maandag)</div>
+    <input class="bmodal-input" id="kopieer-datum" type="date" onchange="onKopieerDatumChange(this.value)">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;margin-bottom:8px">
+      <span style="font-size:11px;color:var(--text3)">Weeknummer:</span>
+      <span id="kopieer-nr" style="font-size:13px;font-weight:500;color:var(--accent)">—</span>
+    </div>
+    <div class="bmodal-label">Focus / naam week</div>
+    <input class="bmodal-input" id="kopieer-focus" placeholder="Bijv: Herhaling counterpressing">
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeBModalKopieer()">Annuleer</button>
+      <button class="bmodal-save" onclick="saveKopieerWeek()">Kopiëren</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 <script>
 const SCHEMA=[
@@ -165,6 +185,7 @@ function buildWeekHtml(w, type, wi) {
     : `Week ${weekNr} · ${datumStr}`;
   const editDel = type === 'custom'
     ? `<button onclick="openNieuweWeekModal(${wi});event.stopPropagation()" style="font-size:11px;padding:2px 7px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text3);cursor:pointer;margin-left:6px">✏️</button>
+       <button onclick="kopieerWeek(${wi});event.stopPropagation()" style="font-size:11px;padding:2px 7px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text3);cursor:pointer;margin-left:4px">⎘</button>
        <button onclick="deleteCustomWeek(${wi})" style="font-size:11px;padding:2px 7px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);cursor:pointer;margin-left:4px">✕</button>`
     : '';
   let html = `<div class="week-item" id="${wid}">
@@ -415,6 +436,41 @@ function shareTraining(dag, blokken) {
     tekst += 'Nog geen oefeningen ingepland.';
   }
   window.open('https://wa.me/?text=' + encodeURIComponent(tekst), '_blank');
+}
+
+let kopieerBronIdx = null;
+
+function kopieerWeek(wi) {
+  kopieerBronIdx = wi;
+  const bron = customWeken[wi];
+  document.getElementById('kopieer-focus').value = bron.focus + ' (kopie)';
+  document.getElementById('kopieer-datum').value = '';
+  document.getElementById('kopieer-nr').textContent = '—';
+  document.getElementById('bmodalKopieer').classList.add('open');
+}
+function closeBModalKopieer() { document.getElementById('bmodalKopieer').classList.remove('open'); }
+function onKopieerDatumChange(val) {
+  if (!val) return;
+  document.getElementById('kopieer-nr').textContent = getISOWeek(val);
+}
+
+function saveKopieerWeek() {
+  const bron    = customWeken[kopieerBronIdx];
+  const focus   = document.getElementById('kopieer-focus').value.trim() || bron.focus + ' (kopie)';
+  const isoDate = document.getElementById('kopieer-datum').value;
+  const weekNr  = document.getElementById('kopieer-nr').textContent;
+  // Diepe kopie van sessies — blokken overnemen, aanwezigheid/aantekeningen niet
+  const sessies = bron.sessies.map(s => ({
+    dag:    s.dag,
+    pr:     [...(s.pr || [])],
+    blokken: (s.blokken || []).map(b => ({ t:b.t||'', cat:b.cat, n:b.n, tip:b.tip||'', url:b.url||'' }))
+  }));
+  const nieuw = { focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
+  customWeken.push(nieuw);
+  saveCustomWeken(customWeken);
+  closeBModalKopieer();
+  buildSchema();
+  showToast('Week gekopieerd: ' + focus);
 }
 
 function deleteCustomWeek(wi) {

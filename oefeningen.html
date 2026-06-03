@@ -77,6 +77,19 @@
   </div>
 </div>
 
+<!-- Categorie bewerken modal -->
+<div class="bmodal-overlay" id="bmodalCatEdit" onclick="if(event.target===this)closeCatEdit()">
+  <div class="bmodal">
+    <div class="bmodal-title">Categorie bewerken</div>
+    <div class="bmodal-label">Naam</div>
+    <input class="bmodal-input" id="cat-edit-input" placeholder="Categorienaam...">
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeCatEdit()">Annuleer</button>
+      <button class="bmodal-save" onclick="saveCatEdit()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 <script>
 
@@ -233,9 +246,41 @@ function renderCatList() {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm)';
     row.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text)">${c}</span>
+      <button onclick="openCatEdit(${i})" style="padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text2);font-size:11px;cursor:pointer">✏️</button>
       <button onclick="deleteCat(${i})" style="padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:11px;cursor:pointer">✕</button>`;
     cont.appendChild(row);
   });
+}
+
+let editingCatIdx = null;
+
+function openCatEdit(i) {
+  editingCatIdx = i;
+  document.getElementById('cat-edit-input').value = categories[i];
+  document.getElementById('bmodalCatEdit').classList.add('open');
+}
+function closeCatEdit() { document.getElementById('bmodalCatEdit').classList.remove('open'); }
+
+async function saveCatEdit() {
+  const val = document.getElementById('cat-edit-input').value.trim();
+  if (!val) { showToast('Vul een naam in'); return; }
+  if (val !== categories[editingCatIdx] && categories.includes(val)) { showToast('Bestaat al'); return; }
+  const oudeNaam = categories[editingCatIdx];
+  // Update naam in oefeningen die deze categorie gebruiken
+  customOef.forEach(o => { if (o.cat === oudeNaam) o.cat = val; });
+  saveCustomOef(customOef);
+  categories[editingCatIdx] = val;
+  saveCategories(categories);
+  if (supabaseReady) {
+    await sbFetch('categories?naam=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { naam: val });
+    // Update ook categorie in custom_oef rijen
+    await sbFetch('custom_oef?cat=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { cat: val });
+  }
+  closeCatEdit();
+  renderCatList();
+  renderCatFilters();
+  renderOef();
+  showToast(oudeNaam + ' → ' + val);
 }
 
 async function addCat() {

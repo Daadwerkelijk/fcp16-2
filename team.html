@@ -33,26 +33,12 @@
 <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
 <div class="toast" id="toast"></div>
 
-<!-- Reden beheren modal -->
-<div class="bmodal-overlay" id="bmodalRedenen" onclick="if(event.target===this)closeRedenModal()">
-  <div class="bmodal">
-    <div class="bmodal-title">Afwezigheidsredenen</div>
-    <div id="reden-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
-    <div style="display:flex;gap:7px">
-      <input class="bmodal-input" id="new-reden-input" placeholder="Nieuwe reden..." style="flex:1;margin-bottom:0">
-      <button class="bmodal-save" style="flex:0 0 auto;padding:9px 14px" onclick="addReden()">+</button>
-    </div>
-    <div class="bmodal-actions">
-      <button class="bmodal-save" onclick="closeRedenModal()">Klaar</button>
-    </div>
-  </div>
-</div>
 
 <div class="page-wrap">
   <div class="page-header">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div class="page-title">Dashboard</div>
-      <button class="add-btn" onclick="openRedenModal()">⚙️ Redenen</button>
+      <a href="instellingen.html" style="padding:6px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text3);font-size:13px;text-decoration:none">⚙️</a>
     </div>
     <div class="page-sub">Aanwezigheidsoverzicht seizoen 2026/2027</div>
   </div>

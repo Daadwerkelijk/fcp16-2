@@ -258,7 +258,7 @@ async function onSupabaseReady() {
   const data = await loadFromSupabase();
   if (data.players) players = data.players;
   if (data.lineup)  lineup  = data.lineup;
-  renderLineup();
+  buildField(); // opnieuw opbouwen zodat spelersnamen correct staan
 }
 
 // Init

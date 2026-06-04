@@ -239,8 +239,8 @@ const FORMATIES_BUILTIN = {
     {id:'VM_R', label:'VM-R', role:'dm',     x:64, y:57},
     {id:'AM_L', label:'AM-L', role:'am',     x:22, y:38},
     {id:'AM_R', label:'AM-R', role:'am',     x:78, y:38},
-    {id:'ST_L', label:'ST-L', role:'st',     x:36, y:18},
-    {id:'ST_R', label:'ST-R', role:'st',     x:64, y:18},
+    {id:'ST_L', label:'ST-L', role:'st',     x:22, y:18},
+    {id:'ST_R', label:'ST-R', role:'st',     x:78, y:18},
   ]},
   '14231': { label:'1-4-2-3-1', pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
@@ -372,10 +372,10 @@ const ALL_POS_OPTS = ['Keeper','LB','RB','CB-L','CB-R','VM-L','VM-R','AM-L','AM-
 
 // ─── THEMA'S ───
 const THEMAS = {
-  groen:  { name:'Groen',  accent:'#a8e040', bg:'#0a1200', bg2:'#0f1a04', bg3:'#161f06', text:'#e8f0d8', text2:'#b0c890', text3:'#708050', line:'#1e2e0a', line2:'#263810', red:'#f04040' },
-  blauw:  { name:'Blauw',  accent:'#40a8f0', bg:'#000e1a', bg2:'#04121e', bg3:'#061624', text:'#d8eaf8', text2:'#90b8e0', text3:'#507080', line:'#0a1e2e', line2:'#102638', red:'#f04040' },
-  oranje: { name:'Oranje', accent:'#f09040', bg:'#1a0e00', bg2:'#1e1204', bg3:'#241606', text:'#f8ead8', text2:'#e0b890', text3:'#806050', line:'#2e1e0a', line2:'#382610', red:'#f04040' },
-  paars:  { name:'Paars',  accent:'#a080f8', bg:'#0e0a1a', bg2:'#120e1e', bg3:'#161224', text:'#e8d8f8', text2:'#b090e0', text3:'#705080', line:'#1e1a2e', line2:'#261e38', red:'#f04040' },
+  groen:  { name:'Groen',  accent:'#a8e040', accent2:'#7ab820', bg:'#0a1200', bg2:'#0f1a04', bg3:'#161f06', bg4:'#1f2e00', text:'#e8f0d8', text2:'#b0c890', text3:'#708050', line:'#1e2e0a', line2:'#263810', red:'#f05050' },
+  blauw:  { name:'Blauw',  accent:'#40a8f0', accent2:'#2080c0', bg:'#000e1a', bg2:'#04121e', bg3:'#061624', bg4:'#0a1e2e', text:'#d8eaf8', text2:'#90b8e0', text3:'#507080', line:'#0a1e2e', line2:'#102638', red:'#f05050' },
+  oranje: { name:'Oranje', accent:'#f09040', accent2:'#c06010', bg:'#1a0e00', bg2:'#1e1204', bg3:'#241606', bg4:'#2e1e08', text:'#f8ead8', text2:'#e0b890', text3:'#806050', line:'#2e1e0a', line2:'#382610', red:'#f05050' },
+  paars:  { name:'Paars',  accent:'#a080f8', accent2:'#7050c0', bg:'#0e0a1a', bg2:'#120e1e', bg3:'#161224', bg4:'#1e1830', text:'#e8d8f8', text2:'#b090e0', text3:'#705080', line:'#1e1a2e', line2:'#261e38', red:'#f05050' },
 };
 
 function loadThema() { return localStorage.getItem('fcp_thema') || 'groen'; }
@@ -383,9 +383,11 @@ function applyThema(key) {
   const t = THEMAS[key] || THEMAS.groen;
   const r = document.documentElement.style;
   r.setProperty('--accent',  t.accent);
+  r.setProperty('--accent2', t.accent2);
   r.setProperty('--bg',      t.bg);
   r.setProperty('--bg2',     t.bg2);
   r.setProperty('--bg3',     t.bg3);
+  r.setProperty('--bg4',     t.bg4);
   r.setProperty('--text',    t.text);
   r.setProperty('--text2',   t.text2);
   r.setProperty('--text3',   t.text3);

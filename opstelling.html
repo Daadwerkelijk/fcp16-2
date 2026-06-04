@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 <script>
 (function(){
-  const t={'groen':{'--accent':'#a8e040','--bg':'#0a1200','--bg2':'#0f1a04','--bg3':'#161f06','--text':'#e8f0d8','--text2':'#b0c890','--text3':'#708050','--line':'#1e2e0a','--line2':'#263810','--red':'#f04040'},'blauw':{'--accent':'#40a8f0','--bg':'#000e1a','--bg2':'#04121e','--bg3':'#061624','--text':'#d8eaf8','--text2':'#90b8e0','--text3':'#507080','--line':'#0a1e2e','--line2':'#102638','--red':'#f04040'},'oranje':{'--accent':'#f09040','--bg':'#1a0e00','--bg2':'#1e1204','--bg3':'#241606','--text':'#f8ead8','--text2':'#e0b890','--text3':'#806050','--line':'#2e1e0a','--line2':'#382610','--red':'#f04040'},'paars':{'--accent':'#a080f8','--bg':'#0e0a1a','--bg2':'#120e1e','--bg3':'#161224','--text':'#e8d8f8','--text2':'#b090e0','--text3':'#705080','--line':'#1e1a2e','--line2':'#261e38','--red':'#f04040'}};
+  const t={'groen':{'--accent':'#a8e040','--accent2':'#7ab820','--bg':'#0a1200','--bg2':'#0f1a04','--bg3':'#161f06','--bg4':'#1f2e00','--text':'#e8f0d8','--text2':'#b0c890','--text3':'#708050','--line':'#1e2e0a','--line2':'#263810','--red':'#f05050'},'blauw':{'--accent':'#40a8f0','--accent2':'#2080c0','--bg':'#000e1a','--bg2':'#04121e','--bg3':'#061624','--bg4':'#0a1e2e','--text':'#d8eaf8','--text2':'#90b8e0','--text3':'#507080','--line':'#0a1e2e','--line2':'#102638','--red':'#f05050'},'oranje':{'--accent':'#f09040','--accent2':'#c06010','--bg':'#1a0e00','--bg2':'#1e1204','--bg3':'#241606','--bg4':'#2e1e08','--text':'#f8ead8','--text2':'#e0b890','--text3':'#806050','--line':'#2e1e0a','--line2':'#382610','--red':'#f05050'},'paars':{'--accent':'#a080f8','--accent2':'#7050c0','--bg':'#0e0a1a','--bg2':'#120e1e','--bg3':'#161224','--bg4':'#1e1830','--text':'#e8d8f8','--text2':'#b090e0','--text3':'#705080','--line':'#1e1a2e','--line2':'#261e38','--red':'#f05050'}};
   const k=localStorage.getItem('fcp_thema')||'groen';
   const m=t[k]||t.groen;
   const r=document.documentElement.style;
@@ -36,7 +36,11 @@
 <div class="page-wrap">
   <div class="page-header">
     <div class="page-title">Opstelling</div>
-    <div id="formatie-knoppen" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;overflow-x:auto;padding-bottom:2px"></div>
+    <div style="margin-top:8px">
+      <select id="formatie-select" onchange="setFormatie(this.value)"
+        style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23a8e040%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;background-size:12px">
+      </select>
+    </div>
   </div>
 
   <div class="field-wrap">
@@ -94,26 +98,24 @@ let lineup   = state.lineup;
 let activeFormatie = state.formatie;
 let currentPosId = null;
 
-function renderFormatieKnoppen() {
+function renderFormatieDropdown() {
   FORMATIES = loadFormaties();
-  const cont = document.getElementById('formatie-knoppen');
-  cont.innerHTML = '';
+  const sel = document.getElementById('formatie-select');
+  sel.innerHTML = '';
   Object.entries(FORMATIES).forEach(([key, f]) => {
-    const btn = document.createElement('button');
-    btn.className = 'thu-uit-btn' + (key === activeFormatie ? ' active' : '');
-    btn.id = 'btn-f-' + key;
-    btn.textContent = f.label;
-    btn.onclick = () => setFormatie(key);
-    cont.appendChild(btn);
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = f.label;
+    opt.selected = key === activeFormatie;
+    sel.appendChild(opt);
   });
 }
 
 function setFormatie(f) {
   activeFormatie = f;
   localStorage.setItem('fcp_formatie', f);
-  document.querySelectorAll('#formatie-knoppen .thu-uit-btn').forEach(b => b.classList.remove('active'));
-  const active = document.getElementById('btn-f-' + f);
-  if (active) active.classList.add('active');
+  const sel = document.getElementById('formatie-select');
+  if (sel) sel.value = f;
   buildField();
 }
 
@@ -264,7 +266,7 @@ async function onSupabaseReady() {
 // Init
 FORMATIES = loadFormaties();
 if (!FORMATIES[activeFormatie]) activeFormatie = Object.keys(FORMATIES)[0];
-renderFormatieKnoppen();
+renderFormatieDropdown();
 buildField();
 initScrollTop();
 initManifest();

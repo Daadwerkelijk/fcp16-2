@@ -229,7 +229,7 @@ const DEFAULT_PRINCIPES = [
 // ─── FORMATIES LIBRARY ───
 // Standaard formaties - uitbreidbaar via instellingen
 const FORMATIES_BUILTIN = {
-  '4222': { label:'4-2-2-2 (Como)', pos:[
+  '4222': { label:'4-2-2-2', pos:[
     {id:'GK',   label:'GK',   role:'keeper', x:50, y:88},
     {id:'LB',   label:'LB',   role:'back',   x:14, y:72},
     {id:'CB_L', label:'CB-L', role:'cb',     x:36, y:75},
@@ -375,6 +375,7 @@ const THEMAS = {
   groen:  { name:'Groen',  accent:'#a8e040', accent2:'#7ab820', bg:'#0a1200', bg2:'#0f1a04', bg3:'#161f06', bg4:'#1f2e00', text:'#e8f0d8', text2:'#b0c890', text3:'#708050', line:'#1e2e0a', line2:'#263810', red:'#f05050' },
   blauw:  { name:'Blauw',  accent:'#40a8f0', accent2:'#2080c0', bg:'#000e1a', bg2:'#04121e', bg3:'#061624', bg4:'#0a1e2e', text:'#d8eaf8', text2:'#90b8e0', text3:'#507080', line:'#0a1e2e', line2:'#102638', red:'#f05050' },
   oranje: { name:'Oranje', accent:'#f09040', accent2:'#c06010', bg:'#1a0e00', bg2:'#1e1204', bg3:'#241606', bg4:'#2e1e08', text:'#f8ead8', text2:'#e0b890', text3:'#806050', line:'#2e1e0a', line2:'#382610', red:'#f05050' },
+  geel:   { name:'Geel',   accent:'#f0d040', accent2:'#c0a010', bg:'#141200', bg2:'#1a1800', bg3:'#201e00', bg4:'#2a2800', text:'#f8f0c0', text2:'#d8c860', text3:'#807840', line:'#282400', line2:'#343000', red:'#f05050' },
   paars:  { name:'Paars',  accent:'#a080f8', accent2:'#7050c0', bg:'#0e0a1a', bg2:'#120e1e', bg3:'#161224', bg4:'#1e1830', text:'#e8d8f8', text2:'#b090e0', text3:'#705080', line:'#1e1a2e', line2:'#261e38', red:'#f05050' },
 };
 

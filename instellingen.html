@@ -39,7 +39,9 @@
     <!-- ─── THEMA ─── -->
     <section>
       <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">🎨 Kleurthema</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="thema-knoppen"></div>
+      <select id="thema-select" onchange="kiesThema(this.value)"
+        style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23a8e040%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;background-size:12px">
+      </select>
     </section>
 
     <!-- ─── SUPABASE ─── -->
@@ -123,18 +125,28 @@ function saveTeamConfig() {
 }
 
 // ─── THEMA ───
-function renderThemaKnoppen() {
+function renderThemaDropdown() {
   const huidig = loadThema();
-  const cont = document.getElementById('thema-knoppen');
-  cont.innerHTML = '';
+  const sel = document.getElementById('thema-select');
+  sel.innerHTML = '';
   Object.entries(THEMAS).forEach(([key, t]) => {
-    const btn = document.createElement('button');
-    btn.style.cssText = `padding:12px 8px;background:${t.bg2};border:2px solid ${key===huidig?t.accent:t.line2};border-radius:var(--rsm);color:${t.text};font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;text-align:left`;
-    btn.innerHTML = `<div style="font-size:16px;margin-bottom:4px">⬤</div><div style="color:${t.accent}">${t.name}</div>`;
-    btn.querySelector('div').style.color = t.accent;
-    btn.onclick = () => { applyThema(key); renderThemaKnoppen(); showToast(t.name + ' thema actief'); };
-    cont.appendChild(btn);
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = t.name;
+    opt.selected = key === huidig;
+    sel.appendChild(opt);
   });
+}
+function kiesThema(key) {
+  applyThema(key);
+  showToast(THEMAS[key]?.name + ' thema actief');
+  // Update dropdown pijl kleur naar nieuwe accent kleur
+  const t = THEMAS[key];
+  if (t) {
+    const encodedColor = encodeURIComponent(t.accent);
+    document.getElementById('thema-select').style.backgroundImage =
+      `url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22${encodedColor}%22 stroke-width=%221.5%22 fill=%22none%22/></svg>')`;
+  }
 }
 
 // ─── SUPABASE ───
@@ -299,7 +311,7 @@ async function onSupabaseReady() {
 
 // Init
 loadCfgFields();
-renderThemaKnoppen();
+renderThemaDropdown();
 loadSbFields();
 renderFormaties();
 renderRedenen();

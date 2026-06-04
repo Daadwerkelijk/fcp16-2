@@ -217,59 +217,45 @@ function deleteReden(i) {
 }
 
 // ─── SKILLS (bestaande functionaliteit) ───
-async function loadTeamExcel(event) {
-  const file = event.target.files[0]; if (!file) return;
-  const naam = file.name.replace(/\.(xlsx|xls)$/i, '').trim();
-  const p = players.find(pl => pl.naam.toLowerCase() === naam.toLowerCase());
-  if (!p) { showToast('Speler "' + naam + '" niet gevonden'); return; }
-  try {
-    const data = await file.arrayBuffer();
-    const wb = XLSX.read(data);
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
-    p.skills = parseSkills(rows);
-    const allPlayers = loadState().players.map(pl => pl.id === p.id ? p : pl);
-    savePlayers(allPlayers);
-    players = allPlayers;
-    if (supabaseReady) await sbFetch('players?id=eq.' + p.id, 'PATCH', { skills: JSON.stringify(p.skills) });
-    renderTeamProfiel();
-    showToast(p.naam + ' — skills ingeladen');
-  } catch(e) { showToast('Fout: ' + e.message); }
-}
+// ─── SKILLS UIT FORMULIEREN ───
+let spelerSkills = {}; // pid -> skills object
 
-function parseSkills(rows) {
-  const skills = {};
-  const allSkills = SKILL_CATS.flatMap(sc => sc.skills);
-  rows.forEach(row => {
-    const label = String(row[0] || '').trim();
-    if (allSkills.includes(label)) {
-      for (let c = 1; c <= 4; c++) {
-        if (String(row[c] || '').trim()) { skills[label] = SKILL_LEVELS[c-1]; break; }
-      }
-    }
-    if (label === 'Waar wil je dit seizoen aan werken' || label === 'Wens') {
-      const v = String(row[1] || '').trim(); if (v) skills['Wens'] = v;
-    }
+async function laadAlleFormulieren() {
+  if (!supabaseReady) return;
+  const res = await sbFetch('session_notes?note_key=like.formulier:*&select=note_key,content');
+  if (!res || res._error) return;
+  res.forEach(r => {
+    const pid = r.note_key.replace('formulier:', '');
+    try {
+      const data = JSON.parse(r.content);
+      if (data.skills) spelerSkills[pid] = data.skills;
+    } catch(e) {}
   });
-  return skills;
 }
 
 function renderTeamProfiel() {
   const cont = document.getElementById('profiel-content');
-  const withSkills = sortedPlayers(players).filter(p => p.skills && Object.keys(p.skills).length > 0);
+  // Combineer p.skills (oud) met spelerSkills uit formulieren (nieuw)
+  const withSkills = sortedPlayers(players).filter(p =>
+    (p.skills && Object.keys(p.skills).length > 0) || spelerSkills[p.id]
+  );
   if (!withSkills.length) {
-    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);line-height:1.7">Geen spelers met ingeladen formulier.<br><br><strong style="color:var(--text2)">Tip:</strong> Noem het Excel-bestand exact naar de spelernaam.</div>';
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);line-height:1.7">Nog geen formulieren ingevuld door spelers.<br><br><strong style="color:var(--text2)">Tip:</strong> Deel formulierlinks via Selectie → speler → 📲 Deel.</div>';
     return;
   }
+  // Merge skills: formulier heeft prioriteit boven oud Excel
+  const getSkills = p => ({ ...(p.skills || {}), ...(spelerSkills[p.id] || {}) });
   let html = `<div style="font-size:11px;color:var(--text3);margin-bottom:12px">${withSkills.length} spelers met formulier · Tap een score voor detail</div>`;
   SKILL_CATS.forEach(sc => {
     html += `<div style="font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--text);margin:16px 0 8px;padding-top:8px;border-top:1px solid var(--line2)">${sc.cat}</div>`;
     sc.skills.forEach(skill => {
       const counts = [[], [], [], []];
       withSkills.forEach(p => {
-        const i = SKILL_LEVELS.indexOf(p.skills[skill]);
+        const skills = getSkills(p);
+        const i = SKILL_LEVELS.indexOf(skills[skill]);
         if (i >= 0) counts[i].push(p.naam);
       });
+      if (counts.every(c => !c.length)) return; // skill niet ingevuld door iemand
       const sid = 'sk-' + skill.replace(/\s+/g,'_');
       html += `<div style="margin-bottom:12px">
         <div style="font-size:12px;color:var(--text);margin-bottom:5px">${skill}</div>
@@ -305,6 +291,7 @@ async function onSupabaseReady() {
   if (data.aanwezigheid) { aanwezigheid = data.aanwezigheid; }
   if (data.customWeken)  { customWeken  = data.customWeken; }
   if (data.absRedenen)   { absRedenen   = data.absRedenen; }
+  await laadAlleFormulieren();
   renderAanwOverzicht();
   renderTeamProfiel();
 }

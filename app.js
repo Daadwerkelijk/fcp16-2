@@ -235,14 +235,14 @@ const FORMATIES_BUILTIN = {
     {id:'CB_L', label:'CB-L', role:'cb',     x:36, y:75},
     {id:'CB_R', label:'CB-R', role:'cb',     x:64, y:75},
     {id:'RB',   label:'RB',   role:'back',   x:86, y:72},
-    {id:'VM_L', label:'VM-L', role:'dm',     x:36, y:57},
-    {id:'VM_R', label:'VM-R', role:'dm',     x:64, y:57},
-    {id:'AM_L', label:'AM-L', role:'am',     x:22, y:38},
-    {id:'AM_R', label:'AM-R', role:'am',     x:78, y:38},
-    {id:'ST_L', label:'ST-L', role:'st',     x:22, y:18},
-    {id:'ST_R', label:'ST-R', role:'st',     x:78, y:18},
+    {id:'VM_L', label:'VM-L', role:'dm',     x:36, y:53},
+    {id:'VM_R', label:'VM-R', role:'dm',     x:64, y:53},
+    {id:'AM_L', label:'AM-L', role:'am',     x:18, y:34},
+    {id:'AM_R', label:'AM-R', role:'am',     x:82, y:34},
+    {id:'ST_L', label:'ST-L', role:'st',     x:14, y:16},
+    {id:'ST_R', label:'ST-R', role:'st',     x:86, y:16},
   ]},
-  '14231': { label:'1-4-2-3-1', pos:[
+  '14231': { label:'4-2-3-1', pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
     {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
@@ -255,7 +255,7 @@ const FORMATIES_BUILTIN = {
     {id:'RAM', label:'RAM', role:'am',     x:82, y:38},
     {id:'CF',  label:'CF',  role:'st',     x:50, y:16},
   ]},
-  '433a': { label:'4-3-3 (punt achteren)', pos:[
+  '433a': { label:'4-3-3 (punt achter)', pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
     {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
@@ -268,7 +268,7 @@ const FORMATIES_BUILTIN = {
     {id:'ST',  label:'ST',  role:'st',     x:50, y:16},
     {id:'RW',  label:'RW',  role:'am',     x:86, y:28},
   ]},
-  '352': { label:'1-3-5-2 (punt voor)', pos:[
+  '352': { label:'3-5-2 (punt voor)', pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'CB_L',label:'CB-L',role:'cb',     x:26, y:75},
     {id:'CB_C',label:'CB-C',role:'cb',     x:50, y:78},
@@ -281,7 +281,7 @@ const FORMATIES_BUILTIN = {
     {id:'ST_L',label:'ST-L',role:'st',     x:36, y:22},
     {id:'ST_R',label:'ST-R',role:'st',     x:64, y:22},
   ]},
-  '13421': { label:'1-3-4-2-1', pos:[
+  '13421': { label:'3-4-2-1', pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'CB_L',label:'CB-L',role:'cb',     x:26, y:75},
     {id:'CB_C',label:'CB-C',role:'cb',     x:50, y:78},
@@ -320,7 +320,7 @@ const FORMATIES_BUILTIN = {
     {id:'ST_L',label:'ST-L',role:'st',     x:36, y:20},
     {id:'ST_R',label:'ST-R',role:'st',     x:64, y:20},
   ]},
-  '532': { label:'1-5-3-2', pos:[
+  '532': { label:'5-3-2', pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LWB', label:'LWB', role:'back',   x:8,  y:68},
     {id:'CB_L',label:'CB-L',role:'cb',     x:28, y:75},

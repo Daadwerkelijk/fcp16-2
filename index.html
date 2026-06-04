@@ -13,6 +13,15 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 <link rel="stylesheet" href="style.css">
 <script>
+(function(){
+  const t={'groen':{'--accent':'#a8e040','--bg':'#0a1200','--bg2':'#0f1a04','--bg3':'#161f06','--text':'#e8f0d8','--text2':'#b0c890','--text3':'#708050','--line':'#1e2e0a','--line2':'#263810','--red':'#f04040'},'blauw':{'--accent':'#40a8f0','--bg':'#000e1a','--bg2':'#04121e','--bg3':'#061624','--text':'#d8eaf8','--text2':'#90b8e0','--text3':'#507080','--line':'#0a1e2e','--line2':'#102638','--red':'#f04040'},'oranje':{'--accent':'#f09040','--bg':'#1a0e00','--bg2':'#1e1204','--bg3':'#241606','--text':'#f8ead8','--text2':'#e0b890','--text3':'#806050','--line':'#2e1e0a','--line2':'#382610','--red':'#f04040'},'paars':{'--accent':'#a080f8','--bg':'#0e0a1a','--bg2':'#120e1e','--bg3':'#161224','--text':'#e8d8f8','--text2':'#b090e0','--text3':'#705080','--line':'#1e1a2e','--line2':'#261e38','--red':'#f04040'}};
+  const k=localStorage.getItem('fcp_thema')||'groen';
+  const m=t[k]||t.groen;
+  const r=document.documentElement.style;
+  Object.entries(m).forEach(([p,v])=>r.setProperty(p,v));
+})();
+</script>
+<script>
 if(localStorage.getItem('sb_url')&&localStorage.getItem('sb_key')){
   document.addEventListener('DOMContentLoaded',()=>{
     const b=document.getElementById('config-banner');
@@ -39,7 +48,13 @@ if(localStorage.getItem('sb_url')&&localStorage.getItem('sb_key')){
 <div class="page-wrap">
   <div class="home-hero">
     <div style="padding:48px 16px 16px">
-      <h1 class="home-title">FCP <em>16-2</em></h1>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <h1 class="home-title" id="home-titel">FCP <em>16-2</em></h1>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px" id="home-subtitel">Seizoen 2026/2027</div>
+        </div>
+        <a href="instellingen.html" style="padding:7px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text3);font-size:16px;text-decoration:none;margin-top:44px">⚙️</a>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
         <a href="schema.html"      class="form-btn" style="text-align:center;text-decoration:none;padding:11px 8px;font-size:12px">📅 Trainen</a>
         <a href="opstelling.html"  class="form-btn" style="text-align:center;text-decoration:none;padding:11px 8px;font-size:12px;background:var(--bg3);border-color:var(--line2);color:var(--text2)">🟢 Opstelling</a>
@@ -127,8 +142,21 @@ function updateStats() {
   const oef = JSON.parse(localStorage.getItem('fcp_oef')||'[]');
   document.getElementById('stat-wedstrijden').textContent = wed.length;
   document.getElementById('stat-spelers').textContent     = pl.length;
-  document.getElementById('stat-oef').textContent         = 49 + oef.length;
+  document.getElementById('stat-oef').textContent         = oef.length;
   document.getElementById('stat-wins').textContent        = wed.filter(w=>w.score_eigen>w.score_tegen).length;
+}
+
+function applyTeamConfig(cfg) {
+  const c = cfg || loadTeamInstellingen();
+  const titel = document.getElementById('home-titel');
+  const sub   = document.getElementById('home-subtitel');
+  if (titel) {
+    const delen = c.naam.split(' ');
+    titel.innerHTML = delen.length > 1
+      ? delen.slice(0,-1).join(' ') + ' <em>' + delen[delen.length-1] + '</em>'
+      : '<em>' + c.naam + '</em>';
+  }
+  if (sub) sub.textContent = c.subtitel || '';
 }
 
 function renderPrincipes() {
@@ -185,11 +213,13 @@ async function savePr() {
 async function onSupabaseReady() {
   const data = await loadFromSupabase();
   if (data.principes) { principes = data.principes; localStorage.setItem('fcp_principes', JSON.stringify(principes)); }
+  if (data.teamConfig) applyTeamConfig(data.teamConfig);
   renderPrincipes();
   updateStats();
 }
 
 // Init
+applyTeamConfig();
 principes = JSON.parse(localStorage.getItem('fcp_principes') || JSON.stringify(DEFAULT_PRINCIPES));
 renderPrincipes();
 updateStats();

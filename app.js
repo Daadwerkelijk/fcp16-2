@@ -151,10 +151,13 @@ async function loadFromSupabase() {
     if (notes['abs_redenen']) {
       try {
         const redenen = JSON.parse(notes['abs_redenen']);
-        if (Array.isArray(redenen)) {
-          result.absRedenen = redenen;
-          localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen));
-        }
+        if (Array.isArray(redenen)) { result.absRedenen = redenen; localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen)); }
+      } catch(e) {}
+    }
+    if (notes['team_config']) {
+      try {
+        const cfg = JSON.parse(notes['team_config']);
+        if (cfg && cfg.naam) { result.teamConfig = cfg; localStorage.setItem('fcp_team_config', JSON.stringify(cfg)); }
       } catch(e) {}
     }
   }
@@ -223,9 +226,10 @@ const DEFAULT_PRINCIPES = [
     kleur_bg:'#101800', kleur_border:'#304010', kleur_text:'#a8e040' },
 ];
 
-// ─── FORMATIES ───
-const FORMATIES = {
-  '4222': { label:'4-2-2-2', pos:[
+// ─── FORMATIES LIBRARY ───
+// Standaard formaties - uitbreidbaar via instellingen
+const FORMATIES_BUILTIN = {
+  '4222': { label:'4-2-2-2 (Como)', pos:[
     {id:'GK',   label:'GK',   role:'keeper', x:50, y:88},
     {id:'LB',   label:'LB',   role:'back',   x:14, y:72},
     {id:'CB_L', label:'CB-L', role:'cb',     x:36, y:75},
@@ -235,10 +239,10 @@ const FORMATIES = {
     {id:'VM_R', label:'VM-R', role:'dm',     x:64, y:57},
     {id:'AM_L', label:'AM-L', role:'am',     x:22, y:38},
     {id:'AM_R', label:'AM-R', role:'am',     x:78, y:38},
-    {id:'ST_L', label:'ST-L', role:'st',     x:14, y:16},
-    {id:'ST_R', label:'ST-R', role:'st',     x:86, y:16},
+    {id:'ST_L', label:'ST-L', role:'st',     x:36, y:18},
+    {id:'ST_R', label:'ST-R', role:'st',     x:64, y:18},
   ]},
-  '4231': { label:'4-2-3-1', pos:[
+  '14231': { label:'1-4-2-3-1', pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
     {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
@@ -251,23 +255,161 @@ const FORMATIES = {
     {id:'RAM', label:'RAM', role:'am',     x:82, y:38},
     {id:'CF',  label:'CF',  role:'st',     x:50, y:16},
   ]},
-  '442': { label:'4-4-2 ruit', pos:[
-    {id:'GK',   label:'GK',   role:'keeper', x:50, y:88},
-    {id:'LB',   label:'LB',   role:'back',   x:14, y:72},
-    {id:'CB_L', label:'CB-L', role:'cb',     x:36, y:75},
-    {id:'CB_R', label:'CB-R', role:'cb',     x:64, y:75},
-    {id:'RB',   label:'RB',   role:'back',   x:86, y:72},
-    {id:'LM',   label:'LM',   role:'dm',     x:14, y:52},
-    {id:'CM_A', label:'CM-A', role:'dm',     x:50, y:40},
-    {id:'CM_V', label:'CM-V', role:'am',     x:50, y:60},
-    {id:'RM',   label:'RM',   role:'dm',     x:86, y:52},
-    {id:'ST_L', label:'ST-L', role:'st',     x:35, y:18},
-    {id:'ST_R', label:'ST-R', role:'st',     x:65, y:18},
+  '433a': { label:'4-3-3 (punt achteren)', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:64, y:75},
+    {id:'RB',  label:'RB',  role:'back',   x:86, y:72},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:22, y:52},
+    {id:'CM_C',label:'CM-C',role:'dm',     x:50, y:60},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:78, y:52},
+    {id:'LW',  label:'LW',  role:'am',     x:14, y:28},
+    {id:'ST',  label:'ST',  role:'st',     x:50, y:16},
+    {id:'RW',  label:'RW',  role:'am',     x:86, y:28},
+  ]},
+  '352': { label:'1-3-5-2 (punt voor)', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:26, y:75},
+    {id:'CB_C',label:'CB-C',role:'cb',     x:50, y:78},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:74, y:75},
+    {id:'LWB', label:'LWB', role:'back',   x:10, y:55},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:32, y:55},
+    {id:'CM_C',label:'CM-C',role:'dm',     x:50, y:60},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:68, y:55},
+    {id:'RWB', label:'RWB', role:'back',   x:90, y:55},
+    {id:'ST_L',label:'ST-L',role:'st',     x:36, y:22},
+    {id:'ST_R',label:'ST-R',role:'st',     x:64, y:22},
+  ]},
+  '13421': { label:'1-3-4-2-1', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:26, y:75},
+    {id:'CB_C',label:'CB-C',role:'cb',     x:50, y:78},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:74, y:75},
+    {id:'LM',  label:'LM',  role:'dm',     x:10, y:57},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:36, y:60},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:64, y:60},
+    {id:'RM',  label:'RM',  role:'dm',     x:90, y:57},
+    {id:'AM_L',label:'AM-L',role:'am',     x:36, y:38},
+    {id:'AM_R',label:'AM-R',role:'am',     x:64, y:38},
+    {id:'CF',  label:'CF',  role:'st',     x:50, y:16},
+  ]},
+  '442v': { label:'4-4-2 vlak', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:64, y:75},
+    {id:'RB',  label:'RB',  role:'back',   x:86, y:72},
+    {id:'LM',  label:'LM',  role:'dm',     x:14, y:52},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:38, y:55},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:62, y:55},
+    {id:'RM',  label:'RM',  role:'dm',     x:86, y:52},
+    {id:'ST_L',label:'ST-L',role:'st',     x:36, y:20},
+    {id:'ST_R',label:'ST-R',role:'st',     x:64, y:20},
+  ]},
+  '442r': { label:'4-4-2 ruit', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:64, y:75},
+    {id:'RB',  label:'RB',  role:'back',   x:86, y:72},
+    {id:'LM',  label:'LM',  role:'dm',     x:14, y:52},
+    {id:'CM_A',label:'CM-A',role:'dm',     x:50, y:40},
+    {id:'CM_V',label:'CM-V',role:'am',     x:50, y:60},
+    {id:'RM',  label:'RM',  role:'dm',     x:86, y:52},
+    {id:'ST_L',label:'ST-L',role:'st',     x:36, y:20},
+    {id:'ST_R',label:'ST-R',role:'st',     x:64, y:20},
+  ]},
+  '532': { label:'1-5-3-2', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'LWB', label:'LWB', role:'back',   x:8,  y:68},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:28, y:75},
+    {id:'CB_C',label:'CB-C',role:'cb',     x:50, y:78},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:72, y:75},
+    {id:'RWB', label:'RWB', role:'back',   x:92, y:68},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:28, y:52},
+    {id:'CM_C',label:'CM-C',role:'dm',     x:50, y:55},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:72, y:52},
+    {id:'ST_L',label:'ST-L',role:'st',     x:36, y:22},
+    {id:'ST_R',label:'ST-R',role:'st',     x:64, y:22},
+  ]},
+  '433b': { label:'4-3-3 (punt voor)', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:64, y:75},
+    {id:'RB',  label:'RB',  role:'back',   x:86, y:72},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:36, y:55},
+    {id:'CM_C',label:'CM-C',role:'am',     x:50, y:45},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:64, y:55},
+    {id:'LW',  label:'LW',  role:'am',     x:14, y:28},
+    {id:'ST',  label:'ST',  role:'st',     x:50, y:16},
+    {id:'RW',  label:'RW',  role:'am',     x:86, y:28},
   ]},
 };
 
+// Laad gebruikersformaties uit localStorage
+function loadFormaties() {
+  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
+  return { ...FORMATIES_BUILTIN, ...custom };
+}
+function saveCustomFormatie(key, formatie) {
+  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
+  custom[key] = formatie;
+  localStorage.setItem('fcp_custom_formaties', JSON.stringify(custom));
+}
+function deleteCustomFormatie(key) {
+  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
+  delete custom[key];
+  localStorage.setItem('fcp_custom_formaties', JSON.stringify(custom));
+}
+
+// Backwards compat - FORMATIES verwijst nu naar de geladen set
+let FORMATIES = loadFormaties();
+
 const POS_LABELS = { keeper:'Keeper', back:'Back', cb:'Centrale back', dm:'Middenveld', am:'Aanvallend midden', st:'Spits' };
 const ALL_POS_OPTS = ['Keeper','LB','RB','CB-L','CB-R','VM-L','VM-R','AM-L','AM-R','ST-L','ST-R','DM-L','DM-R','LAM','CAM','RAM','CF','LM','CM-L','CM-R','RM'];
+
+// ─── THEMA'S ───
+const THEMAS = {
+  groen:  { name:'Groen',  accent:'#a8e040', bg:'#0a1200', bg2:'#0f1a04', bg3:'#161f06', text:'#e8f0d8', text2:'#b0c890', text3:'#708050', line:'#1e2e0a', line2:'#263810', red:'#f04040' },
+  blauw:  { name:'Blauw',  accent:'#40a8f0', bg:'#000e1a', bg2:'#04121e', bg3:'#061624', text:'#d8eaf8', text2:'#90b8e0', text3:'#507080', line:'#0a1e2e', line2:'#102638', red:'#f04040' },
+  oranje: { name:'Oranje', accent:'#f09040', bg:'#1a0e00', bg2:'#1e1204', bg3:'#241606', text:'#f8ead8', text2:'#e0b890', text3:'#806050', line:'#2e1e0a', line2:'#382610', red:'#f04040' },
+  paars:  { name:'Paars',  accent:'#a080f8', bg:'#0e0a1a', bg2:'#120e1e', bg3:'#161224', text:'#e8d8f8', text2:'#b090e0', text3:'#705080', line:'#1e1a2e', line2:'#261e38', red:'#f04040' },
+};
+
+function loadThema() { return localStorage.getItem('fcp_thema') || 'groen'; }
+function applyThema(key) {
+  const t = THEMAS[key] || THEMAS.groen;
+  const r = document.documentElement.style;
+  r.setProperty('--accent',  t.accent);
+  r.setProperty('--bg',      t.bg);
+  r.setProperty('--bg2',     t.bg2);
+  r.setProperty('--bg3',     t.bg3);
+  r.setProperty('--text',    t.text);
+  r.setProperty('--text2',   t.text2);
+  r.setProperty('--text3',   t.text3);
+  r.setProperty('--line',    t.line);
+  r.setProperty('--line2',   t.line2);
+  r.setProperty('--red',     t.red);
+  localStorage.setItem('fcp_thema', key);
+}
+// Thema direct toepassen bij laden
+applyThema(loadThema());
+
+// ─── TEAM INSTELLINGEN ───
+function loadTeamInstellingen() {
+  return JSON.parse(localStorage.getItem('fcp_team_config') || '{"naam":"FCP 16-2","subtitel":"Seizoen 2026/2027","trainer":"Stefan & Onno"}');
+}
+function saveTeamInstellingen(config) {
+  localStorage.setItem('fcp_team_config', JSON.stringify(config));
+  // Sync naar Supabase via session_notes
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    sbFetch('session_notes?note_key=eq.team_config', 'DELETE').then(() =>
+      sbFetch('session_notes', 'POST', { note_key:'team_config', content:JSON.stringify(config) })
+    );
+  }
+}
 
 // ─── SCHEMA DATA ───
 const SCHEMA_DATES  = {1:'2026-08-03',2:'2026-08-10',3:'2026-08-17',4:'2026-08-24',5:'2026-08-31',6:'2026-09-07',7:'2026-09-14',8:'2026-09-21',9:'2026-09-28',10:'2026-10-05',11:'2026-10-12',12:'2026-10-19'};

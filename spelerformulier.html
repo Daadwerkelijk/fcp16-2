@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a1200">
+<title>Spelersformulier — FCP 16-2</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .form-section { background:var(--bg2); border:1px solid var(--line2); border-radius:var(--rsm); padding:14px; margin-bottom:12px; }
+  .form-section-title { font-family:'Fraunces',serif; font-size:14px; font-weight:600; color:var(--text); margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid var(--line2); }
+  .form-row { margin-bottom:10px; }
+  .form-label { font-size:11px; color:var(--text3); margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em; }
+  .form-input { width:100%; padding:9px 10px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--rsm); color:var(--text); font-family:'DM Mono',monospace; font-size:13px; box-sizing:border-box; }
+  .form-select { width:100%; padding:9px 10px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--rsm); color:var(--text); font-family:'DM Mono',monospace; font-size:13px; }
+  .form-textarea { width:100%; padding:9px 10px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--rsm); color:var(--text); font-family:'DM Mono',monospace; font-size:13px; min-height:80px; resize:vertical; box-sizing:border-box; }
+  .skill-tabel { width:100%; border-collapse:collapse; }
+  .skill-tabel th { font-size:10px; color:var(--text3); text-align:center; padding:4px 2px; font-weight:400; }
+  .skill-tabel td { padding:5px 3px; border-bottom:1px solid var(--line2); }
+  .skill-naam { font-size:12px; color:var(--text2); }
+  .skill-radio-cel { text-align:center; }
+  .skill-radio-cel input[type=radio] { width:18px; height:18px; accent-color:var(--accent); cursor:pointer; }
+  .submit-btn { width:100%; padding:14px; background:var(--accent); border:none; border-radius:var(--rsm); color:#0a1200; font-family:'DM Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; margin-top:8px; }
+  .success-msg { text-align:center; padding:40px 20px; }
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<div id="form-wrap" style="display:none">
+  <div style="padding:48px 16px 8px;background:var(--bg2);border-bottom:1px solid var(--line2);margin-bottom:16px">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:2px">FCP 16-2 · Spelersformulier</div>
+    <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--text)" id="form-speler-naam">—</div>
+  </div>
+
+  <div style="padding:0 16px 32px">
+
+    <!-- Persoonlijke gegevens -->
+    <div class="form-section">
+      <div class="form-section-title">Persoonlijke gegevens</div>
+      <div class="form-row">
+        <div class="form-label">Naam</div>
+        <input class="form-input" id="f-naam" placeholder="Volledige naam">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Geboortedatum</div>
+        <input class="form-input" id="f-geboortedatum" type="date">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Voorkeurspositie</div>
+        <select class="form-select" id="f-positie">
+          <option value="">Kies positie...</option>
+          <option>Keeper</option>
+          <option>Verdediger</option>
+          <option>Middenvelder</option>
+          <option>Aanvaller</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Mobielnummer</div>
+        <input class="form-input" id="f-mobiel" type="tel" placeholder="06-...">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Ga je op vakantie?</div>
+        <select class="form-select" id="f-vakantie">
+          <option value="">Kies...</option>
+          <option value="ja">Ja</option>
+          <option value="nee">Nee</option>
+        </select>
+      </div>
+      <div id="vakantie-details" style="display:none">
+        <div class="form-row">
+          <div class="form-label">Van</div>
+          <input class="form-input" id="f-vakantie-van" type="date">
+        </div>
+        <div class="form-row">
+          <div class="form-label">Tot</div>
+          <input class="form-input" id="f-vakantie-tot" type="date">
+        </div>
+      </div>
+    </div>
+
+    <!-- Leiderschap -->
+    <div class="form-section">
+      <div class="form-section-title">Leiderschap</div>
+      <div class="form-row">
+        <div class="form-label">Wil je aanvoerder zijn?</div>
+        <select class="form-select" id="f-aanvoerder" onchange="toggleAanvoerder()">
+          <option value="">Kies...</option>
+          <option value="ja">Ja</option>
+          <option value="nee">Nee</option>
+        </select>
+      </div>
+      <div id="aanvoerder-ja" style="display:none" class="form-row">
+        <div class="form-label">Zo ja, waarom?</div>
+        <textarea class="form-textarea" id="f-aanvoerder-waarom" placeholder="Leg uit..."></textarea>
+      </div>
+      <div id="aanvoerder-nee" style="display:none" class="form-row">
+        <div class="form-label">Zo nee, wie dan?</div>
+        <input class="form-input" id="f-aanvoerder-wie" placeholder="Naam van ploeggenoot">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Waarom deze speler?</div>
+        <textarea class="form-textarea" id="f-aanvoerder-waarom2" placeholder="Leg uit..."></textarea>
+      </div>
+    </div>
+
+    <!-- Skills: Techniek -->
+    <div class="form-section">
+      <div class="form-section-title">Techniek</div>
+      <div id="skill-techniek"></div>
+    </div>
+
+    <!-- Skills: Tactiek -->
+    <div class="form-section">
+      <div class="form-section-title">Tactiek</div>
+      <div id="skill-tactiek"></div>
+    </div>
+
+    <!-- Skills: Fysiek -->
+    <div class="form-section">
+      <div class="form-section-title">Fysiek</div>
+      <div id="skill-fysiek"></div>
+    </div>
+
+    <!-- Skills: Mentaal -->
+    <div class="form-section">
+      <div class="form-section-title">Mentaal</div>
+      <div id="skill-mentaal"></div>
+    </div>
+
+    <!-- Wens -->
+    <div class="form-section">
+      <div class="form-section-title">Wens dit seizoen</div>
+      <div class="form-row">
+        <div class="form-label">Waar wil je dit seizoen aan werken?</div>
+        <textarea class="form-textarea" id="f-wens" placeholder="Beschrijf je persoonlijke doel..." style="min-height:100px"></textarea>
+      </div>
+    </div>
+
+    <!-- Bijzonderheden -->
+    <div class="form-section">
+      <div class="form-section-title">Bijzonderheden</div>
+      <textarea class="form-textarea" id="f-bijzonderheden" placeholder="Medische info, blessures, afspraken..." style="min-height:80px"></textarea>
+    </div>
+
+    <button class="submit-btn" onclick="submitFormulier()">✓ Formulier insturen</button>
+  </div>
+</div>
+
+<div id="loading-msg" style="padding:60px 20px;text-align:center;color:var(--text3);font-size:13px">Formulier laden...</div>
+<div id="success-msg" style="display:none" class="success-msg">
+  <div style="font-size:48px;margin-bottom:16px">✅</div>
+  <div style="font-family:'Fraunces',serif;font-size:22px;color:var(--text);margin-bottom:8px">Bedankt!</div>
+  <div style="font-size:13px;color:var(--text3)">Je formulier is ontvangen door de trainer.</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const FORM_SKILLS = {
+  techniek: ['Balcontrole','Dribbel','Passen van de bal','Schieten op doel'],
+  tactiek:  ['Positiespel','Inzicht','Teamplayer'],
+  fysiek:   ['Conditie','Explosieve kracht','Duel kracht'],
+  mentaal:  ['Gedrag','Motivatie','Aandacht','Discipline','Omgaan met tegenslag'],
+};
+const SKILL_OPTIES = ['Ontwikkel punt','Voldoende','Goed','Zeer goed'];
+
+let spelerId = null;
+let spelerNaam = '';
+
+function getTokenFromUrl() {
+  const params = new URLSearchParams(location.search);
+  return params.get('token');
+}
+
+function buildSkillTabel(cat, skills) {
+  let html = '<table class="skill-tabel"><thead><tr><th style="text-align:left">Skill</th>';
+  SKILL_OPTIES.forEach(o => html += `<th>${o}</th>`);
+  html += '</tr></thead><tbody>';
+  skills.forEach(s => {
+    const sid = 'skill-' + cat + '-' + s.replace(/\s+/g,'_');
+    html += `<tr><td class="skill-naam">${s}</td>`;
+    SKILL_OPTIES.forEach((o, i) => {
+      html += `<td class="skill-radio-cel"><input type="radio" name="${sid}" value="${o}" id="${sid}-${i}"></td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+function toggleAanvoerder() {
+  const val = document.getElementById('f-aanvoerder').value;
+  document.getElementById('aanvoerder-ja').style.display  = val === 'ja'  ? 'block' : 'none';
+  document.getElementById('aanvoerder-nee').style.display = val === 'nee' ? 'block' : 'none';
+}
+
+document.getElementById('f-vakantie').addEventListener('change', function() {
+  document.getElementById('vakantie-details').style.display = this.value === 'ja' ? 'block' : 'none';
+});
+
+function collectSkills() {
+  const skills = {};
+  Object.entries(FORM_SKILLS).forEach(([cat, lijst]) => {
+    lijst.forEach(s => {
+      const sid = 'skill-' + cat + '-' + s.replace(/\s+/g,'_');
+      const checked = document.querySelector(`input[name="${sid}"]:checked`);
+      if (checked) skills[s] = checked.value;
+    });
+  });
+  return skills;
+}
+
+async function submitFormulier() {
+  const data = {
+    naam:           document.getElementById('f-naam').value.trim(),
+    geboortedatum:  document.getElementById('f-geboortedatum').value,
+    positie:        document.getElementById('f-positie').value,
+    mobiel:         document.getElementById('f-mobiel').value.trim(),
+    vakantie:       document.getElementById('f-vakantie').value,
+    vakantie_van:   document.getElementById('f-vakantie-van').value,
+    vakantie_tot:   document.getElementById('f-vakantie-tot').value,
+    aanvoerder:     document.getElementById('f-aanvoerder').value,
+    aanvoerder_waarom: document.getElementById('f-aanvoerder-waarom').value.trim(),
+    aanvoerder_wie: document.getElementById('f-aanvoerder-wie').value.trim(),
+    aanvoerder_waarom2: document.getElementById('f-aanvoerder-waarom2').value.trim(),
+    wens:           document.getElementById('f-wens').value.trim(),
+    bijzonderheden: document.getElementById('f-bijzonderheden').value.trim(),
+    skills:         collectSkills(),
+    ingestuurd_op:  new Date().toISOString(),
+  };
+
+  if (!data.naam) { showToast('Vul je naam in'); return; }
+
+  // Opslaan via session_notes met sleutel formulier:<spelerId>
+  const ok = await initSupabase();
+  if (ok) {
+    const res = await sbFetch('session_notes?note_key=eq.formulier:' + spelerId, 'DELETE');
+    await sbFetch('session_notes', 'POST', { note_key: 'formulier:' + spelerId, content: JSON.stringify(data) });
+    document.getElementById('form-wrap').style.display = 'none';
+    document.getElementById('success-msg').style.display = 'block';
+  } else {
+    showToast('Geen verbinding — probeer later opnieuw');
+  }
+}
+
+// Init
+const token = getTokenFromUrl();
+if (token) {
+  try {
+    const decoded = atob(decodeURIComponent(token));
+    const parts = decoded.split(':');
+    spelerId   = parts[0];
+    spelerNaam = parts.slice(1).join(':');
+    document.getElementById('form-speler-naam').textContent = spelerNaam;
+    document.getElementById('f-naam').value = spelerNaam;
+    // Bouw skill tabellen
+    Object.entries(FORM_SKILLS).forEach(([cat, skills]) => {
+      const el = document.getElementById('skill-' + cat);
+      if (el) el.innerHTML = buildSkillTabel(cat, skills);
+    });
+    document.getElementById('loading-msg').style.display = 'none';
+    document.getElementById('form-wrap').style.display = 'block';
+  } catch(e) {
+    document.getElementById('loading-msg').textContent = 'Ongeldige link. Vraag de trainer om een nieuwe link.';
+  }
+} else {
+  document.getElementById('loading-msg').textContent = 'Geen spelerstoken gevonden in de link.';
+}
+</script>
+</body>
+</html>

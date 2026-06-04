@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1200">
+<title>Instellingen — FCP 16-2</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<div class="page-wrap" style="padding-bottom:40px">
+  <div class="page-header" style="position:sticky;top:0;z-index:10">
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="index.html" style="padding:6px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-size:13px;text-decoration:none">← Terug</a>
+      <div class="page-title">Instellingen</div>
+    </div>
+  </div>
+
+  <div style="padding:16px;display:flex;flex-direction:column;gap:20px">
+
+    <!-- ─── TEAM & WEERGAVE ─── -->
+    <section>
+      <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">⚡ Team & weergave</div>
+      <div class="bmodal-label">Teamnaam</div>
+      <input class="bmodal-input" id="cfg-naam" placeholder="FCP 16-2">
+      <div class="bmodal-label">Ondertitel startpagina</div>
+      <input class="bmodal-input" id="cfg-subtitel" placeholder="Seizoen 2026/2027">
+      <div class="bmodal-label">Trainer(s)</div>
+      <input class="bmodal-input" id="cfg-trainer" placeholder="Stefan & Onno">
+      <button class="bmodal-save" style="width:100%;margin-top:4px" onclick="saveTeamConfig()">💾 Opslaan</button>
+    </section>
+
+    <!-- ─── THEMA ─── -->
+    <section>
+      <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">🎨 Kleurthema</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="thema-knoppen"></div>
+    </section>
+
+    <!-- ─── SUPABASE ─── -->
+    <section>
+      <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">🔗 Supabase koppeling</div>
+      <div class="bmodal-label">Project URL</div>
+      <input class="bmodal-input" id="cfg-sb-url" placeholder="https://xxxx.supabase.co" type="url">
+      <div class="bmodal-label">Anon key</div>
+      <input class="bmodal-input" id="cfg-sb-key" placeholder="eyJ...">
+      <button class="bmodal-save" style="width:100%;margin-top:4px" onclick="saveSupabaseConfig()">🔗 Verbinding opslaan en testen</button>
+      <button id="cfg-sb-reset" style="width:100%;margin-top:6px;padding:9px;background:transparent;border:1px solid var(--red);border-radius:var(--rsm);color:var(--red);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;display:none" onclick="resetSupabaseConfig()">✕ Verbinding verwijderen</button>
+    </section>
+
+    <!-- ─── FORMATIES ─── -->
+    <section>
+      <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">🟢 Formaties library</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">De ingebouwde formaties zijn altijd beschikbaar. Hieronder zie je alle formaties en kun je eigen varianten toevoegen.</div>
+      <div id="formaties-lijst" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+    </section>
+
+    <!-- ─── AFWEZIGHEIDSREDENEN ─── -->
+    <section>
+      <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">📋 Afwezigheidsredenen</div>
+      <div id="redenen-lijst" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:7px">
+        <input class="bmodal-input" id="new-reden" placeholder="Nieuwe reden..." style="flex:1;margin-bottom:0">
+        <button class="bmodal-save" style="flex:0 0 auto;padding:9px 14px" onclick="addReden()">+</button>
+      </div>
+    </section>
+
+    <!-- ─── OEFENINGEN CATEGORIEËN ─── -->
+    <section>
+      <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">📚 Oefeningen categorieën</div>
+      <div id="cat-lijst" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:7px">
+        <input class="bmodal-input" id="new-cat" placeholder="Nieuwe categorie..." style="flex:1;margin-bottom:0">
+        <button class="bmodal-save" style="flex:0 0 auto;padding:9px 14px" onclick="addCat()">+</button>
+      </div>
+    </section>
+
+    <!-- ─── SPELERSFORMULIER ─── -->
+    <section>
+      <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">📝 Spelersformulier</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.6">Deel een persoonlijke link met een speler. De speler vult het formulier in op zijn telefoon en de data wordt opgeslagen in de app.</div>
+      <div id="speler-links" style="display:flex;flex-direction:column;gap:6px"></div>
+    </section>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const state = loadState();
+let players    = state.players;
+let categories = state.categories;
+let absRedenen = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]');
+function saveAbsRedenen(r) {
+  localStorage.setItem('fcp_abs_redenen', JSON.stringify(r));
+  if (supabaseReady) {
+    sbFetch('session_notes?note_key=eq.abs_redenen','DELETE').then(()=>
+      sbFetch('session_notes','POST',{note_key:'abs_redenen',content:JSON.stringify(r)}));
+  }
+}
+
+// ─── TEAM CONFIG ───
+function loadCfgFields() {
+  const c = loadTeamInstellingen();
+  document.getElementById('cfg-naam').value     = c.naam     || '';
+  document.getElementById('cfg-subtitel').value = c.subtitel || '';
+  document.getElementById('cfg-trainer').value  = c.trainer  || '';
+}
+function saveTeamConfig() {
+  const cfg = {
+    naam:     document.getElementById('cfg-naam').value.trim() || 'FCP 16-2',
+    subtitel: document.getElementById('cfg-subtitel').value.trim(),
+    trainer:  document.getElementById('cfg-trainer').value.trim(),
+  };
+  saveTeamInstellingen(cfg);
+  showToast('Opgeslagen');
+}
+
+// ─── THEMA ───
+function renderThemaKnoppen() {
+  const huidig = loadThema();
+  const cont = document.getElementById('thema-knoppen');
+  cont.innerHTML = '';
+  Object.entries(THEMAS).forEach(([key, t]) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `padding:12px 8px;background:${t.bg2};border:2px solid ${key===huidig?t.accent:t.line2};border-radius:var(--rsm);color:${t.text};font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;text-align:left`;
+    btn.innerHTML = `<div style="font-size:16px;margin-bottom:4px">⬤</div><div style="color:${t.accent}">${t.name}</div>`;
+    btn.querySelector('div').style.color = t.accent;
+    btn.onclick = () => { applyThema(key); renderThemaKnoppen(); showToast(t.name + ' thema actief'); };
+    cont.appendChild(btn);
+  });
+}
+
+// ─── SUPABASE ───
+function loadSbFields() {
+  const url = localStorage.getItem('sb_url') || '';
+  const key = localStorage.getItem('sb_key') || '';
+  document.getElementById('cfg-sb-url').value = url;
+  document.getElementById('cfg-sb-key').value = key;
+  document.getElementById('cfg-sb-reset').style.display = url ? 'block' : 'none';
+}
+async function saveSupabaseConfig() {
+  const url = document.getElementById('cfg-sb-url').value.trim();
+  const key = document.getElementById('cfg-sb-key').value.trim();
+  if (!url || !key) { showToast('Vul URL en key in'); return; }
+  localStorage.setItem('sb_url', url);
+  localStorage.setItem('sb_key', key);
+  showToast('Verbinding opgeslagen — pagina herladen...');
+  setTimeout(() => location.reload(), 1200);
+}
+function resetSupabaseConfig() {
+  if (!confirm('Supabase koppeling verwijderen?')) return;
+  localStorage.removeItem('sb_url'); localStorage.removeItem('sb_key');
+  loadSbFields();
+  showToast('Koppeling verwijderd');
+}
+
+// ─── FORMATIES ───
+function renderFormaties() {
+  const alle = loadFormaties();
+  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
+  const cont = document.getElementById('formaties-lijst');
+  cont.innerHTML = '';
+  Object.entries(alle).forEach(([key, f]) => {
+    const isCustom = !!custom[key];
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)';
+    row.innerHTML = `
+      <div style="flex:1">
+        <div style="font-size:12px;color:var(--text)">${f.label}</div>
+        <div style="font-size:10px;color:var(--text3)">${f.pos.length} posities${isCustom?' · Eigen formatie':' · Ingebouwd'}</div>
+      </div>
+      ${isCustom ? `<button onclick="verwijderFormatie('${key}')" style="padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:11px;cursor:pointer">✕</button>` : ''}`;
+    cont.appendChild(row);
+  });
+}
+function verwijderFormatie(key) {
+  if (!confirm('Formatie verwijderen?')) return;
+  deleteCustomFormatie(key);
+  FORMATIES = loadFormaties();
+  renderFormaties();
+  showToast('Formatie verwijderd');
+}
+
+// ─── AFWEZIGHEIDSREDENEN ───
+function renderRedenen() {
+  const cont = document.getElementById('redenen-lijst'); cont.innerHTML = '';
+  absRedenen.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm)';
+    row.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text)">${r}</span>
+      <button onclick="deleteReden(${i})" style="padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:11px;cursor:pointer">✕</button>`;
+    cont.appendChild(row);
+  });
+}
+function addReden() {
+  const val = document.getElementById('new-reden').value.trim();
+  if (!val || absRedenen.includes(val)) { showToast(val?'Bestaat al':'Vul een reden in'); return; }
+  absRedenen.push(val); saveAbsRedenen(absRedenen);
+  document.getElementById('new-reden').value = '';
+  renderRedenen(); showToast(val + ' toegevoegd');
+}
+function deleteReden(i) {
+  if (!confirm('Verwijder reden "' + absRedenen[i] + '"?')) return;
+  absRedenen.splice(i, 1); saveAbsRedenen(absRedenen);
+  renderRedenen(); showToast('Verwijderd');
+}
+
+// ─── CATEGORIEËN ───
+function renderCats() {
+  const cont = document.getElementById('cat-lijst'); cont.innerHTML = '';
+  categories.forEach((c, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm)';
+    row.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text)">${c}</span>
+      <button onclick="deleteCat(${i})" style="padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:11px;cursor:pointer">✕</button>`;
+    cont.appendChild(row);
+  });
+}
+async function addCat() {
+  const val = document.getElementById('new-cat').value.trim();
+  if (!val || categories.includes(val)) { showToast(val?'Bestaat al':'Vul een naam in'); return; }
+  categories.push(val); saveCategories(categories);
+  document.getElementById('new-cat').value = '';
+  if (supabaseReady) {
+    const res = await sbFetch('categories','POST',{naam:val, sort_order:categories.length});
+    if (res && res._error) showToast('⚠️ Supabase: niet opgeslagen in cloud');
+  }
+  renderCats(); showToast(val + ' toegevoegd');
+}
+async function deleteCat(i) {
+  if (!confirm('Verwijder categorie "' + categories[i] + '"?')) return;
+  const naam = categories[i]; categories.splice(i, 1); saveCategories(categories);
+  if (supabaseReady) await sbFetch('categories?naam=eq.' + encodeURIComponent(naam), 'DELETE');
+  renderCats(); showToast(naam + ' verwijderd');
+}
+
+// ─── SPELERSFORMULIER LINKS ───
+function renderSpelerLinks() {
+  const cont = document.getElementById('speler-links');
+  if (!players.length) {
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Voeg eerst spelers toe via Selectie.</div>';
+    return;
+  }
+  const base = location.origin + location.pathname.replace('instellingen.html','') + 'spelerformulier.html?token=';
+  cont.innerHTML = '';
+  sortedPlayers(players).forEach(p => {
+    const token = btoa(p.id + ':' + p.naam);
+    const url   = base + encodeURIComponent(token);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)';
+    row.innerHTML = `
+      <span style="flex:1;font-size:12px;color:var(--text)">${p.naam}</span>
+      <button onclick="deelFormulier('${url}','${p.naam}')" style="padding:4px 10px;background:transparent;border:1px solid var(--accent);border-radius:4px;color:var(--accent);font-size:11px;cursor:pointer">📲 Deel</button>`;
+    cont.appendChild(row);
+  });
+}
+function deelFormulier(url, naam) {
+  if (navigator.share) {
+    navigator.share({ title:'Spelersformulier ' + naam, text:'Vul je formulier in voor FCP 16-2', url });
+  } else {
+    navigator.clipboard?.writeText(url).then(() => showToast('Link gekopieerd'));
+  }
+}
+
+async function onSupabaseReady() {
+  const data = await loadFromSupabase();
+  if (data.players)    players    = data.players;
+  if (data.categories) categories = data.categories;
+  if (data.absRedenen) absRedenen = data.absRedenen;
+  renderRedenen();
+  renderCats();
+  renderSpelerLinks();
+}
+
+// Init
+loadCfgFields();
+renderThemaKnoppen();
+loadSbFields();
+renderFormaties();
+renderRedenen();
+renderCats();
+renderSpelerLinks();
+initManifest();
+initSupabase().then(ok => { if (ok) onSupabaseReady(); });
+</script>
+</body>
+</html>

@@ -10,6 +10,15 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 <link rel="stylesheet" href="style.css">
+<script>
+(function(){
+  const t={'groen':{'--accent':'#a8e040','--bg':'#0a1200','--bg2':'#0f1a04','--bg3':'#161f06','--text':'#e8f0d8','--text2':'#b0c890','--text3':'#708050','--line':'#1e2e0a','--line2':'#263810','--red':'#f04040'},'blauw':{'--accent':'#40a8f0','--bg':'#000e1a','--bg2':'#04121e','--bg3':'#061624','--text':'#d8eaf8','--text2':'#90b8e0','--text3':'#507080','--line':'#0a1e2e','--line2':'#102638','--red':'#f04040'},'oranje':{'--accent':'#f09040','--bg':'#1a0e00','--bg2':'#1e1204','--bg3':'#241606','--text':'#f8ead8','--text2':'#e0b890','--text3':'#806050','--line':'#2e1e0a','--line2':'#382610','--red':'#f04040'},'paars':{'--accent':'#a080f8','--bg':'#0e0a1a','--bg2':'#120e1e','--bg3':'#161224','--text':'#e8d8f8','--text2':'#b090e0','--text3':'#705080','--line':'#1e1a2e','--line2':'#261e38','--red':'#f04040'}};
+  const k=localStorage.getItem('fcp_thema')||'groen';
+  const m=t[k]||t.groen;
+  const r=document.documentElement.style;
+  Object.entries(m).forEach(([p,v])=>r.setProperty(p,v));
+})();
+</script>
 </head>
 <body>
 <nav class="nav">
@@ -27,11 +36,7 @@
 <div class="page-wrap">
   <div class="page-header">
     <div class="page-title">Opstelling</div>
-    <div style="display:flex;gap:6px;margin-top:8px">
-      <button class="thu-uit-btn active" id="btn-f-4222" onclick="setFormatie('4222')">4-2-2-2</button>
-      <button class="thu-uit-btn" id="btn-f-4231" onclick="setFormatie('4231')">4-2-3-1</button>
-      <button class="thu-uit-btn" id="btn-f-442"  onclick="setFormatie('442')">4-4-2 ruit</button>
-    </div>
+    <div id="formatie-knoppen" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;overflow-x:auto;padding-bottom:2px"></div>
   </div>
 
   <div class="field-wrap">
@@ -89,10 +94,26 @@ let lineup   = state.lineup;
 let activeFormatie = state.formatie;
 let currentPosId = null;
 
+function renderFormatieKnoppen() {
+  FORMATIES = loadFormaties();
+  const cont = document.getElementById('formatie-knoppen');
+  cont.innerHTML = '';
+  Object.entries(FORMATIES).forEach(([key, f]) => {
+    const btn = document.createElement('button');
+    btn.className = 'thu-uit-btn' + (key === activeFormatie ? ' active' : '');
+    btn.id = 'btn-f-' + key;
+    btn.textContent = f.label;
+    btn.onclick = () => setFormatie(key);
+    cont.appendChild(btn);
+  });
+}
+
 function setFormatie(f) {
   activeFormatie = f;
   localStorage.setItem('fcp_formatie', f);
-  ['4222','4231','442'].forEach(k => document.getElementById('btn-f-'+k).classList.toggle('active', k === f));
+  document.querySelectorAll('#formatie-knoppen .thu-uit-btn').forEach(b => b.classList.remove('active'));
+  const active = document.getElementById('btn-f-' + f);
+  if (active) active.classList.add('active');
   buildField();
 }
 
@@ -241,7 +262,9 @@ async function onSupabaseReady() {
 }
 
 // Init
-document.getElementById('btn-f-' + activeFormatie).classList.add('active');
+FORMATIES = loadFormaties();
+if (!FORMATIES[activeFormatie]) activeFormatie = Object.keys(FORMATIES)[0];
+renderFormatieKnoppen();
 buildField();
 initScrollTop();
 initManifest();

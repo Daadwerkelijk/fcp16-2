@@ -372,29 +372,46 @@ const ALL_POS_OPTS = ['Keeper','LB','RB','CB-L','CB-R','VM-L','VM-R','AM-L','AM-
 
 // ─── THEMA'S ───
 const THEMAS = {
-  groen:  { name:'Groen',  accent:'#a8e040', accent2:'#7ab820', bg:'#0a1200', bg2:'#0f1a04', bg3:'#161f06', bg4:'#1f2e00', text:'#e8f0d8', text2:'#b0c890', text3:'#708050', line:'#1e2e0a', line2:'#263810', red:'#f05050' },
-  blauw:  { name:'Blauw',  accent:'#40a8f0', accent2:'#2080c0', bg:'#000e1a', bg2:'#04121e', bg3:'#061624', bg4:'#0a1e2e', text:'#d8eaf8', text2:'#90b8e0', text3:'#507080', line:'#0a1e2e', line2:'#102638', red:'#f05050' },
-  oranje: { name:'Oranje', accent:'#f09040', accent2:'#c06010', bg:'#1a0e00', bg2:'#1e1204', bg3:'#241606', bg4:'#2e1e08', text:'#f8ead8', text2:'#e0b890', text3:'#806050', line:'#2e1e0a', line2:'#382610', red:'#f05050' },
-  geel:   { name:'Geel',   accent:'#f0d040', accent2:'#c0a010', bg:'#141200', bg2:'#1a1800', bg3:'#201e00', bg4:'#2a2800', text:'#f8f0c0', text2:'#d8c860', text3:'#807840', line:'#282400', line2:'#343000', red:'#f05050' },
-  paars:  { name:'Paars',  accent:'#a080f8', accent2:'#7050c0', bg:'#0e0a1a', bg2:'#120e1e', bg3:'#161224', bg4:'#1e1830', text:'#e8d8f8', text2:'#b090e0', text3:'#705080', line:'#1e1a2e', line2:'#261e38', red:'#f05050' },
+  // ─── STIJL 3: STADIUM NIGHT (default) ───
+  stadium:  { name:'Stadium Night', accent:'#c8a840', accent2:'#a08020', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#c8d4f0', text2:'#8090b8', text3:'#2e3e60', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#c8a840,#f0c060)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
+  // ─── STIJL 1: SHARP & INDUSTRIAL ───
+  industrial:{ name:'Sharp & Industrial', accent:'#ff3a00', accent2:'#cc2e00', bg:'#0d0d0d', bg2:'#161616', bg3:'#1e1e1e', bg4:'#262626', text:'#f0f0f0', text2:'#a0a0a0', text3:'#444', line:'#1a1a1a', line2:'#222', red:'#ff3a00', accentGradient:'none', fieldBg:'#0a0a0a', fieldBorder:'#1a1a1a', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Unbounded',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'0px', cardShadow:'none', r:'0px', rsm:'0px' },
+  // ─── VARIANTEN STADIUM NIGHT ───
+  blauw:    { name:'Blauw', accent:'#4090f0', accent2:'#2070c0', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#c8d4f0', text2:'#8090b8', text3:'#2e3e60', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#4090f0,#80c0ff)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
+  groen:    { name:'Groen', accent:'#40c060', accent2:'#208040', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#c8d4f0', text2:'#8090b8', text3:'#2e3e60', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#40c060,#80f0a0)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
+  geel:     { name:'Geel', accent:'#f0d040', accent2:'#c0a010', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#c8d4f0', text2:'#8090b8', text3:'#2e3e60', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#f0d040,#f0f080)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
+  paars:    { name:'Paars', accent:'#a060f8', accent2:'#7040c0', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#c8d4f0', text2:'#8090b8', text3:'#2e3e60', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#a060f8,#c090ff)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
 };
 
-function loadThema() { return localStorage.getItem('fcp_thema') || 'groen'; }
+function loadThema() { return localStorage.getItem('fcp_thema') || 'stadium'; }
 function applyThema(key) {
-  const t = THEMAS[key] || THEMAS.groen;
+  const t = THEMAS[key] || THEMAS.stadium;
   const r = document.documentElement.style;
-  r.setProperty('--accent',  t.accent);
-  r.setProperty('--accent2', t.accent2);
-  r.setProperty('--bg',      t.bg);
-  r.setProperty('--bg2',     t.bg2);
-  r.setProperty('--bg3',     t.bg3);
-  r.setProperty('--bg4',     t.bg4);
-  r.setProperty('--text',    t.text);
-  r.setProperty('--text2',   t.text2);
-  r.setProperty('--text3',   t.text3);
-  r.setProperty('--line',    t.line);
-  r.setProperty('--line2',   t.line2);
-  r.setProperty('--red',     t.red);
+  r.setProperty('--accent',     t.accent);
+  r.setProperty('--accent2',    t.accent2);
+  r.setProperty('--bg',         t.bg);
+  r.setProperty('--bg2',        t.bg2);
+  r.setProperty('--bg3',        t.bg3);
+  r.setProperty('--bg4',        t.bg4);
+  r.setProperty('--text',       t.text);
+  r.setProperty('--text2',      t.text2);
+  r.setProperty('--text3',      t.text3);
+  r.setProperty('--line',       t.line);
+  r.setProperty('--line2',      t.line2);
+  r.setProperty('--red',        t.red);
+  r.setProperty('--gold',       t.accent);
+  r.setProperty('--accent-gradient', t.accentGradient);
+  r.setProperty('--field-bg',   t.fieldBg);
+  r.setProperty('--field-border', t.fieldBorder);
+  r.setProperty('--font-ui',    t.fontUI);
+  r.setProperty('--font-mono',  t.fontUI);
+  r.setProperty('--font-display', t.fontDisplay);
+  r.setProperty('--font-weight-title', t.fontWeight);
+  r.setProperty('--title-style', t.titleStyle);
+  r.setProperty('--badge-radius', t.badgeRadius);
+  r.setProperty('--card-shadow', t.cardShadow);
+  r.setProperty('--r',          t.r);
+  r.setProperty('--rsm',        t.rsm);
   localStorage.setItem('fcp_thema', key);
 }
 // Thema direct toepassen bij laden

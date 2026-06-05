@@ -9,12 +9,21 @@
 <title>Wedstrijden — FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script>
 (function(){
-  const t={'groen':{'--accent':'#a8e040','--accent2':'#7ab820','--bg':'#0a1200','--bg2':'#0f1a04','--bg3':'#161f06','--bg4':'#1f2e00','--text':'#e8f0d8','--text2':'#b0c890','--text3':'#708050','--line':'#1e2e0a','--line2':'#263810','--red':'#f05050'},'blauw':{'--accent':'#40a8f0','--accent2':'#2080c0','--bg':'#000e1a','--bg2':'#04121e','--bg3':'#061624','--bg4':'#0a1e2e','--text':'#d8eaf8','--text2':'#90b8e0','--text3':'#507080','--line':'#0a1e2e','--line2':'#102638','--red':'#f05050'},'oranje':{'--accent':'#f09040','--accent2':'#c06010','--bg':'#1a0e00','--bg2':'#1e1204','--bg3':'#241606','--bg4':'#2e1e08','--text':'#f8ead8','--text2':'#e0b890','--text3':'#806050','--line':'#2e1e0a','--line2':'#382610','--red':'#f05050'},'geel':{'--accent':'#f0d040','--accent2':'#c0a010','--bg':'#141200','--bg2':'#1a1800','--bg3':'#201e00','--bg4':'#2a2800','--text':'#f8f0c0','--text2':'#d8c860','--text3':'#807840','--line':'#282400','--line2':'#343000','--red':'#f05050'},'paars':{'--accent':'#a080f8','--accent2':'#7050c0','--bg':'#0e0a1a','--bg2':'#120e1e','--bg3':'#161224','--bg4':'#1e1830','--text':'#e8d8f8','--text2':'#b090e0','--text3':'#705080','--line':'#1e1a2e','--line2':'#261e38','--red':'#f05050'}};
-  const k=localStorage.getItem('fcp_thema')||'groen';
-  const m=t[k]||t.groen;
+  const t={
+    'stadium':{'--accent':'#c8a840','--accent2':'#a08020','--bg':'#080c14','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#c8d4f0','--text2':'#8090b8','--text3':'#2e3e60','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--gold':'#c8a840','--accent-gradient':'linear-gradient(90deg,#c8a840,#f0c060)','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Space Grotesk',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'20px','--card-shadow':'none','--r':'10px','--rsm':'7px'},
+    'industrial':{'--accent':'#ff3a00','--accent2':'#cc2e00','--bg':'#0d0d0d','--bg2':'#161616','--bg3':'#1e1e1e','--bg4':'#262626','--text':'#f0f0f0','--text2':'#a0a0a0','--text3':'#444','--line':'#1a1a1a','--line2':'#222','--red':'#ff3a00','--gold':'#ff3a00','--accent-gradient':'none','--field-bg':'#0a0a0a','--field-border':'#1a1a1a','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Unbounded',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'0px','--card-shadow':'none','--r':'0px','--rsm':'0px'},
+    'blauw':{'--accent':'#4090f0','--accent2':'#2070c0','--bg':'#080c14','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#c8d4f0','--text2':'#8090b8','--text3':'#2e3e60','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--gold':'#4090f0','--accent-gradient':'linear-gradient(90deg,#4090f0,#80c0ff)','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Space Grotesk',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'20px','--card-shadow':'none','--r':'10px','--rsm':'7px'},
+    'groen':{'--accent':'#40c060','--accent2':'#208040','--bg':'#080c14','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#c8d4f0','--text2':'#8090b8','--text3':'#2e3e60','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--gold':'#40c060','--accent-gradient':'linear-gradient(90deg,#40c060,#80f0a0)','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Space Grotesk',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'20px','--card-shadow':'none','--r':'10px','--rsm':'7px'},
+    'geel':{'--accent':'#f0d040','--accent2':'#c0a010','--bg':'#080c14','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#c8d4f0','--text2':'#8090b8','--text3':'#2e3e60','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--gold':'#f0d040','--accent-gradient':'linear-gradient(90deg,#f0d040,#f0f080)','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Space Grotesk',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'20px','--card-shadow':'none','--r':'10px','--rsm':'7px'},
+    'paars':{'--accent':'#a060f8','--accent2':'#7040c0','--bg':'#080c14','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#c8d4f0','--text2':'#8090b8','--text3':'#2e3e60','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--gold':'#a060f8','--accent-gradient':'linear-gradient(90deg,#a060f8,#c090ff)','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Space Grotesk',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'20px','--card-shadow':'none','--r':'10px','--rsm':'7px'}
+  };
+  const k=localStorage.getItem('fcp_thema')||'stadium';
+  const m=t[k]||t.stadium;
   const r=document.documentElement.style;
   Object.entries(m).forEach(([p,v])=>r.setProperty(p,v));
 })();
@@ -60,7 +69,7 @@
 
     <!-- Ranking -->
     <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--line2)">
-      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:var(--text);margin-bottom:10px">Seizoen ranking</div>
+      <div style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--text);margin-bottom:10px">Seizoen ranking</div>
       <div id="ranking-cont"><div style="font-size:12px;color:var(--text3)">Vul cijfers in bij wedstrijden om de ranking te zien.</div></div>
     </div>
   </div>
@@ -170,7 +179,7 @@ function renderWedstrijden() {
             <span style="flex:1;font-size:12px;color:var(--text)">${p.naam}</span>
             <input type="number" min="1" max="10" step="0.5" placeholder="—" value="${rating}"
               id="rat-${w.id}-${p.id}"
-              style="width:52px;padding:4px 6px;background:var(--bg3);border:1px solid var(--line2);border-radius:4px;color:var(--accent);font-family:'Fraunces',serif;font-size:16px;font-weight:600;text-align:center;outline:none">
+              style="width:52px;padding:4px 6px;background:var(--bg3);border:1px solid var(--line2);border-radius:4px;color:var(--accent);font-family:var(--font-display);font-size:16px;font-weight:600;text-align:center;outline:none">
           </div>`;
         }).join('')}
       </div>` : '';
@@ -194,20 +203,20 @@ function renderWedstrijden() {
         <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
           <div style="flex:1;min-width:130px">
             <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Formatie</div>
-            <select id="ws-form-${w.id}" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none">
+            <select id="ws-form-${w.id}" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none">
               <option value="">— geen —</option>${lineupOpties}
             </select>
           </div>
           <div style="flex:1;min-width:130px">
             <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Man of the Match ⭐</div>
-            <select id="ws-motm-${w.id}" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none">
+            <select id="ws-motm-${w.id}" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none">
               <option value="">— geen —</option>${motmOptions}
             </select>
           </div>
         </div>
         ${ratingsHtml}
         <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Opmerkingen</div>
-        <textarea style="width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none;resize:vertical;min-height:65px;line-height:1.5" id="ws-opm-${w.id}" placeholder="Hoe verliep de wedstrijd?">${w.opmerkingen||''}</textarea>
+        <textarea style="width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none;resize:vertical;min-height:65px;line-height:1.5" id="ws-opm-${w.id}" placeholder="Hoe verliep de wedstrijd?">${w.opmerkingen||''}</textarea>
         <div class="player-actions">
           <button class="save-btn" onclick="saveWedstrijd('${w.id}')">💾 Opslaan</button>
           <button class="del-btn" onclick="deleteWedstrijd('${w.id}')">Verwijder</button>
@@ -231,19 +240,19 @@ function renderRanking() {
   const motmRanked = sortedPlayers(players).map(p => ({ p, motm: motmMap[p.id] })).filter(x => x.motm > 0).sort((a,b) => b.motm - a.motm);
   let html = '';
   if (ranked.length) {
-    html += `<div style="font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">Gemiddeld cijfer</div>`;
+    html += `<div style="font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">Gemiddeld cijfer</div>`;
     ranked.forEach((x,i) => {
       const col = x.avg>=8?'#40f090':x.avg>=6.5?'#a8e040':x.avg>=5?'#f0c040':'#f07040';
       html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
         <span style="font-size:11px;color:var(--text3);min-width:16px">${i+1}</span>
         <span style="flex:1;font-size:13px;color:var(--text)">${x.p.naam}</span>
         <span style="font-size:11px;color:var(--text3)">${x.count}×</span>
-        <span style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:${col};min-width:32px;text-align:right">${x.avg||'—'}</span>
+        <span style="font-family:var(--font-display);font-size:18px;font-weight:600;color:${col};min-width:32px;text-align:right">${x.avg||'—'}</span>
       </div>`;
     });
   }
   if (motmRanked.length) {
-    html += `<div style="font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--text);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line2)">Man of the Match</div>`;
+    html += `<div style="font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line2)">Man of the Match</div>`;
     motmRanked.forEach((x,i) => {
       html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <span style="font-size:11px;color:var(--text3);min-width:16px">${i+1}</span>

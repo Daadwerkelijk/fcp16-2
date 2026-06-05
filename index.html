@@ -67,7 +67,7 @@ if(localStorage.getItem('sb_url')&&localStorage.getItem('sb_key')){
       <!-- Navigatieknoppen in stat-card stijl -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
         <a href="schema.html"      class="stat-card" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:12px 14px">
-          <span style="font-size:20px">📅</span><div><div class="stat-label" style="font-size:12px;color:var(--accent)">Trainen</div><div style="font-size:10px;color:var(--text3)">Schema & oefeningen</div></div>
+          <span style="font-size:20px">📅</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Trainen</div><div style="font-size:10px;color:var(--text3)">Schema & oefeningen</div></div>
         </a>
         <a href="opstelling.html"  class="stat-card" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:12px 14px">
           <span style="font-size:20px">🟢</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Opstelling</div><div style="font-size:10px;color:var(--text3)">Formaties & veld</div></div>
@@ -104,7 +104,7 @@ if(localStorage.getItem('sb_url')&&localStorage.getItem('sb_key')){
         <div style="font-size:9px;color:var(--text3);margin-top:1px">wedstrijden</div>
       </div>
       <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--line2)">
-        <div style="font-size:16px;font-weight:700;color:var(--accent);font-family:var(--font-display)" id="stat-wins">0</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-wins">0</div>
         <div style="font-size:9px;color:var(--text3);margin-top:1px">gewonnen</div>
       </div>
       <div style="flex:1;padding:10px 6px;text-align:center">
@@ -119,20 +119,14 @@ if(localStorage.getItem('sb_url')&&localStorage.getItem('sb_key')){
     <div class="principle-grid" id="principle-grid"></div>
   </div>
 
-  <!-- Supabase config -->
-  <div class="config-banner" id="config-banner">
-    <strong>🔗 Koppel Supabase voor gedeeld gebruik</strong><br>
-    Maak een gratis account op <strong>supabase.com</strong>, maak een project aan en voer de SQL-bestanden uit.<br>
-    Vind URL en key via: <code>Project Settings → API → Legacy anon key</code>
-    <div class="config-inputs">
-      <input class="config-input" id="sb-url" placeholder="https://xxxx.supabase.co" type="url">
-      <input class="config-input" id="sb-key" placeholder="anon public key (eyJ...)">
-      <button class="config-save-btn" onclick="saveSupabaseConfig()">Verbinding opslaan en testen</button>
-    </div>
-  </div>
-  <div class="sync-bar sync-loading" id="sync-bar" style="display:none">
+  <!-- Supabase status balk -->
+  <div id="sync-bar" class="sync-bar sync-loading" style="display:none">
     <span id="sync-msg" style="flex:1">Verbinden...</span>
-    <button onclick="resetSupabaseConfig()" style="padding:3px 9px;background:transparent;border:1px solid currentColor;border-radius:4px;color:inherit;font-family:var(--font-mono);font-size:10px;cursor:pointer">✏️ Wijzig</button>
+    <a href="instellingen.html" style="padding:3px 9px;background:transparent;border:1px solid currentColor;border-radius:4px;color:inherit;font-family:var(--font-mono);font-size:10px;cursor:pointer;text-decoration:none">⚙️</a>
+  </div>
+  <div id="config-banner" style="display:none">
+    <input id="sb-url" type="hidden">
+    <input id="sb-key" type="hidden">
   </div>
 </div>
 

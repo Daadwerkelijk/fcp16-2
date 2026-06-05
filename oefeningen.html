@@ -46,7 +46,10 @@
   <div class="page-header">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div class="page-title">Oefeningen</div>
-      <button class="add-btn" onclick="openOefModal(null)">+ Nieuw</button>
+      <div style="display:flex;gap:7px">
+        <button class="add-btn" style="background:transparent;border-color:var(--line2);color:var(--text2)" onclick="openCatModal()">⚙️</button>
+        <button class="add-btn" onclick="openOefModal(null)">+ Oefening</button>
+      </div>
     </div>
   </div>
   <div class="filter-scroll" id="cat-filters"></div>
@@ -136,7 +139,7 @@ function renderCatFilters() {
     cont.appendChild(btn);
   });
   const mgr = document.createElement('button');
-  mgr.className = 'filter-btn'; mgr.textContent = '⚙️ Categorieën'; mgr.onclick = openCatModal;
+  mgr.className = 'filter-btn'; mgr.style.display = 'none'; mgr.onclick = openCatModal;
   cont.appendChild(mgr);
 }
 

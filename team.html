@@ -49,7 +49,7 @@
       <div class="page-title">Dashboard</div>
       <a href="instellingen.html" style="padding:6px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text3);font-size:13px;text-decoration:none">⚙️</a>
     </div>
-    <div class="page-sub">Aanwezigheidsoverzicht seizoen 2026/2027</div>
+    <div class="page-sub" id="dashboard-sub">Seizoen 2026/2027</div>
   </div>
 
   <div style="padding:16px">
@@ -65,7 +65,7 @@
       Skills overzicht
     </div>
     <div id="profiel-content" style="font-size:12px;color:var(--text3);line-height:1.7">
-      Skills worden automatisch ingeladen zodra een speler het formulier invult. Deel formulierlinks via <strong style="color:var(--text2)">Selectie → speler</strong>.
+      Formulieren worden automatisch ingeladen zodra spelers ze invullen.
     </div>
   </div>
 </div>
@@ -249,7 +249,7 @@ function renderTeamProfiel() {
     (p.skills && Object.keys(p.skills).length > 0) || spelerSkills[p.id]
   );
   if (!withSkills.length) {
-    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);line-height:1.7">Nog geen formulieren ingevuld door spelers.<br><br><strong style="color:var(--text2)">Tip:</strong> Deel formulierlinks via Selectie → speler → 📲 Deel.</div>';
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Nog geen formulieren ingevuld door spelers.</div>';
     return;
   }
   // Merge skills: formulier heeft prioriteit boven oud Excel
@@ -300,11 +300,14 @@ async function onSupabaseReady() {
   if (data.aanwezigheid) { aanwezigheid = data.aanwezigheid; }
   if (data.customWeken)  { customWeken  = data.customWeken; }
   if (data.absRedenen)   { absRedenen   = data.absRedenen; }
+  if (data.teamConfig)   { const sub = document.getElementById('dashboard-sub'); if (sub) sub.textContent = data.teamConfig.subtitel || ''; }
   await laadAlleFormulieren();
   renderAanwOverzicht();
   renderTeamProfiel();
 }
 
+const cfg = loadTeamInstellingen(); const sub = document.getElementById('dashboard-sub'); if (sub) sub.textContent = cfg.subtitel || '';
+const _cfg = loadTeamInstellingen(); const _sub = document.getElementById('dashboard-sub'); if (_sub) _sub.textContent = _cfg.subtitel || '';
 renderAanwOverzicht();
 renderTeamProfiel();
 initScrollTop(); initManifest();

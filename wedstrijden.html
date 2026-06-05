@@ -42,6 +42,26 @@
 <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
 <div class="toast" id="toast"></div>
 
+<!-- Edit wedstrijd modal -->
+<div class="bmodal-overlay" id="bmodalEditWed" onclick="if(event.target===this)closeEditWed()">
+  <div class="bmodal">
+    <div class="bmodal-title">Wedstrijd bewerken</div>
+    <div class="bmodal-label">Tegenstander</div>
+    <input class="bmodal-input" id="edit-wed-teg" placeholder="Tegenstander">
+    <div class="bmodal-label">Datum</div>
+    <input class="bmodal-input" id="edit-wed-datum" type="date">
+    <div class="bmodal-label">Locatie</div>
+    <div style="display:flex;gap:7px;margin-bottom:2px">
+      <button class="thu-uit-btn active" id="edit-btn-thuis" onclick="setEditThuisUit('thuis')">Thuis</button>
+      <button class="thu-uit-btn" id="edit-btn-uit" onclick="setEditThuisUit('uit')">Uit</button>
+    </div>
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeEditWed()">Annuleer</button>
+      <button class="bmodal-save" onclick="saveEditWed()">💾 Opslaan</button>
+    </div>
+  </div>
+</div>
+
 <div class="page-wrap">
   <div class="page-header">
     <div class="page-title">Wedstrijden</div>
@@ -51,10 +71,10 @@
     <div class="add-form">
       <div class="form-title">+ Nieuwe wedstrijd</div>
       <div class="form-row">
-        <input class="form-input" id="wed-teg" placeholder="Tegenstander" type="text">
+        <input class="form-input" id="wed-teg" placeholder="Tegenstander" type="text" style="flex:2">
+        <input class="form-input" id="wed-datum" type="date" style="flex:1;min-width:130px">
       </div>
       <div class="form-row">
-        <input class="form-input" id="wed-datum" type="date" style="max-width:160px">
         <div class="thu-uit-btns" style="flex:1">
           <button class="thu-uit-btn active" id="btn-thuis" onclick="setThuisUit('thuis')">Thuis</button>
           <button class="thu-uit-btn" id="btn-uit"   onclick="setThuisUit('uit')">Uit</button>
@@ -154,16 +174,88 @@ function setMotm(wedId, playerId) {
   showToast(w.motm ? '⭐ MOTM: ' + (p ? p.naam : '') : 'MOTM verwijderd');
 }
 
+let editWedId = null;
+let editThuisUit = 'thuis';
+
+function setEditThuisUit(val) {
+  editThuisUit = val;
+  document.getElementById('edit-btn-thuis').classList.toggle('active', val === 'thuis');
+  document.getElementById('edit-btn-uit').classList.toggle('active', val === 'uit');
+}
+function openEditWed(id) {
+  const w = wedstrijden.find(x => x.id === id); if (!w) return;
+  editWedId = id;
+  document.getElementById('edit-wed-teg').value = w.tegenstander || '';
+  // Probeer datum terug te parsen naar ISO formaat
+  document.getElementById('edit-wed-datum').value = w.isoDate || '';
+  editThuisUit = w.thuis_uit || 'thuis';
+  setEditThuisUit(editThuisUit);
+  document.getElementById('bmodalEditWed').classList.add('open');
+}
+function closeEditWed() {
+  document.getElementById('bmodalEditWed').classList.remove('open');
+}
+async function saveEditWed() {
+  const w = wedstrijden.find(x => x.id === editWedId); if (!w) return;
+  const teg = document.getElementById('edit-wed-teg').value.trim();
+  if (!teg) { showToast('Vul een tegenstander in'); return; }
+  const rawDatum = document.getElementById('edit-wed-datum').value;
+  w.tegenstander = teg;
+  w.isoDate = rawDatum;
+  w.datum = rawDatum ? formatDatumShort(rawDatum) : w.datum;
+  w.thuis_uit = editThuisUit;
+  saveWedstrijden(wedstrijden);
+  if (supabaseReady) {
+    await sbFetch('wedstrijden?id=eq.' + editWedId, 'PATCH', {
+      tegenstander: w.tegenstander, datum: w.datum, thuis_uit: w.thuis_uit
+    });
+  }
+  closeEditWed();
+  renderWedstrijden();
+  showToast('Wedstrijd bijgewerkt');
+}
+
+function wedCategorie(w) {
+  if (!w.datum && !w.isoDate) return 'toekomst';
+  const nu = new Date(); nu.setHours(0,0,0,0);
+  let d;
+  if (w.isoDate) { d = new Date(w.isoDate); }
+  else {
+    // Probeer w.datum te parsen (bijv "15 aug" of "2026-08-15")
+    const p = w.datum ? new Date(w.datum) : null;
+    d = p && !isNaN(p) ? p : null;
+  }
+  if (!d) return 'gespeeld'; // score ingevuld = gespeeld
+  if (w.score_eigen > 0 || w.score_tegen > 0) return 'gespeeld';
+  const diff = d - nu;
+  if (diff < 0) return 'gespeeld';
+  if (diff < 7 * 24 * 60 * 60 * 1000) return 'volgend';
+  return 'toekomst';
+}
+
 function renderWedstrijden() {
   const list = document.getElementById('wed-list');
   if (!wedstrijden.length) { list.innerHTML = '<div style="font-size:12px;color:var(--text3)">Nog geen wedstrijden.</div>'; return; }
   list.innerHTML = '';
-  [...wedstrijden].reverse().forEach(w => {
-    const card = document.createElement('div');
-    card.className = 'card'; card.id = 'wcard-' + w.id;
-    const rc = w.score_eigen > w.score_tegen ? '#70e890' : w.score_eigen < w.score_tegen ? '#f04070' : '#f0c040';
-    const rl = w.score_eigen > w.score_tegen ? 'W' : w.score_eigen < w.score_tegen ? 'V' : 'G';
-    const motmP = w.motm ? players.find(p => p.id === w.motm) : null;
+
+  const gespeeld  = wedstrijden.filter(w => wedCategorie(w) === 'gespeeld');
+  const volgend   = wedstrijden.filter(w => wedCategorie(w) === 'volgend');
+  const toekomst  = wedstrijden.filter(w => wedCategorie(w) === 'toekomst');
+
+  function renderGroep(titel, kleur, border, lijst, omgekeerd = false) {
+    if (!lijst.length) return;
+    const hdr = document.createElement('div');
+    hdr.style.cssText = `font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${kleur};margin:14px 0 6px;padding-left:2px;display:flex;align-items:center;gap:8px`;
+    hdr.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${kleur};flex-shrink:0"></span>${titel}`;
+    list.appendChild(hdr);
+    const groep = omgekeerd ? [...lijst].reverse() : lijst;
+    groep.forEach(w => {
+      const card = document.createElement('div');
+      card.className = 'card'; card.id = 'wcard-' + w.id;
+      card.style.borderLeft = `3px solid ${border}`;
+      const rc = w.score_eigen > w.score_tegen ? 'var(--accent)' : w.score_eigen < w.score_tegen ? 'var(--red)' : 'var(--text3)';
+      const rl = w.score_eigen > w.score_tegen ? 'W' : w.score_eigen < w.score_tegen ? 'V' : 'G';
+      const motmP = w.motm ? players.find(p => p.id === w.motm) : null;
     const motmOptions = sortedPlayers(players).map(p =>
       `<option value="${p.id}" ${w.motm===p.id?'selected':''}>${p.naam}</option>`
     ).join('');
@@ -183,14 +275,15 @@ function renderWedstrijden() {
           </div>`;
         }).join('')}
       </div>` : '';
-    card.innerHTML = `
+      card.innerHTML = `
       <div class="card-hdr" onclick="this.closest('.card').classList.toggle('open')">
         <div class="wed-score-big" style="color:${rc}">${w.score_eigen}–${w.score_tegen}</div>
         <div class="card-info">
           <div class="card-title">${w.tegenstander}</div>
           <div class="card-sub">${w.datum||'–'} · ${w.thuis_uit} · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}</div>
         </div>
-        <span class="card-chev">▾</span>
+        <button onclick="event.stopPropagation();openEditWed('${w.id}')" style="padding:4px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0">✏️</button>
+        <span class="card-chev" style="margin-left:4px">▾</span>
       </div>
       <div class="card-body">
         <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Eindstand</div>
@@ -222,8 +315,13 @@ function renderWedstrijden() {
           <button class="del-btn" onclick="deleteWedstrijd('${w.id}')">Verwijder</button>
         </div>
       </div>`;
-    list.appendChild(card);
-  });
+      list.appendChild(card);
+    });
+  }
+
+  renderGroep('Eerstvolgende', 'var(--accent)', 'var(--accent)', volgend);
+  renderGroep('Toekomstige wedstrijden', 'var(--text3)', 'var(--line2)', toekomst);
+  renderGroep('Gespeeld', 'var(--text3)', 'var(--line)', gespeeld, true);
   renderRanking();
 }
 

@@ -105,6 +105,19 @@ function togglePosTag(pid, pos, el) {
 
 function deelSpelerFormulier(pid, naam) { deelFormulier(pid, naam); }
 
+async function wisFormulier(pid) {
+  if (!confirm('Formulier van deze speler wissen?')) return;
+  if (supabaseReady) {
+    await sbFetch('session_notes?note_key=eq.formulier:' + pid, 'DELETE');
+  }
+  // Verwijder ook uit cache
+  delete formulierCache[pid];
+  // Herrender de formuliersectie
+  const el = document.getElementById('formulier-' + pid);
+  if (el) el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:4px 0">Nog niet ingevuld</div>';
+  showToast('Formulier gewist');
+}
+
 // Formulier delen
 function deelFormulier(pid, naam) {
   const base = location.origin + location.pathname.replace('selectie.html','') + 'spelerformulier.html?token=';
@@ -234,7 +247,10 @@ function renderPlayerList() {
         <textarea class="player-textarea" id="ontw-${p.id}" placeholder="Week 5 — positiespel gaat beter...">${p.ontwikkeling||''}</textarea>
         <div class="player-section" style="display:flex;justify-content:space-between;align-items:center">
           <span>Spelersformulier</span>
-          <button onclick="deelFormulier('${p.id}',decodeURIComponent('${encodeURIComponent(p.naam)}'))" style="padding:3px 10px;background:transparent;border:1px solid var(--accent);border-radius:12px;color:var(--accent);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace">📲 Deel</button>
+          <span style="display:inline-flex;gap:6px">
+            <button onclick="deelFormulier('${p.id}',decodeURIComponent('${encodeURIComponent(p.naam)}'))" style="padding:3px 10px;background:transparent;border:1px solid var(--accent);border-radius:12px;color:var(--accent);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace">📲 Deel</button>
+            <button onclick="wisFormulier('${p.id}')" style="padding:3px 10px;background:transparent;border:1px solid var(--red);border-radius:12px;color:var(--red);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace" id="wisknop-${p.id}">✕ Wis</button>
+          </span>
         </div>
         <div id="formulier-${p.id}" style="margin:4px 0 8px"></div>
         <div class="player-actions">

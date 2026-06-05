@@ -30,16 +30,7 @@
   Object.entries(m).forEach(([p,v])=>r.setProperty(p,v));
 })();
 </script>
-<script>
-if(localStorage.getItem('sb_url')&&localStorage.getItem('sb_key')){
-  document.addEventListener('DOMContentLoaded',()=>{
-    const b=document.getElementById('config-banner');
-    const s=document.getElementById('sync-bar');
-    if(b)b.style.display='none';
-    if(s)s.style.display='flex';
-  });
-}
-</script>
+
 </head>
 <body>
 <nav class="nav">
@@ -47,7 +38,7 @@ if(localStorage.getItem('sb_url')&&localStorage.getItem('sb_key')){
   <a class="nav-btn" href="opstelling.html"><span class="nav-icon">🟢</span><span>Opstelling</span></a>
   <a class="nav-btn" href="selectie.html"><span class="nav-icon">👥</span><span>Selectie</span></a>
   <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">⚽</span><span>Wedstrijden</span></a>
-  <a class="nav-btn" href="schema.html"><span class="nav-icon">📅</span><span>Trainen</span></a>
+  <a class="nav-btn" href="trainen.html"><span class="nav-icon">📅</span><span>Trainen</span></a>
   <a class="nav-btn" href="oefeningen.html"><span class="nav-icon">📚</span><span>Oefeningen</span></a>
   <a class="nav-btn" href="team.html"><span class="nav-icon">📊</span><span>Dashboard</span></a>
 </nav>
@@ -66,23 +57,23 @@ if(localStorage.getItem('sb_url')&&localStorage.getItem('sb_key')){
       </div>
       <!-- Navigatieknoppen in stat-card stijl -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
-        <a href="schema.html"      class="stat-card" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:12px 14px">
-          <span style="font-size:20px">📅</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Trainen</div><div style="font-size:10px;color:var(--text3)">Schema & oefeningen</div></div>
+        <a href="trainen.html"      class="stat-card" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:12px 14px">
+          <span style="font-size:20px">📅</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Trainen</div><div style="font-size:10px;color:var(--text2)">Schema & oefeningen</div></div>
         </a>
         <a href="opstelling.html"  class="stat-card" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:12px 14px">
-          <span style="font-size:20px">🟢</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Opstelling</div><div style="font-size:10px;color:var(--text3)">Formaties & veld</div></div>
+          <span style="font-size:20px">🟢</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Opstelling</div><div style="font-size:10px;color:var(--text2)">Formaties & veld</div></div>
         </a>
         <a href="wedstrijden.html" class="stat-card" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:12px 14px">
-          <span style="font-size:20px">⚽</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Wedstrijden</div><div style="font-size:10px;color:var(--text3)">Resultaten & MOTM</div></div>
+          <span style="font-size:20px">⚽</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Wedstrijden</div><div style="font-size:10px;color:var(--text2)">Resultaten & MOTM</div></div>
         </a>
         <a href="selectie.html"    class="stat-card" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:12px 14px">
-          <span style="font-size:20px">👥</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Selectie</div><div style="font-size:10px;color:var(--text3)">Spelers & formulieren</div></div>
+          <span style="font-size:20px">👥</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Selectie</div><div style="font-size:10px;color:var(--text2)">Spelers & formulieren</div></div>
         </a>
         <a href="team.html"        class="stat-card" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:12px 14px">
-          <span style="font-size:20px">📊</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Dashboard</div><div style="font-size:10px;color:var(--text3)">Aanwezigheid & skills</div></div>
+          <span style="font-size:20px">📊</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Dashboard</div><div style="font-size:10px;color:var(--text2)">Aanwezigheid & skills</div></div>
         </a>
         <a href="oefeningen.html"  class="stat-card" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:12px 14px">
-          <span style="font-size:20px">📚</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Oefeningen</div><div style="font-size:10px;color:var(--text3)">Bibliotheek</div></div>
+          <span style="font-size:20px">📚</span><div><div class="stat-label" style="font-size:12px;color:var(--text2)">Oefeningen</div><div style="font-size:10px;color:var(--text2)">Bibliotheek</div></div>
         </a>
       </div>
     </div>
@@ -119,15 +110,9 @@ if(localStorage.getItem('sb_url')&&localStorage.getItem('sb_key')){
     <div class="principle-grid" id="principle-grid"></div>
   </div>
 
-  <!-- Supabase status balk -->
-  <div id="sync-bar" class="sync-bar sync-loading" style="display:none">
-    <span id="sync-msg" style="flex:1">Verbinden...</span>
-    <a href="instellingen.html" style="padding:3px 9px;background:transparent;border:1px solid currentColor;border-radius:4px;color:inherit;font-family:var(--font-mono);font-size:10px;cursor:pointer;text-decoration:none">⚙️</a>
-  </div>
-  <div id="config-banner" style="display:none">
-    <input id="sb-url" type="hidden">
-    <input id="sb-key" type="hidden">
-  </div>
+  <!-- Supabase hidden inputs voor app.js compatibiliteit -->
+  <div id="config-banner" style="display:none"><input id="sb-url" type="hidden"><input id="sb-key" type="hidden"></div>
+  <div id="sync-bar" style="display:none"><span id="sync-msg"></span></div>
 </div>
 
 <!-- Principe modal -->

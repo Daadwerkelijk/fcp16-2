@@ -35,7 +35,7 @@
   <a class="nav-btn" href="opstelling.html"><span class="nav-icon">🟢</span><span>Opstelling</span></a>
   <a class="nav-btn" href="selectie.html"><span class="nav-icon">👥</span><span>Selectie</span></a>
   <a class="nav-btn active" href="wedstrijden.html"><span class="nav-icon">⚽</span><span>Wedstrijden</span></a>
-  <a class="nav-btn" href="schema.html"><span class="nav-icon">📅</span><span>Trainen</span></a>
+  <a class="nav-btn" href="trainen.html"><span class="nav-icon">📅</span><span>Trainen</span></a>
   <a class="nav-btn" href="oefeningen.html"><span class="nav-icon">📚</span><span>Oefeningen</span></a>
   <a class="nav-btn" href="team.html"><span class="nav-icon">📊</span><span>Dashboard</span></a>
 </nav>
@@ -79,9 +79,7 @@
           <button class="thu-uit-btn active" id="btn-thuis" onclick="setThuisUit('thuis')">Thuis</button>
           <button class="thu-uit-btn" id="btn-uit"   onclick="setThuisUit('uit')">Uit</button>
         </div>
-      </div>
-      <div class="form-row">
-        <button class="form-btn" onclick="addWedstrijd()" style="width:100%">Toevoegen</button>
+        <button class="form-btn" onclick="addWedstrijd()" style="flex:0 0 auto;padding:8px 18px">Toevoegen</button>
       </div>
     </div>
 
@@ -112,7 +110,7 @@ async function addWedstrijd() {
   if (!teg) { showToast('Vul een tegenstander in'); return; }
   const rawDatum = document.getElementById('wed-datum').value;
   const datum = rawDatum ? formatDatumShort(rawDatum) : '';
-  const w = { id:genId(), tegenstander:teg, datum, thuis_uit:thuisUit, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null };
+  const w = { id:genId(), tegenstander:teg, datum, isoDate:rawDatum, thuis_uit:thuisUit, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null, gespeeld:false };
   if (supabaseReady) {
     // Alleen de basiskolommen sturen bij aanmaken
     const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, thuis_uit:w.thuis_uit, score_eigen:0, score_tegen:0, opmerkingen:'' });
@@ -216,21 +214,23 @@ async function saveEditWed() {
 }
 
 function wedCategorie(w) {
-  if (!w.datum && !w.isoDate) return 'toekomst';
+  if (w.gespeeld) return 'gespeeld';
   const nu = new Date(); nu.setHours(0,0,0,0);
-  let d;
-  if (w.isoDate) { d = new Date(w.isoDate); }
-  else {
-    // Probeer w.datum te parsen (bijv "15 aug" of "2026-08-15")
-    const p = w.datum ? new Date(w.datum) : null;
-    d = p && !isNaN(p) ? p : null;
-  }
-  if (!d) return 'gespeeld'; // score ingevuld = gespeeld
-  if (w.score_eigen > 0 || w.score_tegen > 0) return 'gespeeld';
+  let d = w.isoDate ? new Date(w.isoDate) : null;
+  if (!d) return 'toekomst';
   const diff = d - nu;
-  if (diff < 0) return 'gespeeld';
+  if (diff < 0) return 'volgend'; // datum voorbij maar niet bevestigd gespeeld
   if (diff < 7 * 24 * 60 * 60 * 1000) return 'volgend';
   return 'toekomst';
+}
+
+async function markeerGespeeld(id) {
+  const w = wedstrijden.find(x => x.id === id); if (!w) return;
+  w.gespeeld = true;
+  saveWedstrijden(wedstrijden);
+  if (supabaseReady) await sbFetch('wedstrijden?id=eq.' + id, 'PATCH', { gespeeld: true });
+  renderWedstrijden();
+  showToast('Wedstrijd gemarkeerd als gespeeld');
 }
 
 function renderWedstrijden() {
@@ -312,6 +312,7 @@ function renderWedstrijden() {
         <textarea style="width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none;resize:vertical;min-height:65px;line-height:1.5" id="ws-opm-${w.id}" placeholder="Hoe verliep de wedstrijd?">${w.opmerkingen||''}</textarea>
         <div class="player-actions">
           <button class="save-btn" onclick="saveWedstrijd('${w.id}')">💾 Opslaan</button>
+          ${!w.gespeeld ? `<button class="save-btn" style="background:transparent;border-color:var(--accent);color:var(--accent)" onclick="markeerGespeeld('${w.id}')">✓ Gespeeld</button>` : '<span style="font-size:11px;color:var(--accent)">✓ Gespeeld</span>'}
           <button class="del-btn" onclick="deleteWedstrijd('${w.id}')">Verwijder</button>
         </div>
       </div>`;

@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1200">
+<title>Trainen — FCP 16-2</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>
+(function(){
+  const t={
+    'stadium':{'--accent':'#c8a840','--accent2':'#a08020','--bg':'#080c14','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#c8d4f0','--text2':'#8090b8','--text3':'#4a5e80','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--gold':'#c8a840','--accent-gradient':'linear-gradient(90deg,#c8a840,#f0c060)','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Space Grotesk',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'20px','--card-shadow':'none','--r':'10px','--rsm':'7px'},
+    'industrial':{'--accent':'#ff3a00','--accent2':'#cc2e00','--bg':'#0d0d0d','--bg2':'#161616','--bg3':'#1e1e1e','--bg4':'#262626','--text':'#f0f0f0','--text2':'#a0a0a0','--text3':'#444','--line':'#1a1a1a','--line2':'#222','--red':'#ff3a00','--gold':'#ff3a00','--accent-gradient':'none','--field-bg':'#0a0a0a','--field-border':'#1a1a1a','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Unbounded',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'0px','--card-shadow':'none','--r':'0px','--rsm':'0px'},
+    'blauw':{'--accent':'#4090f0','--accent2':'#2070c0','--bg':'#080c14','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#c8d4f0','--text2':'#8090b8','--text3':'#4a5e80','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--gold':'#4090f0','--accent-gradient':'linear-gradient(90deg,#4090f0,#80c0ff)','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Space Grotesk',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'20px','--card-shadow':'none','--r':'10px','--rsm':'7px'},
+    'groen':{'--accent':'#40c060','--accent2':'#208040','--bg':'#080c14','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#c8d4f0','--text2':'#8090b8','--text3':'#4a5e80','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--gold':'#40c060','--accent-gradient':'linear-gradient(90deg,#40c060,#80f0a0)','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Space Grotesk',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'20px','--card-shadow':'none','--r':'10px','--rsm':'7px'},
+    'geel':{'--accent':'#f0d040','--accent2':'#c0a010','--bg':'#080c14','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#c8d4f0','--text2':'#8090b8','--text3':'#4a5e80','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--gold':'#f0d040','--accent-gradient':'linear-gradient(90deg,#f0d040,#f0f080)','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Space Grotesk',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'20px','--card-shadow':'none','--r':'10px','--rsm':'7px'},
+    'paars':{'--accent':'#a060f8','--accent2':'#7040c0','--bg':'#080c14','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#c8d4f0','--text2':'#8090b8','--text3':'#4a5e80','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--gold':'#a060f8','--accent-gradient':'linear-gradient(90deg,#a060f8,#c090ff)','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'Space Grotesk',sans-serif",'--font-mono':"'Space Grotesk',sans-serif",'--font-display':"'Space Grotesk',sans-serif",'--font-weight-title':'700','--title-style':'normal','--badge-radius':'20px','--card-shadow':'none','--r':'10px','--rsm':'7px'}
+  };
+  const k=localStorage.getItem('fcp_thema')||'stadium';
+  const m=t[k]||t.stadium;
+  const r=document.documentElement.style;
+  Object.entries(m).forEach(([p,v])=>r.setProperty(p,v));
+})();
+</script>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-btn" href="index.html"><span class="nav-icon">⚡</span><span>Start</span></a>
+  <a class="nav-btn" href="opstelling.html"><span class="nav-icon">🟢</span><span>Opstelling</span></a>
+  <a class="nav-btn" href="selectie.html"><span class="nav-icon">👥</span><span>Selectie</span></a>
+  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">⚽</span><span>Wedstrijden</span></a>
+  <a class="nav-btn active" href="trainen.html"><span class="nav-icon">📅</span><span>Trainen</span></a>
+  <a class="nav-btn" href="oefeningen.html"><span class="nav-icon">📚</span><span>Oefeningen</span></a>
+  <a class="nav-btn" href="team.html"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+</nav>
+<div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+<div class="toast" id="toast"></div>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="page-title">Trainen</div>
+      <button class="add-btn" onclick="openNieuweWeekModal()">+ Week</button>
+    </div>
+    
+  </div>
+  <div id="schema-content"></div>
+</div>
+
+<!-- Afwezigheid toevoegen modal -->
+<div class="bmodal-overlay" id="bmodalAanw" onclick="if(event.target===this)closeAanwPicker()">
+  <div class="bmodal">
+    <div class="bmodal-title">Afwezig toevoegen</div>
+    <div class="bmodal-label">Speler</div>
+    <select class="bmodal-select" id="aanwpick-speler"></select>
+    <div class="bmodal-label">Reden</div>
+    <select class="bmodal-select" id="aanwpick-reden"></select>
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeAanwPicker()">Annuleer</button>
+      <button class="bmodal-save" onclick="saveAanwPicker()">Toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Week aanmaken modal -->
+<div class="bmodal-overlay" id="bmodalWeek" onclick="if(event.target===this)closeBModalWeekDirect()">
+  <div class="bmodal">
+    <div class="bmodal-title" id="bmodalWeekTitle">Trainingsweek aanmaken</div>
+    <div class="bmodal-label">Startdatum week (maandag)</div>
+    <input class="bmodal-input" id="week-f-datum" type="date" onchange="onWeekDatumChange(this.value)"
+      style="font-size:16px;padding:12px;background:var(--bg3);border:2px solid var(--accent);color:var(--text);border-radius:var(--rsm)">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:6px;margin-bottom:12px;padding:8px 10px;background:var(--bg3);border-radius:var(--rsm)">
+      <span style="font-size:11px;color:var(--text3)">Weeknummer:</span>
+      <span id="week-f-nr" style="font-size:14px;font-weight:700;color:var(--accent)">—</span>
+    </div>
+    <div class="bmodal-label">Focus / naam week</div>
+    <input class="bmodal-input" id="week-f-focus" placeholder="Bijv: Counterpressing verdieping">
+    <div style="margin-top:14px;padding:12px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm)">
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Training 1</div>
+      <input class="bmodal-input" id="tr1-naam" value="Training 1" style="margin-bottom:8px">
+      <div id="tr1-blokken" style="display:flex;flex-direction:column;gap:5px;margin-bottom:7px"></div>
+      <button class="bmodal-add-stap" onclick="openPickOef(0)">+ Oefening toevoegen</button>
+    </div>
+    <div style="margin-top:8px;padding:12px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm)">
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Training 2</div>
+      <input class="bmodal-input" id="tr2-naam" value="Training 2" style="margin-bottom:8px">
+      <div id="tr2-blokken" style="display:flex;flex-direction:column;gap:5px;margin-bottom:7px"></div>
+      <button class="bmodal-add-stap" onclick="openPickOef(1)">+ Oefening toevoegen</button>
+    </div>
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeBModalWeekDirect()">Annuleer</button>
+      <button class="bmodal-save" onclick="saveNieuweWeek()">Week opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Oefening kiezen modal -->
+<div class="bmodal-overlay" id="bmodalPickOef" onclick="if(event.target===this)closeBModalPickOefDirect()">
+  <div class="bmodal">
+    <div class="bmodal-title">Oefening kiezen</div>
+    <div class="bmodal-label">Categorie</div>
+    <select class="bmodal-select" id="pick-cat" onchange="renderPickOefList()"></select>
+    <div id="pick-oef-list" style="display:flex;flex-direction:column;gap:5px;margin:10px 0;max-height:40dvh;overflow-y:auto"></div>
+    <button class="bmodal-add-stap" onclick="openNieuweOef()">+ Nieuwe oefening aanmaken</button>
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeBModalPickOefDirect()">Annuleer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nieuwe oefening snel aanmaken -->
+<div class="bmodal-overlay" id="bmodalQuickOef" onclick="if(event.target===this)closeQuickOef()">
+  <div class="bmodal">
+    <div class="bmodal-title">Oefening aanmaken</div>
+    <div class="bmodal-label">Naam</div>
+    <input class="bmodal-input" id="qoef-naam" placeholder="Naam oefening">
+    <div class="bmodal-label">Categorie</div>
+    <select class="bmodal-select" id="qoef-cat"></select>
+    <div class="bmodal-label">Tip / omschrijving</div>
+    <textarea class="bmodal-textarea" id="qoef-tip" placeholder="Korte omschrijving..."></textarea>
+    <div class="bmodal-label">URL (optioneel)</div>
+    <input class="bmodal-input" id="qoef-url" placeholder="https://..." type="url">
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeQuickOef()">Annuleer</button>
+      <button class="bmodal-save" onclick="saveQuickOef()">Aanmaken &amp; toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Week kopiëren modal -->
+<div class="bmodal-overlay" id="bmodalKopieer" onclick="if(event.target===this)closeBModalKopieer()">
+  <div class="bmodal">
+    <div class="bmodal-title">Week kopiëren</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">De oefeningen en trainingsopzet worden gekopieerd. Aanwezigheid en aantekeningen niet.</div>
+    <div class="bmodal-label">Startdatum nieuwe week (maandag)</div>
+    <input class="bmodal-input" id="kopieer-datum" type="date" onchange="onKopieerDatumChange(this.value)">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;margin-bottom:8px">
+      <span style="font-size:11px;color:var(--text3)">Weeknummer:</span>
+      <span id="kopieer-nr" style="font-size:13px;font-weight:500;color:var(--accent)">—</span>
+    </div>
+    <div class="bmodal-label">Focus / naam week</div>
+    <input class="bmodal-input" id="kopieer-focus" placeholder="Bijv: Herhaling counterpressing">
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeBModalKopieer()">Annuleer</button>
+      <button class="bmodal-save" onclick="saveKopieerWeek()">Kopiëren</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const SCHEMA=[
+  {week:1,focus:'Kennismaking 4-2-2-2',fase:'m1',sessies:[{dag:'Training 1',pr:['P6','P1'],blokken:[{t:'15\'',cat:'OPW',n:'Passeer-estafette namen leren',tip:'Tweetallen 10m, naam noemen.',url:''},{t:'15\'',cat:'CON',n:'Shuttle runs met bal',tip:'5-10-15m.',url:''},{t:'25\'',cat:'POS',n:'Rondo ruimte creëren',tip:'4+2 op 15x15m.',url:''},{t:'25\'',cat:'PAR',n:'Partijspel vrij observeren',tip:'7v7, geen instructies.',url:''},{t:'10\'',cat:'EVA',n:'Wat zagen jullie zelf?',tip:'Trainers zwijgen eerst.',url:''}]},{dag:'Training 2',pr:['P1','P6'],blokken:[{t:'10\'',cat:'OPW',n:'Tikspel met smal kanaal',tip:'30x12m.',url:''},{t:'15\'',cat:'CON',n:'Loopladder + smalle sprints',tip:'Kegelkanaal 2m breed.',url:''},{t:'25\'',cat:'POS',n:'4-2-2-2 posities stilstaand',tip:'Zone en beweging per positie.',url:''},{t:'30\'',cat:'PAR',n:'Partijspel bonus driehoek',tip:'Extra punt na 3-passes driehoek.',url:''},{t:'10\'',cat:'EVA',n:'Driehoek uitleggen',tip:'Steun voor én achter de bal.',url:''}]}]},
+  {week:2,focus:'Driehoekjes + doorlopen',fase:'m1',sessies:[{dag:'Training 3',pr:['P6','P1'],blokken:[{t:'10\'',cat:'OPW',n:'Rondo met positie-herstel',tip:'Na balverlies direct terugdrukken.',url:''},{t:'15\'',cat:'TEC',n:'Driehoek A-B-C doorlopen',tip:'Altijd beweging na de pas.',url:''},{t:'25\'',cat:'POS',n:'3-zones opbouw',tip:'Eerst 1 terugspeel toegestaan.',url:''},{t:'30\'',cat:'PAR',n:'Partijspel: punt voor dieptepass',tip:'Extra punt.',url:''},{t:'10\'',cat:'EVA',n:'Wanneer diep, wanneer wachten?',tip:'Spelers geven antwoord.',url:''}]},{dag:'Training 4',pr:['P1','P4'],blokken:[{t:'15\'',cat:'CON',n:'Interval passing sprint',tip:'A past naar B, sprint naar kegel.',url:''},{t:'20\'',cat:'TEC',n:'Aannemen onder lichte druk',tip:'A ontvangt, B druk, C vrij.',url:''},{t:'25\'',cat:'POS',n:'Rondo VM+2 omhoog',tip:'VM stapt uit cirkel.',url:''},{t:'25\'',cat:'PAR',n:'Partijspel 4-2-2-2 verplicht',tip:'Systeem verplicht.',url:''},{t:'10\'',cat:'EVA',n:'Wat kost nog nadenken?',tip:'Eerlijke vraag.',url:''}]}]},
+  {week:3,focus:'Counterpressing introductie',fase:'m1',sessies:[{dag:'Training 5',pr:['P4','P6'],blokken:[{t:'10\'',cat:'OPW',n:'Rondo met positie-herstel',tip:'Reflex opbouwen.',url:''},{t:'15\'',cat:'CON',n:'Duurloop met tempowisseling',tip:'6 sprints van 20m.',url:''},{t:'20\'',cat:'CPR',n:'Pressing trigger herkennen',tip:'3 triggers, demo 4 spelers.',url:''},{t:'25\'',cat:'CPR',n:'5 sec counterpressing reflex',tip:'Trainer telt. Druk bij 3.',url:''},{t:'20\'',cat:'PAR',n:'Partijspel pressing punt',tip:'Extra punt binnen 5 sec.',url:''},{t:'10\'',cat:'EVA',n:'Wie geeft het pressing-signaal?',tip:'Per positie.',url:''}]},{dag:'Training 6',pr:['P4','P1'],blokken:[{t:'15\'',cat:'CON',n:'Shuttle runs met bal',tip:'Sneller nu.',url:''},{t:'20\'',cat:'CPR',n:'2v2+1 counterpressing na verlies',tip:'Direct terugdrukken.',url:''},{t:'25\'',cat:'POS',n:'Opbouw keeper + backs',tip:'Zonder tegenstander.',url:''},{t:'25\'',cat:'PAR',n:'Vrij partijspel geen stoppage',tip:'Trainers observeren.',url:''},{t:'10\'',cat:'EVA',n:'Wat gaat al automatisch?',tip:'Positief afsluiten.',url:''}]}]},
+  {week:4,focus:'Integratie + oefenwedstrijd',fase:'m1',sessies:[{dag:'Training 7',pr:['P1','P4','P6'],blokken:[{t:'10\'',cat:'OPW',n:'Rondo VM+2 omhoog',tip:'Sneller dan week 2?',url:''},{t:'20\'',cat:'POS',n:'Opbouw alles samen',tip:'Keeper → backs → VM → AM → ST.',url:''},{t:'20\'',cat:'CPR',n:'Groepspressing vanuit AM',tip:'AM lokt, VM sluit aan.',url:''},{t:'35\'',cat:'PAR',n:'Gesimuleerde wedstrijd 2x15\'',tip:'Rust: 1 verbeterpunt.',url:''},{t:'10\'',cat:'EVA',n:'Klaar voor oefenwedstrijd?',tip:'Wat wil het team nog?',url:''}]},{dag:'Training 8 licht',pr:['P6'],blokken:[{t:'20\'',cat:'OPW',n:'Activatie passing + keeper',tip:'Rustig.',url:''},{t:'20\'',cat:'POS',n:'Vaste situaties 4-2-2-2',tip:'Hoekschop + vrije trap.',url:''},{t:'40\'',cat:'PAR',n:'Oefenwedstrijd of 11v11',tip:'Alles toepassen.',url:''},{t:'10\'',cat:'EVA',n:'Maand 1: wat heeft het team nodig?',tip:'Open gesprek.',url:''}]}]},
+  {week:5,focus:'Opbouw backs aanvallend',fase:'m2',sessies:[{dag:'Training 9',pr:['P3','P1'],blokken:[{t:'10\'',cat:'OPW',n:'Rondo VM+2 omhoog',tip:'Sneller tempo.',url:''},{t:'25\'',cat:'POS',n:'Backs derde-man run triggeren',tip:'Touch van VM = signaal.',url:''},{t:'25\'',cat:'TEC',n:'Derde-man combinatie back',tip:'AM trekt naar binnen.',url:''},{t:'25\'',cat:'PAR',n:'Backs-als-aanvallers partijvorm',tip:'Bonuspunt als back aanvallende zone bereikt.',url:''},{t:'10\'',cat:'EVA',n:'Terugkoppeling wedstrijd',tip:'Max 1 thema.',url:''}]},{dag:'Training 10',pr:['P3','P5'],blokken:[{t:'15\'',cat:'CON',n:'Interval pressing blok',tip:'3 min positiespel, op fluit pressing.',url:''},{t:'20\'',cat:'TEC',n:'AM in smal kanaal ontvangen',tip:'Kegels 3m breed.',url:''},{t:'25\'',cat:'POS',n:'Opbouw VM omhoog schuiven',tip:'Na 2e pas schuift VM 10m op.',url:''},{t:'25\'',cat:'PAR',n:'Partijspel punt opbouw via backs',tip:'Extra punt.',url:''},{t:'10\'',cat:'EVA',n:'Wanneer schuift VM mee?',tip:'Spelers beschrijven signaal.',url:''}]}]},
+  {week:6,focus:'Counterpressing als team',fase:'m2',sessies:[{dag:'Training 11',pr:['P4','P5'],blokken:[{t:'10\'',cat:'OPW',n:'Tikspel gepakt = twee persen',tip:'Counterpressing als opwarm.',url:''},{t:'25\'',cat:'CPR',n:'Groepspressing vanuit AM',tip:'AM lokt, VM wacht op signaal.',url:''},{t:'25\'',cat:'CPR',n:'Counterpressing nu 3 sec',tip:'Timer verscherpt.',url:''},{t:'25\'',cat:'PAR',n:'Partijspel pressing punt',tip:'Aparte pressing-score.',url:''},{t:'10\'',cat:'EVA',n:'Wie verantwoordelijk voor signaal?',tip:'Per linie.',url:''}]},{dag:'Training 12',pr:['P4','P5'],blokken:[{t:'15\'',cat:'CON',n:'Interval pressing blok',tip:'Sneller dan week 5?',url:''},{t:'25\'',cat:'CPR',n:'2v2+1 counterpressing',tip:'Hogere intensiteit.',url:''},{t:'40\'',cat:'PAR',n:'Partijvorm 2x15\' nabespreking',tip:'Spelers coachen zichzelf.',url:''},{t:'10\'',cat:'EVA',n:'Zelfbeoordeling per speler',tip:'1 goed, 1 beter.',url:''}]}]},
+  {week:7,focus:'Aanvalsmoment + smal kanaal',fase:'m2',sessies:[{dag:'Training 13',pr:['P2','P5'],blokken:[{t:'10\'',cat:'OPW',n:'Rondo met positie-herstel',tip:'Tempo hoog.',url:''},{t:'20\'',cat:'TEC',n:'Afwerken na combinatie via AM',tip:'VM loopt mee omhoog.',url:''},{t:'25\'',cat:'POS',n:'Smalle aanval via centraal kanaal',tip:'Alleen 3 centrale banen.',url:''},{t:'30\'',cat:'PAR',n:'Partijspel centraal kanaal bonus',tip:'Dubbel punt via beide AM-ers.',url:''},{t:'10\'',cat:'EVA',n:'Wanneer circulatie naar diepte?',tip:'Spelers beschrijven.',url:''}]},{dag:'Training 14',pr:['P2','P1'],blokken:[{t:'15\'',cat:'TEC',n:'1v1 afronden + rebound',tip:'2e aanvaller pakt rebound.',url:''},{t:'25\'',cat:'POS',n:'Geduldig circuleren tot opening',tip:'Punt na 6+ passes.',url:''},{t:'40\'',cat:'PAR',n:'Vrij spel groot veld',tip:'Patronen opschrijven.',url:''},{t:'10\'',cat:'EVA',n:'Wat willen spelers nog begrijpen?',tip:'Laat hen agenda bepalen.',url:''}]}]},
+  {week:8,focus:'Wedstrijdvoorbereiding maand 2',fase:'m2',sessies:[{dag:'Training 15',pr:['P1','P3','P4'],blokken:[{t:'10\'',cat:'OPW',n:'Positie activatie eigen plek',tip:'Korte passes.',url:''},{t:'20\'',cat:'POS',n:'Vaste situaties hoekschop vrije trap',tip:'Aanval én verdediging.',url:''},{t:'20\'',cat:'CPR',n:'Groepspressing herhaling',tip:'Compact blok.',url:''},{t:'35\'',cat:'PAR',n:'Wedstrijdsimulatie 2x15\'',tip:'Trainers zwijgen 2e helft.',url:''},{t:'10\'',cat:'EVA',n:'Automatismen zitten ze erin?',tip:'Eerlijk antwoord.',url:''}]},{dag:'Training 16 licht',pr:['P6'],blokken:[{t:'20\'',cat:'OPW',n:'Loosening keeper warming-up',tip:'Rustig.',url:''},{t:'20\'',cat:'POS',n:'Opbouw + 1 pressing drill',tip:'Max 20 min.',url:''},{t:'45\'',cat:'PAR',n:'Wedstrijd of 11v11',tip:'Alles toepassen.',url:''},{t:'10\'',cat:'EVA',n:'Maand 2 positief afsluiten',tip:'Wat laat het team goed zien?',url:''}]}]},
+  {week:9,focus:'Speler als leider',fase:'m3',sessies:[{dag:'Training 17',pr:['P1','P4'],blokken:[{t:'10\'',cat:'OPW',n:'Speler leidt warming-up',tip:'Rouleer per training.',url:''},{t:'20\'',cat:'POS',n:'Spelers leggen positie-oefening uit',tip:'Tweetallen coachen de groep.',url:''},{t:'25\'',cat:'CPR',n:'Hoge pressing als blok',tip:'Alle linies max 10m.',url:''},{t:'30\'',cat:'PAR',n:'Partijspel spelers coachen zichzelf',tip:'Trainers zwijgen volledig.',url:''},{t:'10\'',cat:'EVA',n:'Wat merkten jullie zonder coaching?',tip:'Eerlijk gesprek.',url:''}]},{dag:'Training 18',pr:['P5','P2'],blokken:[{t:'15\'',cat:'CON',n:'4x4 min positiespel hoge intensiteit',tip:'4 blokken van 4 min.',url:''},{t:'25\'',cat:'POS',n:'Overbezetting flank creëren',tip:'AM trekt centrum, back steekt door.',url:''},{t:'40\'',cat:'PAR',n:'Partijvorm 2x18\' nabespreking spelers',tip:'Spelers leiden.',url:''},{t:'10\'',cat:'EVA',n:'Patroon herkenning wedstrijden',tip:'Verbind training aan wedstrijden.',url:''}]}]},
+  {week:10,focus:'Variatie in aanval',fase:'m3',sessies:[{dag:'Training 19',pr:['P2','P3'],blokken:[{t:'10\'',cat:'OPW',n:'Rondo positie-herstel snel',tip:'Inpikker wisselt na 30 sec.',url:''},{t:'25\'',cat:'TEC',n:'Afwerken na derde-man back',tip:'Beide kanten.',url:''},{t:'30\'',cat:'POS',n:'3 aanvalsvarianten kies zelf',tip:'Teams kiezen per aanval.',url:''},{t:'25\'',cat:'PAR',n:'Partijspel punt per aanvalsvariant',tip:'Welke variant?',url:''},{t:'10\'',cat:'EVA',n:'Welke variant past bij jullie?',tip:'Spelers beslissen.',url:''}]},{dag:'Training 20',pr:['P1','P5'],blokken:[{t:'10\'',cat:'OPW',n:'Keeper backs uitspelen onder druk',tip:'4v2.',url:''},{t:'30\'',cat:'POS',n:'Centrale zone beheersen',tip:'VM max 2 touch. 8 passes = punt.',url:''},{t:'40\'',cat:'PAR',n:'Lange partijvorm 2x20\'',tip:'Observeer automatismen.',url:''},{t:'10\'',cat:'EVA',n:'Wat gaat automatisch?',tip:'Eerlijk antwoord.',url:''}]}]},
+  {week:11,focus:'Tegenstander lezen',fase:'m3',sessies:[{dag:'Training 21',pr:['P4','P1'],blokken:[{t:'10\'',cat:'OPW',n:'Speler leidt warming-up 2e keer',tip:'Andere speler.',url:''},{t:'25\'',cat:'POS',n:'Wat als tegenstander hoog druk zet?',tip:'Keeper + backs vs 3 drukkers.',url:''},{t:'25\'',cat:'CPR',n:'Hoge pressing als blok herhaling',tip:'Beter dan week 9?',url:''},{t:'30\'',cat:'PAR',n:'Partijspel hoog druk vs opbouw',tip:'Wissel rollen na 12 min.',url:''},{t:'10\'',cat:'EVA',n:'Hoe pas je aan zonder systeem los te laten?',tip:'Kernvraag maand 3.',url:''}]},{dag:'Training 22',pr:['P1','P4','P5'],blokken:[{t:'15\'',cat:'CON',n:'Intensiteitsblok 3x5\'',tip:'3x5 min op 70%, dan 2 min vol.',url:''},{t:'35\'',cat:'POS',n:'Alles samen opbouw pressing omschakeling',tip:'1 oefening alle principes.',url:''},{t:'35\'',cat:'PAR',n:'Wedstrijdsimulatie groot veld',tip:'Referee uit de groep.',url:''},{t:'10\'',cat:'EVA',n:'1 compliment + 1 aandachtspunt',tip:'Elk speler persoonlijk.',url:''}]}]},
+  {week:12,focus:'Kwartaal afsluiting',fase:'m3',sessies:[{dag:'Training 23',pr:['P6','P1'],blokken:[{t:'15\'',cat:'OPW',n:'Favoriete rondo van de groep',tip:'Spelers kiezen.',url:''},{t:'20\'',cat:'POS',n:'Beste oefening 3 maanden',tip:'Trainers voeren uit.',url:''},{t:'40\'',cat:'PAR',n:'Intern toernooi 4v4 smal veld',tip:'3-4 teams.',url:''},{t:'15\'',cat:'EVA',n:'Groepsgesprek wat hebben we bereikt?',tip:'Iedereen noemt 1 ding.',url:''}]},{dag:'Training 24 seizoensafsluiting',pr:['P6'],blokken:[{t:'20\'',cat:'OPW',n:'Activatie + keeper schoten',tip:'Rustig.',url:''},{t:'15\'',cat:'POS',n:'De 3 kernprincipes herhalen',tip:'Driehoek · counterpressing · diepte.',url:''},{t:'45\'',cat:'PAR',n:'Wedstrijd of 11v11',tip:'Trainers coachen niet.',url:''},{t:'10\'',cat:'EVA',n:'Iedereen 1 ding waar je trots op bent',tip:'Trainer als laatste.',url:''}]}]}
+];
+
+const state = loadState();
+let players      = state.players;
+let sessionNotes = state.sessionNotes;
+let aanwezigheid = state.aanwezigheid;
+let customWeken  = state.customWeken;
+let customOef    = state.customOef;
+let categories   = state.categories;
+let absRedenen   = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]');
+function saveAbsRedenen(r) { localStorage.setItem('fcp_abs_redenen', JSON.stringify(r)); }
+
+// Week builder state
+let weekBlokken   = [[], []];
+let activePickTi  = 0;
+let editingWeekIdx = null;
+let pickOefCallback = null;
+
+// ─── SCHEMA OPBOUWEN ───
+function buildSchema() {
+  const container = document.getElementById('schema-content');
+  container.innerHTML = '';
+
+  if (!customWeken.length) {
+    container.innerHTML = '<div style="padding:24px 16px;font-size:12px;color:var(--text3);line-height:1.8">Nog geen trainingsweken.<br>Tap <strong style=\"color:var(--text2)\">+ Week</strong> rechtsboven om je eerste week aan te maken.</div>';
+    return;
+  }
+
+  const nu = new Date(); nu.setHours(0,0,0,0);
+  const sorted = [...customWeken].map((w,wi)=>({w,wi})).sort((a,b)=>{
+    const da = a.w.isoDate ? new Date(a.w.isoDate).getTime() : a.wi*1000;
+    const db = b.w.isoDate ? new Date(b.w.isoDate).getTime() : b.wi*1000;
+    return da - db;
+  });
+
+  function weekCat(w) {
+    if (!w.isoDate) return 'toekomst';
+    const start = new Date(w.isoDate);
+    const eind  = new Date(start); eind.setDate(eind.getDate() + 6);
+    if (nu > eind) return 'verleden';
+    if (nu >= start && nu <= eind) return 'huidig';
+    return 'toekomst';
+  }
+
+  const verleden  = sorted.filter(i => weekCat(i.w) === 'verleden');
+  const huidig    = sorted.filter(i => weekCat(i.w) === 'huidig');
+  const toekomst  = sorted.filter(i => weekCat(i.w) === 'toekomst');
+
+  function sectionHdr(label, kleur) {
+    return `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${kleur};padding:12px 16px 6px;display:flex;align-items:center;gap:8px"><span style="width:6px;height:6px;border-radius:50%;background:${kleur};flex-shrink:0"></span>${label}</div>`;
+  }
+
+  let html = '<div style="padding-top:4px">';
+  if (toekomst.length) { html += sectionHdr('Komende weken', 'var(--text3)'); toekomst.forEach(i => { html += buildWeekHtml(i.w,'custom',i.wi); }); }
+  if (huidig.length)   { html += sectionHdr('Huidige week', 'var(--accent)'); huidig.forEach(i => { html += buildWeekHtml(i.w,'custom',i.wi); }); }
+  if (verleden.length) { html += sectionHdr('Verleden', 'var(--text3)'); [...verleden].reverse().forEach(i => { html += buildWeekHtml(i.w,'custom',i.wi); }); }
+  if (!toekomst.length && !huidig.length && !verleden.length) html += '<div style="padding:16px;font-size:12px;color:var(--text3)">Geen weken gevonden.</div>';
+  html += '</div>';
+
+  const sec = document.createElement('div');
+  sec.innerHTML = html;
+  container.appendChild(sec);
+
+  customWeken.forEach((w, wi) => w.sessies.forEach((_, si) => renderAanw('cw' + wi + '_' + si)));
+}
+
+function isHuidigeWeek(w) {
+  if (!w.isoDate) return false;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const start = new Date(w.isoDate);
+  const eind  = new Date(start); eind.setDate(eind.getDate() + 6);
+  return now >= start && now <= eind;
+}
+
+function buildWeekHtml(w, type, wi) {
+  const wid = type === 'custom' ? 'cw' + wi : 'w' + w.week;
+  const isoDate = type === 'schema' ? SCHEMA_DATES[w.week] : null;
+  const weekNr  = type === 'schema' ? SCHEMA_WEEKNR[w.week] : null;
+  const datumStr = isoDate ? formatDatumShort(isoDate) : (w.datum || '');
+  const huidig  = isHuidigeWeek(w);
+  const weekLabel = type === 'custom'
+    ? `<span style="font-size:10px;background:${huidig?'color-mix(in srgb,var(--accent) 15%,var(--bg))':'var(--bg3)'};border:1px solid ${huidig?'var(--accent)':'var(--line2)'};color:${huidig?'var(--accent)':'var(--text3)'};padding:1px 7px;border-radius:var(--rsm);font-weight:600">${w.weekNr || 'Eigen week'}${huidig?' · Nu':''}</span>`
+    : `Week ${weekNr} · ${datumStr}`;
+  const btnS = 'font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text3);cursor:pointer;line-height:1.4;vertical-align:middle';
+  const btnR = 'font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--red);cursor:pointer;line-height:1.4;font-weight:600';
+  const btnCopy = 'font-size:11px;padding:3px 9px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);cursor:pointer;line-height:1.4;font-weight:600';
+  const editDel = type === 'custom'
+    ? `<span style="display:inline-flex;gap:4px;flex-shrink:0">
+         <button onclick="openNieuweWeekModal(${wi});event.stopPropagation()" style="${btnS}">✏️</button>
+         <button onclick="kopieerWeek(${wi});event.stopPropagation()" style="${btnCopy}">⎘</button>
+         <button onclick="deleteCustomWeek(${wi});event.stopPropagation()" style="${btnR}">✕</button>
+       </span>`
+    : '';
+  const hdrStyle = huidig ? `background:color-mix(in srgb,var(--accent) 8%,var(--bg));border-left:3px solid var(--accent);padding-left:13px;` : '';
+  let html = `<div class="week-item" id="${wid}">
+    <div class="week-hdr" onclick="toggleWeek('${wid}')" style="${hdrStyle}">
+      <div style="flex:1"><div class="week-num">${weekLabel}</div><div class="week-focus">${w.focus}</div></div>
+      ${editDel}<span class="week-chev" style="margin-left:4px">▾</span>
+    </div><div class="week-body">`;
+  w.sessies.forEach((sess, si) => {
+    const sid = wid + 's' + si;
+    const nk  = wid + '_' + si;
+    const sn  = sessionNotes[nk] || '';
+    const prs = (sess.pr || []).map(p => { const t = PR_TAGS[p]; return t ? `<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:4px;background:${t.bg};color:${t.c}">${p}</span>` : ''; }).join('');
+    const sessNr = si + 1;
+    html += `<div class="session-item" id="${sid}">
+      <div class="session-hdr" onclick="toggleSession('${sid}')">
+        <div>
+          <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:2px">Training ${sessNr}</div>
+          <div class="session-day">${sess.dag}</div>
+          <div class="session-prs">${prs}</div>
+        </div>
+        <span class="session-chev">▾</span>
+      </div><div class="session-body">`;
+    html += buildBlokkenHtml(nk, sess.blokken || []);
+    html += `<div class="session-extra">
+      <button onclick="shareTraining('${nk}')" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-mono);font-size:11px;cursor:pointer;margin-bottom:12px">📲 Delen via WhatsApp</button>
+      <div class="session-extra-label" style="margin-bottom:6px">Afwezigheid</div>
+      <div id="aanw-${nk}"></div>
+      <button class="session-save-btn" style="margin-bottom:12px" onclick="saveAanwezigheid('${nk}')">💾 Aanwezigheid opslaan</button>
+      <div class="session-extra-label">Aantekeningen</div>
+      <textarea class="session-notes-ta" id="notes-${nk}" placeholder="Notities...">${sn}</textarea>
+      <button class="session-save-btn" onclick="saveNote('${nk}')">💾 Opslaan</button>
+    </div></div></div>`;
+  });
+  html += `<button class="week-add-btn" onclick="addExtraTraining('${wid}',${type==='custom'?wi:'null'})">+ Extra training toevoegen</button></div></div>`;
+  return html;
+}
+
+function toggleWeek(id)    { document.getElementById(id).classList.toggle('open'); }
+function toggleSession(id) { document.getElementById(id).classList.toggle('open'); }
+
+function buildBlokkenHtml(nk, blokken) {
+  let html = '';
+  blokken.forEach((b, bi) => {
+    const ct = CAT_STYLES[b.cat] || (CAT_BG[normaliseerCat(b.cat)] ? { bg:CAT_BG[normaliseerCat(b.cat)].bg, c:CAT_BG[normaliseerCat(b.cat)].c, label:normaliseerCat(b.cat) } : { bg:'#181818', c:'#888', label:normaliseerCat(b.cat) });
+    const urlKey = nk + '_b' + bi;
+    const savedUrl = sessionNotes[urlKey] || b.url || '';
+    const isFirst = bi === 0;
+    const isLast  = bi === blokken.length - 1;
+    html += `<div class="block-row">
+      <span class="btag" style="background:${ct.bg};color:${ct.c}">${ct.label}</span>
+      <div class="block-info">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1"><div class="block-name">${b.n}</div>${b.tip ? `<div class="block-tip">${b.tip}</div>` : ''}</div>
+          <div style="display:flex;flex-direction:column;gap:2px;margin-left:6px;flex-shrink:0">
+            <button onclick="moveBlok('${nk}',${bi},-1)" ${isFirst?'disabled':''} style="padding:1px 5px;background:transparent;border:1px solid var(--line2);border-radius:3px;color:${isFirst?'var(--text3)':'var(--text2)'};font-size:9px;cursor:${isFirst?'default':'pointer'};line-height:1">▲</button>
+            <button onclick="moveBlok('${nk}',${bi},1)"  ${isLast ?'disabled':''} style="padding:1px 5px;background:transparent;border:1px solid var(--line2);border-radius:3px;color:${isLast ?'var(--text3)':'var(--text2)'};font-size:9px;cursor:${isLast ?'default':'pointer'};line-height:1">▼</button>
+          </div>
+          <button onclick="removeBlok('${nk}',${bi})" style="padding:2px 6px;background:transparent;border:1px solid var(--red);border-radius:3px;color:var(--red);font-size:10px;cursor:pointer;margin-left:4px;flex-shrink:0">✕</button>
+        </div>
+        <div style="display:flex;gap:5px;margin-top:5px;align-items:center">
+          <input style="flex:1;padding:4px 8px;background:var(--bg3);border:1px solid var(--line2);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:11px;outline:none" placeholder="URL / YouTube..." value="${savedUrl.replace(/"/g,'&quot;')}" id="url-${urlKey}" onblur="saveUrl('${urlKey}')">
+          ${savedUrl ? `<a href="${savedUrl}" target="_blank" rel="noopener" style="font-size:18px;text-decoration:none">▶️</a>` : `<span id="urlplay-${urlKey}"></span>`}
+        </div>
+      </div>
+    </div>`;
+  });
+  return html;
+}
+
+function renderSessieBlokken(nk) {
+  // Bewaar welke weken en sessies open zijn
+  const openWeken   = [...document.querySelectorAll('.week-item.open')].map(el => el.id);
+  const openSessies = [...document.querySelectorAll('.session-item.open')].map(el => el.id);
+  buildSchema();
+  // Herstel open staat
+  openWeken.forEach(id   => { const el = document.getElementById(id);   if (el) el.classList.add('open'); });
+  openSessies.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('open'); });
+}
+
+function removeBlok(nk, bi) {
+  const blokken = getBlokken(nk); if (!blokken) return;
+  blokken.splice(bi, 1);
+  persistBlokken(nk); renderSessieBlokken(nk);
+}
+
+function moveBlok(nk, bi, dir) {
+  const blokken = getBlokken(nk); if (!blokken) return;
+  const ni = bi + dir;
+  if (ni < 0 || ni >= blokken.length) return;
+  [blokken[bi], blokken[ni]] = [blokken[ni], blokken[bi]];
+  persistBlokken(nk); renderSessieBlokken(nk);
+}
+
+function getBlokken(nk) {
+  if (nk.startsWith('cw')) {
+    const [wi, si] = nk.replace('cw','').split('_').map(Number);
+    return customWeken[wi]?.sessies[si]?.blokken;
+  } else {
+    const [wn, si] = nk.replace('w','').split('_').map(Number);
+    return SCHEMA.find(w => w.week === wn)?.sessies[si]?.blokken;
+  }
+}
+
+function persistBlokken(nk) {
+  if (nk.startsWith('cw')) syncCustomWeken(customWeken);
+}
+
+function saveUrl(key) {
+  const val = document.getElementById('url-' + key)?.value.trim() || '';
+  sessionNotes[key] = val;
+  saveSessionNotes(sessionNotes);
+  const el = document.getElementById('urlplay-' + key);
+  if (el) el.innerHTML = val ? `<a href="${val}" target="_blank" rel="noopener" style="font-size:18px;text-decoration:none">▶️</a>` : '';
+  if (supabaseReady) sbFetch('session_notes?note_key=eq.' + encodeURIComponent(key), 'DELETE').then(() => sbFetch('session_notes', 'POST', { note_key:key, content:val }));
+}
+
+async function saveNote(nk) {
+  const val = document.getElementById('notes-' + nk)?.value || '';
+  sessionNotes[nk] = val;
+  saveSessionNotes(sessionNotes);
+  if (supabaseReady) { await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(nk), 'DELETE'); await sbFetch('session_notes', 'POST', { note_key:nk, content:val }); }
+  showToast('Aantekening opgeslagen');
+}
+
+async function saveAanwezigheid(nk) {
+  if (typeof nk !== 'string' || !nk) { console.warn('saveAanwezigheid: ongeldige nk', nk); return; }
+  if (!aanwezigheid[nk]) aanwezigheid[nk] = {};
+  // State is al bijgewerkt via saveAanwPicker / removeAfwezig - direct opslaan
+  localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
+  if (supabaseReady) {
+    await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(nk), 'DELETE');
+    const nkData = aanwezigheid[nk] || {};
+    for (const p of players) {
+      const entry = nkData[p.id] || {};
+      const isAfw = entry.afwezig === true;
+      await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:nk, player_id:p.id, aanwezig:!isAfw, reden:entry.reden||'' });
+    }
+  }
+  const nkData2 = aanwezigheid[nk] || {};
+  const afw = players.filter(p => nkData2[p.id]?.afwezig === true).map(p => p.naam);
+  showToast(afw.length ? 'Afwezig: ' + afw.join(', ') : 'Iedereen aanwezig ✓');
+}
+
+// ─── AFWEZIGHEID + KNOP MODEL ───
+function renderAanw(nk) {
+  const cont = document.getElementById('aanw-' + nk); if (!cont) return;
+  if (!players.length) { cont.innerHTML = '<div style="font-size:11px;color:var(--text3)">Voeg eerst spelers toe via Selectie.</div>'; return; }
+  const afwObj = aanwezigheid[nk] || {};
+  // Verzamel huidige afwezigen
+  const afwezigen = players.filter(p => {
+    const e = afwObj[p.id];
+    return e === false || (e && e.afwezig === true);
+  });
+  // Badges van afwezigen + + knop
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">';
+  afwezigen.forEach(p => {
+    const e = afwObj[p.id];
+    const reden = (e && e.reden) ? e.reden : '';
+    html += `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;background:var(--bg3);border:1px solid var(--red);border-radius:20px;font-size:11px;color:var(--red)">
+      ${p.naam}${reden ? ' · ' + reden : ''}
+      <button onclick="removeAfwezig('${nk}','${p.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:0;line-height:1">✕</button>
+    </span>`;
+  });
+  html += `<button onclick="openAanwPicker('${nk}')" style="padding:4px 10px;background:transparent;border:1px solid var(--accent);border-radius:20px;color:var(--accent);font-size:11px;cursor:pointer">+ Afwezig</button>`;
+  html += '</div>';
+  cont.innerHTML = html;
+}
+
+let aanwPickerNk = null;
+function openAanwPicker(nk) {
+  aanwPickerNk = nk;
+  const afwObj = aanwezigheid[nk] || {};
+  // Spelers die nog niet afwezig zijn
+  const beschikbaar = sortedPlayers(players).filter(p => {
+    const e = afwObj[p.id];
+    return e !== false && !(e && e.afwezig === true);
+  });
+  if (!beschikbaar.length) { showToast('Alle spelers zijn al gemarkeerd'); return; }
+  const selSpeler = document.getElementById('aanwpick-speler');
+  const selReden  = document.getElementById('aanwpick-reden');
+  selSpeler.innerHTML = beschikbaar.map(p => `<option value="${p.id}">${p.naam}</option>`).join('');
+  selReden.innerHTML  = absRedenen.map(r => `<option value="${r}">${r}</option>`).join('');
+  document.getElementById('bmodalAanw').classList.add('open');
+}
+function closeAanwPicker() { document.getElementById('bmodalAanw').classList.remove('open'); }
+
+function saveAanwPicker() {
+  const pid   = document.getElementById('aanwpick-speler').value;
+  const reden = document.getElementById('aanwpick-reden').value;
+  if (!aanwezigheid[aanwPickerNk]) aanwezigheid[aanwPickerNk] = {};
+  aanwezigheid[aanwPickerNk][pid] = { afwezig: true, reden };
+  localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
+  closeAanwPicker();
+  renderAanw(aanwPickerNk);
+}
+
+function removeAfwezig(nk, pid) {
+  if (!aanwezigheid[nk]) return;
+  aanwezigheid[nk][pid] = { afwezig: false, reden: '' };
+  localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
+  renderAanw(nk);
+}
+
+function addExtraTraining(wid, customIdx) {
+  const naam = prompt('Naam extra training:', 'Extra training'); if (!naam) return;
+  const newSess = { dag:naam, pr:['P6'], blokken:[] };
+  if (customIdx !== null && customIdx !== undefined) {
+    customWeken[customIdx].sessies.push(newSess); syncCustomWeken(customWeken);
+  } else {
+    const weekNum = parseInt(wid.replace('w','')); const week = SCHEMA.find(w => w.week === weekNum);
+    if (week) week.sessies.push(newSess);
+  }
+  buildSchema();
+  setTimeout(() => { const el = document.getElementById(wid); if (el) el.classList.add('open'); }, 100);
+}
+
+// ─── WEEK BUILDER ───
+// Vertaal oude CAT_STYLES afkortingen naar volledige categorienamen
+const CAT_AFKORTING_MAP = { OPW:'opwarmen', CON:'conditie', TEC:'techniek', POS:'positiespel', CPR:'counterpressing', PAR:'partijvorm', EVA:'evaluatie' };
+function normaliseerCat(cat) { return CAT_AFKORTING_MAP[cat] || cat; }
+
+function openNieuweWeekModal(wi) {
+  editingWeekIdx = (wi !== undefined && wi !== null) ? wi : null;
+  const existing = editingWeekIdx !== null ? customWeken[editingWeekIdx] : null;
+  weekBlokken = [[], []];
+  document.getElementById('bmodalWeekTitle').textContent = existing ? 'Week bewerken' : 'Trainingsweek aanmaken';
+  document.getElementById('week-f-focus').value = existing ? existing.focus : '';
+  document.getElementById('week-f-datum').value = existing?.isoDate || '';
+  document.getElementById('week-f-nr').textContent = existing?.weekNr || '—';
+  document.getElementById('tr1-naam').value = existing?.sessies[0]?.dag || 'Training 1';
+  document.getElementById('tr2-naam').value = existing?.sessies[1]?.dag || 'Training 2';
+  if (existing) {
+    [0,1].forEach(ti => {
+      if (existing.sessies[ti]) weekBlokken[ti] = existing.sessies[ti].blokken.map(b => ({ cat:normaliseerCat(b.cat), oefNaam:b.n, tip:b.tip||'', url:b.url||'' }));
+    });
+  }
+  if (existing?.isoDate) onWeekDatumChange(existing.isoDate);
+  renderWeekBlokken(0); renderWeekBlokken(1);
+  document.getElementById('bmodalWeek').classList.add('open');
+}
+
+function onWeekDatumChange(val) {
+  if (!val) return;
+  document.getElementById('week-f-nr').textContent = getISOWeek(val);
+}
+
+function renderWeekBlokken(ti) {
+  const cont = document.getElementById('tr' + (ti+1) + '-blokken'); cont.innerHTML = '';
+  weekBlokken[ti].forEach((b, bi) => {
+    const ct = CAT_STYLES[b.cat] || (CAT_BG[b.cat] ? { bg:CAT_BG[b.cat].bg, c:CAT_BG[b.cat].c, label:b.cat } : { bg:'#181818', c:'#888', label:b.cat });
+    const isFirst = bi === 0;
+    const isLast  = bi === weekBlokken[ti].length - 1;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg2);border:1px solid var(--line2);border-radius:4px';
+    row.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+        <button onclick="moveWeekBlok(${ti},${bi},-1)" ${isFirst?'disabled':''} style="padding:1px 5px;background:transparent;border:1px solid var(--line2);border-radius:3px;color:${isFirst?'var(--text3)':'var(--text2)'};font-size:9px;cursor:${isFirst?'default':'pointer'};line-height:1">▲</button>
+        <button onclick="moveWeekBlok(${ti},${bi},1)"  ${isLast ?'disabled':''} style="padding:1px 5px;background:transparent;border:1px solid var(--line2);border-radius:3px;color:${isLast ?'var(--text3)':'var(--text2)'};font-size:9px;cursor:${isLast ?'default':'pointer'};line-height:1">▼</button>
+      </div>
+      <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${ct.bg};color:${ct.c};flex-shrink:0">${ct.label}</span>
+      <span style="flex:1;font-size:12px;color:var(--text2)">${b.oefNaam}</span>
+      <button onclick="removeWeekBlok(${ti},${bi})" style="padding:2px 6px;background:transparent;border:1px solid var(--red);border-radius:3px;color:var(--red);font-size:10px;cursor:pointer">✕</button>`;
+    cont.appendChild(row);
+  });
+}
+function removeWeekBlok(ti, bi) { weekBlokken[ti].splice(bi, 1); renderWeekBlokken(ti); }
+function moveWeekBlok(ti, bi, dir) {
+  const arr = weekBlokken[ti];
+  const ni = bi + dir;
+  if (ni < 0 || ni >= arr.length) return;
+  [arr[bi], arr[ni]] = [arr[ni], arr[bi]];
+  renderWeekBlokken(ti);
+}
+
+function openPickOef(ti) {
+  activePickTi = ti;
+  const sel = document.getElementById('pick-cat'); sel.innerHTML = '';
+  categories.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
+  pickOefCallback = oef => {
+    weekBlokken[activePickTi].push({ cat:oef.cat, oefNaam:oef.title, tip:oef.tip||'', url:oef.url||'' });
+    renderWeekBlokken(activePickTi);
+    closeBModalPickOefDirect();
+  };
+  renderPickOefList();
+  document.getElementById('bmodalPickOef').classList.add('open');
+}
+
+function renderPickOefList() {
+  const cat = document.getElementById('pick-cat').value;
+  const all = [...BUILTIN_OEF, ...customOef].filter(o => o.cat === cat);
+  const cont = document.getElementById('pick-oef-list'); cont.innerHTML = '';
+  if (!all.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Geen oefeningen. Maak er hieronder een aan.</div>'; return; }
+  all.forEach(o => {
+    const btn = document.createElement('button');
+    btn.style.cssText = 'width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center';
+    btn.innerHTML = `<span style="flex:1">${o.title}</span>${o.url ? '<span style="font-size:14px">▶️</span>' : ''}`;
+    btn.onclick = () => { if (pickOefCallback) pickOefCallback(o); };
+    cont.appendChild(btn);
+  });
+}
+
+function openNieuweOef() {
+  const sel = document.getElementById('qoef-cat'); sel.innerHTML = '';
+  const cat = document.getElementById('pick-cat').value;
+  categories.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; if (c===cat) opt.selected=true; sel.appendChild(opt); });
+  document.getElementById('qoef-naam').value = '';
+  document.getElementById('qoef-tip').value  = '';
+  document.getElementById('qoef-url').value  = '';
+  closeBModalPickOefDirect();
+  document.getElementById('bmodalQuickOef').classList.add('open');
+}
+
+async function saveQuickOef() {
+  const naam = document.getElementById('qoef-naam').value.trim(); if (!naam) { showToast('Vul een naam in'); return; }
+  const cat  = document.getElementById('qoef-cat').value;
+  const oef  = { id:genId(), title:naam, cat, tip:document.getElementById('qoef-tip').value, url:document.getElementById('qoef-url').value, stappen:[], pr:[], duur:'', spelers:'', desc:document.getElementById('qoef-tip').value };
+  customOef.push(oef); saveCustomOef(customOef);
+  if (supabaseReady) await sbFetch('custom_oef', 'POST', { id:oef.id, title:oef.title, cat:oef.cat, tip:oef.tip, url:oef.url, stappen:oef.stappen, spelers:oef.spelers, duur:oef.duur, beschrijving:oef.tip });
+  showToast(naam + ' aangemaakt');
+  closeQuickOef();
+  // Reopen picker with new oefening selected
+  const sel = document.getElementById('pick-cat'); if (sel) sel.value = cat;
+  renderPickOefList();
+  document.getElementById('bmodalPickOef').classList.add('open');
+  if (pickOefCallback) pickOefCallback(oef);
+}
+
+function closeQuickOef() { document.getElementById('bmodalQuickOef').classList.remove('open'); }
+
+function closeBModalPickOefDirect() { document.getElementById('bmodalPickOef').classList.remove('open'); }
+function closeBModalWeekDirect()    { document.getElementById('bmodalWeek').classList.remove('open'); weekBlokken = [[],[]]; }
+
+function saveNieuweWeek() {
+  const focus   = document.getElementById('week-f-focus').value.trim() || 'Eigen trainingsweek';
+  const isoDate = document.getElementById('week-f-datum').value;
+  const weekNr  = document.getElementById('week-f-nr').textContent;
+  const tr1naam = document.getElementById('tr1-naam').value.trim() || 'Training 1';
+  const tr2naam = document.getElementById('tr2-naam').value.trim() || 'Training 2';
+  const sessies = [
+    { dag:tr1naam, pr:['P6'], blokken:weekBlokken[0].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
+    { dag:tr2naam, pr:['P6'], blokken:weekBlokken[1].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
+  ];
+  const week = { focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
+  if (editingWeekIdx !== null) { customWeken[editingWeekIdx] = week; showToast('Week bijgewerkt'); }
+  else { customWeken.push(week); showToast('Week aangemaakt: ' + focus); }
+  syncCustomWeken(customWeken);
+  closeBModalWeekDirect();
+  buildSchema();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+function shareTraining(nk) {
+  let dag = '', blokken = [];
+  if (nk.startsWith('cw')) {
+    const [wi, si] = nk.replace('cw','').split('_').map(Number);
+    const sess = customWeken[wi]?.sessies[si];
+    if (sess) { dag = sess.dag; blokken = sess.blokken || []; }
+  }
+  let tekst = '⚽ FCP 16-2 — ' + dag + '\n\n';
+  if (blokken.length) {
+    blokken.forEach(b => { tekst += '• ' + b.n + (b.tip ? ' — ' + b.tip : '') + '\n'; });
+  } else { tekst += 'Nog geen oefeningen ingepland.'; }
+  window.location.href = 'https://wa.me/?text=' + encodeURIComponent(tekst);
+}
+
+let kopieerBronIdx = null;
+
+function kopieerWeek(wi) {
+  kopieerBronIdx = wi;
+  const bron = customWeken[wi];
+  document.getElementById('kopieer-focus').value = bron.focus + ' (kopie)';
+  document.getElementById('kopieer-datum').value = '';
+  document.getElementById('kopieer-nr').textContent = '—';
+  document.getElementById('bmodalKopieer').classList.add('open');
+}
+function closeBModalKopieer() { document.getElementById('bmodalKopieer').classList.remove('open'); }
+function onKopieerDatumChange(val) {
+  if (!val) return;
+  document.getElementById('kopieer-nr').textContent = getISOWeek(val);
+}
+
+function saveKopieerWeek() {
+  const bron    = customWeken[kopieerBronIdx];
+  const focus   = document.getElementById('kopieer-focus').value.trim() || bron.focus + ' (kopie)';
+  const isoDate = document.getElementById('kopieer-datum').value;
+  const weekNr  = document.getElementById('kopieer-nr').textContent;
+  // Diepe kopie van sessies — blokken overnemen, aanwezigheid/aantekeningen niet
+  const sessies = bron.sessies.map(s => ({
+    dag:    s.dag,
+    pr:     [...(s.pr || [])],
+    blokken: (s.blokken || []).map(b => ({ t:b.t||'', cat:normaliseerCat(b.cat), n:b.n, tip:b.tip||'', url:b.url||'' }))
+  }));
+  const nieuw = { focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
+  customWeken.push(nieuw);
+  syncCustomWeken(customWeken);
+  closeBModalKopieer();
+  buildSchema();
+  showToast('Week gekopieerd: ' + focus);
+}
+
+function deleteCustomWeek(wi) {
+  if (!confirm('Verwijder deze week?')) return;
+  customWeken.splice(wi, 1); syncCustomWeken(customWeken); buildSchema(); showToast('Week verwijderd');
+}
+
+async function onSupabaseReady() {
+  const data = await loadFromSupabase();
+  if (data.players)      players      = data.players;
+  if (data.sessionNotes) sessionNotes = data.sessionNotes;
+  if (data.aanwezigheid) aanwezigheid = data.aanwezigheid;
+  if (data.customWeken)  customWeken  = data.customWeken;
+  if (data.absRedenen)   absRedenen   = data.absRedenen;
+  buildSchema();
+}
+
+buildSchema();
+initScrollTop();
+initManifest();
+initSupabase().then(ok => { if (ok) onSupabaseReady(); });
+</script>
+</body>
+</html>

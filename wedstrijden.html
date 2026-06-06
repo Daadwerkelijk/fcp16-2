@@ -267,7 +267,7 @@ function toggleSpeech(){ if(speechActief) stopSpeech(); else startSpeech(); }
 function startSpeech(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ showToast('Spraakherkenning niet beschikbaar'); return; }
-  speechRecog=new SR(); speechRecog.lang='nl-NL'; speechRecog.continuous=false; speechRecog.interimResults=true;
+  speechRecog=new SR(); speechRecog.lang='nl-NL'; speechRecog.continuous=true; speechRecog.interimResults=true;
   const btn=document.getElementById('live-mic-btn'),status=document.getElementById('live-speech-status'),input=document.getElementById('live-notitie-input');
   speechRecog.onstart=()=>{ speechActief=true; btn.style.background='var(--red)'; btn.style.borderColor='var(--red)'; btn.textContent='🔴'; status.textContent='Luisteren...'; };
   speechRecog.onresult=(e)=>{

@@ -267,17 +267,54 @@ function toggleSpeech(){ if(speechActief) stopSpeech(); else startSpeech(); }
 function startSpeech(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ showToast('Spraakherkenning niet beschikbaar'); return; }
-  speechRecog=new SR(); speechRecog.lang='nl-NL'; speechRecog.continuous=true; speechRecog.interimResults=true;
+  speechRecog=new SR();
+  speechRecog.lang='nl-NL';
+  speechRecog.continuous=true;
+  speechRecog.interimResults=true;
+
   const btn=document.getElementById('live-mic-btn'),status=document.getElementById('live-speech-status'),input=document.getElementById('live-notitie-input');
-  speechRecog.onstart=()=>{ speechActief=true; btn.style.background='var(--red)'; btn.style.borderColor='var(--red)'; btn.textContent='🔴'; status.textContent='Luisteren...'; };
-  speechRecog.onresult=(e)=>{
-    let interim='',final='';
-    for(let i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal) final+=e.results[i][0].transcript; else interim+=e.results[i][0].transcript; }
-    if(interim) status.textContent='🎤 '+interim;
-    if(final){ input.value=(input.value+' '+final).trim(); status.textContent=''; }
+  let verwerktTotIndex=0; // bijhouden welke resultaten al verwerkt zijn
+
+  speechRecog.onstart=()=>{
+    speechActief=true;
+    verwerktTotIndex=0;
+    btn.style.background='var(--red)'; btn.style.borderColor='var(--red)'; btn.textContent='🔴';
+    status.textContent='Luisteren...';
   };
-  speechRecog.onerror=(e)=>{ status.textContent=e.error==='not-allowed'?'⚠️ Microfoon niet toegestaan':'⚠️ '+e.error; stopSpeech(); };
-  speechRecog.onend=()=>stopSpeech();
+
+  speechRecog.onresult=(e)=>{
+    let interimTekst='';
+    // Verwerk alleen nieuwe resultaten vanaf verwerktTotIndex
+    for(let i=verwerktTotIndex;i<e.results.length;i++){
+      const resultaat=e.results[i];
+      const tekst=resultaat[0].transcript;
+      if(resultaat.isFinal){
+        // Definitief resultaat: toevoegen aan input en index ophogen
+        input.value=(input.value+' '+tekst.trim()).trim();
+        verwerktTotIndex=i+1;
+      } else {
+        // Tijdelijk resultaat: alleen tonen in statusbalk
+        interimTekst+=tekst;
+      }
+    }
+    status.textContent=interimTekst ? '🎤 '+interimTekst : (speechActief ? 'Luisteren...' : '');
+  };
+
+  speechRecog.onerror=(e)=>{
+    if(e.error==='no-speech') return; // stilte is geen fout
+    status.textContent=e.error==='not-allowed'?'⚠️ Microfoon niet toegestaan':'⚠️ '+e.error;
+    stopSpeech();
+  };
+
+  // Bij continuous=true: onend kan vuren door stilte - herstart automatisch
+  speechRecog.onend=()=>{
+    if(speechActief){
+      // Herstart na korte stilte zodat continue luisteren werkt
+      try { speechRecog.start(); }
+      catch(e){ stopSpeech(); }
+    }
+  };
+
   speechRecog.start();
 }
 function stopSpeech(){

@@ -42,6 +42,15 @@
 <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
 <div class="toast" id="toast"></div>
 
+<!-- Wedstrijd positie kiezen modal -->
+<div class="modal-overlay" id="wedPosModal" onclick="if(event.target===this)closeWedPosModal()">
+  <div class="modal">
+    <div class="modal-title" id="wedPosModalTitel">Kies speler</div>
+    <div class="modal-list" id="wedPosModalLijst"></div>
+    <button class="modal-cancel" onclick="closeWedPosModal()">Annuleer</button>
+  </div>
+</div>
+
 <!-- Edit wedstrijd modal -->
 <div class="bmodal-overlay" id="bmodalEditWed" onclick="if(event.target===this)closeEditWed()">
   <div class="bmodal">
@@ -167,6 +176,118 @@ let wedstrijden = loadState().wedstrijden;
 let players     = loadState().players;
 let thuisUit    = 'thuis';
 
+// ─── WEDSTRIJD TABS ───
+function wedTab(wid, tab) {
+  ['aanwezig','opstelling','wedstrijd'].forEach(t => {
+    const panel = document.getElementById('wpanel-' + t + '-' + wid);
+    const btn   = document.getElementById('wtab-' + t + '-' + wid);
+    if (!panel || !btn) return;
+    const actief = t === tab;
+    panel.style.display = actief ? 'block' : 'none';
+    btn.style.borderBottom = actief ? '2px solid var(--accent)' : '2px solid transparent';
+    btn.style.color = actief ? 'var(--accent)' : 'var(--text3)';
+  });
+  if (tab === 'opstelling') buildWedField(wid);
+}
+
+function toggleWedAanwezig(wid, pid, cb) {
+  const w = wedstrijden.find(x => x.id === wid); if (!w) return;
+  if (!w.aanwezig) w.aanwezig = [];
+  if (cb.checked) { if (!w.aanwezig.includes(pid)) w.aanwezig.push(pid); }
+  else { w.aanwezig = w.aanwezig.filter(x => x !== pid); }
+  const label = cb.closest('label');
+  if (label) {
+    label.style.borderColor = cb.checked ? 'var(--accent)' : 'var(--line2)';
+    const span = label.querySelector('span');
+    if (span) span.style.color = cb.checked ? 'var(--text)' : 'var(--text2)';
+  }
+}
+
+async function saveWedAanwezig(wid) {
+  const w = wedstrijden.find(x => x.id === wid); if (!w) return;
+  saveWedstrijden(wedstrijden);
+  showToast((w.aanwezig||[]).length + ' spelers aanwezig opgeslagen');
+}
+
+// ─── WEDSTRIJD OPSTELLING ───
+const wedLineups = {};
+
+function buildWedField(wid) {
+  const w = wedstrijden.find(x => x.id === wid); if (!w) return;
+  const formatieKey = document.getElementById('wform-sel-' + wid)?.value || w.formatie || '4222';
+  const formatie = FORMATIES[formatieKey]; if (!formatie) return;
+  if (!wedLineups[wid]) wedLineups[wid] = typeof w.wed_lineup === 'string' ? JSON.parse(w.wed_lineup||'{}') : (w.wed_lineup||{});
+  const cont = document.getElementById('wfield-' + wid); if (!cont) return;
+  cont.innerHTML = '';
+  formatie.pos.forEach(pos => {
+    const pid = wedLineups[wid][pos.id];
+    const p   = pid ? players.find(x => x.id === pid) : null;
+    const slot = document.createElement('div');
+    slot.style.cssText = `position:absolute;left:${pos.x}%;top:${pos.y}%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;cursor:pointer`;
+    const circle = document.createElement('div');
+    circle.style.cssText = `width:40px;height:40px;border-radius:50%;border:2px solid ${p?'var(--accent)':'rgba(255,255,255,0.2)'};background:${p?'var(--accent2)':'rgba(0,0,0,0.5)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text)`;
+    if (p) { const parts=p.naam.trim().split(' '); circle.textContent=parts.length>1?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():p.naam.slice(0,2).toUpperCase(); }
+    else { circle.textContent='+'; circle.style.color='rgba(255,255,255,0.4)'; }
+    const badge = document.createElement('div');
+    badge.style.cssText = 'font-size:8px;color:rgba(255,255,255,0.6);margin-top:1px;background:rgba(0,0,0,0.5);padding:1px 4px;border-radius:4px;font-weight:600';
+    badge.textContent = pos.label;
+    const naam = document.createElement('div');
+    naam.style.cssText = 'font-size:9px;color:var(--text);margin-top:1px;max-width:52px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500';
+    naam.textContent = p ? p.naam.split(' ')[0] : '';
+    slot.appendChild(circle); slot.appendChild(badge); slot.appendChild(naam);
+    slot.onclick = () => openWedPositieModal(wid, pos, formatieKey);
+    cont.appendChild(slot);
+  });
+}
+
+let wedModalWid=null, wedModalPos=null;
+
+function openWedPositieModal(wid, pos, formatieKey) {
+  wedModalWid=wid; wedModalPos=pos;
+  const w = wedstrijden.find(x => x.id === wid); if (!w) return;
+  if (!wedLineups[wid]) wedLineups[wid] = {};
+  const aanwezig = (w.aanwezig||[]);
+  const pool = aanwezig.length ? players.filter(p => aanwezig.includes(p.id)) : players;
+  document.getElementById('wedPosModalTitel').textContent = pos.label + ' — kies speler';
+  const lijst = document.getElementById('wedPosModalLijst'); lijst.innerHTML = '';
+  const leegBtn = document.createElement('button');
+  leegBtn.className = 'modal-btn';
+  leegBtn.textContent = '— Positie leeg laten';
+  leegBtn.onclick = () => { wedLineups[wid][pos.id]=null; buildWedField(wid); closeWedPosModal(); };
+  lijst.appendChild(leegBtn);
+  if (!pool.length) { lijst.innerHTML += '<div style="font-size:12px;color:var(--text3);padding:8px 0">Markeer eerst aanwezige spelers op het Aanwezig tabblad.</div>'; }
+  sortedPlayers(pool).forEach(p => {
+    const btn = document.createElement('button');
+    const alGeplaatst = Object.entries(wedLineups[wid]).find(([k,v]) => v===p.id && k!==pos.id);
+    btn.className = 'modal-btn' + (wedLineups[wid][pos.id]===p.id?' current':'');
+    if (alGeplaatst && wedLineups[wid][pos.id]!==p.id) btn.style.opacity='0.45';
+    btn.innerHTML = `<span>${p.naam}</span><span style="font-size:11px;color:var(--text3)">${wedLineups[wid][pos.id]===p.id?'✓':alGeplaatst?'→ '+alGeplaatst[0]:''}</span>`;
+    btn.onclick = () => {
+      if (alGeplaatst && wedLineups[wid][pos.id]!==p.id) { showToast(p.naam+' staat al op '+alGeplaatst[0]); return; }
+      wedLineups[wid][pos.id]=p.id; buildWedField(wid); closeWedPosModal(); showToast(p.naam+' → '+pos.label);
+    };
+    lijst.appendChild(btn);
+  });
+  document.getElementById('wedPosModal').classList.add('open');
+}
+function closeWedPosModal() { document.getElementById('wedPosModal').classList.remove('open'); }
+
+async function saveWedOpstelling(wid) {
+  const w = wedstrijden.find(x => x.id === wid); if (!w) return;
+  const formatieKey = document.getElementById('wform-sel-' + wid)?.value || '4222';
+  w.formatie   = formatieKey;
+  w.wed_lineup = wedLineups[wid] || {};
+  saveWedstrijden(wedstrijden);
+  if (supabaseReady) {
+    await sbFetch('wedstrijden?id=eq.' + wid, 'PATCH', {
+      formatie:   w.formatie,
+      wed_lineup: JSON.stringify(w.wed_lineup),
+      aanwezig:   JSON.stringify(w.aanwezig||[]),
+    });
+  }
+  showToast('Opstelling opgeslagen · ' + Object.values(w.wed_lineup).filter(Boolean).length + '/11');
+}
+
 // ─── LIVE MODUS ───
 let liveWedId=null,liveKlokSec=0,liveKlokLoopt=false,liveKlokTimer=null;
 let liveHelft=1,liveMinsPerHelft=40,liveNotities=[],speechRecog=null,speechActief=false;
@@ -189,10 +310,29 @@ function openLive(id) {
   renderLiveNotities();
   document.getElementById('live-overlay').style.display='flex';
   if('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
+
+  // Herstel lopende klok als die nog loopt (na wegnavigeren en terugkomen)
+  const startTs = localStorage.getItem('live_klok_start');
+  const wasActief = localStorage.getItem('live_klok_actief');
+  if(startTs && wasActief) {
+    liveKlokSec = Math.floor((Date.now() - parseInt(startTs)) / 1000);
+    updateKlokDisplay();
+    startKlok(); // hervat automatisch
+    showToast('Klok hervat');
+  }
 }
+
+// Waarschuw bij wegnavigeren als live actief is
+window.addEventListener('beforeunload', (e) => {
+  if(document.getElementById('live-overlay').style.display==='flex'){
+    e.preventDefault(); e.returnValue='';
+  }
+});
 
 function closeLive() {
   stopKlok(); stopSpeech();
+  localStorage.removeItem('live_klok_start');
+  localStorage.removeItem('live_klok_actief');
   const w=wedstrijden.find(x=>x.id===liveWedId); if(w){
     w.score_eigen=parseInt(document.getElementById('live-score-eigen').textContent)||0;
     w.score_tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
@@ -212,11 +352,24 @@ function closeLive() {
 function toggleKlok(){ if(liveKlokLoopt) stopKlok(); else startKlok(); }
 function startKlok(){
   liveKlokLoopt=true;
-  const btn=document.getElementById('live-start-btn'); btn.textContent='⏸ Pauze'; btn.style.background='var(--bg3)'; btn.style.color='var(--text2)';
-  liveKlokTimer=setInterval(()=>{ liveKlokSec++; updateKlokDisplay(); if(liveKlokSec>=liveMinsPerHelft*60) stopKlok(); },1000);
+  // Sla starttijdstip op zodat we na terugkeer de klok kunnen reconstrueren
+  const startTs = Date.now() - (liveKlokSec * 1000);
+  localStorage.setItem('live_klok_start', startTs);
+  localStorage.setItem('live_klok_actief', '1');
+  const btn=document.getElementById('live-start-btn');
+  btn.textContent='⏸ Pauze'; btn.style.background='var(--bg3)'; btn.style.color='var(--text2)';
+  liveKlokTimer=setInterval(()=>{
+    // Bereken tijd op basis van realtime verschil ipv tellen
+    const verstreken = Math.floor((Date.now() - startTs) / 1000);
+    liveKlokSec = verstreken;
+    updateKlokDisplay();
+    if(liveKlokSec>=liveMinsPerHelft*60) stopKlok();
+  },500);
 }
 function stopKlok(){
   liveKlokLoopt=false; clearInterval(liveKlokTimer);
+  localStorage.removeItem('live_klok_start');
+  localStorage.removeItem('live_klok_actief');
   const btn=document.getElementById('live-start-btn'); if(!btn) return;
   btn.textContent='▶ Verder'; btn.style.background='var(--accent2)'; btn.style.color='var(--bg)';
 }
@@ -264,58 +417,67 @@ function renderLiveNotities(){
 }
 
 function toggleSpeech(){ if(speechActief) stopSpeech(); else startSpeech(); }
+// ─── SPEECH: module-level index zodat herstart geen reset veroorzaakt ───
+let speechVerwerktIndex = 0;
+
 function startSpeech(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){ showToast('Spraakherkenning niet beschikbaar'); return; }
-  speechRecog=new SR();
-  speechRecog.lang='nl-NL';
-  speechRecog.continuous=true;
-  speechRecog.interimResults=true;
+  if(!SR){ showToast('Spraakherkenning niet beschikbaar op deze browser'); return; }
 
-  const btn=document.getElementById('live-mic-btn'),status=document.getElementById('live-speech-status'),input=document.getElementById('live-notitie-input');
-  let verwerktTotIndex=0; // bijhouden welke resultaten al verwerkt zijn
+  const btn=document.getElementById('live-mic-btn');
+  const status=document.getElementById('live-speech-status');
+  const input=document.getElementById('live-notitie-input');
 
-  speechRecog.onstart=()=>{
-    speechActief=true;
-    verwerktTotIndex=0;
-    btn.style.background='var(--red)'; btn.style.borderColor='var(--red)'; btn.textContent='🔴';
-    status.textContent='Luisteren...';
-  };
+  // Stop eventueel lopende sessie eerst
+  if(speechRecog){ try{speechRecog.abort();}catch(e){} speechRecog=null; }
 
-  speechRecog.onresult=(e)=>{
-    let interimTekst='';
-    // Verwerk alleen nieuwe resultaten vanaf verwerktTotIndex
-    for(let i=verwerktTotIndex;i<e.results.length;i++){
-      const resultaat=e.results[i];
-      const tekst=resultaat[0].transcript;
-      if(resultaat.isFinal){
-        // Definitief resultaat: toevoegen aan input en index ophogen
-        input.value=(input.value+' '+tekst.trim()).trim();
-        verwerktTotIndex=i+1;
-      } else {
-        // Tijdelijk resultaat: alleen tonen in statusbalk
-        interimTekst+=tekst;
+  speechVerwerktIndex=0; // reset alleen bij bewuste nieuwe start
+  speechActief=true;
+  btn.style.background='var(--red)'; btn.style.borderColor='var(--red)'; btn.textContent='🔴';
+  status.textContent='Luisteren...';
+
+  function maakNieuweSessie(){
+    const s=new SR();
+    s.lang='nl-NL';
+    s.continuous=false; // false is stabieler: één zin, auto-restart via onend
+    s.interimResults=true;
+    s.maxAlternatives=1;
+
+    s.onresult=(e)=>{
+      let interimTekst='';
+      for(let i=0;i<e.results.length;i++){
+        const r=e.results[i];
+        if(r.isFinal){
+          const tekst=r[0].transcript.trim();
+          if(tekst) input.value=(input.value+' '+tekst).trim();
+        } else {
+          interimTekst+=r[0].transcript;
+        }
       }
-    }
-    status.textContent=interimTekst ? '🎤 '+interimTekst : (speechActief ? 'Luisteren...' : '');
-  };
+      status.textContent=interimTekst?'🎤 '+interimTekst:(speechActief?'Luisteren...':'');
+    };
 
-  speechRecog.onerror=(e)=>{
-    if(e.error==='no-speech') return; // stilte is geen fout
-    status.textContent=e.error==='not-allowed'?'⚠️ Microfoon niet toegestaan':'⚠️ '+e.error;
-    stopSpeech();
-  };
+    s.onerror=(e)=>{
+      if(e.error==='no-speech'||e.error==='aborted') return;
+      status.textContent=e.error==='not-allowed'?'⚠️ Microfoon niet toegestaan':'⚠️ '+e.error;
+      stopSpeech();
+    };
 
-  // Bij continuous=true: onend kan vuren door stilte - herstart automatisch
-  speechRecog.onend=()=>{
-    if(speechActief){
-      // Herstart na korte stilte zodat continue luisteren werkt
-      try { speechRecog.start(); }
-      catch(e){ stopSpeech(); }
-    }
-  };
+    s.onend=()=>{
+      // Auto-herstart zolang mic actief is — nieuwe instantie voorkomt resultaat-herhaling
+      if(speechActief){
+        speechRecog=null;
+        setTimeout(()=>{
+          if(speechActief) speechRecog=maakNieuweSessie();
+        },150);
+      }
+    };
 
-  speechRecog.start();
+    try{ s.start(); } catch(e){ stopSpeech(); return null; }
+    return s;
+  }
+
+  speechRecog=maakNieuweSessie();
 }
 function stopSpeech(){
   speechActief=false; if(speechRecog){try{speechRecog.stop();}catch(e){} speechRecog=null;}
@@ -504,6 +666,9 @@ function renderWedstrijden() {
           </div>`;
         }).join('')}
       </div>` : '';
+      const aanwezigenW = (w.aanwezig||[]);
+      const aanwezigenNames = aanwezigenW.map(pid=>{ const p=players.find(x=>x.id===pid); return p?p.naam:''; }).filter(Boolean);
+
       card.innerHTML = `
       <div class="card-hdr" onclick="this.closest('.card').classList.toggle('open')">
         <div class="wed-score-big" style="color:${rc}">${w.score_eigen}–${w.score_tegen}</div>
@@ -514,37 +679,89 @@ function renderWedstrijden() {
         <button onclick="event.stopPropagation();openEditWed('${w.id}')" style="padding:4px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0">✏️</button>
         <span class="card-chev" style="margin-left:4px">▾</span>
       </div>
-      <div class="card-body">
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Eindstand</div>
-        <div class="wed-score-row">
-          <input class="wed-score-input" id="ws-eigen-${w.id}" type="number" min="0" max="99" value="${w.score_eigen}">
-          <span class="wed-score-sep">–</span>
-          <input class="wed-score-input" id="ws-tegen-${w.id}" type="number" min="0" max="99" value="${w.score_tegen}">
-          <span style="font-size:11px;color:var(--text3);margin-left:6px">FCP – ${w.tegenstander}</span>
+      <div class="card-body" style="padding:0">
+
+        <!-- Tabbladen -->
+        <div style="display:flex;border-bottom:1px solid var(--line2)">
+          <button onclick="wedTab('${w.id}','aanwezig')" id="wtab-aanwezig-${w.id}"
+            style="flex:1;padding:10px 4px;background:transparent;border:none;border-bottom:2px solid var(--accent);color:var(--accent);font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer">
+            👥 Aanwezig
+          </button>
+          <button onclick="wedTab('${w.id}','opstelling')" id="wtab-opstelling-${w.id}"
+            style="flex:1;padding:10px 4px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer">
+            🟢 Opstelling
+          </button>
+          <button onclick="wedTab('${w.id}','wedstrijd')" id="wtab-wedstrijd-${w.id}"
+            style="flex:1;padding:10px 4px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer">
+            ⚽ Wedstrijd
+          </button>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-          <div style="flex:1;min-width:130px">
-            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Formatie</div>
-            <select id="ws-form-${w.id}" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none">
-              <option value="">— geen —</option>${lineupOpties}
+
+        <!-- Tab: Aanwezig -->
+        <div id="wpanel-aanwezig-${w.id}" style="padding:12px 14px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Selecteer wie er speelt</div>
+          <div style="display:flex;flex-direction:column;gap:5px" id="waanw-lijst-${w.id}">
+            ${sortedPlayers(players).map(p => `
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border:1px solid ${aanwezigenW.includes(p.id)?'var(--accent)':'var(--line2)'};border-radius:var(--rsm);cursor:pointer">
+                <input type="checkbox" ${aanwezigenW.includes(p.id)?'checked':''} onchange="toggleWedAanwezig('${w.id}','${p.id}',this)"
+                  style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+                <span style="font-size:13px;color:${aanwezigenW.includes(p.id)?'var(--text)':'var(--text2)'}">${p.naam}</span>
+              </label>`).join('')}
+          </div>
+          <button class="session-save-btn" style="margin-top:10px" onclick="saveWedAanwezig('${w.id}')">💾 Aanwezig opslaan</button>
+        </div>
+
+        <!-- Tab: Opstelling -->
+        <div id="wpanel-opstelling-${w.id}" style="display:none;padding:12px 14px">
+          <div style="margin-bottom:8px">
+            <select id="wform-sel-${w.id}" onchange="buildWedField('${w.id}')"
+              style="width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none">
+              ${Object.entries(FORMATIES).map(([k,f])=>`<option value="${k}" ${(w.formatie||'4222')===k?'selected':''}>${f.label}</option>`).join('')}
             </select>
           </div>
-          <div style="flex:1;min-width:130px">
-            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Man of the Match ⭐</div>
-            <select id="ws-motm-${w.id}" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none">
-              <option value="">— geen —</option>${motmOptions}
-            </select>
+          <div style="position:relative;background:var(--field-bg);border-radius:10px;overflow:hidden;border:2px solid var(--field-border)">
+            <svg viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+              <rect width="400" height="280" fill="var(--field-bg)"/>
+              <rect x="8" y="8" width="384" height="264" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+              <line x1="8" y1="140" x2="392" y2="140" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+              <circle cx="200" cy="140" r="32" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+              <circle cx="200" cy="140" r="2" fill="rgba(255,255,255,0.4)"/>
+              <rect x="128" y="8" width="144" height="52" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+              <rect x="128" y="220" width="144" height="52" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+            </svg>
+            <div id="wfield-${w.id}" style="position:absolute;top:0;left:0;width:100%;height:100%"></div>
+          </div>
+          <button class="session-save-btn" style="margin-top:10px" onclick="saveWedOpstelling('${w.id}')">💾 Opstelling opslaan</button>
+        </div>
+
+        <!-- Tab: Wedstrijd -->
+        <div id="wpanel-wedstrijd-${w.id}" style="display:none;padding:12px 14px">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Eindstand</div>
+          <div class="wed-score-row">
+            <input class="wed-score-input" id="ws-eigen-${w.id}" type="number" min="0" max="99" value="${w.score_eigen}">
+            <span class="wed-score-sep">–</span>
+            <input class="wed-score-input" id="ws-tegen-${w.id}" type="number" min="0" max="99" value="${w.score_tegen}">
+            <span style="font-size:11px;color:var(--text3);margin-left:6px">FCP – ${w.tegenstander}</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:130px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Man of the Match ⭐</div>
+              <select id="ws-motm-${w.id}" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none">
+                <option value="">— geen —</option>${motmOptions}
+              </select>
+            </div>
+          </div>
+          ${ratingsHtml}
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Opmerkingen</div>
+          <textarea style="width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none;resize:vertical;min-height:65px;line-height:1.5" id="ws-opm-${w.id}" placeholder="Hoe verliep de wedstrijd?">${w.opmerkingen||''}</textarea>
+          <div class="player-actions" style="margin-top:10px">
+            <button class="save-btn" style="background:var(--accent2);border-color:var(--accent);color:var(--bg)" onclick="openLive('${w.id}')">▶ Live</button>
+            <button class="save-btn" onclick="saveWedstrijd('${w.id}')">💾 Opslaan</button>
+            ${!w.gespeeld ? `<button class="save-btn" style="background:transparent;border-color:var(--accent);color:var(--accent)" onclick="markeerGespeeld('${w.id}')">✓ Gespeeld</button>` : '<span style="font-size:11px;color:var(--accent)">✓ Gespeeld</span>'}
+            <button class="del-btn" onclick="deleteWedstrijd('${w.id}')">Verwijder</button>
           </div>
         </div>
-        ${ratingsHtml}
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Opmerkingen</div>
-        <textarea style="width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none;resize:vertical;min-height:65px;line-height:1.5" id="ws-opm-${w.id}" placeholder="Hoe verliep de wedstrijd?">${w.opmerkingen||''}</textarea>
-        <div class="player-actions">
-          <button class="save-btn" style="background:var(--accent2);border-color:var(--accent);color:var(--bg)" onclick="openLive('${w.id}')">▶ Live</button>
-          <button class="save-btn" onclick="saveWedstrijd('${w.id}')">💾 Opslaan</button>
-          ${!w.gespeeld ? `<button class="save-btn" style="background:transparent;border-color:var(--accent);color:var(--accent)" onclick="markeerGespeeld('${w.id}')">✓ Gespeeld</button>` : '<span style="font-size:11px;color:var(--accent)">✓ Gespeeld</span>'}
-          <button class="del-btn" onclick="deleteWedstrijd('${w.id}')">Verwijder</button>
-        </div>
+
       </div>`;
       list.appendChild(card);
     });

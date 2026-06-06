@@ -172,10 +172,12 @@ async function loadFromSupabase() {
   if (wd && !wd._error) {
     const wedstrijden = wd.map(w => ({
       ...w,
-      isoDate: w.iso_date || w.isoDate || '',
-      ratings: typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
-      motm: w.motm || null,
-      gespeeld: w.gespeeld || false,
+      isoDate:    w.iso_date || w.isoDate || '',
+      ratings:    typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
+      motm:       w.motm || null,
+      gespeeld:   w.gespeeld || false,
+      aanwezig:   typeof w.aanwezig === 'string' ? JSON.parse(w.aanwezig || '[]') : (w.aanwezig || []),
+      wed_lineup: typeof w.wed_lineup === 'string' ? JSON.parse(w.wed_lineup || '{}') : (w.wed_lineup || {}),
     }));
     result.wedstrijden = wedstrijden; saveWedstrijden(wedstrijden);
   }

@@ -215,7 +215,10 @@ function renderWedAanwezig(wid) {
   const cont = document.getElementById('waanw-badges-' + wid);
   if (!cont) return;
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
-  const afwezigen = w.afwezig || []; // [{pid, reden}]
+  const afwezigen = w.afwezig || [];
+  const aantalAanwezig = Math.max(0, players.length - afwezigen.length);
+  const teller = document.getElementById('waanw-teller-' + wid);
+  if (teller) teller.textContent = aantalAanwezig + '/' + players.length + ' aanwezig';
   let html = '';
   afwezigen.forEach((entry, i) => {
     const p = players.find(x => x.id === entry.pid);
@@ -300,8 +303,8 @@ function openWedPositieModal(wid, pos, formatieKey) {
   wedModalWid=wid; wedModalPos=pos;
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
   if (!wedLineups[wid]) wedLineups[wid] = {};
-  const aanwezig = (w.aanwezig||[]);
-  const pool = aanwezig.length ? players.filter(p => aanwezig.includes(p.id)) : players;
+  const afwezigPids2 = (w.afwezig||[]).map(e=>e.pid);
+  const pool = players.filter(p => !afwezigPids2.includes(p.id));
   document.getElementById('wedPosModalTitel').textContent = pos.label + ' — kies speler';
   const lijst = document.getElementById('wedPosModalLijst'); lijst.innerHTML = '';
   const leegBtn = document.createElement('button');
@@ -720,8 +723,8 @@ function renderWedstrijden() {
           </div>`;
         }).join('')}
       </div>` : '';
-      const aanwezigenW = (w.aanwezig||[]);
-      const aanwezigenNames = aanwezigenW.map(pid=>{ const p=players.find(x=>x.id===pid); return p?p.naam:''; }).filter(Boolean);
+      const afwezigCount = (w.afwezig||[]).length;
+      const aanwezig_count = Math.max(0, players.length - afwezigCount);
 
       card.innerHTML = `
       <div class="card-hdr" onclick="this.closest('.card').classList.toggle('open')">
@@ -753,7 +756,10 @@ function renderWedstrijden() {
 
         <!-- Tab: Aanwezig -->
         <div id="wpanel-aanwezig-${w.id}" style="padding:12px 14px">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Wie is er afwezig?</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:11px;color:var(--text3)">Wie is er afwezig?</div>
+            <div id="waanw-teller-${w.id}" style="font-size:12px;font-weight:600;color:var(--text2)"></div>
+          </div>
           <div id="waanw-badges-${w.id}" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px">
           </div>
           <button class="session-save-btn" style="margin-top:2px" onclick="saveWedAanwezig('${w.id}')">💾 Opslaan</button>

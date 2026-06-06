@@ -259,11 +259,18 @@ function buildWeekHtml(w, type, wi) {
     const sn  = sessionNotes[nk] || '';
     const prs = (sess.pr || []).map(p => { const t = PR_TAGS[p]; return t ? `<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:4px;background:${t.bg};color:${t.c}">${p}</span>` : ''; }).join('');
     const sessNr = si + 1;
+    const nkData    = aanwezigheid[nk] || {};
+    const nkAfwezig = players.filter(p => { const e=nkData[p.id]; return e===false||(e&&e.afwezig===true); }).length;
+    const nkAanwezig = players.length - nkAfwezig;
+    const tellerTxt  = players.length ? `<span style="font-size:11px;font-weight:600;color:${nkAfwezig>0?'var(--red)':'var(--text3)'}">${nkAanwezig}/${players.length}</span>` : '';
     html += `<div class="session-item" id="${sid}">
       <div class="session-hdr" onclick="toggleSession('${sid}')">
         <div>
           <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:2px">Training ${sessNr}</div>
-          <div class="session-day">${sess.dag}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="session-day">${sess.dag}</div>
+            ${tellerTxt}
+          </div>
           <div class="session-prs">${prs}</div>
         </div>
         <span class="session-chev">▾</span>

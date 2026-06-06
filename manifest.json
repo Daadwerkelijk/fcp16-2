@@ -2,22 +2,14 @@
   "name": "FCP 16-2 Trainingsapp",
   "short_name": "FCP 16-2",
   "description": "Trainingsapp voor FCP 16-2 seizoen 2026/2027",
-  "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0a1200",
-  "theme_color": "#0a1200",
   "start_url": "/fcp16-2/",
   "scope": "/fcp16-2/",
+  "display": "standalone",
+  "background_color": "#080c14",
+  "theme_color": "#080c14",
+  "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='38' fill='%230a1200'/><text x='96' y='135' font-size='110' text-anchor='middle' fill='%23a8e040'>⚽</text></svg>",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%230a1200'/><text x='256' y='360' font-size='300' text-anchor='middle' fill='%23a8e040'>⚽</text></svg>",
-      "sizes": "512x512",
-      "type": "image/svg+xml"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }

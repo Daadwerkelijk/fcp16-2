@@ -176,6 +176,7 @@ async function loadFromSupabase() {
       ratings:    typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
       motm:       w.motm || null,
       gespeeld:   w.gespeeld || false,
+      afwezig:    typeof w.afwezig === 'string' ? JSON.parse(w.afwezig || '[]') : (w.afwezig || []),
       aanwezig:   typeof w.aanwezig === 'string' ? JSON.parse(w.aanwezig || '[]') : (w.aanwezig || []),
       wed_lineup: typeof w.wed_lineup === 'string' ? JSON.parse(w.wed_lineup || '{}') : (w.wed_lineup || {}),
     }));

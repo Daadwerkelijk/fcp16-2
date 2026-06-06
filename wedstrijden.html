@@ -264,6 +264,11 @@ function removeWedAfwezig(wid, idx) {
 async function saveWedAanwezig(wid) {
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
   saveWedstrijden(wedstrijden);
+  if (supabaseReady) {
+    await sbFetch('wedstrijden?id=eq.' + wid, 'PATCH', {
+      afwezig: JSON.stringify(w.afwezig || [])
+    });
+  }
   showToast((w.afwezig||[]).length + ' afwezig opgeslagen');
 }
 

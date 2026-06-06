@@ -42,6 +42,21 @@
 <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
 <div class="toast" id="toast"></div>
 
+<!-- Wedstrijd afwezig picker modal -->
+<div class="bmodal-overlay" id="wedAfwezigModal" onclick="if(event.target===this)closeWedAfwezigPicker()">
+  <div class="bmodal">
+    <div class="bmodal-title">Afwezig toevoegen</div>
+    <div class="bmodal-label">Speler</div>
+    <select class="bmodal-select" id="wedAfwezigSpeler"></select>
+    <div class="bmodal-label">Reden</div>
+    <select class="bmodal-select" id="wedAfwezigReden"></select>
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeWedAfwezigPicker()">Annuleer</button>
+      <button class="bmodal-save" onclick="saveWedAfwezigPicker()">Toevoegen</button>
+    </div>
+  </div>
+</div>
+
 <!-- Wedstrijd positie kiezen modal -->
 <div class="modal-overlay" id="wedPosModal" onclick="if(event.target===this)closeWedPosModal()">
   <div class="modal">
@@ -188,25 +203,64 @@ function wedTab(wid, tab) {
     btn.style.color = actief ? 'var(--accent)' : 'var(--text3)';
   });
   if (tab === 'opstelling') buildWedField(wid);
+  if (tab === 'aanwezig')   renderWedAanwezig(wid);
 }
 
 function toggleWedAanwezig(wid, pid, cb) {
-  const w = wedstrijden.find(x => x.id === wid); if (!w) return;
-  if (!w.aanwezig) w.aanwezig = [];
-  if (cb.checked) { if (!w.aanwezig.includes(pid)) w.aanwezig.push(pid); }
-  else { w.aanwezig = w.aanwezig.filter(x => x !== pid); }
-  const label = cb.closest('label');
-  if (label) {
-    label.style.borderColor = cb.checked ? 'var(--accent)' : 'var(--line2)';
-    const span = label.querySelector('span');
-    if (span) span.style.color = cb.checked ? 'var(--text)' : 'var(--text2)';
-  }
+  // Niet meer gebruikt - vervangen door + Afwezig model
 }
 
+// Render afwezigen als badges + + Afwezig knop
+function renderWedAanwezig(wid) {
+  const cont = document.getElementById('waanw-badges-' + wid);
+  if (!cont) return;
+  const w = wedstrijden.find(x => x.id === wid); if (!w) return;
+  const afwezigen = w.afwezig || []; // [{pid, reden}]
+  let html = '';
+  afwezigen.forEach((entry, i) => {
+    const p = players.find(x => x.id === entry.pid);
+    if (!p) return;
+    html += `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;background:var(--bg3);border:1px solid var(--red);border-radius:20px;font-size:12px;color:var(--red)">
+      ${p.naam}${entry.reden ? ' · ' + entry.reden : ''}
+      <button onclick="removeWedAfwezig('${wid}',${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0;line-height:1">✕</button>
+    </span>`;
+  });
+  html += `<button onclick="openWedAfwezigPicker('${wid}')" style="padding:4px 10px;background:transparent;border:1px solid var(--accent);border-radius:20px;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--font-ui)">+ Afwezig</button>`;
+  cont.innerHTML = html;
+}
+
+let wedAfwezigWid = null;
+function openWedAfwezigPicker(wid) {
+  wedAfwezigWid = wid;
+  const w = wedstrijden.find(x => x.id === wid); if (!w) return;
+  const afwezigen = (w.afwezig||[]).map(e => e.pid);
+  const beschikbaar = sortedPlayers(players).filter(p => !afwezigen.includes(p.id));
+  if (!beschikbaar.length) { showToast('Alle spelers zijn al gemarkeerd'); return; }
+  const selSpeler = document.getElementById('wedAfwezigSpeler');
+  const selReden  = document.getElementById('wedAfwezigReden');
+  selSpeler.innerHTML = beschikbaar.map(p => `<option value="${p.id}">${p.naam}</option>`).join('');
+  selReden.innerHTML  = ['Ziek','Geblesseerd','Leren','Feest','Anders','Onbekend'].map(r => `<option value="${r}">${r}</option>`).join('');
+  document.getElementById('wedAfwezigModal').classList.add('open');
+}
+function closeWedAfwezigPicker() { document.getElementById('wedAfwezigModal').classList.remove('open'); }
+function saveWedAfwezigPicker() {
+  const pid   = document.getElementById('wedAfwezigSpeler').value;
+  const reden = document.getElementById('wedAfwezigReden').value;
+  const w = wedstrijden.find(x => x.id === wedAfwezigWid); if (!w) return;
+  if (!w.afwezig) w.afwezig = [];
+  w.afwezig.push({ pid, reden });
+  closeWedAfwezigPicker();
+  renderWedAanwezig(wedAfwezigWid);
+}
+function removeWedAfwezig(wid, idx) {
+  const w = wedstrijden.find(x => x.id === wid); if (!w) return;
+  w.afwezig.splice(idx, 1);
+  renderWedAanwezig(wid);
+}
 async function saveWedAanwezig(wid) {
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
   saveWedstrijden(wedstrijden);
-  showToast((w.aanwezig||[]).length + ' spelers aanwezig opgeslagen');
+  showToast((w.afwezig||[]).length + ' afwezig opgeslagen');
 }
 
 // ─── WEDSTRIJD OPSTELLING ───
@@ -699,16 +753,10 @@ function renderWedstrijden() {
 
         <!-- Tab: Aanwezig -->
         <div id="wpanel-aanwezig-${w.id}" style="padding:12px 14px">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Selecteer wie er speelt</div>
-          <div style="display:flex;flex-direction:column;gap:5px" id="waanw-lijst-${w.id}">
-            ${sortedPlayers(players).map(p => `
-              <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border:1px solid ${aanwezigenW.includes(p.id)?'var(--accent)':'var(--line2)'};border-radius:var(--rsm);cursor:pointer">
-                <input type="checkbox" ${aanwezigenW.includes(p.id)?'checked':''} onchange="toggleWedAanwezig('${w.id}','${p.id}',this)"
-                  style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
-                <span style="font-size:13px;color:${aanwezigenW.includes(p.id)?'var(--text)':'var(--text2)'}">${p.naam}</span>
-              </label>`).join('')}
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Wie is er afwezig?</div>
+          <div id="waanw-badges-${w.id}" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px">
           </div>
-          <button class="session-save-btn" style="margin-top:10px" onclick="saveWedAanwezig('${w.id}')">💾 Aanwezig opslaan</button>
+          <button class="session-save-btn" style="margin-top:2px" onclick="saveWedAanwezig('${w.id}')">💾 Opslaan</button>
         </div>
 
         <!-- Tab: Opstelling -->
@@ -763,6 +811,11 @@ function renderWedstrijden() {
         </div>
 
       </div>`;
+      card.onclick = (e) => {
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      };
+      // Render aanwezig badges zodra card in DOM is
+      setTimeout(() => renderWedAanwezig(w.id), 0);
       list.appendChild(card);
     });
   }

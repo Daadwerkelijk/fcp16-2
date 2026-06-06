@@ -302,7 +302,6 @@ async function onSupabaseReady() {
   if (data.absRedenen) absRedenen = data.absRedenen;
   renderRedenen();
   renderCats();
-  renderSpelerLinks();
 }
 
 // Init
@@ -312,7 +311,6 @@ loadSbFields();
 renderFormaties();
 renderRedenen();
 renderCats();
-renderSpelerLinks();
 initManifest();
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });
 </script>

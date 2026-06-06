@@ -172,8 +172,10 @@ async function loadFromSupabase() {
   if (wd && !wd._error) {
     const wedstrijden = wd.map(w => ({
       ...w,
+      isoDate: w.iso_date || w.isoDate || '',
       ratings: typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
       motm: w.motm || null,
+      gespeeld: w.gespeeld || false,
     }));
     result.wedstrijden = wedstrijden; saveWedstrijden(wedstrijden);
   }
@@ -373,14 +375,14 @@ const ALL_POS_OPTS = ['Keeper','LB','RB','CB-L','CB-R','VM-L','VM-R','AM-L','AM-
 // ─── THEMA'S ───
 const THEMAS = {
   // ─── STIJL 3: STADIUM NIGHT (default) ───
-  stadium:  { name:'Stadium Night', accent:'#c8a840', accent2:'#a08020', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#c8d4f0', text2:'#8090b8', text3:'#2e3e60', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#c8a840,#f0c060)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
+  stadium:  { name:'Stadium Night', accent:'#c8a840', accent2:'#a08020', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#c8a840,#f0c060)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
   // ─── STIJL 1: SHARP & INDUSTRIAL ───
   industrial:{ name:'Sharp & Industrial', accent:'#ff3a00', accent2:'#cc2e00', bg:'#0d0d0d', bg2:'#161616', bg3:'#1e1e1e', bg4:'#262626', text:'#f0f0f0', text2:'#a0a0a0', text3:'#444', line:'#1a1a1a', line2:'#222', red:'#ff3a00', accentGradient:'none', fieldBg:'#0a0a0a', fieldBorder:'#1a1a1a', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Unbounded',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'0px', cardShadow:'none', r:'0px', rsm:'0px' },
   // ─── VARIANTEN STADIUM NIGHT ───
-  blauw:    { name:'Blauw', accent:'#4090f0', accent2:'#2070c0', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#c8d4f0', text2:'#8090b8', text3:'#2e3e60', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#4090f0,#80c0ff)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
-  groen:    { name:'Groen', accent:'#40c060', accent2:'#208040', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#c8d4f0', text2:'#8090b8', text3:'#2e3e60', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#40c060,#80f0a0)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
-  geel:     { name:'Geel', accent:'#f0d040', accent2:'#c0a010', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#c8d4f0', text2:'#8090b8', text3:'#2e3e60', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#f0d040,#f0f080)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
-  paars:    { name:'Paars', accent:'#a060f8', accent2:'#7040c0', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#c8d4f0', text2:'#8090b8', text3:'#2e3e60', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#a060f8,#c090ff)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
+  blauw:    { name:'Blauw', accent:'#4090f0', accent2:'#2070c0', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#4090f0,#80c0ff)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
+  groen:    { name:'Groen', accent:'#40c060', accent2:'#208040', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#40c060,#80f0a0)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
+  geel:     { name:'Geel', accent:'#f0d040', accent2:'#c0a010', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#f0d040,#f0f080)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
+  paars:    { name:'Paars', accent:'#a060f8', accent2:'#7040c0', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#a060f8,#c090ff)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
 };
 
 function loadThema() { return localStorage.getItem('fcp_thema') || 'stadium'; }
@@ -469,6 +471,15 @@ const SKILL_COLORS = {
 
 // ─── UTILITIES ───
 function genId() { return 'i' + Date.now() + Math.random().toString(36).slice(2, 6); }
+
+function safeEncode(str) {
+  try { return btoa(unescape(encodeURIComponent(str))); }
+  catch(e) { return btoa(str.replace(/[^ -]/g, '?')); }
+}
+function safeDecode(str) {
+  try { return decodeURIComponent(escape(atob(str))); }
+  catch(e) { return atob(str); }
+}
 
 function showToast(msg) {
   const t = document.getElementById('toast');

@@ -826,9 +826,9 @@ function renderWedstrijden() {
       card.onclick = (e) => {
         if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
       };
-      // Render aanwezig badges zodra card in DOM is
-      setTimeout(() => renderWedAanwezig(w.id), 0);
       list.appendChild(card);
+      // Render aanwezig badges na appendChild zodat DOM element zeker bestaat
+      renderWedAanwezig(w.id);
     });
   }
 

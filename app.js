@@ -377,46 +377,49 @@ const ALL_POS_OPTS = ['Keeper','LB','RB','CB-L','CB-R','VM-L','VM-R','AM-L','AM-
 
 // ─── THEMA'S ───
 const THEMAS = {
-  // ─── STIJL 3: STADIUM NIGHT (default) ───
-  stadium:  { name:'Stadium Night', accent:'#c8a840', accent2:'#a08020', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#c8a840,#f0c060)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
-  // ─── STIJL 1: SHARP & INDUSTRIAL ───
-  industrial:{ name:'Sharp & Industrial', accent:'#ff3a00', accent2:'#cc2e00', bg:'#0d0d0d', bg2:'#161616', bg3:'#1e1e1e', bg4:'#262626', text:'#f0f0f0', text2:'#a0a0a0', text3:'#444', line:'#1a1a1a', line2:'#222', red:'#ff3a00', accentGradient:'none', fieldBg:'#0a0a0a', fieldBorder:'#1a1a1a', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Unbounded',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'0px', cardShadow:'none', r:'0px', rsm:'0px' },
-  // ─── VARIANTEN STADIUM NIGHT ───
-  blauw:    { name:'Blauw', accent:'#4090f0', accent2:'#2070c0', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#4090f0,#80c0ff)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
-  groen:    { name:'Groen', accent:'#40c060', accent2:'#208040', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#40c060,#80f0a0)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
-  geel:     { name:'Geel', accent:'#f0d040', accent2:'#c0a010', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#f0d040,#f0f080)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
-  paars:    { name:'Paars', accent:'#a060f8', accent2:'#7040c0', bg:'#080c14', bg2:'#0e1524', bg3:'#121b2e', bg4:'#1a2540', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', line:'#141e30', line2:'#1e2e48', red:'#f05050', accentGradient:'linear-gradient(90deg,#a060f8,#c090ff)', fieldBg:'#0a1828', fieldBorder:'#1a3050', fontUI:"'Space Grotesk',sans-serif", fontDisplay:"'Space Grotesk',sans-serif", fontWeight:'700', titleStyle:'normal', badgeRadius:'20px', cardShadow:'none', r:'10px', rsm:'7px' },
+  licht:      { name:'Licht (standaard)', topbar:'#2B1FA0', accent:'#2B1FA0', bg:'#F2F1FF', white:'#ffffff', text:'#12113A', text2:'#4A4870', text3:'#8B8AB0', border:'#E4E3F5' },
+  licht_groen:{ name:'Licht Groen',       topbar:'#1B5E20', accent:'#1B7A4B', bg:'#F1F8F4', white:'#ffffff', text:'#0D2B14', text2:'#2E6645', text3:'#6B9E7A', border:'#D4EBD9' },
+  licht_blauw:{ name:'Licht Blauw',       topbar:'#0D47A1', accent:'#1565C0', bg:'#F0F4FF', white:'#ffffff', text:'#0D1B4A', text2:'#2B4EA0', text3:'#6B82CC', border:'#C7D4FC' },
+  donker:     { name:'Donker',             topbar:'#080c14', accent:'#c8a840', bg:'#080c14', white:'#0e1524', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', border:'#1e2e48' },
 };
 
-function loadThema() { return localStorage.getItem('fcp_thema') || 'stadium'; }
+function loadThema() { return localStorage.getItem('fcp_thema') || 'licht'; }
 function applyThema(key) {
-  const t = THEMAS[key] || THEMAS.stadium;
+  const t = THEMAS[key] || THEMAS.licht;
   const r = document.documentElement.style;
-  r.setProperty('--accent',     t.accent);
-  r.setProperty('--accent2',    t.accent2);
-  r.setProperty('--bg',         t.bg);
-  r.setProperty('--bg2',        t.bg2);
-  r.setProperty('--bg3',        t.bg3);
-  r.setProperty('--bg4',        t.bg4);
-  r.setProperty('--text',       t.text);
-  r.setProperty('--text2',      t.text2);
-  r.setProperty('--text3',      t.text3);
-  r.setProperty('--line',       t.line);
-  r.setProperty('--line2',      t.line2);
-  r.setProperty('--red',        t.red);
-  r.setProperty('--gold',       t.accent);
-  r.setProperty('--accent-gradient', t.accentGradient);
-  r.setProperty('--field-bg',   t.fieldBg);
-  r.setProperty('--field-border', t.fieldBorder);
-  r.setProperty('--font-ui',    t.fontUI);
-  r.setProperty('--font-mono',  t.fontUI);
-  r.setProperty('--font-display', t.fontDisplay);
-  r.setProperty('--font-weight-title', t.fontWeight);
-  r.setProperty('--title-style', t.titleStyle);
-  r.setProperty('--badge-radius', t.badgeRadius);
-  r.setProperty('--card-shadow', t.cardShadow);
-  r.setProperty('--r',          t.r);
-  r.setProperty('--rsm',        t.rsm);
+  // Topbar
+  r.setProperty('--topbar',    t.topbar);
+  r.setProperty('--topbar-dark', t.topbar);
+  r.setProperty('--accent',    t.accent);
+  r.setProperty('--accent2',   t.accent);
+  // Achtergronden
+  r.setProperty('--bg',        t.bg);
+  r.setProperty('--white',     t.white);
+  r.setProperty('--bg2',       t.white);
+  r.setProperty('--bg3',       t.bg);
+  r.setProperty('--bg4',       t.bg);
+  // Tekst
+  r.setProperty('--text',      t.text);
+  r.setProperty('--text2',     t.text2);
+  r.setProperty('--text3',     t.text3);
+  // Borders
+  r.setProperty('--border',    t.border);
+  r.setProperty('--border2',   t.border);
+  r.setProperty('--line',      t.border);
+  r.setProperty('--line2',     t.border);
+  // Fonts altijd DM Sans
+  r.setProperty('--font-ui',      "'DM Sans',sans-serif");
+  r.setProperty('--font-mono',    "'DM Mono',monospace");
+  r.setProperty('--font-display', "'DM Sans',sans-serif");
+  r.setProperty('--font-weight-title', '700');
+  r.setProperty('--title-style', 'normal');
+  r.setProperty('--badge-radius', '100px');
+  r.setProperty('--card-shadow', '0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)');
+  r.setProperty('--r',   '14px');
+  r.setProperty('--rsm', '10px');
+  // Veld altijd groen
+  r.setProperty('--field-bg',     '#1B5E20');
+  r.setProperty('--field-border', '#2E7D32');
   localStorage.setItem('fcp_thema', key);
 }
 // Thema direct toepassen bij laden

@@ -256,6 +256,15 @@ function startAutoSave() {
 
 function getTokenFromUrl() {
   const params = new URLSearchParams(location.search);
+  // Laad Supabase credentials vanuit URL als die aanwezig zijn
+  const su = params.get('su');
+  const sk = params.get('sk');
+  if (su && sk) {
+    try {
+      localStorage.setItem('sb_url', safeDecode(decodeURIComponent(su)));
+      localStorage.setItem('sb_key', safeDecode(decodeURIComponent(sk)));
+    } catch(e) {}
+  }
   return params.get('token');
 }
 

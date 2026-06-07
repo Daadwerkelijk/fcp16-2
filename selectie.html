@@ -46,7 +46,7 @@
     <div class="page-title">Selectie</div>
     <div class="page-sub">Spelers beheren</div>
   </div>
-  <div class="form-wrap" style="padding-top:12px;padding-bottom:calc(80px + env(safe-area-inset-bottom))">
+  <div class="form-wrap" style="padding-top:12px;padding-bottom:calc(120px + env(safe-area-inset-bottom))">
     <div class="add-form">
       <div class="form-title">+ Nieuwe speler</div>
       <div class="form-row">
@@ -130,7 +130,12 @@ async function wisFormulier(pid) {
 function deelFormulier(pid, naam) {
   const base = location.origin + location.pathname.replace('selectie.html','') + 'spelerformulier.html?token=';
   const token = safeEncode(pid + ':' + naam);
-  const url = base + encodeURIComponent(token);
+  // Voeg sb_url en sb_key toe zodat speler kan opslaan
+  const sbUrl = localStorage.getItem('sb_url') || '';
+  const sbKey = localStorage.getItem('sb_key') || '';
+  let url = base + encodeURIComponent(token);
+  if (sbUrl) url += '&su=' + encodeURIComponent(safeEncode(sbUrl));
+  if (sbKey) url += '&sk=' + encodeURIComponent(safeEncode(sbKey));
   if (navigator.share) {
     navigator.share({ title:'Spelersformulier ' + naam, text:'Vul je formulier in voor FCP 16-2', url });
   } else {

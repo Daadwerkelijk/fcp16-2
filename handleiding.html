@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#2B1FA0">
+<title>Handleiding — FCP 16-2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<link rel="icon" href="icon-192.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:#F2F1FF;color:#12113A;font-size:15px;min-height:100dvh;padding-bottom:32px}
+
+/* Topbar */
+.topbar{background:#2B1FA0;padding:calc(44px + env(safe-area-inset-top)) 16px 14px;position:sticky;top:0;z-index:10}
+.topbar-row{display:flex;align-items:center;justify-content:space-between}
+.topbar-title{color:#fff;font-size:20px;font-weight:700}
+.topbar-back{background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:7px 13px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none}
+
+/* Inhoudsopgave */
+.toc{margin:16px;background:#fff;border:1px solid #E4E3F5;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.toc-title{padding:13px 14px;font-size:12px;font-weight:700;color:#8B8AB0;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #E4E3F5}
+.toc-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #E4E3F5;text-decoration:none;cursor:pointer;transition:background .15s}
+.toc-item:last-child{border-bottom:none}
+.toc-item:active{background:#F2F1FF}
+.toc-nr{width:28px;height:28px;border-radius:8px;background:#EEF2FF;color:#2B1FA0;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.toc-text{font-size:14px;font-weight:500;color:#12113A;flex:1;line-height:1.3}
+.toc-chev{color:#D0CFED;font-size:16px}
+
+/* Secties */
+.sectie{margin:16px;background:#fff;border:1px solid #E4E3F5;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.sectie-hdr{background:#2B1FA0;padding:16px 14px 12px;display:flex;align-items:center;gap:11px}
+.sectie-nr{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.2);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sectie-titel{color:#fff;font-size:16px;font-weight:700;line-height:1.3}
+.sectie-body{padding:14px}
+
+/* Stappen */
+.stap{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.stap:last-child{margin-bottom:0}
+.stap-nr{width:26px;height:26px;border-radius:50%;background:#EEF2FF;color:#2B1FA0;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.stap-tekst{flex:1;font-size:14px;color:#12113A;line-height:1.6}
+.stap-tekst strong{font-weight:700;color:#2B1FA0}
+.stap-tekst em{font-style:normal;background:#EEF2FF;color:#2B1FA0;padding:1px 6px;border-radius:6px;font-size:13px;font-weight:600}
+
+/* Tip blok */
+.tip{background:#FFF8E1;border:1px solid #FFE082;border-radius:10px;padding:11px 13px;margin-top:12px;font-size:13px;color:#6B4E00;line-height:1.6}
+.tip strong{font-weight:700}
+
+/* Sub-sectie */
+.sub-sectie{margin-top:14px;padding-top:14px;border-top:1px solid #E4E3F5}
+.sub-titel{font-size:13px;font-weight:700;color:#4A4870;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
+
+/* Terug naar top */
+.top-btn{display:block;text-align:center;margin:8px 16px 0;padding:11px;background:#fff;border:1px solid #E4E3F5;border-radius:10px;color:#8B8AB0;font-size:13px;font-weight:500;text-decoration:none;cursor:pointer}
+.top-btn:active{background:#F2F1FF}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <div class="topbar-title">📖 Handleiding</div>
+    <a href="index.html" class="topbar-back">← Terug</a>
+  </div>
+</div>
+
+<!-- Inhoudsopgave -->
+<div class="toc">
+  <div class="toc-title">Inhoudsopgave</div>
+  <a class="toc-item" href="#s1"><div class="toc-nr">1</div><div class="toc-text">Iemand afmelden voor een training</div><div class="toc-chev">›</div></a>
+  <a class="toc-item" href="#s2"><div class="toc-nr">2</div><div class="toc-text">Zien wie er bij een training niet is</div><div class="toc-chev">›</div></a>
+  <a class="toc-item" href="#s3"><div class="toc-nr">3</div><div class="toc-text">Zien wie er bij een wedstrijd niet is</div><div class="toc-chev">›</div></a>
+  <a class="toc-item" href="#s4"><div class="toc-nr">4</div><div class="toc-text">Iemand afmelden voor een wedstrijd</div><div class="toc-chev">›</div></a>
+  <a class="toc-item" href="#s5"><div class="toc-nr">5</div><div class="toc-text">Opstelling maken voor een wedstrijd</div><div class="toc-chev">›</div></a>
+  <a class="toc-item" href="#s6"><div class="toc-nr">6</div><div class="toc-text">Training van een specifieke dag zien</div><div class="toc-chev">›</div></a>
+  <a class="toc-item" href="#s7"><div class="toc-nr">7</div><div class="toc-text">Training maken of bewerken</div><div class="toc-chev">›</div></a>
+  <a class="toc-item" href="#s8"><div class="toc-nr">8</div><div class="toc-text">Oefening toevoegen aan de database</div><div class="toc-chev">›</div></a>
+  <a class="toc-item" href="#s9"><div class="toc-nr">9</div><div class="toc-text">Notitie bij een speler maken</div><div class="toc-chev">›</div></a>
+  <a class="toc-item" href="#s10"><div class="toc-nr">10</div><div class="toc-text">Zien hoe een speler zichzelf ziet</div><div class="toc-chev">›</div></a>
+  <a class="toc-item" href="#s11"><div class="toc-nr">11</div><div class="toc-text">Skills overzicht van de selectie</div><div class="toc-chev">›</div></a>
+</div>
+
+<!-- 1 -->
+<div class="sectie" id="s1">
+  <div class="sectie-hdr"><div class="sectie-nr">1</div><div class="sectie-titel">Iemand afmelden voor een training</div></div>
+  <div class="sectie-body">
+    <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Trainen</strong> in de navigatie onderaan</div></div>
+    <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Zoek de juiste week en tik erop om hem open te klappen</div></div>
+    <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Tik op de training (bijv. <em>Training 1 — Dinsdag</em>)</div></div>
+    <div class="stap"><div class="stap-nr">4</div><div class="stap-tekst">Scroll naar beneden tot je <strong>Afwezigheid</strong> ziet</div></div>
+    <div class="stap"><div class="stap-nr">5</div><div class="stap-tekst">Tik op <em>+ Afwezig</em></div></div>
+    <div class="stap"><div class="stap-nr">6</div><div class="stap-tekst">Kies de speler en de reden (Ziek, Geblesseerd, Leren…)</div></div>
+    <div class="stap"><div class="stap-nr">7</div><div class="stap-tekst">Tik op <em>Toevoegen</em></div></div>
+    <div class="stap"><div class="stap-nr">8</div><div class="stap-tekst">Tik op <strong>💾 Aanwezigheid opslaan</strong></div></div>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="sectie" id="s2">
+  <div class="sectie-hdr"><div class="sectie-nr">2</div><div class="sectie-titel">Zien wie er bij een training niet is</div></div>
+  <div class="sectie-body">
+    <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Trainen</strong> in de navigatie onderaan</div></div>
+    <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Open de juiste week — bij elke training zie je direct een getal zoals <em>16/18</em> naast de naam</div></div>
+    <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Tik op de training — onder <strong>Afwezigheid</strong> staan alle afgemelde spelers als rode badges met naam en reden</div></div>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="sectie" id="s3">
+  <div class="sectie-hdr"><div class="sectie-nr">3</div><div class="sectie-titel">Zien wie er bij een wedstrijd niet is</div></div>
+  <div class="sectie-body">
+    <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Wedstrijden</strong> in de navigatie onderaan</div></div>
+    <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Tik op de wedstrijd om hem open te klappen</div></div>
+    <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Het tabblad <strong>👥 Aanwezig</strong> toont direct wie afwezig is en hoeveel spelers beschikbaar zijn</div></div>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="sectie" id="s4">
+  <div class="sectie-hdr"><div class="sectie-nr">4</div><div class="sectie-titel">Iemand afmelden voor een wedstrijd</div></div>
+  <div class="sectie-body">
+    <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Wedstrijden</strong> in de navigatie onderaan</div></div>
+    <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Tik op de wedstrijd om hem open te klappen</div></div>
+    <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Tik op het tabblad <strong>👥 Aanwezig</strong></div></div>
+    <div class="stap"><div class="stap-nr">4</div><div class="stap-tekst">Tik op <em>+ Afwezig</em>, kies speler en reden, tik <em>Toevoegen</em></div></div>
+    <div class="stap"><div class="stap-nr">5</div><div class="stap-tekst">Tik op <strong>💾 Opslaan</strong></div></div>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="sectie" id="s5">
+  <div class="sectie-hdr"><div class="sectie-nr">5</div><div class="sectie-titel">Opstelling maken voor een wedstrijd</div></div>
+  <div class="sectie-body">
+    <div class="tip"><strong>Tip:</strong> Meld eerst afwezige spelers af (zie punt 4) — dan zie je in de opstelling alleen beschikbare spelers.</div>
+    <div class="sub-sectie">
+      <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Wedstrijden</strong> en open de wedstrijd</div></div>
+      <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Tik op het tabblad <strong>🟢 Opstelling</strong></div></div>
+      <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Kies een formatie uit de dropdown bovenaan</div></div>
+      <div class="stap"><div class="stap-nr">4</div><div class="stap-tekst">Tik op een positie op het veld en kies een speler</div></div>
+      <div class="stap"><div class="stap-nr">5</div><div class="stap-tekst">Herhaal voor alle posities en tik op <strong>💾 Opstelling opslaan</strong></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="sectie" id="s6">
+  <div class="sectie-hdr"><div class="sectie-nr">6</div><div class="sectie-titel">Training van een specifieke dag zien</div></div>
+  <div class="sectie-body">
+    <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Trainen</strong> in de navigatie onderaan</div></div>
+    <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">De huidige week staat bovenaan met een groene markering — andere weken staan er direct onder</div></div>
+    <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Tik op de week om hem open te klappen — je ziet Training 1 en Training 2 met de dag</div></div>
+    <div class="stap"><div class="stap-nr">4</div><div class="stap-tekst">Tik op de training om oefeningen, aantekeningen en aanwezigheid te zien</div></div>
+  </div>
+</div>
+
+<!-- 7 -->
+<div class="sectie" id="s7">
+  <div class="sectie-hdr"><div class="sectie-nr">7</div><div class="sectie-titel">Training maken of bewerken</div></div>
+  <div class="sectie-body">
+    <div class="sub-sectie" style="margin-top:0;padding-top:0;border-top:none">
+      <div class="sub-titel">Nieuwe week aanmaken</div>
+      <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Trainen</strong> en daarna op <em>+ Week</em> rechtsboven</div></div>
+      <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Kies de startdatum (maandag van die week)</div></div>
+      <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Vul het thema in en voeg trainingen toe met dag en naam</div></div>
+      <div class="stap"><div class="stap-nr">4</div><div class="stap-tekst">Tik op <strong>Opslaan</strong></div></div>
+    </div>
+    <div class="sub-sectie">
+      <div class="sub-titel">Bestaande week bewerken</div>
+      <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Zoek de week en tik op <em>✏️</em> rechts van de weeknaam</div></div>
+      <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Pas aan en tik op <strong>Opslaan</strong></div></div>
+    </div>
+    <div class="sub-sectie">
+      <div class="sub-titel">Oefening toevoegen aan een training</div>
+      <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Open de training en tik op <em>+ Blok toevoegen</em></div></div>
+      <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Kies een oefening uit de bibliotheek</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 8 -->
+<div class="sectie" id="s8">
+  <div class="sectie-hdr"><div class="sectie-nr">8</div><div class="sectie-titel">Oefening toevoegen aan de database</div></div>
+  <div class="sectie-body">
+    <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Oefeningen</strong> in de navigatie onderaan</div></div>
+    <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Tik op <em>+ Oefening</em> rechtsboven</div></div>
+    <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Vul naam, categorie, beschrijving en minimum spelers in</div></div>
+    <div class="stap"><div class="stap-nr">4</div><div class="stap-tekst">Voeg stappen toe via <em>+ Stap toevoegen</em> — één stap per instructie</div></div>
+    <div class="stap"><div class="stap-nr">5</div><div class="stap-tekst">Voeg optioneel een coachtip toe en tik op <strong>Opslaan</strong></div></div>
+    <div class="tip">De oefening is daarna beschikbaar in de bibliotheek en kan in trainingen worden gebruikt.</div>
+  </div>
+</div>
+
+<!-- 9 -->
+<div class="sectie" id="s9">
+  <div class="sectie-hdr"><div class="sectie-nr">9</div><div class="sectie-titel">Notitie bij een speler maken</div></div>
+  <div class="sectie-body">
+    <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Selectie</strong> in de navigatie onderaan</div></div>
+    <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Tik op de speler om de kaart open te klappen</div></div>
+    <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Je ziet vier velden: <strong>Omschrijving</strong>, <strong>Posities</strong>, <strong>Opmerkingen</strong> en <strong>Ontwikkeling</strong></div></div>
+    <div class="stap"><div class="stap-nr">4</div><div class="stap-tekst">Typ je notitie in het gewenste veld</div></div>
+    <div class="stap"><div class="stap-nr">5</div><div class="stap-tekst">Tik op <strong>💾 Opslaan</strong> onderaan de kaart</div></div>
+    <div class="tip"><strong>Ontwikkeling</strong> is handig voor wekelijkse voortgang, bijv. <em>Week 5 — positiespel gaat beter</em>.</div>
+  </div>
+</div>
+
+<!-- 10 -->
+<div class="sectie" id="s10">
+  <div class="sectie-hdr"><div class="sectie-nr">10</div><div class="sectie-titel">Zien hoe een speler zichzelf ziet</div></div>
+  <div class="sectie-body">
+    <div class="sub-sectie" style="margin-top:0;padding-top:0;border-top:none">
+      <div class="sub-titel">Formulier delen met speler</div>
+      <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Selectie</strong> en open de speler</div></div>
+      <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Scroll naar <strong>Spelersformulier</strong> en tik op <em>📲 Deel</em></div></div>
+      <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Stuur de link via WhatsApp naar de speler of ouder</div></div>
+    </div>
+    <div class="sub-sectie">
+      <div class="sub-titel">Resultaten bekijken</div>
+      <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Selectie</strong> en open de speler</div></div>
+      <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Scroll naar <strong>Spelersformulier</strong> — als ingevuld zie je positie, vakantie, leiderschap, skills en persoonlijke wens</div></div>
+    </div>
+    <div class="tip">De speler vult het formulier in op zijn eigen telefoon. De voortgang wordt automatisch opgeslagen zodat hij het in meerdere keren kan invullen.</div>
+  </div>
+</div>
+
+<!-- 11 -->
+<div class="sectie" id="s11">
+  <div class="sectie-hdr"><div class="sectie-nr">11</div><div class="sectie-titel">Skills overzicht van de selectie</div></div>
+  <div class="sectie-body">
+    <div class="stap"><div class="stap-nr">1</div><div class="stap-tekst">Tik op <strong>Dashboard</strong> in de navigatie onderaan</div></div>
+    <div class="stap"><div class="stap-nr">2</div><div class="stap-tekst">Tik op de knop <strong>🎯 Skills</strong></div></div>
+    <div class="stap"><div class="stap-nr">3</div><div class="stap-tekst">Je ziet per vaardigheid (Balcontrole, Dribbel, Positiespel…) een kleurenbalk</div></div>
+    <div class="stap"><div class="stap-nr">4</div><div class="stap-tekst">Tik op een kleur om te zien welke spelers die beoordeling hebben gegeven</div></div>
+    <div class="tip"><strong>Let op:</strong> alleen spelers die hun formulier hebben ingevuld zijn zichtbaar. Deel formulierlinks via Selectie → speler → 📲 Deel om meer spelers mee te krijgen.</div>
+  </div>
+</div>
+
+<a class="top-btn" href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false">↑ Terug naar boven</a>
+
+</body>
+</html>

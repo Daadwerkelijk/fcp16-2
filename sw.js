@@ -1,4 +1,4 @@
-const CACHE = 'fcp162-v3';
+const CACHE = 'fcp162-v4';
 const ASSETS = [
   '/fcp16-2/',
   '/fcp16-2/index.html',
@@ -9,7 +9,7 @@ const ASSETS = [
   '/fcp16-2/oefeningen.html',
   '/fcp16-2/team.html',
   '/fcp16-2/instellingen.html',
-  '/fcp16-2/spelerformulier.html',
+  '/fcp16-2/handleiding.html',
   '/fcp16-2/app.js',
   '/fcp16-2/style.css',
   '/fcp16-2/manifest.json',

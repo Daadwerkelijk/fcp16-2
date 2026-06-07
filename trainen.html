@@ -295,10 +295,10 @@ function toggleSession(id) {
   if (!el) return;
   el.classList.toggle('open');
   if (el.classList.contains('open')) {
-    // nk zit in de session-body als aanw-{nk}
-    const aanwEl = el.querySelector('[id^="aanw-"]');
-    if (aanwEl) {
-      const nk = aanwEl.id.replace('aanw-','');
+    // id formaat: cw{wi}s{si} -> nk = cw{wi}_{si}
+    const match = id.match(/^(cw\d+)s(\d+)$/);
+    if (match) {
+      const nk = match[1] + '_' + match[2];
       checkVakantiesEnZetAfwezig(nk);
     }
   }

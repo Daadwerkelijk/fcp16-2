@@ -27,7 +27,12 @@
 <body>
 <div class="toast" id="toast"></div>
 
-<div id="form-wrap" style="display:none">
+<div id="herstel-banner" style="display:none;margin:10px 16px 0;padding:10px 13px;background:#EEF2FF;border:1px solid #C7D4FC;border-radius:10px;font-size:12px;color:#1a3799;align-items:center;gap:8px">
+    🔄 <span></span>
+  </div>
+  <div id="autosave-indicator" style="text-align:right;font-size:11px;color:#1B7A4B;padding:6px 16px 0;opacity:0;transition:opacity .5s"></div>
+
+  <div id="form-wrap" style="display:none">
   <div style="padding:48px 16px 8px;background:var(--bg2);border-bottom:1px solid var(--line2);margin-bottom:16px">
     <div style="font-size:11px;color:var(--text3);margin-bottom:2px">FCP 16-2 · Spelersformulier</div>
     <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--text)" id="form-speler-naam">—</div>
@@ -167,6 +172,87 @@ const SKILL_OPTIES = ['Ontwikkel punt','Voldoende','Goed','Zeer goed'];
 
 let spelerId = null;
 let spelerNaam = '';
+let autoSaveTimer = null;
+
+// ─── AUTO-SAVE ───
+function autoSaveKey() { return 'formulier_draft_' + spelerId; }
+
+function saveVoortgang() {
+  if (!spelerId) return;
+  const draft = {
+    naam:              document.getElementById('f-naam')?.value || '',
+    geboortedatum:     document.getElementById('f-geboortedatum')?.value || '',
+    positie:           document.getElementById('f-positie')?.value || '',
+    mobiel:            document.getElementById('f-mobiel')?.value || '',
+    vakantie:          document.getElementById('f-vakantie')?.value || '',
+    vakantie_van:      document.getElementById('f-vakantie-van')?.value || '',
+    vakantie_tot:      document.getElementById('f-vakantie-tot')?.value || '',
+    aanvoerder:        document.getElementById('f-aanvoerder')?.value || '',
+    aanvoerder_waarom: document.getElementById('f-aanvoerder-waarom')?.value || '',
+    aanvoerder_wie:    document.getElementById('f-aanvoerder-wie')?.value || '',
+    aanvoerder_waarom2:document.getElementById('f-aanvoerder-waarom2')?.value || '',
+    wens:              document.getElementById('f-wens')?.value || '',
+    bijzonderheden:    document.getElementById('f-bijzonderheden')?.value || '',
+    skills:            collectSkills(),
+    opgeslagen_op:     new Date().toISOString(),
+  };
+  localStorage.setItem(autoSaveKey(), JSON.stringify(draft));
+  // Toon indicator
+  const ind = document.getElementById('autosave-indicator');
+  if (ind) { ind.textContent = '✓ Voortgang opgeslagen'; ind.style.opacity = '1'; setTimeout(() => ind.style.opacity = '0', 2000); }
+}
+
+function herstelVoortgang() {
+  if (!spelerId) return;
+  const raw = localStorage.getItem(autoSaveKey());
+  if (!raw) return;
+  try {
+    const d = JSON.parse(raw);
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+    set('f-naam', d.naam);
+    set('f-geboortedatum', d.geboortedatum);
+    set('f-positie', d.positie);
+    set('f-mobiel', d.mobiel);
+    set('f-vakantie', d.vakantie);
+    set('f-vakantie-van', d.vakantie_van);
+    set('f-vakantie-tot', d.vakantie_tot);
+    set('f-aanvoerder', d.aanvoerder);
+    set('f-aanvoerder-waarom', d.aanvoerder_waarom);
+    set('f-aanvoerder-wie', d.aanvoerder_wie);
+    set('f-aanvoerder-waarom2', d.aanvoerder_waarom2);
+    set('f-wens', d.wens);
+    set('f-bijzonderheden', d.bijzonderheden);
+    // Skills herstellen
+    if (d.skills) {
+      Object.entries(d.skills).forEach(([skill, waarde]) => {
+        const sid = 'skill-' + ['techniek','tactiek','fysiek','mentaal'].find(cat =>
+          (FORM_SKILLS[cat]||[]).includes(skill)
+        ) + '-' + skill.replace(/\s+/g,'_');
+        const radio = document.querySelector(`input[name="${sid}"][value="${waarde}"]`);
+        if (radio) radio.checked = true;
+      });
+    }
+    // Toon herstel-banner
+    const datum = d.opgeslagen_op ? new Date(d.opgeslagen_op).toLocaleString('nl-NL') : '';
+    const banner = document.getElementById('herstel-banner');
+    if (banner) { banner.style.display = 'block'; banner.querySelector('span').textContent = 'Voortgang hersteld van ' + datum; }
+    // Triggers
+    document.getElementById('f-vakantie')?.dispatchEvent(new Event('change'));
+    toggleAanvoerder();
+  } catch(e) {}
+}
+
+function startAutoSave() {
+  // Save bij elke wijziging, max 1x per 3 seconden
+  document.getElementById('form-wrap').addEventListener('input', () => {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(saveVoortgang, 3000);
+  });
+  document.getElementById('form-wrap').addEventListener('change', () => {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(saveVoortgang, 1000);
+  });
+}
 
 function getTokenFromUrl() {
   const params = new URLSearchParams(location.search);
@@ -261,6 +347,8 @@ if (token) {
     });
     document.getElementById('loading-msg').style.display = 'none';
     document.getElementById('form-wrap').style.display = 'block';
+    herstelVoortgang();
+    startAutoSave();
   } catch(e) {
     document.getElementById('loading-msg').textContent = 'Ongeldige link. Vraag de trainer om een nieuwe link.';
   }

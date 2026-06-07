@@ -277,11 +277,24 @@ function buildWedField(wid) {
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
   const formatieKey = document.getElementById('wform-sel-' + wid)?.value || w.formatie || '4222';
   const formatie = FORMATIES[formatieKey]; if (!formatie) return;
-  // Alleen laden vanuit w.wed_lineup als wedLineups[wid] nog niet in geheugen zit
-  if (!wedLineups[wid]) {
-    wedLineups[wid] = typeof w.wed_lineup === 'string'
-      ? JSON.parse(w.wed_lineup||'{}')
-      : JSON.parse(JSON.stringify(w.wed_lineup||{}));
+  // Laad lineup: geheugen → w.wed_lineup (Supabase/localStorage)
+  if (!wedLineups[wid] || Object.keys(wedLineups[wid]).length === 0) {
+    let lineup = {};
+    if (w.wed_lineup && Object.keys(w.wed_lineup).length > 0) {
+      lineup = typeof w.wed_lineup === 'string'
+        ? JSON.parse(w.wed_lineup)
+        : JSON.parse(JSON.stringify(w.wed_lineup));
+    } else {
+      // Probeer direct uit localStorage als Supabase nog niet gesyncet is
+      const stored = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
+      const sw = stored.find(x => x.id === wid);
+      if (sw && sw.wed_lineup) {
+        lineup = typeof sw.wed_lineup === 'string'
+          ? JSON.parse(sw.wed_lineup)
+          : sw.wed_lineup;
+      }
+    }
+    wedLineups[wid] = lineup;
   }
   const cont = document.getElementById('wfield-' + wid); if (!cont) return;
   cont.innerHTML = '';

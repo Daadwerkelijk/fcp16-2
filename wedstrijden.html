@@ -277,23 +277,43 @@ function buildWedField(wid) {
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
   const formatieKey = document.getElementById('wform-sel-' + wid)?.value || w.formatie || '4222';
   const formatie = FORMATIES[formatieKey]; if (!formatie) return;
-  if (!wedLineups[wid]) wedLineups[wid] = typeof w.wed_lineup === 'string' ? JSON.parse(w.wed_lineup||'{}') : (w.wed_lineup||{});
+  // Alleen laden vanuit w.wed_lineup als wedLineups[wid] nog niet in geheugen zit
+  if (!wedLineups[wid]) {
+    wedLineups[wid] = typeof w.wed_lineup === 'string'
+      ? JSON.parse(w.wed_lineup||'{}')
+      : JSON.parse(JSON.stringify(w.wed_lineup||{}));
+  }
   const cont = document.getElementById('wfield-' + wid); if (!cont) return;
   cont.innerHTML = '';
+  const afwezigPids = (w.afwezig||[]).map(e=>e.pid);
   formatie.pos.forEach(pos => {
     const pid = wedLineups[wid][pos.id];
     const p   = pid ? players.find(x => x.id === pid) : null;
+    const isKeeper = pos.role === 'keeper';
     const slot = document.createElement('div');
+    slot.className = 'pos-slot';
     slot.style.cssText = `position:absolute;left:${pos.x}%;top:${pos.y}%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;cursor:pointer`;
     const circle = document.createElement('div');
-    circle.style.cssText = `width:40px;height:40px;border-radius:50%;border:2px solid ${p?'var(--accent)':'rgba(255,255,255,0.2)'};background:${p?'var(--accent2)':'rgba(0,0,0,0.5)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text)`;
-    if (p) { const parts=p.naam.trim().split(' '); circle.textContent=parts.length>1?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():p.naam.slice(0,2).toUpperCase(); }
-    else { circle.textContent='+'; circle.style.color='rgba(255,255,255,0.4)'; }
+    // Expliciete stijlen zodat veldkleuren altijd kloppen ongeacht thema
+    if (p) {
+      circle.style.cssText = `width:42px;height:42px;border-radius:50%;border:2px solid #fff;background:${isKeeper?'rgba(27,122,75,.9)':'rgba(43,31,160,.85)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)`;
+    } else {
+      circle.style.cssText = `width:42px;height:42px;border-radius:50%;border:2px dashed rgba(255,255,255,.4);background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,.5)`;
+    }
+    if (p) {
+      const parts = p.naam.trim().split(' ');
+      circle.textContent = parts.length > 1
+        ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+        : p.naam.slice(0,2).toUpperCase();
+    } else {
+      circle.textContent = '+';
+      circle.style.color = 'rgba(255,255,255,.35)';
+    }
     const badge = document.createElement('div');
-    badge.style.cssText = 'font-size:8px;color:rgba(255,255,255,0.6);margin-top:1px;background:rgba(0,0,0,0.5);padding:1px 4px;border-radius:4px;font-weight:600';
+    badge.style.cssText = 'font-size:8px;color:rgba(255,255,255,.85);margin-top:2px;background:rgba(0,0,0,.5);padding:1px 5px;border-radius:5px;font-weight:700;letter-spacing:.03em;white-space:nowrap';
     badge.textContent = pos.label;
     const naam = document.createElement('div');
-    naam.style.cssText = 'font-size:9px;color:var(--text);margin-top:1px;max-width:52px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500';
+    naam.style.cssText = 'font-size:9px;color:#fff;margin-top:1px;max-width:52px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.6)';
     naam.textContent = p ? p.naam.split(' ')[0] : '';
     slot.appendChild(circle); slot.appendChild(badge); slot.appendChild(naam);
     slot.onclick = () => openWedPositieModal(wid, pos, formatieKey);
@@ -337,7 +357,7 @@ async function saveWedOpstelling(wid) {
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
   const formatieKey = document.getElementById('wform-sel-' + wid)?.value || '4222';
   w.formatie   = formatieKey;
-  w.wed_lineup = wedLineups[wid] || {};
+  w.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid] || {}));
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
     await sbFetch('wedstrijden?id=eq.' + wid, 'PATCH', {
@@ -877,7 +897,11 @@ function renderRanking() {
 async function onSupabaseReady() {
   const data = await loadFromSupabase();
   if (data.players)     players     = data.players;
-  if (data.wedstrijden) wedstrijden = data.wedstrijden;
+  if (data.wedstrijden) {
+    wedstrijden = data.wedstrijden;
+    // Cache leegmaken zodat wedLineups opnieuw geladen worden vanuit verse Supabase data
+    Object.keys(wedLineups).forEach(k => delete wedLineups[k]);
+  }
   renderWedstrijden();
 }
 

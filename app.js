@@ -469,10 +469,10 @@ const SKILL_CATS = [
 ];
 const SKILL_LEVELS = ['Ontwikkel punt','Voldoende','Goed','Zeer goed'];
 const SKILL_COLORS = {
-  'Ontwikkel punt': { bg:'#3a1000', c:'#f07040' },
-  'Voldoende':      { bg:'#1a2800', c:'#a8e040' },
-  'Goed':           { bg:'#0a2010', c:'#60d080' },
-  'Zeer goed':      { bg:'#003818', c:'#40f090' },
+  'Ontwikkel punt': { bg:'#FFEBEE', c:'#C62828' },
+  'Voldoende':      { bg:'#FFF3E0', c:'#E65100' },
+  'Goed':           { bg:'#F1F8E9', c:'#558B2F' },
+  'Zeer goed':      { bg:'#E8F5E9', c:'#1B5E20' },
 };
 
 // ─── UTILITIES ───

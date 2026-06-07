@@ -187,7 +187,7 @@ async function renderFormulierData(pid) {
     Fysiek:   ['Conditie','Explosieve kracht','Duel kracht'],
     Mentaal:  ['Gedrag','Motivatie','Aandacht','Discipline','Omgaan met tegenslag'],
   };
-  const kleur = {'Ontwikkel punt':'#c04040','Voldoende':'#8080a0','Goed':'#60a0c0','Zeer goed':'#a8e040'};
+  const kleur = {'Ontwikkel punt':'#C62828','Voldoende':'#E65100','Goed':'#558B2F','Zeer goed':'#1B5E20'};
   if (data.skills && Object.keys(data.skills).length) {
     Object.entries(FORM_SKILLS).forEach(([cat, skills]) => {
       const catSkills = skills.filter(s => data.skills[s]);

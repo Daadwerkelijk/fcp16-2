@@ -206,9 +206,9 @@ function buildSchema() {
   }
 
   let html = '<div style="padding-top:4px">';
-  if (toekomst.length) { html += sectionHdr('Komende weken', 'var(--text3)'); toekomst.forEach(i => { html += buildWeekHtml(i.w,'custom',i.wi); }); }
   if (huidig.length)   { html += sectionHdr('Huidige week', 'var(--accent)'); huidig.forEach(i => { html += buildWeekHtml(i.w,'custom',i.wi); }); }
-  if (verleden.length) { html += sectionHdr('Verleden', 'var(--text3)'); [...verleden].reverse().forEach(i => { html += buildWeekHtml(i.w,'custom',i.wi); }); }
+  if (toekomst.length) { html += sectionHdr('Komende weken', 'var(--text3)'); toekomst.forEach(i => { html += buildWeekHtml(i.w,'custom',i.wi); }); }
+  if (verleden.length) { html += sectionHdr('Archief', 'var(--text3)'); [...verleden].reverse().forEach(i => { html += buildWeekHtml(i.w,'custom',i.wi); }); }
   if (!toekomst.length && !huidig.length && !verleden.length) html += '<div style="padding:16px;font-size:12px;color:var(--text3)">Geen weken gevonden.</div>';
   html += '</div>';
 

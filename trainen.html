@@ -290,7 +290,19 @@ function buildWeekHtml(w, type, wi) {
 }
 
 function toggleWeek(id)    { document.getElementById(id).classList.toggle('open'); }
-function toggleSession(id) { document.getElementById(id).classList.toggle('open'); }
+function toggleSession(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) {
+    // nk zit in de session-body als aanw-{nk}
+    const aanwEl = el.querySelector('[id^="aanw-"]');
+    if (aanwEl) {
+      const nk = aanwEl.id.replace('aanw-','');
+      checkVakantiesEnZetAfwezig(nk);
+    }
+  }
+}
 
 function buildBlokkenHtml(nk, blokken) {
   let html = '';
@@ -396,6 +408,65 @@ async function saveAanwezigheid(nk) {
 }
 
 // ─── AFWEZIGHEID + KNOP MODEL ───
+// ─── VAKANTIE CHECK ───
+const DAGMAP = {'maandag':0,'dinsdag':1,'woensdag':2,'donderdag':3,'vrijdag':4,'zaterdag':5,'zondag':6};
+
+function getTrainingsDatum(nk) {
+  // nk = 'cw0_0' -> week 0, sessie 0
+  if (!nk.startsWith('cw')) return null;
+  const [wi, si] = nk.replace('cw','').split('_').map(Number);
+  const week = customWeken[wi]; if (!week || !week.isoDate) return null;
+  const sess = week.sessies[si]; if (!sess) return null;
+  const dagTxt = sess.dag.toLowerCase().trim();
+  // Probeer dag uit de tekst te halen
+  const dagNr = Object.entries(DAGMAP).find(([d]) => dagTxt.includes(d));
+  if (!dagNr) return null;
+  const maandag = new Date(week.isoDate);
+  maandag.setHours(0,0,0,0);
+  const trainingsDatum = new Date(maandag);
+  trainingsDatum.setDate(maandag.getDate() + dagNr[1]);
+  return trainingsDatum;
+}
+
+async function checkVakantiesEnZetAfwezig(nk) {
+  const trainingsDatum = getTrainingsDatum(nk);
+  if (!trainingsDatum) return;
+  if (!aanwezigheid[nk]) aanwezigheid[nk] = {};
+
+  // Haal alle formulieren op als ze er nog niet zijn
+  let formulieren = {};
+  if (supabaseReady) {
+    const res = await sbFetch('session_notes?note_key=like.formulier:*&select=note_key,content');
+    if (res && !res._error) {
+      res.forEach(r => {
+        const pid = r.note_key.replace('formulier:','');
+        try { formulieren[pid] = JSON.parse(r.content); } catch(e) {}
+      });
+    }
+  }
+
+  let gewijzigd = false;
+  players.forEach(p => {
+    const data = formulieren[p.id];
+    if (!data || data.vakantie !== 'ja' || !data.vakantie_van || !data.vakantie_tot) return;
+    const van = new Date(data.vakantie_van); van.setHours(0,0,0,0);
+    const tot = new Date(data.vakantie_tot); tot.setHours(23,59,59,0);
+    if (trainingsDatum >= van && trainingsDatum <= tot) {
+      // Alleen zetten als nog niet handmatig afwezig gemeld
+      const bestaand = aanwezigheid[nk][p.id];
+      if (!bestaand || (bestaand && !bestaand.afwezig)) {
+        aanwezigheid[nk][p.id] = { afwezig: true, reden: 'Vakantie' };
+        gewijzigd = true;
+      }
+    }
+  });
+
+  if (gewijzigd) {
+    localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
+    renderAanw(nk);
+  }
+}
+
 function renderAanw(nk) {
   const cont = document.getElementById('aanw-' + nk); if (!cont) return;
   if (!players.length) { cont.innerHTML = '<div style="font-size:11px;color:var(--text3)">Voeg eerst spelers toe via Selectie.</div>'; return; }

@@ -27,6 +27,13 @@
 
   <div style="padding:16px;display:flex;flex-direction:column;gap:20px">
 
+    <!-- ─── CACHE ─── -->
+    <section>
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">🔄 App vernieuwen</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:10px;line-height:1.6">Gebruik dit als de app niet de nieuwste versie toont na een update.</div>
+      <button class="btn-primary btn" onclick="wisCache()">🗑️ Cache wissen en vernieuwen</button>
+    </section>
+
     <!-- ─── HANDLEIDING ─── -->
     <section>
       <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">📖 Handleiding</div>
@@ -316,6 +323,20 @@ async function onSupabaseReady() {
   if (data.absRedenen) absRedenen = data.absRedenen;
   renderRedenen();
   renderCats();
+}
+
+async function wisCache() {
+  if (!confirm('Cache wissen en app herladen?')) return;
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+  }
+  if ('serviceWorker' in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r => r.unregister()));
+  }
+  showToast('Cache gewist — pagina herlaadt...');
+  setTimeout(() => location.reload(true), 1000);
 }
 
 // Init

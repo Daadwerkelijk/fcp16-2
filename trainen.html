@@ -190,8 +190,9 @@ function buildSchema() {
 
   function weekCat(w) {
     if (!w.isoDate) return 'toekomst';
-    const start = new Date(w.isoDate);
-    const eind  = new Date(start); eind.setDate(eind.getDate() + 6);
+    // Tijdzone-veilig: parse als lokale datum door tijd op 12:00 te zetten
+    const start = new Date(w.isoDate + 'T12:00:00');
+    const eind  = new Date(start); eind.setDate(eind.getDate() + 6); eind.setHours(23,59,59,0);
     if (nu > eind) return 'verleden';
     if (nu >= start && nu <= eind) return 'huidig';
     return 'toekomst';
@@ -221,9 +222,9 @@ function buildSchema() {
 
 function isHuidigeWeek(w) {
   if (!w.isoDate) return false;
-  const now = new Date(); now.setHours(0,0,0,0);
-  const start = new Date(w.isoDate);
-  const eind  = new Date(start); eind.setDate(eind.getDate() + 6);
+  const now = new Date(); now.setHours(12,0,0,0);
+  const start = new Date(w.isoDate + 'T12:00:00');
+  const eind  = new Date(start); eind.setDate(eind.getDate() + 6); eind.setHours(23,59,59,0);
   return now >= start && now <= eind;
 }
 

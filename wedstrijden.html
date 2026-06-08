@@ -373,7 +373,8 @@ function openWedPositieModal(wid, pos, formatieKey) {
         w2.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid]));
         w2.formatie = document.getElementById('wform-sel-' + wid)?.value || w2.formatie || '4222';
         saveWedstrijden(wedstrijden);
-        if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup),formatie:w2.formatie});
+        if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup),formatie:w2.formatie})
+          .then(r => { if (r && r._error) showToast('⚠️ Supabase fout: ' + JSON.stringify(r)); });
       }
       buildWedField(wid); closeWedPosModal(); showToast(p.naam+' → '+pos.label);
     };

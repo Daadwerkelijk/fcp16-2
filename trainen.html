@@ -188,13 +188,21 @@ function buildSchema() {
     return da - db;
   });
 
+  // Vandaag als dagindex (geen tijdzone problemen)
+  const nuDag = (()=>{ const n=new Date(); return n.getFullYear()*10000+(n.getMonth()+1)*100+n.getDate(); })();
+
+  function isoNaarDag(iso) {
+    if (!iso) return 0;
+    const d = iso.substring(0,10).split('-');
+    return parseInt(d[0]) * 10000 + parseInt(d[1]) * 100 + parseInt(d[2]);
+  }
+
   function weekCat(w) {
     if (!w.isoDate) return 'toekomst';
-    // Tijdzone-veilig: parse als lokale datum door tijd op 12:00 te zetten
-    const start = new Date(w.isoDate + 'T12:00:00');
-    const eind  = new Date(start); eind.setDate(eind.getDate() + 6); eind.setHours(23,59,59,0);
-    if (nu > eind) return 'verleden';
-    if (nu >= start && nu <= eind) return 'huidig';
+    const startDag = isoNaarDag(w.isoDate);
+    const eindDag  = startDag + 6;
+    if (nuDag > eindDag)  return 'verleden';
+    if (nuDag >= startDag && nuDag <= eindDag) return 'huidig';
     return 'toekomst';
   }
 
@@ -222,10 +230,11 @@ function buildSchema() {
 
 function isHuidigeWeek(w) {
   if (!w.isoDate) return false;
-  const now = new Date(); now.setHours(12,0,0,0);
-  const start = new Date(w.isoDate + 'T12:00:00');
-  const eind  = new Date(start); eind.setDate(eind.getDate() + 6); eind.setHours(23,59,59,0);
-  return now >= start && now <= eind;
+  const nu = new Date();
+  const nuDag = nu.getFullYear() * 10000 + (nu.getMonth()+1) * 100 + nu.getDate();
+  const d = w.isoDate.substring(0,10).split('-');
+  const startDag = parseInt(d[0]) * 10000 + parseInt(d[1]) * 100 + parseInt(d[2]);
+  return nuDag >= startDag && nuDag <= startDag + 6;
 }
 
 function buildWeekHtml(w, type, wi) {

@@ -347,7 +347,12 @@ function openWedPositieModal(wid, pos, formatieKey) {
   const leegBtn = document.createElement('button');
   leegBtn.className = 'modal-btn';
   leegBtn.textContent = '— Positie leeg laten';
-  leegBtn.onclick = () => { wedLineups[wid][pos.id]=null; buildWedField(wid); closeWedPosModal(); };
+  leegBtn.onclick = () => {
+    wedLineups[wid][pos.id]=null;
+    const w2 = wedstrijden.find(x => x.id === wid);
+    if (w2) { w2.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid])); saveWedstrijden(wedstrijden); }
+    buildWedField(wid); closeWedPosModal();
+  };
   lijst.appendChild(leegBtn);
   if (!pool.length) { lijst.innerHTML += '<div style="font-size:12px;color:var(--text3);padding:8px 0">Markeer eerst aanwezige spelers op het Aanwezig tabblad.</div>'; }
   sortedPlayers(pool).forEach(p => {
@@ -358,7 +363,11 @@ function openWedPositieModal(wid, pos, formatieKey) {
     btn.innerHTML = `<span>${p.naam}</span><span style="font-size:11px;color:var(--text3)">${wedLineups[wid][pos.id]===p.id?'✓':alGeplaatst?'→ '+alGeplaatst[0]:''}</span>`;
     btn.onclick = () => {
       if (alGeplaatst && wedLineups[wid][pos.id]!==p.id) { showToast(p.naam+' staat al op '+alGeplaatst[0]); return; }
-      wedLineups[wid][pos.id]=p.id; buildWedField(wid); closeWedPosModal(); showToast(p.naam+' → '+pos.label);
+      wedLineups[wid][pos.id]=p.id;
+      // Direct opslaan in localStorage zodat navigeren geen data verliest
+      const w2 = wedstrijden.find(x => x.id === wid);
+      if (w2) { w2.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid])); saveWedstrijden(wedstrijden); }
+      buildWedField(wid); closeWedPosModal(); showToast(p.naam+' → '+pos.label);
     };
     lijst.appendChild(btn);
   });

@@ -332,6 +332,7 @@ async function submitFormulier() {
   if (ok) {
     const res = await sbFetch('session_notes?note_key=eq.formulier:' + spelerId, 'DELETE');
     await sbFetch('session_notes', 'POST', { note_key: 'formulier:' + spelerId, content: JSON.stringify(data) });
+    localStorage.removeItem(autoSaveKey());
     document.getElementById('form-wrap').style.display = 'none';
     document.getElementById('success-msg').style.display = 'block';
   } else {

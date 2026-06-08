@@ -401,7 +401,6 @@ async function saveNote(nk) {
 async function saveAanwezigheid(nk) {
   if (typeof nk !== 'string' || !nk) { console.warn('saveAanwezigheid: ongeldige nk', nk); return; }
   if (!aanwezigheid[nk]) aanwezigheid[nk] = {};
-  // State is al bijgewerkt via saveAanwPicker / removeAfwezig - direct opslaan
   localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
   if (supabaseReady) {
     await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(nk), 'DELETE');
@@ -415,6 +414,8 @@ async function saveAanwezigheid(nk) {
   const nkData2 = aanwezigheid[nk] || {};
   const afw = players.filter(p => nkData2[p.id]?.afwezig === true).map(p => p.naam);
   showToast(afw.length ? 'Afwezig: ' + afw.join(', ') : 'Iedereen aanwezig ✓');
+  // Herlaad schema zodat teller bijgewerkt wordt
+  buildSchema();
 }
 
 // ─── AFWEZIGHEID + KNOP MODEL ───

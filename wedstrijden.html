@@ -350,7 +350,11 @@ function openWedPositieModal(wid, pos, formatieKey) {
   leegBtn.onclick = () => {
     wedLineups[wid][pos.id]=null;
     const w2 = wedstrijden.find(x => x.id === wid);
-    if (w2) { w2.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid])); saveWedstrijden(wedstrijden); }
+    if (w2) {
+      w2.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid]));
+      saveWedstrijden(wedstrijden);
+      if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup)});
+    }
     buildWedField(wid); closeWedPosModal();
   };
   lijst.appendChild(leegBtn);
@@ -364,9 +368,13 @@ function openWedPositieModal(wid, pos, formatieKey) {
     btn.onclick = () => {
       if (alGeplaatst && wedLineups[wid][pos.id]!==p.id) { showToast(p.naam+' staat al op '+alGeplaatst[0]); return; }
       wedLineups[wid][pos.id]=p.id;
-      // Direct opslaan in localStorage zodat navigeren geen data verliest
       const w2 = wedstrijden.find(x => x.id === wid);
-      if (w2) { w2.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid])); saveWedstrijden(wedstrijden); }
+      if (w2) {
+        w2.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid]));
+        w2.formatie = document.getElementById('wform-sel-' + wid)?.value || w2.formatie || '4222';
+        saveWedstrijden(wedstrijden);
+        if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup),formatie:w2.formatie});
+      }
       buildWedField(wid); closeWedPosModal(); showToast(p.naam+' → '+pos.label);
     };
     lijst.appendChild(btn);
@@ -919,11 +927,7 @@ function renderRanking() {
 async function onSupabaseReady() {
   const data = await loadFromSupabase();
   if (data.players)     players     = data.players;
-  if (data.wedstrijden) {
-    wedstrijden = data.wedstrijden;
-    // Cache leegmaken zodat wedLineups opnieuw geladen worden vanuit verse Supabase data
-    Object.keys(wedLineups).forEach(k => delete wedLineups[k]);
-  }
+  if (data.wedstrijden) wedstrijden = data.wedstrijden;
   renderWedstrijden();
 }
 

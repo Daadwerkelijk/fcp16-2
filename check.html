@@ -176,7 +176,7 @@ async function runChecks() {
     }
 
     // Session notes
-    const sn = await sbFetch('session_notes?select=id,note_key,content&limit=1');
+    const sn = await sbFetch('session_notes?select=note_key,content&limit=1');
     tabHtml += sn._error
       ? checkItem('✗', 'Tabel session_notes', 'Fout: ' + sn._error, 'err')
       : checkItem('✓', 'Tabel session_notes', 'OK', 'ok');

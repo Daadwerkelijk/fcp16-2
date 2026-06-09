@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#2B1FA0">
+<title>Health Check — FCP 16-2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#F2F1FF;color:#12113A;font-size:14px;padding-bottom:32px}
+.topbar{background:#2B1FA0;padding:calc(44px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{color:#fff;font-size:20px;font-weight:700}
+.topbar-back{background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:7px 13px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none}
+.content{padding:16px}
+.card{background:#fff;border:1px solid #E4E3F5;border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card-hdr{padding:13px 14px;font-size:13px;font-weight:700;color:#8B8AB0;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #E4E3F5;display:flex;align-items:center;justify-content:space-between}
+.card-body{padding:12px 14px}
+.check-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E4E3F5;font-size:13px}
+.check-item:last-child{border-bottom:none}
+.check-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:700}
+.ok{background:#E8F5EE;color:#1B7A4B}
+.warn{background:#FFF3E0;color:#E65100}
+.err{background:#FFEBEE;color:#C62828}
+.loading{background:#EEF2FF;color:#2B1FA0}
+.check-label{flex:1;color:#12113A}
+.check-detail{font-size:11px;color:#8B8AB0;font-family:'DM Mono',monospace}
+.btn{width:100%;padding:13px;background:#2B1FA0;border:none;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
+.btn:active{opacity:.85}
+.btn-s{background:#fff;border:1px solid #E4E3F5;color:#4A4870;margin-top:8px}
+.summary{padding:14px;border-radius:12px;margin-bottom:12px;font-size:14px;font-weight:600;text-align:center}
+.summary.ok{background:#E8F5EE;color:#1B7A4B}
+.summary.warn{background:#FFF3E0;color:#E65100}
+.summary.err{background:#FFEBEE;color:#C62828}
+.summary.loading{background:#EEF2FF;color:#2B1FA0}
+.mono{font-family:'DM Mono',monospace;font-size:12px;background:#F2F1FF;padding:8px 12px;border-radius:8px;margin-top:8px;word-break:break-all;color:#4A4870;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">🔍 Health Check</div>
+  <a href="instellingen.html" class="topbar-back">← Terug</a>
+</div>
+
+<div class="content">
+
+  <div id="summary" class="summary loading">⏳ Controle bezig...</div>
+
+  <!-- Supabase verbinding -->
+  <div class="card">
+    <div class="card-hdr">🔗 Supabase verbinding</div>
+    <div class="card-body" id="check-verbinding">
+      <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Verbinding testen...</div></div>
+    </div>
+  </div>
+
+  <!-- Tabellen -->
+  <div class="card">
+    <div class="card-hdr">🗄️ Tabellen & kolommen</div>
+    <div class="card-body" id="check-tabellen">
+      <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Tabellen controleren...</div></div>
+    </div>
+  </div>
+
+  <!-- Data integriteit -->
+  <div class="card">
+    <div class="card-hdr">🧹 Data integriteit</div>
+    <div class="card-body" id="check-data">
+      <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Data controleren...</div></div>
+    </div>
+  </div>
+
+  <!-- localStorage -->
+  <div class="card">
+    <div class="card-hdr">💾 Lokale opslag</div>
+    <div class="card-body" id="check-local">
+      <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Lokale data controleren...</div></div>
+    </div>
+  </div>
+
+  <button class="btn" onclick="runChecks()">🔄 Opnieuw controleren</button>
+  <button class="btn btn-s" onclick="fixData()">🔧 Automatisch repareren</button>
+
+</div>
+
+<script>
+const sbUrl = localStorage.getItem('sb_url');
+const sbKey = localStorage.getItem('sb_key');
+let totaalOk = 0, totaalWarn = 0, totaalErr = 0;
+
+async function sbFetch(path) {
+  try {
+    const r = await fetch(sbUrl + '/rest/v1/' + path, {
+      headers: { apikey: sbKey, Authorization: 'Bearer ' + sbKey, 'Content-Type': 'application/json' }
+    });
+    if (!r.ok) return { _error: r.status, _msg: await r.text() };
+    return await r.json();
+  } catch(e) {
+    return { _error: 'network', _msg: e.message };
+  }
+}
+
+function checkItem(icon, label, detail, type) {
+  if (type === 'ok') totaalOk++;
+  else if (type === 'warn') totaalWarn++;
+  else if (type === 'err') totaalErr++;
+  const sym = type === 'ok' ? '✓' : type === 'warn' ? '⚠' : type === 'err' ? '✗' : '⏳';
+  return `<div class="check-item">
+    <div class="check-icon ${type}">${sym}</div>
+    <div>
+      <div class="check-label">${label}</div>
+      ${detail ? `<div class="check-detail">${detail}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+async function runChecks() {
+  totaalOk = 0; totaalWarn = 0; totaalErr = 0;
+  document.getElementById('summary').className = 'summary loading';
+  document.getElementById('summary').textContent = '⏳ Controle bezig...';
+
+  // ── 1. VERBINDING ──
+  let verbHtml = '';
+  if (!sbUrl || !sbKey) {
+    verbHtml = checkItem('✗', 'Geen Supabase credentials', 'Stel URL en key in via Instellingen', 'err');
+  } else {
+    verbHtml = checkItem('✓', 'Credentials aanwezig', sbUrl, 'ok');
+    const test = await sbFetch('players?select=id&limit=1');
+    if (test._error) {
+      verbHtml += checkItem('✗', 'Verbinding mislukt', 'Status: ' + test._error + ' — ' + test._msg, 'err');
+    } else {
+      verbHtml += checkItem('✓', 'Verbinding succesvol', 'Supabase bereikbaar', 'ok');
+    }
+  }
+  document.getElementById('check-verbinding').innerHTML = verbHtml;
+
+  // ── 2. TABELLEN & KOLOMMEN ──
+  let tabHtml = '';
+  if (!sbUrl || !sbKey) {
+    tabHtml = checkItem('⚠', 'Geen verbinding', 'Stel eerst Supabase in', 'warn');
+  } else {
+    // Players
+    const pl = await sbFetch('players?select=id,naam&limit=1');
+    tabHtml += pl._error
+      ? checkItem('✗', 'Tabel players', 'Fout: ' + pl._error, 'err')
+      : checkItem('✓', 'Tabel players', pl.length + ' spelers gevonden', 'ok');
+
+    // Wedstrijden kolommen
+    const wd = await sbFetch('wedstrijden?select=id,datum,gespeeld,iso_date,wed_lineup,aanwezig,afwezig,formatie&limit=1');
+    if (wd._error) {
+      const msg = wd._msg || '';
+      const missend = [];
+      if (msg.includes('gespeeld')) missend.push('gespeeld');
+      if (msg.includes('iso_date')) missend.push('iso_date');
+      if (msg.includes('wed_lineup')) missend.push('wed_lineup');
+      if (msg.includes('aanwezig')) missend.push('aanwezig');
+      if (msg.includes('afwezig')) missend.push('afwezig');
+      if (msg.includes('formatie')) missend.push('formatie');
+      tabHtml += missend.length
+        ? checkItem('✗', 'Tabel wedstrijden — ontbrekende kolommen', missend.join(', '), 'err')
+        : checkItem('✗', 'Tabel wedstrijden', 'Fout: ' + wd._error, 'err');
+    } else {
+      tabHtml += checkItem('✓', 'Tabel wedstrijden', 'Alle kolommen aanwezig', 'ok');
+    }
+
+    // Aanwezigheid kolommen
+    const aanw = await sbFetch('aanwezigheid?select=id,training_key,player_id,aanwezig,reden&limit=1');
+    if (aanw._error) {
+      tabHtml += aanw._msg?.includes('reden')
+        ? checkItem('✗', 'Tabel aanwezigheid — kolom reden ontbreekt', 'Voer SQL uit: ALTER TABLE aanwezigheid ADD COLUMN IF NOT EXISTS reden text DEFAULT \'\'', 'err')
+        : checkItem('✗', 'Tabel aanwezigheid', 'Fout: ' + aanw._error, 'err');
+    } else {
+      tabHtml += checkItem('✓', 'Tabel aanwezigheid', aanw.length + ' rijen', 'ok');
+    }
+
+    // Session notes
+    const sn = await sbFetch('session_notes?select=id,note_key,content&limit=1');
+    tabHtml += sn._error
+      ? checkItem('✗', 'Tabel session_notes', 'Fout: ' + sn._error, 'err')
+      : checkItem('✓', 'Tabel session_notes', 'OK', 'ok');
+
+    // Custom weken
+    const cw = await sbFetch('custom_weken?select=id,data&limit=1');
+    tabHtml += cw._error
+      ? checkItem('✗', 'Tabel custom_weken', 'Fout: ' + cw._error, 'err')
+      : checkItem('✓', 'Tabel custom_weken', 'OK', 'ok');
+  }
+  document.getElementById('check-tabellen').innerHTML = tabHtml;
+
+  // ── 3. DATA INTEGRITEIT ──
+  let dataHtml = '';
+  if (sbUrl && sbKey) {
+    // Corrupte training_keys
+    const aanwAll = await sbFetch('aanwezigheid?select=training_key');
+    if (!aanwAll._error) {
+      const corrupt = aanwAll.filter(r => r.training_key && (r.training_key.length > 20 || r.training_key.includes('[object') || r.training_key.startsWith('{')));
+      dataHtml += corrupt.length > 0
+        ? checkItem('✗', 'Corrupte training_keys gevonden', corrupt.length + ' rijen — gebruik Repareer knop', 'err')
+        : checkItem('✓', 'Training keys correct', aanwAll.length + ' rijen gecontroleerd', 'ok');
+
+      // Aanwezigheid zonder spelers
+      const pl2 = await sbFetch('players?select=id');
+      if (!pl2._error) {
+        const playerIds = pl2.map(p => p.id);
+        const orphans = aanwAll.filter(r => r.player_id && !playerIds.includes(r.player_id));
+        dataHtml += orphans.length > 0
+          ? checkItem('⚠', 'Aanwezigheid van verwijderde spelers', orphans.length + ' rijen', 'warn')
+          : checkItem('✓', 'Alle aanwezigheid gekoppeld aan spelers', 'OK', 'ok');
+      }
+    } else {
+      dataHtml += checkItem('⚠', 'Kan data integriteit niet controleren', 'Verbinding vereist', 'warn');
+    }
+
+    // Wedstrijden datum check
+    const wdAll = await sbFetch('wedstrijden?select=id,datum,iso_date');
+    if (!wdAll._error) {
+      const zonderDatum = wdAll.filter(w => !w.datum && !w.iso_date);
+      dataHtml += zonderDatum.length > 0
+        ? checkItem('⚠', 'Wedstrijden zonder datum', zonderDatum.length + ' wedstrijden', 'warn')
+        : checkItem('✓', 'Alle wedstrijden hebben datum', wdAll.length + ' gecontroleerd', 'ok');
+    }
+  } else {
+    dataHtml = checkItem('⚠', 'Geen verbinding', 'Supabase vereist', 'warn');
+  }
+  document.getElementById('check-data').innerHTML = dataHtml;
+
+  // ── 4. LOCALSTORAGE ──
+  let localHtml = '';
+  const keys = ['sb_url','sb_key','fcp_players','fcp_wed','fcp_aanw','fcp_custom_weken','fcp_thema'];
+  const vereist = ['sb_url','sb_key'];
+
+  keys.forEach(k => {
+    const val = localStorage.getItem(k);
+    if (!val && vereist.includes(k)) {
+      localHtml += checkItem('✗', k, 'Ontbreekt — vereist', 'err');
+    } else if (!val) {
+      localHtml += checkItem('⚠', k, 'Niet aanwezig', 'warn');
+    } else {
+      // Check corrupte aanwezigheid in localStorage
+      if (k === 'fcp_aanw') {
+        try {
+          const aanwObj = JSON.parse(val);
+          const corrupt = Object.keys(aanwObj).filter(key => key.length > 20 || key.includes('[object') || key.startsWith('{'));
+          if (corrupt.length > 0) {
+            localHtml += checkItem('⚠', k, corrupt.length + ' corrupte keys in lokale opslag', 'warn');
+          } else {
+            const aantalSessies = Object.keys(aanwObj).length;
+            localHtml += checkItem('✓', k, aantalSessies + ' trainingen in lokale opslag', 'ok');
+          }
+        } catch(e) {
+          localHtml += checkItem('✗', k, 'Kan niet parsen — corrupt', 'err');
+        }
+      } else {
+        const preview = val.length > 40 ? val.substring(0,40) + '...' : val;
+        localHtml += checkItem('✓', k, preview, 'ok');
+      }
+    }
+  });
+  document.getElementById('check-local').innerHTML = localHtml;
+
+  // ── SAMENVATTING ──
+  const sum = document.getElementById('summary');
+  if (totaalErr > 0) {
+    sum.className = 'summary err';
+    sum.textContent = '✗ ' + totaalErr + ' fouten gevonden — actie vereist';
+  } else if (totaalWarn > 0) {
+    sum.className = 'summary warn';
+    sum.textContent = '⚠ ' + totaalWarn + ' waarschuwingen — controleer aanbevolen';
+  } else {
+    sum.className = 'summary ok';
+    sum.textContent = '✓ Alles ziet er goed uit (' + totaalOk + ' checks geslaagd)';
+  }
+}
+
+async function fixData() {
+  if (!sbUrl || !sbKey) { alert('Geen Supabase verbinding'); return; }
+  let acties = 0;
+
+  // 1. Verwijder corrupte training_keys uit Supabase
+  const res = await fetch(sbUrl + '/rest/v1/aanwezigheid?training_key=like.*%7B*', {
+    method: 'DELETE',
+    headers: { apikey: sbKey, Authorization: 'Bearer ' + sbKey, Prefer: 'return=minimal' }
+  });
+  if (res.ok) acties++;
+
+  // 2. Verwijder corrupte keys uit localStorage
+  const raw = localStorage.getItem('fcp_aanw');
+  if (raw) {
+    try {
+      const aanwObj = JSON.parse(raw);
+      let gewijzigd = false;
+      Object.keys(aanwObj).forEach(k => {
+        if (k.length > 20 || k.includes('[object') || k.startsWith('{')) {
+          delete aanwObj[k];
+          gewijzigd = true;
+          acties++;
+        }
+      });
+      if (gewijzigd) localStorage.setItem('fcp_aanw', JSON.stringify(aanwObj));
+    } catch(e) {}
+  }
+
+  alert(acties + ' reparatie(s) uitgevoerd. Pagina wordt herladen.');
+  runChecks();
+}
+
+// Start automatisch
+runChecks();
+</script>
+</body>
+</html>

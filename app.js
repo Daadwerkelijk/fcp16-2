@@ -385,6 +385,7 @@ const THEMAS = {
   licht:      { name:'Licht (standaard)', topbar:'#2B1FA0', accent:'#2B1FA0', bg:'#F2F1FF', white:'#ffffff', text:'#12113A', text2:'#4A4870', text3:'#8B8AB0', border:'#E4E3F5' },
   licht_groen:{ name:'Licht Groen',       topbar:'#1B5E20', accent:'#1B7A4B', bg:'#F1F8F4', white:'#ffffff', text:'#0D2B14', text2:'#2E6645', text3:'#6B9E7A', border:'#D4EBD9' },
   licht_blauw:{ name:'Licht Blauw',       topbar:'#0D47A1', accent:'#1565C0', bg:'#F0F4FF', white:'#ffffff', text:'#0D1B4A', text2:'#2B4EA0', text3:'#6B82CC', border:'#C7D4FC' },
+  fcp:        { name:'FCP Purmerend', topbar:'#1a1a1a', accent:'#F5C000', bg:'#111111', white:'#1e1e1e', text:'#F5F5F5', text2:'#CCCCCC', text3:'#888888', border:'#333333' },
   donker:     { name:'Donker',             topbar:'#080c14', accent:'#c8a840', bg:'#080c14', white:'#0e1524', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', border:'#1e2e48' },
 };
 

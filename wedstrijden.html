@@ -19,6 +19,7 @@
     'licht':{'--topbar':'#2B1FA0','--topbar-dark':'#1a1262','--accent':'#2B1FA0','--bg':'#F2F1FF','--white':'#ffffff','--bg2':'#ffffff','--bg3':'#F2F1FF','--bg4':'#F2F1FF','--text':'#12113A','--text2':'#4A4870','--text3':'#8B8AB0','--border':'#E4E3F5','--border2':'#D0CFED','--line':'#E4E3F5','--line2':'#D0CFED','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},
     'licht_groen':{'--topbar':'#1B5E20','--topbar-dark':'#0D3B12','--accent':'#1B7A4B','--bg':'#F1F8F4','--white':'#ffffff','--bg2':'#ffffff','--bg3':'#F1F8F4','--bg4':'#F1F8F4','--text':'#0D2B14','--text2':'#2E6645','--text3':'#6B9E7A','--border':'#D4EBD9','--border2':'#B8DABD','--line':'#D4EBD9','--line2':'#B8DABD','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},
     'licht_blauw':{'--topbar':'#0D47A1','--topbar-dark':'#082f6e','--accent':'#1565C0','--bg':'#F0F4FF','--white':'#ffffff','--bg2':'#ffffff','--bg3':'#F0F4FF','--bg4':'#F0F4FF','--text':'#0D1B4A','--text2':'#2B4EA0','--text3':'#6B82CC','--border':'#C7D4FC','--border2':'#A8BCFA','--line':'#C7D4FC','--line2':'#A8BCFA','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},
+    'fcp':{'--topbar':'#1a1a1a','--topbar-dark':'#000000','--accent':'#F5C000','--bg':'#111111','--white':'#1e1e1e','--bg2':'#1e1e1e','--bg3':'#111111','--bg4':'#111111','--text':'#F5F5F5','--text2':'#CCCCCC','--text3':'#888888','--border':'#333333','--border2':'#444444','--line':'#333333','--line2':'#444444','--red':'#ff4444','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'none'},
     'donker':{'--topbar':'#080c14','--topbar-dark':'#030508','--accent':'#c8a840','--bg':'#080c14','--white':'#0e1524','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#e8eef8','--text2':'#9aaccc','--text3':'#5a7090','--border':'#1e2e48','--border2':'#2a3e5c','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'none'}
   };
   const k=localStorage.getItem('fcp_thema')||'licht';
@@ -73,6 +74,8 @@
     <input class="bmodal-input" id="edit-wed-teg" placeholder="Tegenstander">
     <div class="bmodal-label">Datum</div>
     <input class="bmodal-input" id="edit-wed-datum" type="date">
+    <div class="bmodal-label">Starttijd</div>
+    <input class="bmodal-input" id="edit-wed-tijd" type="time" placeholder="HH:MM">
     <div class="bmodal-label">Locatie</div>
     <div style="display:flex;gap:7px;margin-bottom:2px">
       <button class="thu-uit-btn active" id="edit-btn-thuis" onclick="setEditThuisUit('thuis')">Thuis</button>
@@ -95,7 +98,8 @@
       <div class="form-title">+ Nieuwe wedstrijd</div>
       <div class="form-row">
         <input class="form-input" id="wed-teg" placeholder="Tegenstander" type="text" style="flex:2">
-        <input class="form-input" id="wed-datum" type="date" style="flex:1;min-width:130px">
+        <input class="form-input" id="wed-datum" type="date" style="flex:1;min-width:120px">
+        <input class="form-input" id="wed-tijd" type="time" style="flex:0 0 80px;min-width:80px" placeholder="HH:MM">
       </div>
       <div class="form-row">
         <div class="thu-uit-btns" style="flex:1">
@@ -404,6 +408,16 @@ async function saveWedOpstelling(wid) {
   showToast('Opstelling opgeslagen · ' + Object.values(w.wed_lineup).filter(Boolean).length + '/11');
 }
 
+function deelWedOpstelling(wid) {
+  const url = location.origin + location.pathname.replace('wedstrijden.html','') + 'wedstrijden.html#wcard-' + wid;
+  if (navigator.share) {
+    const w = wedstrijden.find(x => x.id === wid);
+    navigator.share({ title: 'Opstelling FCP 16-2 vs ' + (w?.tegenstander||''), url });
+  } else {
+    navigator.clipboard?.writeText(url).then(() => showToast('Link gekopieerd'));
+  }
+}
+
 // ─── LIVE MODUS ───
 let liveWedId=null,liveKlokSec=0,liveKlokLoopt=false,liveKlokTimer=null;
 let liveHelft=1,liveMinsPerHelft=40,liveNotities=[],speechRecog=null,speechActief=false;
@@ -617,7 +631,8 @@ async function addWedstrijd() {
   if (!teg) { showToast('Vul een tegenstander in'); return; }
   const rawDatum = document.getElementById('wed-datum').value;
   const datum = rawDatum ? formatDatumShort(rawDatum) : '';
-  const w = { id:genId(), tegenstander:teg, datum, isoDate:rawDatum, thuis_uit:thuisUit, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null, gespeeld:false };
+  const rawTijd = document.getElementById('wed-tijd')?.value || '';
+  const w = { id:genId(), tegenstander:teg, datum, isoDate:rawDatum, starttijd:rawTijd, thuis_uit:thuisUit, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null, gespeeld:false };
   if (supabaseReady) {
     // Alleen de basiskolommen sturen bij aanmaken
     const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate||'', thuis_uit:w.thuis_uit, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
@@ -693,6 +708,7 @@ function openEditWed(id) {
   document.getElementById('edit-wed-teg').value = w.tegenstander || '';
   // Probeer datum terug te parsen naar ISO formaat
   document.getElementById('edit-wed-datum').value = w.isoDate || '';
+  document.getElementById('edit-wed-tijd').value = w.starttijd || '';
   editThuisUit = w.thuis_uit || 'thuis';
   setEditThuisUit(editThuisUit);
   document.getElementById('bmodalEditWed').classList.add('open');
@@ -708,6 +724,7 @@ async function saveEditWed() {
   w.tegenstander = teg;
   w.isoDate = rawDatum;
   w.datum = rawDatum ? formatDatumShort(rawDatum) : w.datum;
+  w.starttijd = document.getElementById('edit-wed-tijd').value || '';
   w.thuis_uit = editThuisUit;
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
@@ -790,7 +807,7 @@ function renderWedstrijden() {
         <div class="wed-score-big" style="color:${rc}">${w.score_eigen}–${w.score_tegen}</div>
         <div class="card-info">
           <div class="card-title">${w.tegenstander}</div>
-          <div class="card-sub">${w.datum||'–'} · ${w.thuis_uit} · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}</div>
+          <div class="card-sub">${w.datum||'–'}${w.starttijd ? ' ' + w.starttijd : ''} · ${w.thuis_uit} · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}</div>
         </div>
         <button onclick="event.stopPropagation();openEditWed('${w.id}')" style="padding:4px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0">✏️</button>
         <span class="card-chev" style="margin-left:4px">▾</span>
@@ -833,18 +850,21 @@ function renderWedstrijden() {
             </select>
           </div>
           <div style="position:relative;background:var(--field-bg);border-radius:10px;overflow:hidden;border:2px solid var(--field-border)">
-            <svg viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
-              <rect width="400" height="280" fill="var(--field-bg)"/>
-              <rect x="8" y="8" width="384" height="264" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
-              <line x1="8" y1="140" x2="392" y2="140" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+            <svg viewBox="0 0 400 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+              <rect width="400" height="340" fill="var(--field-bg)"/>
+              <rect x="8" y="8" width="384" height="324" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+              <line x1="8" y1="170" x2="392" y2="170" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
               <circle cx="200" cy="140" r="32" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-              <circle cx="200" cy="140" r="2" fill="rgba(255,255,255,0.4)"/>
-              <rect x="128" y="8" width="144" height="52" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-              <rect x="128" y="220" width="144" height="52" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+              <circle cx="200" cy="170" r="2" fill="rgba(255,255,255,0.4)"/>
+              <rect x="128" y="8" width="144" height="62" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+              <rect x="128" y="270" width="144" height="62" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
             </svg>
             <div id="wfield-${w.id}" style="position:absolute;top:0;left:0;width:100%;height:100%"></div>
           </div>
-          <button class="session-save-btn" style="margin-top:10px" onclick="saveWedOpstelling('${w.id}')">💾 Opstelling opslaan</button>
+          <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="session-save-btn" style="flex:1" onclick="saveWedOpstelling('${w.id}')">💾 Opslaan</button>
+          <button class="session-save-btn" style="flex:0 0 auto;background:var(--groen);border-color:var(--groen)" onclick="deelWedOpstelling('${w.id}')">📲 Delen</button>
+        </div>
         </div>
 
         <!-- Tab: Wedstrijd -->

@@ -861,9 +861,9 @@ function renderWedstrijden() {
             </svg>
             <div id="wfield-${w.id}" style="position:absolute;top:0;left:0;width:100%;height:100%"></div>
           </div>
-          <div style="display:flex;gap:8px;margin-top:10px">
+          <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
           <button class="session-save-btn" style="flex:1" onclick="saveWedOpstelling('${w.id}')">💾 Opslaan</button>
-          <button class="session-save-btn" style="flex:0 0 auto;background:transparent;border:1px solid var(--topbar);color:var(--topbar)" onclick="deelWedOpstelling('${w.id}')">📲 Delen</button>
+          <button onclick="deelWedOpstelling('${w.id}')" style="padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0">📲</button>
         </div>
         </div>
 

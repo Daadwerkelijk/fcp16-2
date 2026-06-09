@@ -185,7 +185,7 @@ async function loadFromSupabase() {
   if (pr && !pr._error && pr.length) { result.principes = pr; }
   if (aanw && !aanw._error) {
     const aanwObj = {};
-    aanw.filter(r => r.training_key && r.training_key !== '[object Object]').forEach(r => {
+    aanw.filter(r => r.training_key && r.training_key !== '[object Object]' && r.training_key.length < 20).forEach(r => {
       if (!aanwObj[r.training_key]) aanwObj[r.training_key] = {};
       // Ondersteuning voor oud formaat (boolean) en nieuw formaat ({afwezig, reden})
       if (typeof r.aanwezig === 'boolean') {
@@ -195,7 +195,10 @@ async function loadFromSupabase() {
       }
     });
     result.aanwezigheid = aanwObj;
-    // Supabase is bron van waarheid - sla op in localStorage als cache
+    // Opschonen - verwijder corrupte keys (te lang of object Object)
+    Object.keys(aanwObj).forEach(k => {
+      if (k.length > 20 || k.includes('[object') || k.startsWith('{')) delete aanwObj[k];
+    });
     localStorage.setItem('fcp_aanw', JSON.stringify(aanwObj));
   }
   if (cw && !cw._error && cw.length) {

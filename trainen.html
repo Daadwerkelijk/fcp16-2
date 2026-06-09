@@ -403,18 +403,20 @@ async function saveAanwezigheid(nk) {
   if (!aanwezigheid[nk]) aanwezigheid[nk] = {};
   localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
   if (supabaseReady) {
-    await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(nk), 'DELETE');
+    const del = await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(nk), 'DELETE');
     const nkData = aanwezigheid[nk] || {};
+    let succes = true;
     for (const p of players) {
       const entry = nkData[p.id] || {};
       const isAfw = entry.afwezig === true;
-      await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:nk, player_id:p.id, aanwezig:!isAfw, reden:entry.reden||'' });
+      const res = await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:nk, player_id:p.id, aanwezig:!isAfw, reden:entry.reden||'' });
+      if (res && res._error) succes = false;
     }
+    if (!succes) showToast('⚠️ Niet alle data opgeslagen in Supabase');
   }
   const nkData2 = aanwezigheid[nk] || {};
   const afw = players.filter(p => nkData2[p.id]?.afwezig === true).map(p => p.naam);
-  showToast(afw.length ? 'Afwezig: ' + afw.join(', ') : 'Iedereen aanwezig ✓');
-  // Herlaad schema zodat teller bijgewerkt wordt
+  showToast(afw.length ? 'Afwezig opgeslagen ✓' : 'Iedereen aanwezig ✓');
   buildSchema();
 }
 

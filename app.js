@@ -195,11 +195,8 @@ async function loadFromSupabase() {
       }
     });
     result.aanwezigheid = aanwObj;
-    // Samenvoegen met localStorage ipv overschrijven - localStorage heeft prioriteit
-    const lokaal = JSON.parse(localStorage.getItem('fcp_aanw') || '{}');
-    const samengevoegd = { ...aanwObj, ...lokaal };
-    localStorage.setItem('fcp_aanw', JSON.stringify(samengevoegd));
-    result.aanwezigheid = samengevoegd;
+    // Supabase is bron van waarheid - sla op in localStorage als cache
+    localStorage.setItem('fcp_aanw', JSON.stringify(aanwObj));
   }
   if (cw && !cw._error && cw.length) {
     const weken = typeof cw[0].data === 'string' ? JSON.parse(cw[0].data) : cw[0].data;

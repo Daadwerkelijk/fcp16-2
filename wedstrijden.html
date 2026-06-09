@@ -263,11 +263,15 @@ async function saveWedAanwezig(wid) {
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
-    await sbFetch('wedstrijden?id=eq.' + wid, 'PATCH', {
+    const res = await sbFetch('wedstrijden?id=eq.' + wid, 'PATCH', {
       afwezig: JSON.stringify(w.afwezig || [])
     });
+    if (res && res._error) {
+      showToast('⚠️ Supabase fout bij opslaan afwezigheid');
+      return;
+    }
   }
-  showToast((w.afwezig||[]).length + ' afwezig opgeslagen');
+  showToast((w.afwezig||[]).length + ' afwezig opgeslagen ✓');
 }
 
 // ─── WEDSTRIJD OPSTELLING ───

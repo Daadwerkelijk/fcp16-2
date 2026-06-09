@@ -79,17 +79,23 @@
     </div>
   </div>
 
+  <!-- Eerstvolgende training & wedstrijd -->
+  <div style="padding:10px 16px 0;background:var(--bg)">
+    <div id="start-training-card"></div>
+    <div id="start-wedstrijd-card"></div>
+  </div>
+
   <!-- Statistieken balk -->
   <div style="padding:6px 16px 0;background:var(--bg)">
     <div style="display:flex;gap:0;background:rgba(0,0,0,.2);border-radius:var(--rsm);overflow:hidden;margin-top:0">
-      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.1)">
+      <a href="selectie.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.1);text-decoration:none">
         <div style="font-size:16px;font-weight:700;color:#fff;font-family:var(--font-display)" id="stat-spelers">0</div>
         <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">spelers</div>
-      </div>
-      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.1)">
+      </a>
+      <a href="trainen.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.1);text-decoration:none">
         <div style="font-size:16px;font-weight:700;color:#fff;font-family:var(--font-display)" id="stat-oef">0</div>
         <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">oefeningen</div>
-      </div>
+      </a>
       <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.1)">
         <div style="font-size:16px;font-weight:700;color:#fff;font-family:var(--font-display)" id="stat-wedstrijden">0</div>
         <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">wedstrijden</div>
@@ -153,6 +159,65 @@
 const state = loadState();
 let principes = state.principes || DEFAULT_PRINCIPES;
 let activePrId = null;
+
+function renderStartCards() {
+  // Eerstvolgende training
+  const weken = JSON.parse(localStorage.getItem('fcp_custom_weken') || '[]');
+  const trainCard = document.getElementById('start-training-card');
+  const today = new Date();
+  const todayDag = today.getFullYear()*10000 + (today.getMonth()+1)*100 + today.getDate();
+
+  if (trainCard && weken.length) {
+    // Zoek huidige of eerstvolgende week
+    let gevondenWeek = null, gevondenSessie = null;
+    for (const w of weken) {
+      if (!w.isoDate) continue;
+      const d = w.isoDate.substring(0,10).split('-');
+      const startDag = parseInt(d[0])*10000 + parseInt(d[1])*100 + parseInt(d[2]);
+      if (startDag + 6 >= todayDag) {
+        gevondenWeek = w;
+        if (w.sessies && w.sessies.length) gevondenSessie = w.sessies[0];
+        break;
+      }
+    }
+    if (gevondenWeek && gevondenSessie) {
+      trainCard.innerHTML = `<a href="trainen.html" style="display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;margin-bottom:8px;text-decoration:none;box-shadow:var(--card-shadow)">
+        <div style="width:36px;height:36px;border-radius:9px;background:var(--blauw-l);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blauw)" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Eerstvolgende training</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:2px">${gevondenSessie.dag || 'Training'}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px">${gevondenWeek.focus || gevondenWeek.naam || ''}</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--border2)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>`;
+    }
+  }
+
+  // Eerstvolgende wedstrijd
+  const wedCard = document.getElementById('start-wedstrijd-card');
+  const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
+  if (wedCard && wedstrijden.length) {
+    const komend = wedstrijden.filter(w => !w.gespeeld).sort((a,b) => (a.isoDate||'').localeCompare(b.isoDate||''));
+    if (komend.length) {
+      const w = komend[0];
+      const resultaat = w.gespeeld ? `${w.score_eigen}–${w.score_tegen}` : '0–0';
+      wedCard.innerHTML = `<a href="wedstrijden.html" style="display:block;background:linear-gradient(135deg,var(--topbar),var(--accent2,var(--topbar)));border-radius:var(--r);padding:11px 13px;margin-bottom:8px;text-decoration:none">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Eerstvolgende wedstrijd</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:14px;font-weight:700;color:#fff">${w.thuis_uit === 'thuis' ? 'FCP JO16-2' : (w.tegenstander||'?')}</div>
+          <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.7)">VS</div>
+          <div style="font-size:14px;font-weight:700;color:#fff">${w.thuis_uit === 'thuis' ? (w.tegenstander||'?') : 'FCP JO16-2'}</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:10px;color:rgba(255,255,255,.6)">${w.datum||'–'}${w.starttijd ? ' · ' + w.starttijd : ''} · ${w.thuis_uit||'–'}</div>
+          <span style="background:rgba(255,255,255,.18);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px" id="start-wed-aanw">–</span>
+        </div>
+      </a>`;
+    }
+  }
+}
 
 function updateStats() {
   const wed = JSON.parse(localStorage.getItem('fcp_wed')||'[]');
@@ -239,6 +304,7 @@ async function onSupabaseReady() {
   if (data.teamConfig) applyTeamConfig(data.teamConfig);
   renderPrincipes();
   updateStats();
+  renderStartCards();
 }
 
 // Init
@@ -246,6 +312,7 @@ applyTeamConfig();
 principes = JSON.parse(localStorage.getItem('fcp_principes') || JSON.stringify(DEFAULT_PRINCIPES));
 renderPrincipes();
 updateStats();
+renderStartCards();
 initScrollTop();
 initManifest();
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });

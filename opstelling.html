@@ -54,24 +54,24 @@
 
   <div class="field-wrap">
     <div class="field-container" id="fieldContainer">
-      <svg class="field-svg" viewBox="0 0 400 340" xmlns="http://www.w3.org/2000/svg">
-        <rect width="400" height="340" fill="var(--field-bg)"/>
-        <rect x="8" y="8" width="384" height="324" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
-        <line x1="8" y1="170" x2="392" y2="170" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
-        <circle cx="200" cy="170" r="36" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-        <circle cx="200" cy="170" r="2" fill="rgba(255,255,255,0.4)"/>
-        <!-- Bovenste strafschopgebied -->
-        <rect x="120" y="8"  width="160" height="62" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-        <rect x="156" y="8"  width="88"  height="28" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-        <circle cx="200" cy="54" r="2" fill="rgba(255,255,255,0.35)"/>
-        <!-- Halve cirkel boven: bogt naar buiten (weg van doel) = 0 0 1 -->
-        <path d="M 166 70 A 34 34 0 0 1 234 70" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-        <!-- Onderste strafschopgebied -->
-        <rect x="120" y="270" width="160" height="62" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-        <rect x="156" y="304" width="88"  height="28" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-        <circle cx="200" cy="286" r="2" fill="rgba(255,255,255,0.35)"/>
-        <!-- Halve cirkel onder: bogt naar buiten (weg van doel) = 0 0 0 -->
-        <path d="M 166 270 A 34 34 0 0 0 234 270" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <svg class="field-svg" viewBox="0 0 400 380" xmlns="http://www.w3.org/2000/svg">
+        <rect width="400" height="380" fill="var(--field-bg)"/>
+        <rect x="8" y="8" width="384" height="364" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <line x1="8" y1="190" x2="392" y2="190" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <circle cx="200" cy="190" r="38" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        <circle cx="200" cy="190" r="2.5" fill="rgba(255,255,255,0.6)"/>
+        <!-- Strafschopgebied boven -->
+        <rect x="116" y="8" width="168" height="68" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <rect x="148" y="8" width="104" height="30" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <circle cx="200" cy="54" r="2.5" fill="rgba(255,255,255,0.45)"/>
+        <!-- Halve cirkel boven: ARC naar BUITEN (weg van doel = sweep-flag=1) -->
+        <path d="M 162 76 A 38 38 0 0 1 238 76" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <!-- Strafschopgebied onder -->
+        <rect x="116" y="304" width="168" height="68" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <rect x="148" y="342" width="104" height="30" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <circle cx="200" cy="326" r="2.5" fill="rgba(255,255,255,0.45)"/>
+        <!-- Halve cirkel onder: ARC naar BUITEN (weg van doel = sweep-flag=0) -->
+        <path d="M 162 304 A 38 38 0 0 0 238 304" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
       </svg>
       <div class="field-positions" id="fieldPositions"></div>
     </div>

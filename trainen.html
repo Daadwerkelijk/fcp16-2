@@ -245,7 +245,7 @@ function buildWeekHtml(w, type, wi) {
   const datumStr = isoDate ? formatDatumShort(isoDate) : (w.datum || '');
   const huidig  = isHuidigeWeek(w);
   const weekLabel = type === 'custom'
-    ? `<span style="font-size:10px;background:${huidig?'color-mix(in srgb,var(--accent) 15%,var(--bg))':'var(--bg3)'};border:1px solid ${huidig?'var(--accent)':'var(--line2)'};color:${huidig?'var(--accent)':'var(--text3)'};padding:1px 7px;border-radius:var(--rsm);font-weight:600">${w.weekNr || 'Eigen week'}${huidig?' · Nu':''}</span>`
+    ? `<span style="font-size:11px;font-weight:700;color:${huidig?'var(--accent)':'var(--text3)'};">${w.weekNr || 'Eigen week'}</span>`
     : `Week ${weekNr} · ${datumStr}`;
   const btnS = 'font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text3);cursor:pointer;line-height:1.4;vertical-align:middle';
   const btnR = 'font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--red);cursor:pointer;line-height:1.4;font-weight:600';
@@ -260,7 +260,7 @@ function buildWeekHtml(w, type, wi) {
   const hdrStyle = huidig ? `background:color-mix(in srgb,var(--accent) 8%,var(--bg));border-left:3px solid var(--accent);padding-left:13px;` : '';
   let html = `<div class="week-item" id="${wid}">
     <div class="week-hdr" onclick="toggleWeek('${wid}')" style="${hdrStyle}">
-      <div style="flex:1"><div class="week-num">${weekLabel}</div><div class="week-focus">${w.focus}</div></div>
+      <div style="flex:1"><div class="week-num">${weekLabel}</div><div class="week-focus">${w.focus || ''}</div></div>
       ${editDel}<span class="week-chev" style="margin-left:4px">▾</span>
     </div><div class="week-body">`;
   w.sessies.forEach((sess, si) => {

@@ -44,17 +44,19 @@
 
 <div class="page-wrap">
   <div class="page-header">
-    <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
       <div class="page-title">Oefeningen</div>
-      <div style="display:flex;gap:7px">
-        <button class="add-btn" onclick="openOefModal(null)">+ Oefening</button>
-        <button class="add-btn" style="background:transparent;border-color:var(--line2);color:var(--text2)" onclick="openCatModal()">⚙️</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="topbar-btn" onclick="openOefModal(null)" style="display:flex;align-items:center;gap:4px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Oefening
+        </button>
+        <button class="topbar-btn" style="padding:6px 9px" onclick="openCatModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
       </div>
     </div>
-  </div>
-  <div style="padding:10px 16px 4px;display:flex;gap:8px;align-items:center">
     <select id="cat-dropdown" onchange="setActiveFilter(this.value)"
-      style="flex:1;padding:9px 12px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:14px;outline:none;-webkit-appearance:none;appearance:none">
+      style="width:100%;padding:8px 12px;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none">
     </select>
   </div>
   <div class="oef-toolbar">
@@ -143,6 +145,7 @@ function renderCatFilters() {
     dd.innerHTML = '<option value="alle">Alle categorieën</option>' +
       categories.map(c => `<option value="${c}" ${activeFilter===c?'selected':''}>${c}</option>`).join('');
     dd.value = activeFilter;
+    // Topbar is altijd donker dus witte tekst werkt altijd
   }
 }
 

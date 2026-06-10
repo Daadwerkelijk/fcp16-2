@@ -182,7 +182,7 @@ function renderStartCards() {
       const spelers = JSON.parse(localStorage.getItem('fcp_players')||'[]');
       const afwNum = Object.values(aanwData).filter(v=>v&&v.afwezig).length;
       const aanwNum = spelers.length - afwNum;
-      trainCard.innerHTML = `<a href="${url}" style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.5);border-radius:var(--r);padding:11px 13px;margin-bottom:10px;text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,.15)">
+      trainCard.innerHTML = `<a href="${url}" style="display:block;background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.5);border-radius:var(--r);padding:13px;margin-bottom:10px;text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,.15)">
         <div style="width:36px;height:36px;border-radius:9px;background:var(--blauw-l);display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--topbar)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/></svg>
         </div>
@@ -279,9 +279,9 @@ function renderPrincipes() {
   ];
   grid.innerHTML = principes.map((p,i) => {
     const k = kleuren[i % kleuren.length];
-    return `<div class="pr-card" style="background:${k.bg};border:1px solid ${k.border};border-radius:12px;padding:10px 12px;cursor:pointer" onclick="openPrModal('${p.id}')">
-      <div style="font-size:18px;font-weight:800;color:${k.code};line-height:1;margin-bottom:4px">${p.code}</div>
-      <div style="font-size:12px;font-weight:700;color:${k.text};line-height:1.3">${p.naam}</div>
+    return `<div style="background:var(--blauw-l);border:1px solid var(--blauw-m);border-radius:12px;padding:10px 12px;cursor:pointer" onclick="openPrModal('${p.id}')">
+      <div style="font-size:18px;font-weight:800;color:var(--topbar);line-height:1;margin-bottom:4px">${p.code}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.3">${p.naam}</div>
     </div>`;
   }).join('');
 }

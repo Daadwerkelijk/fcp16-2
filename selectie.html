@@ -44,11 +44,13 @@
 
 <div class="page-wrap">
   <div class="page-header">
-    <div class="page-title">Selectie</div>
-    <div class="page-sub">Spelers beheren</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="page-title">Selectie</div>
+      <button class="topbar-btn" onclick="toggleNieuweSpeler()">+ Speler</button>
+    </div>
   </div>
-  <div class="form-wrap" style="padding-top:12px;padding-bottom:calc(80px + env(safe-area-inset-bottom))">
-    <div class="add-form">
+  <div class="form-wrap" style="padding-top:12px;padding-bottom:calc(120px + env(safe-area-inset-bottom))">
+    <div class="add-form" id="nieuwe-speler-form" style="display:none">
       <div class="form-title">+ Nieuwe speler</div>
       <div class="form-row">
         <input class="form-input" id="input-naam" placeholder="Naam speler" type="text" maxlength="30">
@@ -65,8 +67,12 @@
 <script>
 let players = loadState().players;
 
+function toggleNieuweSpeler() {
+  const f = document.getElementById('nieuwe-speler-form');
+  if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
 async function addPlayer() {
-  const naam = document.getElementById('input-naam').value.trim();
   if (!naam) { showToast('Vul een naam in'); return; }
   const p = { id:genId(), naam, omschrijving:'', posities:[], opmerkingen:'', ontwikkeling:'', skills:null };
   if (supabaseReady) {

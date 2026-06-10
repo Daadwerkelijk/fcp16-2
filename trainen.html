@@ -777,6 +777,25 @@ async function onSupabaseReady() {
 buildSchema();
 initScrollTop();
 initManifest();
+// Hash navigatie: open week + sessie als URL hash aanwezig (bijv. #cw0_0)
+setTimeout(() => {
+  const hash = location.hash.replace('#','');
+  if (!hash) return;
+  // nk formaat: cw{wi}_{si} → week id: cw{wi}, sessie id: cw{wi}s{si}
+  const m = hash.match(/^(cw\d+)_(\d+)$/);
+  if (!m) return;
+  const weekId = m[1];
+  const sessieId = m[1] + 's' + m[2];
+  // Open week
+  const weekEl = document.getElementById(weekId);
+  if (weekEl && !weekEl.classList.contains('open')) weekEl.classList.add('open');
+  // Open sessie
+  const sessEl = document.getElementById(sessieId);
+  if (sessEl) {
+    if (!sessEl.classList.contains('open')) sessEl.classList.add('open');
+    setTimeout(() => sessEl.scrollIntoView({ behavior:'smooth', block:'start' }), 100);
+  }
+}, 300);
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });
 </script>
 </body>

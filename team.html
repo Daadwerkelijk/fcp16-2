@@ -121,10 +121,18 @@ function renderAanwOverzicht() {
 
   // Samenvatting: totaal aantal trainingen met opgeslagen aanwezigheid
   const metData = trainingen.filter(t => aanwezigheid[t.nk] && Object.keys(aanwezigheid[t.nk]).length > 0);
+  const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
+  const aantalWed = wedstrijden.length;
   document.getElementById('aanw-samenvatting').innerHTML = `
-    <div style="padding:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm);display:inline-block;min-width:120px">
-      <div style="font-size:28px;font-weight:700;color:var(--text)">${trainingen.length}</div>
-      <div style="font-size:11px;color:var(--text3)">Trainingen dit seizoen</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
+      <div style="padding:11px 13px;background:var(--blauw-l);border:1px solid var(--blauw-m);border-radius:var(--r)">
+        <div style="font-size:24px;font-weight:700;color:#1a3799">${trainingen.length}</div>
+        <div style="font-size:10px;font-weight:700;color:var(--blauw);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Trainingen</div>
+      </div>
+      <div style="padding:11px 13px;background:var(--groen-l);border:1px solid var(--groen-m);border-radius:var(--r)">
+        <div style="font-size:24px;font-weight:700;color:#0D4A2C">${aantalWed}</div>
+        <div style="font-size:10px;font-weight:700;color:var(--groen);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Wedstrijden</div>
+      </div>
     </div>`;
 
   // Tabel: spelers als rijen, trainingen als kolommen

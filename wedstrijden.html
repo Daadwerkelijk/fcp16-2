@@ -91,10 +91,11 @@
 <div class="page-wrap">
   <div class="page-header">
     <div class="page-title">Wedstrijden</div>
+    <button class="topbar-btn" onclick="toggleNieuweWedstrijd()">+ Wedstrijd</button>
   </div>
 
   <div class="form-wrap" style="padding-top:12px">
-    <div class="add-form">
+    <div class="add-form" id="nieuwe-wed-form" style="display:none">
       <div class="form-title">+ Nieuwe wedstrijd</div>
       <div class="form-row">
         <input class="form-input" id="wed-teg" placeholder="Tegenstander" type="text" style="flex:2">
@@ -624,6 +625,11 @@ function setThuisUit(val) {
   thuisUit = val;
   document.getElementById('btn-thuis').classList.toggle('active', val === 'thuis');
   document.getElementById('btn-uit').classList.toggle('active',   val === 'uit');
+}
+
+function toggleNieuweWedstrijd() {
+  const f = document.getElementById('nieuwe-wed-form');
+  if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
 }
 
 async function addWedstrijd() {

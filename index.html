@@ -34,79 +34,59 @@
 </head>
 <body>
 <nav class="nav">
-  <a class="nav-btn active" href="index.html"><span class="nav-icon">⚡</span><span>Start</span></a>
-  <a class="nav-btn" href="opstelling.html"><span class="nav-icon">🟢</span><span>Opstelling</span></a>
-  <a class="nav-btn" href="selectie.html"><span class="nav-icon">👥</span><span>Selectie</span></a>
-  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon">⚽</span><span>Wedstrijden</span></a>
-  <a class="nav-btn" href="trainen.html"><span class="nav-icon">📅</span><span>Trainen</span></a>
-  <a class="nav-btn" href="oefeningen.html"><span class="nav-icon">📚</span><span>Oefeningen</span></a>
-  <a class="nav-btn" href="team.html"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+  <a class="nav-btn active" href="index.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 21V13h6v8" fill="white" stroke="white" stroke-width="1.2"/></svg></span><span class="nav-dot"></span><span>Start</span></a>
+  <a class="nav-btn" href="opstelling.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="3"/><line x1="12" y1="3" x2="12" y2="21"/><circle cx="12" cy="12" r="3"/><rect x="2" y="8.5" width="3.5" height="7" rx="1"/><rect x="18.5" y="8.5" width="3.5" height="7" rx="1"/></svg></span><span class="nav-dot"></span><span>Opstelling</span></a>
+  <a class="nav-btn" href="selectie.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l4-3h10l4 3-3 3v12H6V9z"/><path d="M9 3c0 1.7 1.3 3 3 3s3-1.3 3-3"/></svg></span><span class="nav-dot"></span><span>Selectie</span></a>
+  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="12" y1="5" x2="12" y2="19"/><text x="5" y="15" font-size="6" fill="currentColor" stroke="none" font-family="DM Sans" font-weight="700">3</text><text x="15" y="15" font-size="6" fill="currentColor" stroke="none" font-family="DM Sans" font-weight="700">1</text></svg></span><span class="nav-dot"></span><span>Wedstrijden</span></a>
+  <a class="nav-btn" href="trainen.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/><path d="M19 5l1.5 1.5"/></svg></span><span class="nav-dot"></span><span>Trainen</span></a>
+  <a class="nav-btn" href="oefeningen.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21L10.5 6h3L16 21H8z"/><line x1="7" y1="13" x2="17" y2="13"/><line x1="6" y1="21" x2="18" y2="21"/></svg></span><span class="nav-dot"></span><span>Oefeningen</span></a>
+  <a class="nav-btn" href="team.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v7a4 4 0 0 1-8 0z"/><path d="M8 7H5a2 2 0 0 0 2 3.8"/><path d="M16 7h3a2 2 0 0 1-2 3.8"/><line x1="12" y1="15" x2="12" y2="19"/><line x1="9" y1="19" x2="15" y2="19"/></svg></span><span class="nav-dot"></span><span>Dashboard</span></a>
 </nav>
 <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
 <div class="toast" id="toast"></div>
 
 <div class="page-wrap">
   <div class="home-hero">
-    <div style="padding:0 16px 10px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+    <div style="padding:0 16px 12px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px">
         <div>
           <h1 class="home-title" id="home-titel" style="color:#fff">FCP <em>16-2</em></h1>
           <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px" id="home-subtitel">Seizoen 2026/2027</div>
         </div>
-        <a href="instellingen.html" class="topbar-btn" style="margin-top:auto;text-decoration:none;align-self:flex-end">⚙️</a>
+        <a href="instellingen.html" class="topbar-btn" style="text-decoration:none;align-self:flex-end">⚙️</a>
       </div>
-      <!-- Navigatieknoppen in stat-card stijl -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
-        <a href="trainen.html"      class="nav-card" style="text-decoration:none">
-          <div class="nav-card-icon g">📅</div><div><div class="stat-label" style="font-size:13px;font-weight:600;color:var(--text)">Trainen</div><div style="font-size:12px;color:var(--text3)">Schema & oefeningen</div></div>
-        </a>
-        <a href="opstelling.html"  class="nav-card" style="text-decoration:none">
-          <div class="nav-card-icon b">🟢</div><div><div class="stat-label" style="font-size:13px;font-weight:600;color:var(--text)">Opstelling</div><div style="font-size:12px;color:var(--text3)">Formaties & veld</div></div>
-        </a>
-        <a href="wedstrijden.html" class="nav-card" style="text-decoration:none">
-          <div class="nav-card-icon o">⚽</div><div><div class="stat-label" style="font-size:13px;font-weight:600;color:var(--text)">Wedstrijden</div><div style="font-size:12px;color:var(--text3)">Resultaten & MOTM</div></div>
-        </a>
-        <a href="selectie.html"    class="nav-card" style="text-decoration:none">
-          <div class="nav-card-icon r">👥</div><div><div class="stat-label" style="font-size:13px;font-weight:600;color:var(--text)">Selectie</div><div style="font-size:12px;color:var(--text3)">Spelers & formulieren</div></div>
-        </a>
-        <a href="team.html"        class="nav-card" style="text-decoration:none">
-          <div class="nav-card-icon p">📊</div><div><div class="stat-label" style="font-size:13px;font-weight:600;color:var(--text)">Dashboard</div><div style="font-size:12px;color:var(--text3)">Aanwezigheid & skills</div></div>
-        </a>
-        <a href="oefeningen.html"  class="nav-card" style="text-decoration:none">
-          <div class="nav-card-icon g">📚</div><div><div class="stat-label" style="font-size:13px;font-weight:600;color:var(--text)">Oefeningen</div><div style="font-size:12px;color:var(--text3)">Bibliotheek</div></div>
-        </a>
-      </div>
+      <!-- Eerstvolgende training IN paarse hero -->
+      <div id="start-training-card"></div>
     </div>
   </div>
 
-  <!-- Eerstvolgende training & wedstrijd -->
-  <div style="padding:10px 16px 0;background:var(--bg)">
-    <div id="start-training-card"></div>
+  <!-- Eerstvolgende wedstrijd IN lichte sectie -->
+  <div style="padding:12px 16px 0;background:var(--bg)">
     <div id="start-wedstrijd-card"></div>
   </div>
 
   <!-- Statistieken balk -->
-  <div style="padding:6px 16px 0;background:var(--bg)">
-    <div style="display:flex;gap:0;background:rgba(0,0,0,.2);border-radius:var(--rsm);overflow:hidden;margin-top:0">
-      <a href="selectie.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.1);text-decoration:none">
-        <div style="font-size:16px;font-weight:700;color:#fff;font-family:var(--font-display)" id="stat-spelers">0</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">spelers</div>
+  <div style="padding:0 16px 12px;background:var(--bg)">
+    <div style="display:flex;gap:0;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;box-shadow:var(--card-shadow)">
+      <a href="selectie.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border);text-decoration:none">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-spelers">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">spelers</div>
       </a>
-      <a href="trainen.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.1);text-decoration:none">
-        <div style="font-size:16px;font-weight:700;color:#fff;font-family:var(--font-display)" id="stat-oef">0</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">oefeningen</div>
+      <a href="trainen.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border);text-decoration:none">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-oef">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">oefeningen</div>
       </a>
-      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.1)">
-        <div style="font-size:16px;font-weight:700;color:#fff;font-family:var(--font-display)" id="stat-wedstrijden">0</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">wedstrijden</div>
+      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-wedstrijden">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">wedstrijden</div>
       </div>
-      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.1)">
-        <div style="font-size:16px;font-weight:700;color:#fff;font-family:var(--font-display)" id="stat-wins">0</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">gewonnen</div>
+      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-wins">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">gewonnen</div>
       </div>
       <div style="flex:1;padding:10px 6px;text-align:center">
-        <div style="font-size:16px;font-weight:700;color:#fff;font-family:var(--font-display)" id="stat-doelsaldo">0</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">doelsaldo</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-doelsaldo">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">doelsaldo</div>
       </div>
     </div>
   </div>
@@ -161,60 +141,99 @@ let principes = state.principes || DEFAULT_PRINCIPES;
 let activePrId = null;
 
 function renderStartCards() {
-  // Eerstvolgende training
   const weken = JSON.parse(localStorage.getItem('fcp_custom_weken') || '[]');
   const trainCard = document.getElementById('start-training-card');
   const today = new Date();
   const todayDag = today.getFullYear()*10000 + (today.getMonth()+1)*100 + today.getDate();
 
-  if (trainCard && weken.length) {
-    // Zoek huidige of eerstvolgende week
-    let gevondenWeek = null, gevondenSessie = null;
-    for (const w of weken) {
-      if (!w.isoDate) continue;
+  // ── Eerstvolgende training ──
+  if (trainCard) {
+    let gevondenWeek = null, gevondenSessie = null, gevondenWi = -1, gevondenSi = -1;
+    // Gesorteerd op isoDate
+    const gesorteerd = weken.map((w,i)=>({w,i})).filter(x=>x.w.isoDate).sort((a,b)=>a.w.isoDate.localeCompare(b.w.isoDate));
+    for (const {w, i} of gesorteerd) {
       const d = w.isoDate.substring(0,10).split('-');
       const startDag = parseInt(d[0])*10000 + parseInt(d[1])*100 + parseInt(d[2]);
       if (startDag + 6 >= todayDag) {
-        gevondenWeek = w;
-        if (w.sessies && w.sessies.length) gevondenSessie = w.sessies[0];
+        gevondenWeek = w; gevondenWi = i;
+        if (w.sessies && w.sessies.length) {
+          // Zoek eerste sessie die vandaag of in de toekomst is
+          for (let si = 0; si < w.sessies.length; si++) {
+            const s = w.sessies[si];
+            const dagTxt = (s.dag||'').toLowerCase();
+            const DAGMAP = {maandag:0,dinsdag:1,woensdag:2,donderdag:3,vrijdag:4,zaterdag:5,zondag:6};
+            const dagNr = Object.entries(DAGMAP).find(([d]) => dagTxt.includes(d));
+            if (dagNr) {
+              const sessieD = new Date(w.isoDate); sessieD.setDate(sessieD.getDate() + dagNr[1]);
+              const sessieDag = sessieD.getFullYear()*10000 + (sessieD.getMonth()+1)*100 + sessieD.getDate();
+              if (sessieDag >= todayDag) { gevondenSessie = s; gevondenSi = si; break; }
+            }
+          }
+          if (!gevondenSessie) { gevondenSessie = w.sessies[0]; gevondenSi = 0; }
+        }
         break;
       }
     }
     if (gevondenWeek && gevondenSessie) {
-      trainCard.innerHTML = `<a href="trainen.html" style="display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;margin-bottom:8px;text-decoration:none;box-shadow:var(--card-shadow)">
-        <div style="width:36px;height:36px;border-radius:9px;background:var(--blauw-l);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blauw)" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      const nk = 'cw' + gevondenWi + '_' + gevondenSi;
+      const url = 'trainen.html#' + nk;
+      const aanw = JSON.parse(localStorage.getItem('fcp_aanw')||'{}');
+      const aanwData = aanw[nk] || {};
+      const spelers = JSON.parse(localStorage.getItem('fcp_players')||'[]');
+      const afwNum = Object.values(aanwData).filter(v=>v&&v.afwezig).length;
+      const aanwNum = spelers.length - afwNum;
+      trainCard.innerHTML = `<a href="${url}" style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:var(--r);padding:11px 13px;margin-bottom:10px;text-decoration:none;backdrop-filter:blur(4px)">
+        <div style="width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/></svg>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Eerstvolgende training</div>
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:2px">${gevondenSessie.dag || 'Training'}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:1px">${gevondenWeek.focus || gevondenWeek.naam || ''}</div>
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em">Eerstvolgende training</div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-top:2px">${gevondenSessie.dag || 'Training'}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:1px">${gevondenWeek.focus || gevondenWeek.naam || ''}</div>
         </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--border2)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <span style="background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px">${spelers.length > 0 ? aanwNum+'/'+spelers.length : '–'}</span>
       </a>`;
+    } else {
+      trainCard.innerHTML = '';
     }
   }
 
-  // Eerstvolgende wedstrijd
+  // ── Eerstvolgende wedstrijd (fix: sorteer op datum, pak eerste niet-gespeelde) ──
   const wedCard = document.getElementById('start-wedstrijd-card');
   const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
-  if (wedCard && wedstrijden.length) {
-    const komend = wedstrijden.filter(w => !w.gespeeld).sort((a,b) => (a.isoDate||'').localeCompare(b.isoDate||''));
-    if (komend.length) {
-      const w = komend[0];
-      const resultaat = w.gespeeld ? `${w.score_eigen}–${w.score_tegen}` : '0–0';
-      wedCard.innerHTML = `<a href="wedstrijden.html" style="display:block;background:linear-gradient(135deg,var(--topbar),var(--accent2,var(--topbar)));border-radius:var(--r);padding:11px 13px;margin-bottom:8px;text-decoration:none">
-        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Eerstvolgende wedstrijd</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div style="font-size:14px;font-weight:700;color:#fff">${w.thuis_uit === 'thuis' ? 'FCP JO16-2' : (w.tegenstander||'?')}</div>
-          <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.7)">VS</div>
-          <div style="font-size:14px;font-weight:700;color:#fff">${w.thuis_uit === 'thuis' ? (w.tegenstander||'?') : 'FCP JO16-2'}</div>
+  if (wedCard) {
+    const komend = wedstrijden
+      .filter(w => !w.gespeeld && w.isoDate)
+      .sort((a,b) => a.isoDate.localeCompare(b.isoDate));
+    // Pak de eerste die vandaag of later is
+    const vandaagIso = today.toISOString().substring(0,10);
+    const eersteKomend = komend.find(w => w.isoDate >= vandaagIso) || komend[0];
+    if (eersteKomend) {
+      const w = eersteKomend;
+      wedCard.innerHTML = `<a href="wedstrijden.html" style="display:block;background:linear-gradient(135deg,var(--topbar) 0%,color-mix(in srgb,var(--topbar) 70%,#000) 100%);border-radius:var(--r);padding:13px;margin-bottom:10px;text-decoration:none;box-shadow:var(--card-shadow)">
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Eerstvolgende wedstrijd</div>
+        <div style="display:flex;align-items:center;justify-content:space-around;margin-bottom:8px">
+          <div style="text-align:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);margin:0 auto 4px;display:flex;align-items:center;justify-content:center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M12 2.5c0 0-3 3.5-3 9.5s3 9.5 3 9.5"/><path d="M12 2.5c0 0 3 3.5 3 9.5s-3 9.5-3 9.5"/><line x1="2.5" y1="9" x2="21.5" y2="9"/><line x1="2.5" y1="15" x2="21.5" y2="15"/></svg>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:#fff">FCP JO16-2</div>
+          </div>
+          <div style="font-size:18px;font-weight:700;color:rgba(255,255,255,.5)">vs</div>
+          <div style="text-align:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);margin:0 auto 4px;display:flex;align-items:center;justify-content:center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M12 2.5c0 0-3 3.5-3 9.5s3 9.5 3 9.5"/><path d="M12 2.5c0 0 3 3.5 3 9.5s-3 9.5-3 9.5"/><line x1="2.5" y1="9" x2="21.5" y2="9"/><line x1="2.5" y1="15" x2="21.5" y2="15"/></svg>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:#fff">${w.tegenstander || '?'}</div>
+          </div>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <div style="font-size:10px;color:rgba(255,255,255,.6)">${w.datum||'–'}${w.starttijd ? ' · ' + w.starttijd : ''} · ${w.thuis_uit||'–'}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6)">${w.datum||'–'}${w.starttijd?' · '+w.starttijd:''} · ${w.thuis_uit||'–'}</div>
           <span style="background:rgba(255,255,255,.18);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px" id="start-wed-aanw">–</span>
         </div>
       </a>`;
+    } else {
+      wedCard.innerHTML = '';
     }
   }
 }
@@ -249,16 +268,24 @@ function applyTeamConfig(cfg) {
 
 function renderPrincipes() {
   const grid = document.getElementById('principle-grid');
-  grid.innerHTML = '';
-  principes.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'pr-card';
-    card.style.cssText = `background:${p.kleur_bg};border:1px solid ${p.kleur_border};color:${p.kleur_text}`;
-    card.textContent = p.code + ' · ' + p.naam;
-    card.onclick = () => openPrModal(p.id);
-    grid.appendChild(card);
-  });
+  if (!grid) return;
+  const kleuren = [
+    {bg:'var(--blauw-l)',border:'var(--blauw-m)',code:'var(--blauw)',text:'#1a3799'},
+    {bg:'var(--groen-l)',border:'var(--groen-m)',code:'var(--groen)',text:'#0D4A2C'},
+    {bg:'var(--goud-l)',border:'var(--goud-m)',code:'var(--goud)',text:'#6B4E00'},
+    {bg:'var(--rood-l)',border:'var(--rood-m)',code:'var(--rood)',text:'#8B1A1A'},
+    {bg:'var(--blauw-l)',border:'var(--blauw-m)',code:'var(--blauw)',text:'#1a3799'},
+    {bg:'var(--groen-l)',border:'var(--groen-m)',code:'var(--groen)',text:'#0D4A2C'},
+  ];
+  grid.innerHTML = principes.map((p,i) => {
+    const k = kleuren[i % kleuren.length];
+    return `<div class="pr-card" style="background:${k.bg};border:1px solid ${k.border};border-radius:12px;padding:10px 12px;cursor:pointer" onclick="openPrModal('${p.id}')">
+      <div style="font-size:18px;font-weight:800;color:${k.code};line-height:1;margin-bottom:4px">${p.code}</div>
+      <div style="font-size:12px;font-weight:700;color:${k.text};line-height:1.3">${p.naam}</div>
+    </div>`;
+  }).join('');
 }
+
 
 function openPrModal(id) {
   const p = principes.find(x => x.id === id); if (!p) return;

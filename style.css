@@ -338,13 +338,13 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .bmodal-cancel-btn:active{background:var(--bg)}
 
 /* ─── PRINCIPE MODAL ─── */
-.pr-modal-overlay{position:fixed;inset:0;background:rgba(43,31,160,.5);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+.pr-modal-overlay{position:fixed;inset:0;background:rgba(200,210,240,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:200;display:none;align-items:flex-end;justify-content:center;padding:0}
 .pr-modal-overlay.open{display:flex}
-.pr-modal{background:var(--white);border-radius:20px;padding:22px;width:100%;max-width:420px;max-height:88dvh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.15)}
-.pr-modal-code{font-size:38px;font-weight:800;line-height:1;margin-bottom:4px;color:var(--topbar)}
-.pr-modal-naam{font-size:17px;font-weight:700;margin-bottom:10px;color:var(--text)}
-.pr-modal-section{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 4px;font-weight:700}
-.pr-modal-text{font-size:13px;line-height:1.7;color:var(--text2)}
+.pr-modal{background:var(--bg);border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-height:88dvh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.1)}
+.pr-modal-code{font-size:42px;font-weight:800;line-height:1;margin-bottom:2px;color:var(--text)}
+.pr-modal-naam{font-size:16px;font-weight:600;margin-bottom:10px;color:var(--topbar);padding-bottom:10px;border-bottom:1px solid var(--border)}
+.pr-modal-section{font-size:12px;color:var(--text);font-weight:600;margin:14px 0 4px}
+.pr-modal-text{font-size:13px;line-height:1.7;color:var(--text3)}
 .pr-modal-actions{display:flex;gap:8px;margin-top:18px}
 .pr-modal-edit{flex:1;padding:12px;border-radius:var(--rsm);font-family:var(--font-ui);font-size:13px;font-weight:700;cursor:pointer;border:none;text-align:center;background:var(--topbar);color:#fff}
 .pr-modal-close{padding:12px 16px;border-radius:var(--rsm);font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;background:var(--white);border:1px solid var(--border);color:var(--text3)}

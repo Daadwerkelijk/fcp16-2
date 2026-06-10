@@ -44,14 +44,15 @@
 
 <div class="page-wrap">
   <div class="page-header">
-    <div class="page-title">Opstelling</div>
-    <div style="margin-top:8px">
-      <select id="formatie-select" onchange="setFormatie(this.value)"
-        style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23a8e040%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;background-size:12px">
-      </select>
+    <div class="page-header-row">
+      <div class="page-title">Opstelling</div>
     </div>
   </div>
-
+  <div style="padding:10px 16px 4px;background:var(--bg)">
+    <select id="formatie-select" onchange="setFormatie(this.value)"
+        style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23a8e040%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;background-size:12px">
+      </select>
+  </div>
   <div class="field-wrap">
     <div class="field-container" id="fieldContainer">
       <svg class="field-svg" viewBox="0 0 400 380" xmlns="http://www.w3.org/2000/svg">

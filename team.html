@@ -280,37 +280,54 @@ function renderTeamProfiel() {
     cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Nog geen formulieren ingevuld door spelers.</div>';
     return;
   }
-  // Merge skills: formulier heeft prioriteit boven oud Excel
   const getSkills = p => ({ ...(p.skills || {}), ...(spelerSkills[p.id] || {}) });
-  let html = `<div style="font-size:11px;color:var(--text3);margin-bottom:12px">${withSkills.length} spelers met formulier · Tap een score voor detail</div>`;
+  const total = withSkills.length;
+
+  // Kleur per niveau
+  const NK = {
+    'Ontwikkel punt': { bg:'#FFEBEE', fill:'#C62828', text:'#C62828', label:'Ontwikkelpunt' },
+    'Voldoende':      { bg:'#FFF3E0', fill:'#E65100', text:'#E65100', label:'Voldoende' },
+    'Goed':           { bg:'#F1F8E9', fill:'#558B2F', text:'#558B2F', label:'Goed' },
+    'Zeer goed':      { bg:'#E8F5E9', fill:'#1B5E20', text:'#1B5E20', label:'Zeer goed' },
+  };
+
+  let html = `<div style="font-size:11px;color:var(--text3);margin-bottom:14px">${withSkills.length} spelers met formulier</div>`;
+
   SKILL_CATS.forEach(sc => {
-    html += `<div style="font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text);margin:16px 0 8px;padding-top:8px;border-top:1px solid var(--line2)">${sc.cat}</div>`;
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--border)">${sc.cat}</div>`;
     sc.skills.forEach(skill => {
-      const counts = [[], [], [], []];
-      withSkills.forEach(p => {
-        const skills = getSkills(p);
-        const i = SKILL_LEVELS.indexOf(skills[skill]);
-        if (i >= 0) counts[i].push(p.naam);
-      });
-      if (counts.every(c => !c.length)) return; // skill niet ingevuld door iemand
+      const counts = SKILL_LEVELS.map(lv => {
+        const namen = withSkills.filter(p => getSkills(p)[skill] === lv).map(p => p.naam);
+        return { lv, namen };
+      }).filter(c => c.namen.length > 0);
+
+      if (!counts.length) return;
+
+      // Bepaal dominante niveau (meeste stemmen)
+      const dominant = counts.reduce((a,b) => a.namen.length >= b.namen.length ? a : b);
+      const nk = NK[dominant.lv] || NK['Voldoende'];
+      const pct = Math.round((dominant.namen.length / total) * 100);
       const sid = 'sk-' + skill.replace(/\s+/g,'_');
-      html += `<div style="margin-bottom:12px">
-        <div style="font-size:12px;color:var(--text);margin-bottom:5px">${skill}</div>
-        <div style="display:flex;gap:3px;height:24px">
-          ${SKILL_LEVELS.map((lv,i) => {
-            if (!counts[i].length) return '';
-            const col = SKILL_COLORS[lv];
-            return `<div onclick="toggleDetail('${sid}-${i}')" style="flex:${counts[i].length};background:${col.bg};border:1px solid ${col.c};border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;color:${col.c};font-weight:500;cursor:pointer">${counts[i].length}</div>`;
+
+      html += `<div style="margin-bottom:12px;cursor:pointer" onclick="toggleDetail('${sid}')">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:12px;font-weight:500;color:var(--text);width:120px;flex-shrink:0">${skill}</div>
+          <div style="flex:1;height:8px;background:var(--border);border-radius:100px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${nk.fill};border-radius:100px;transition:width .3s"></div>
+          </div>
+          <div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:${nk.bg};color:${nk.text};border:1px solid ${nk.fill};flex-shrink:0;min-width:80px;text-align:center">${nk.label}</div>
+        </div>
+        <div id="${sid}" style="display:none;margin-top:6px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rsm)">
+          ${SKILL_LEVELS.map(lv => {
+            const c = counts.find(x => x.lv === lv);
+            if (!c) return '';
+            const nki = NK[lv];
+            return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:100px;background:${nki.bg};color:${nki.text};border:1px solid ${nki.fill};flex-shrink:0">${nki.label}</span>
+              <span style="font-size:11px;color:var(--text2)">${c.namen.join(', ')}</span>
+            </div>`;
           }).join('')}
         </div>
-        ${SKILL_LEVELS.map((lv,i) => {
-          if (!counts[i].length) return '';
-          const col = SKILL_COLORS[lv];
-          return `<div id="${sid}-${i}" style="display:none;margin-top:5px;padding:6px 10px;background:${col.bg};border:1px solid ${col.c};border-radius:var(--rsm)">
-            <div style="font-size:10px;color:${col.c};text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${lv}</div>
-            <div style="font-size:12px;color:${col.c}">${counts[i].join(', ')}</div>
-          </div>`;
-        }).join('')}
       </div>`;
     });
   });

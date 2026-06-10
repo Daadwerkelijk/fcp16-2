@@ -44,7 +44,7 @@
 
 <div class="page-wrap">
   <div class="page-header">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
       <div class="page-title">Oefeningen</div>
       <div style="display:flex;gap:6px;align-items:center">
         <button class="topbar-btn" onclick="openOefModal(null)" style="display:flex;align-items:center;gap:4px">
@@ -55,8 +55,11 @@
         </button>
       </div>
     </div>
+  </div>
+  <!-- Dropdown buiten header voor gelijke headerhoogte -->
+  <div style="padding:10px 16px 2px;background:var(--bg)">
     <select id="cat-dropdown" onchange="setActiveFilter(this.value)"
-      style="width:100%;padding:8px 12px;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none">
+      style="width:100%;padding:10px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:14px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;box-shadow:var(--card-shadow)">
     </select>
   </div>
   <div class="oef-toolbar">

@@ -47,7 +47,7 @@
 
 <div class="page-wrap">
   <div class="home-hero">
-    <div style="padding:0 16px 12px">
+    <div style="padding:0 16px 8px">
       <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px">
         <div>
           <h1 class="home-title" id="home-titel" style="color:#fff">FCP <em>16-2</em></h1>
@@ -98,7 +98,7 @@
 
   <!-- Supabase hidden inputs voor app.js compatibiliteit -->
   <div id="config-banner" style="display:none"><input id="sb-url" type="hidden"><input id="sb-key" type="hidden"></div>
-  <div id="sync-bar" style="display:none"><span id="sync-msg"></span></div>
+  
 </div>
 
 <!-- Principe modal -->
@@ -182,16 +182,16 @@ function renderStartCards() {
       const spelers = JSON.parse(localStorage.getItem('fcp_players')||'[]');
       const afwNum = Object.values(aanwData).filter(v=>v&&v.afwezig).length;
       const aanwNum = spelers.length - afwNum;
-      trainCard.innerHTML = `<a href="${url}" style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:var(--r);padding:11px 13px;margin-bottom:10px;text-decoration:none;backdrop-filter:blur(4px)">
-        <div style="width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/></svg>
+      trainCard.innerHTML = `<a href="${url}" style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.5);border-radius:var(--r);padding:11px 13px;margin-bottom:10px;text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,.15)">
+        <div style="width:36px;height:36px;border-radius:9px;background:var(--blauw-l);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--topbar)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/></svg>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em">Eerstvolgende training</div>
-          <div style="font-size:13px;font-weight:600;color:#fff;margin-top:2px">${gevondenSessie.dag || 'Training'}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:1px">${gevondenWeek.focus || gevondenWeek.naam || ''}</div>
+          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Eerstvolgende training</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:2px">${gevondenSessie.dag || 'Training'}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px">${gevondenWeek.focus || gevondenWeek.naam || ''}</div>
         </div>
-        <span style="background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px">${spelers.length > 0 ? aanwNum+'/'+spelers.length : '–'}</span>
+        <span style="background:var(--topbar);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px">${spelers.length > 0 ? aanwNum+'/'+spelers.length : '–'}</span>
       </a>`;
     } else {
       trainCard.innerHTML = '';
@@ -272,8 +272,8 @@ function renderPrincipes() {
   const kleuren = [
     {bg:'var(--blauw-l)',border:'var(--blauw-m)',code:'var(--blauw)',text:'#1a3799'},
     {bg:'var(--groen-l)',border:'var(--groen-m)',code:'var(--groen)',text:'#0D4A2C'},
-    {bg:'var(--goud-l)',border:'var(--goud-m)',code:'var(--goud)',text:'#6B4E00'},
-    {bg:'var(--rood-l)',border:'var(--rood-m)',code:'var(--rood)',text:'#8B1A1A'},
+    {bg:'var(--blauw-l)',border:'var(--blauw-m)',code:'var(--blauw)',text:'#1a3799'},
+    {bg:'var(--groen-l)',border:'var(--groen-m)',code:'var(--groen)',text:'#0D4A2C'},
     {bg:'var(--blauw-l)',border:'var(--blauw-m)',code:'var(--blauw)',text:'#1a3799'},
     {bg:'var(--groen-l)',border:'var(--groen-m)',code:'var(--groen)',text:'#0D4A2C'},
   ];

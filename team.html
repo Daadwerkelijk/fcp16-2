@@ -46,9 +46,11 @@
 <div class="page-wrap">
   <div class="page-header">
     <div class="page-header-row">
-      <div class="page-title">Dashboard</div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub" id="dashboard-sub">Seizoen 2026/2027</div>
+      </div>
     </div>
-    <div class="page-sub" id="dashboard-sub">Seizoen 2026/2027</div>
   </div>
 
   <!-- Statistieken balk -->
@@ -129,9 +131,9 @@ function renderAanwOverzicht() {
         <div style="font-size:24px;font-weight:700;color:#1a3799">${trainingen.length}</div>
         <div style="font-size:10px;font-weight:700;color:var(--blauw);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Trainingen</div>
       </div>
-      <div style="padding:11px 13px;background:var(--groen-l);border:1px solid var(--groen-m);border-radius:var(--r)">
-        <div style="font-size:24px;font-weight:700;color:#0D4A2C">${aantalWed}</div>
-        <div style="font-size:10px;font-weight:700;color:var(--groen);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Wedstrijden</div>
+      <div style="padding:11px 13px;background:var(--blauw-l);border:1px solid var(--blauw-m);border-radius:var(--r)">
+        <div style="font-size:24px;font-weight:700;color:#1a3799">${aantalWed}</div>
+        <div style="font-size:10px;font-weight:700;color:var(--blauw);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Wedstrijden</div>
       </div>
     </div>`;
 

@@ -287,8 +287,6 @@ function renderPrincipes() {
 function openPrModal(id) {
   const p = principes.find(x => x.id === id); if (!p) return;
   activePrId = id;
-  const modal = document.getElementById('prModal');
-  modal.style.cssText = `background:${p.kleur_bg};border-color:${p.kleur_border};color:${p.kleur_text}`;
   document.getElementById('pr-code').textContent     = p.code;
   document.getElementById('pr-naam').textContent     = p.naam;
   document.getElementById('pr-desc').textContent     = p.beschrijving;

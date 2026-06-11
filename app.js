@@ -548,7 +548,7 @@ const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oe
 
 // ─── LANDSCAPE RESPONSIVE ───
 function isLandscape() {
-  return window.innerWidth > window.innerHeight && window.innerWidth <= 1024;
+  return window.innerWidth > window.innerHeight;
 }
 
 function applyLandscape() {
@@ -619,7 +619,7 @@ function initDesktopPanel() {
 
 // Landscape trigger
 function isLandscape() {
-  return window.innerWidth > window.innerHeight && window.innerWidth <= 1024;
+  return window.innerWidth > window.innerHeight;
 }
 
 function applyLandscape() {

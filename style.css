@@ -365,16 +365,16 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 
 /* ═══════════════════════════════════════════
    LANDSCAPE RESPONSIVE
-   @media (orientation: landscape) en (max-height: 500px)
-   Triggers op mobiel in landscape mode
-═══════════════════════════════════════════ */
+   @media (orientation: landscape) {
 
-@media (orientation: landscape) and (max-width: 1024px) {
-
-  /* ── Navigatie: onderaan → links verticaal — ALLEEN MOBIEL ── */
+  /* ── Navigatie: links verticaal in landscape ── */
   .nav {
     position: fixed;
-    left: 0; top: 0; bottom: 0; right: auto;
+    left: 50%;
+    transform: translateX(-210px);
+    top: 0;
+    bottom: 0;
+    right: auto;
     width: 60px;
     height: 100dvh;
     flex-direction: column;
@@ -400,11 +400,16 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     font-size: 6.5px;
   }
 
-  /* ── Main content: ruimte maken voor linker nav ── */
-  .form-wrap,
-  .home-hero,
-  [class*="-responsive"] {
-    /* Marge wordt via JS .is-landscape body klasse gezet */
+  /* ── Main content: ruimte voor linker nav ── */
+  .page-wrap .page-header,
+  .page-wrap .form-wrap,
+  .page-wrap .home-hero,
+  .page-wrap > div:not(.nav) {
+    padding-left: calc(60px + 12px);
+  }
+  /* Maar nav zelf niet verschuiven */
+  .nav {
+    padding-left: 0;
   }
 
   /* ── Page header: compacter ── */
@@ -570,7 +575,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 /* ── is-landscape body klasse (via JS gezet) ── */
 
 /* Opstelling: veld links, bench rechts */
-@media (max-width: 767px) { body.is-landscape .opst-layout-wrap {
+  .opst-layout-wrap {
   display: flex;
   flex-direction: row;
   gap: 10px;
@@ -579,19 +584,19 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   overflow: hidden;
   padding-bottom: 0;
 }
-@media (max-width: 767px) { body.is-landscape .field-wrap {
+  .field-wrap {
   flex: 1.3;
   min-height: 0;
   margin-bottom: 0 !important;
 }
-@media (max-width: 767px) { body.is-landscape .field-svg {
+  .field-svg {
   height: 100% !important;
   object-fit: contain;
 }
-@media (max-width: 767px) { body.is-landscape .field-actions {
+  .field-actions {
   margin-top: 6px;
 }
-@media (max-width: 767px) { body.is-landscape .opst-bench-col-content {
+  .opst-bench-col-content {
   width: 155px;
   flex-shrink: 0;
   overflow-y: auto;
@@ -601,7 +606,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 }
 
 /* Trainen: master links, detail rechts */
-@media (max-width: 767px) { body.is-landscape .trainen-responsive {
+  .trainen-responsive {
   display: flex;
   flex-direction: row;
   height: calc(100dvh - 46px);
@@ -609,7 +614,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   padding: 0;
   padding-bottom: 0 !important;
 }
-@media (max-width: 767px) { body.is-landscape .trainen-responsive .schema-section {
+  .trainen-responsive .schema-section {
   width: 220px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
@@ -617,7 +622,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   padding: 8px;
   height: 100%;
 }
-@media (max-width: 767px) { body.is-landscape .trainen-responsive #session-panel {
+  .trainen-responsive #session-panel {
   flex: 1;
   overflow-y: auto;
   padding: 8px 12px;
@@ -625,7 +630,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 }
 
 /* Wedstrijden: lijst links, detail rechts */
-@media (max-width: 767px) { body.is-landscape .wed-responsive {
+  .wed-responsive {
   display: flex;
   flex-direction: row;
   height: calc(100dvh - 46px);
@@ -633,21 +638,21 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   padding: 0;
   padding-bottom: 0 !important;
 }
-@media (max-width: 767px) { body.is-landscape .wed-responsive .wed-list-col {
+  .wed-responsive .wed-list-col {
   width: 210px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   overflow-y: auto;
   padding: 8px;
 }
-@media (max-width: 767px) { body.is-landscape .wed-responsive .wed-detail-col {
+  .wed-responsive .wed-detail-col {
   flex: 1;
   overflow-y: auto;
   padding: 8px 10px;
 }
 
 /* Selectie: lijst links, detail rechts */
-@media (max-width: 767px) { body.is-landscape .sel-responsive {
+  .sel-responsive {
   display: flex;
   flex-direction: row;
   height: calc(100dvh - 46px);
@@ -655,25 +660,25 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   padding: 0;
   padding-bottom: 0 !important;
 }
-@media (max-width: 767px) { body.is-landscape .sel-responsive .sel-list-col {
+  .sel-responsive .sel-list-col {
   width: 190px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   overflow-y: auto;
 }
-@media (max-width: 767px) { body.is-landscape .sel-responsive .sel-detail-col {
+  .sel-responsive .sel-detail-col {
   flex: 1;
   overflow-y: auto;
   padding: 8px 12px;
 }
 
 /* Oefeningen: categorie sidebar links */
-@media (max-width: 767px) { body.is-landscape .oef-responsive {
+  .oef-responsive {
   /* oef-list wordt flex container */
 }
 
 /* Dashboard: twee kolommen */
-@media (max-width: 767px) { body.is-landscape .team-responsive {
+  .team-responsive {
   display: flex;
   flex-direction: row;
   gap: 10px;
@@ -682,16 +687,16 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   padding: 8px 12px;
   padding-bottom: 0 !important;
 }
-@media (max-width: 767px) { body.is-landscape .team-responsive > * {
+  .team-responsive > * {
   flex: 1;
   overflow-y: auto;
   min-width: 0;
 }
 
 /* Landscape: content verschuiven voor linker nav */
-@media (max-width: 767px) { body.is-landscape .form-wrap,
-@media (max-width: 767px) { body.is-landscape .home-hero,
-@media (max-width: 767px) { body.is-landscape .home-content {
+  .form-wrap,
+  .home-hero,
+  .home-content {
   /* margin-left via CSS zodat het direct werkt zonder JS */
 }
 
@@ -731,6 +736,163 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     position: sticky;
     top: 0;
     z-index: 10;
+  }
+
+  /* Nav: reset landscape overrides — sticky onderaan in de 420px kolom */
+  .nav {
+    position: sticky !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    height: calc(64px + env(safe-area-inset-bottom)) !important;
+    flex-direction: row !important;
+    transform: none !important;
+    border-right: none !important;
+    border-top: 1px solid var(--border) !important;
+    z-index: 10;
+  }
+  .nav-btn {
+    flex: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+  /* Content: geen extra links padding nodig */
+  .page-wrap .page-header,
+  .page-wrap .form-wrap,
+  .page-wrap .home-hero,
+  .page-wrap > div:not(.nav) {
+    padding-left: 0 !important;
+  }
+
+  /* Modals: gecentreerd op de kolom */
+  .modal-overlay,
+  .bmodal-overlay,
+  .pr-modal-overlay {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    max-width: 420px;
+    top: 0;
+    bottom: 0;
+    height: 100vh;
+  }
+
+  /* scroll-top en toast ook in kolom */
+  .scroll-top {
+    right: auto;
+    margin-right: -180px;
+  }
+
+  .toast {
+    max-width: 380px;
+  }
+
+  /* Cursor pointer */
+  button, select, .pos-slot, .nav-btn, .week-hdr, .player-item {
+    cursor: pointer;
+  }
+}
+
+/* Desktop breed (1100px+): sidebar naast de app */
+@media (min-width: 1100px) {
+  body {
+    padding: 40px 0;
+    gap: 40px;
+    align-items: flex-start;
+  }
+
+  .page-wrap {
+    border-radius: 28px;
+    overflow: hidden;
+    min-height: calc(100vh - 80px);
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Nav sticky onderaan scrollbare kolom */
+  .nav {
+    position: sticky;
+    bottom: 0;
+  }
+
+
+
+/* ── Landscape layouts (puur CSS, geen JS nodig) ── */
+
+}
+
+/* ═══════════════════════════════════════════
+   DESKTOP / BREED SCHERM
+   App als gecentreerde kolom, nav sticky
+═══════════════════════════════════════════ */
+
+@media (min-width: 768px) {
+
+  html {
+    background: #1a1a2e;
+  }
+
+  body {
+    background: #1a1a2e;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* App kolom: 420px gecentreerd */
+  .page-wrap {
+    width: 420px;
+    min-width: 420px;
+    max-width: 420px;
+    min-height: 100vh;
+    background: var(--bg);
+    position: relative;
+    box-shadow: 0 0 80px rgba(0,0,0,.5);
+    flex-shrink: 0;
+  }
+
+  /* Page header: blijft in kolom */
+  .page-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  /* Nav: reset landscape overrides — sticky onderaan in de 420px kolom */
+  .nav {
+    position: sticky !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    height: calc(64px + env(safe-area-inset-bottom)) !important;
+    flex-direction: row !important;
+    transform: none !important;
+    border-right: none !important;
+    border-top: 1px solid var(--border) !important;
+    z-index: 10;
+  }
+  .nav-btn {
+    flex: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+  /* Content: geen extra links padding nodig */
+  .page-wrap .page-header,
+  .page-wrap .form-wrap,
+  .page-wrap .home-hero,
+  .page-wrap > div:not(.nav) {
+    padding-left: 0 !important;
   }
 
   /* Modals: gecentreerd op de kolom */

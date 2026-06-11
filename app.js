@@ -542,3 +542,32 @@ function initScrollTop() {
 function initManifest() { /* manifest.json is statisch, geen actie nodig */ }
 
 const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oefeningen via + Nieuw
+
+// ─── LANDSCAPE RESPONSIVE ───
+function isLandscape() {
+  return window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
+}
+
+function applyLandscape() {
+  const ls = isLandscape();
+  document.body.classList.toggle('is-landscape', ls);
+
+  // Nav: voeg klasse toe zodat CSS hem links zet
+  const nav = document.querySelector('.nav');
+  if (nav) nav.classList.toggle('nav-landscape', ls);
+
+  // page-wrap: margin-left aanpassen
+  const wrap = document.querySelector('.page-wrap');
+  if (wrap) wrap.style.marginLeft = ls ? '60px' : '';
+
+  // Home hero: padding aanpassen
+  const hero = document.querySelector('.home-hero');
+  if (hero) {
+    hero.style.paddingTop = ls ? 'calc(8px + env(safe-area-inset-top))' : '';
+  }
+}
+
+// Draai bij laden en bij oriëntatie wijziging
+window.addEventListener('DOMContentLoaded', applyLandscape);
+window.addEventListener('resize', applyLandscape);
+screen.orientation && screen.orientation.addEventListener('change', applyLandscape);

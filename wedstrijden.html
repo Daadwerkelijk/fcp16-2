@@ -374,10 +374,12 @@ function openWedPositieModal(wid, pos, formatieKey) {
     const btn = document.createElement('button');
     const alGeplaatst = Object.entries(wedLineups[wid]).find(([k,v]) => v===p.id && k!==pos.id);
     btn.className = 'modal-btn' + (wedLineups[wid][pos.id]===p.id?' current':'');
-    if (alGeplaatst && wedLineups[wid][pos.id]!==p.id) btn.style.opacity='0.45';
-    btn.innerHTML = `<span>${p.naam}</span><span style="font-size:11px;color:var(--text3)">${wedLineups[wid][pos.id]===p.id?'✓':alGeplaatst?'→ '+alGeplaatst[0]:''}</span>`;
+    btn.innerHTML = `<span>${p.naam}</span><span style="font-size:11px;color:var(--text3)">${wedLineups[wid][pos.id]===p.id?'✓ Huidig':alGeplaatst?'⟵ '+alGeplaatst[0]:''}</span>`;
     btn.onclick = () => {
-      if (alGeplaatst && wedLineups[wid][pos.id]!==p.id) { showToast(p.naam+' staat al op '+alGeplaatst[0]); return; }
+      if (alGeplaatst && wedLineups[wid][pos.id]!==p.id) {
+        // Verplaats: maak oude positie leeg
+        wedLineups[wid][alGeplaatst[0]] = null;
+      }
       wedLineups[wid][pos.id]=p.id;
       const w2 = wedstrijden.find(x => x.id === wid);
       if (w2) {

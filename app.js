@@ -429,6 +429,40 @@ function applyThema(key) {
   // Status bar kleur mee veranderen met thema
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) metaTheme.setAttribute('content', t.topbar);
+
+  // Dynamische accentkleuren passend bij het thema
+  const isDark = ['donker','fcp'].includes(key);
+  if (isDark) {
+    // Donker thema: lichte tekst op donkere achtergrond
+    r.setProperty('--blauw-l',  'rgba(43,92,230,.2)');
+    r.setProperty('--blauw-m',  'rgba(43,92,230,.4)');
+    r.setProperty('--groen-l',  'rgba(27,122,75,.2)');
+    r.setProperty('--groen-m',  'rgba(27,122,75,.4)');
+    r.setProperty('--goud-l',   'rgba(184,134,11,.2)');
+    r.setProperty('--goud-m',   'rgba(184,134,11,.4)');
+    r.setProperty('--rood-l',   'rgba(198,40,40,.2)');
+    r.setProperty('--rood-m',   'rgba(198,40,40,.4)');
+    r.setProperty('--blauw',    '#7aacff');
+    r.setProperty('--groen',    '#6ee0a0');
+    r.setProperty('--goud',     '#f0d080');
+    r.setProperty('--rood',     '#ff8080');
+    r.setProperty('--card-shadow', 'none');
+  } else {
+    r.setProperty('--blauw-l',  '#EEF2FF');
+    r.setProperty('--blauw-m',  '#C7D4FC');
+    r.setProperty('--groen-l',  '#E8F5EE');
+    r.setProperty('--groen-m',  '#C3E8D2');
+    r.setProperty('--goud-l',   '#FFF8E1');
+    r.setProperty('--goud-m',   '#FFE082');
+    r.setProperty('--rood-l',   '#FFEBEE');
+    r.setProperty('--rood-m',   '#FFCDD2');
+    r.setProperty('--blauw',    '#2B5CE6');
+    r.setProperty('--groen',    '#1B7A4B');
+    r.setProperty('--goud',     '#B8860B');
+    r.setProperty('--rood',     '#C62828');
+    r.setProperty('--card-shadow', '0 1px 3px rgba(43,31,160,.06),0 1px 2px rgba(0,0,0,.04)');
+  }
+
   localStorage.setItem('fcp_thema', key);
 }
 // Thema direct toepassen bij laden

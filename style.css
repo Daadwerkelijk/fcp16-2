@@ -362,19 +362,20 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .pr-card:active{opacity:.7}
 .skill-level-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:var(--badge-radius)}
 
-
-/* ══════════════════════════════════════════════════
-   LANDSCAPE — Alleen touchscreens (telefoon/tablet)
-   pointer:coarse = touchscreen, niet laptop/muis
-══════════════════════════════════════════════════ */
+/* ════════════════════════════════════════
+   LANDSCAPE — mobiel/tablet
+   Triggert als telefoon gedraaid is
+════════════════════════════════════════ */
 @media (orientation: landscape) {
 
-  /* Nav: links verticaal */
+  /* Nav: van onderaan naar links verticaal */
   .nav {
     position: fixed;
-    left: 0; top: 0; bottom: 0;
+    left: 0;
+    top: 0;
+    bottom: 0;
     width: 60px;
-    height: 100dvh;
+    height: 100%;
     flex-direction: column;
     border-top: none;
     border-right: 1px solid var(--border);
@@ -382,6 +383,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     z-index: 50;
     overflow-y: auto;
   }
+
   .nav-btn {
     flex: none;
     width: 52px;
@@ -391,194 +393,140 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     flex-direction: column;
     gap: 2px;
   }
-  .nav-btn.active { background: var(--blauw-l); }
-  .nav-btn span:last-child { font-size: 6.5px; }
 
-  /* Content: ruimte voor linker nav */
-  
-  /* Content: ruimte voor linker nav */
-  .page-wrap { padding-left: 60px; }
+  .nav-btn span:last-child {
+    font-size: 6.5px;
+  }
 
-  /* Header compacter */
-  .page-header { padding-top: calc(8px + env(safe-area-inset-top)); }
+  .nav-btn.active {
+    background: var(--blauw-l);
+  }
 
-  /* Home hero kleiner */
-  .home-hero { padding-top: calc(8px + env(safe-area-inset-top)); }
+  /* Alle pagina content: 60px naar rechts */
+  .page-wrap {
+    padding-left: 60px;
+  }
 
-  /* Opstelling: veld links, bench rechts */
+  /* Headers compacter */
+  .page-header {
+    padding-top: calc(8px + env(safe-area-inset-top));
+    padding-bottom: 10px;
+  }
+
+  .home-hero {
+    padding-top: calc(8px + env(safe-area-inset-top));
+    padding-bottom: 12px;
+  }
+
+  /* Opstelling: veld links, bench rechts naast elkaar */
   .opst-layout-wrap {
     display: flex;
     flex-direction: row;
-    gap: 10px;
+    align-items: stretch;
+    gap: 8px;
     padding: 8px 10px;
-    height: calc(100dvh - 46px);
+    height: calc(100dvh - 48px);
     overflow: hidden;
-    padding-bottom: 0;
   }
-  .field-wrap {
-    flex: 1.3;
+
+  /* Veld kolom: neemt alle resterende ruimte */
+  .opst-layout-wrap .field-wrap {
+    flex: 1;
+    min-width: 0;
     min-height: 0;
-    height: 100%;
     margin-bottom: 0 !important;
     display: flex;
     flex-direction: column;
   }
-  .field-wrap .field-container {
+
+  .opst-layout-wrap .field-wrap .field-container {
     flex: 1;
     min-height: 0;
   }
-  .field-wrap .field-svg {
+
+  .opst-layout-wrap .field-wrap .field-container .field-svg {
     height: 100%;
     width: 100%;
+    position: absolute;
+    inset: 0;
   }
-  .opst-bench-col-content {
-    width: 150px;
+
+  .opst-layout-wrap .field-wrap .field-actions {
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  /* Bench kolom: vaste breedte rechts */
+  .opst-layout-wrap .opst-bench-col-content {
+    width: 145px;
     flex-shrink: 0;
     overflow-y: auto;
     margin-top: 0;
+    display: flex;
+    flex-direction: column;
   }
 
-  /* Trainen: weeklijst links, detail rechts */
-  .trainen-responsive {
-    display: flex;
-    flex-direction: row;
-    height: calc(100dvh - 46px);
-    overflow: hidden;
-    padding: 0 !important;
-  }
-  .trainen-responsive .schema-section {
-    width: 200px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--border);
-    overflow-y: auto;
-    padding: 8px;
-  }
-  .trainen-responsive #session-panel {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 12px;
-  }
-
-  /* Wedstrijden: lijst links, detail rechts */
-  .wed-responsive {
-    display: flex;
-    flex-direction: row;
-    height: calc(100dvh - 46px);
-    overflow: hidden;
-    padding: 0 !important;
-  }
-
-  /* Dashboard: twee kolommen */
-  .team-responsive {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    height: calc(100dvh - 46px);
-    overflow: hidden;
-    padding: 8px 10px !important;
-  }
-  .team-responsive > * {
-    flex: 1;
-    overflow-y: auto;
-    min-width: 0;
-  }
 }
 
-
-/* ── Donker thema: leesbaarheid fixes ── */
-/* modal-btn selected state */
-.modal-btn.current {
-  border-color: var(--topbar);
-  color: var(--topbar);
-  background: var(--blauw-l);
-}
-/* Item icoon achtergronden */
-.item-icon.b { background: var(--blauw-l); }
-.item-icon.g { background: var(--groen-l); }
-.item-icon.o { background: var(--goud-l); }
-.item-icon.r { background: var(--rood-l); }
-/* Badges */
-.badge-b { background: var(--blauw-l); color: var(--blauw); border-color: var(--blauw-m); }
-.badge-g { background: var(--groen-l); color: var(--groen); border-color: var(--groen-m); }
-.badge-o { background: var(--goud-l);  color: var(--goud);  border-color: var(--goud-m);  }
-.badge-r { background: var(--rood-l);  color: var(--rood);  border-color: var(--rood-m);  }
-/* SVG iconen in selectie: kleur mee met tekst */
-.item-icon svg { color: var(--topbar); }
-/* Stat blokken */
-.stat-b { background: var(--blauw-l); border-color: var(--blauw-m); }
-.stat-g { background: var(--groen-l); border-color: var(--groen-m); }
-/* Week items */
-.week-hdr { background: var(--white); color: var(--text); }
-.week-num  { color: var(--text); }
-.week-focus { color: var(--text3); }
-
-
-/* ═══════════════════════════════════════════
-   DESKTOP / BREED SCHERM
-   App als gecentreerde kolom, nav sticky
-═══════════════════════════════════════════ */
-
+/* ════════════════════════════════════════
+   DESKTOP (≥1024px): reset landscape nav
+   App gecentreerd als kolom
+════════════════════════════════════════ */
 @media (min-width: 1024px) {
 
-  html {
+  html, body {
     background: #1a1a2e;
   }
 
   body {
-    background: #1a1a2e;
-    min-height: 100vh;
     display: flex;
-    align-items: flex-start;
     justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
   }
 
-  /* App kolom: 420px gecentreerd */
   .page-wrap {
     width: 420px;
     min-width: 420px;
     max-width: 420px;
     min-height: 100vh;
     background: var(--bg);
-    position: relative;
     box-shadow: 0 0 80px rgba(0,0,0,.5);
     flex-shrink: 0;
-  }
-
-  /* Page header: blijft in kolom */
-  .page-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-
-  /* Nav: reset landscape overrides — sticky onderaan in de 420px kolom */
-  .page-wrap {
+    /* Reset landscape padding */
     padding-left: 0 !important;
   }
+
+  /* Nav: reset naar onderaan in de kolom */
   .nav {
     position: sticky !important;
     bottom: 0 !important;
     top: auto !important;
     left: auto !important;
-    right: auto !important;
     width: 100% !important;
-    height: calc(64px + env(safe-area-inset-bottom)) !important;
+    height: auto !important;
     flex-direction: row !important;
-    transform: none !important;
     border-right: none !important;
     border-top: 1px solid var(--border) !important;
+    transform: none !important;
     z-index: 10;
   }
+
   .nav-btn {
     flex: 1 !important;
     width: auto !important;
     height: auto !important;
     border-radius: 0 !important;
     margin: 0 !important;
+    flex-direction: column !important;
+    gap: 1px !important;
   }
 
+  .nav-btn span:last-child {
+    font-size: 7px !important;
+  }
 
-  /* Modals: gecentreerd op de kolom */
+  /* Modals gecentreerd over de 420px kolom */
   .modal-overlay,
   .bmodal-overlay,
   .pr-modal-overlay {
@@ -587,47 +535,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     transform: translateX(-50%);
     width: 420px;
     max-width: 420px;
-    top: 0;
-    bottom: 0;
-    height: 100vh;
   }
 
-  /* scroll-top en toast ook in kolom */
-  .scroll-top {
-    right: auto;
-    margin-right: -180px;
-  }
-
-  .toast {
-    max-width: 380px;
-  }
-
-  /* Cursor pointer */
-  button, select, .pos-slot, .nav-btn, .week-hdr, .player-item {
+  button, select, .pos-slot, .nav-btn, .week-hdr {
     cursor: pointer;
-  }
-}
-
-/* Desktop breed (1100px+): sidebar naast de app */
-@media (min-width: 1100px) {
-  body {
-    padding: 40px 0;
-    gap: 40px;
-    align-items: flex-start;
-  }
-
-  .page-wrap {
-    border-radius: 28px;
-    overflow: hidden;
-    min-height: calc(100vh - 80px);
-    max-height: calc(100vh - 80px);
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-
-  /* Nav sticky onderaan scrollbare kolom */
-  .nav {
-    position: sticky;
-    bottom: 0;
   }
 }

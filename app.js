@@ -582,7 +582,9 @@ const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oe
 
 // ─── LANDSCAPE RESPONSIVE ───
 function isLandscape() {
-  return window.innerWidth > window.innerHeight;
+  // Touch-apparaat check: telefoon/tablet heeft coarse pointer, laptop niet
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  return isTouch && window.innerWidth > window.innerHeight;
 }
 
 function applyLandscape() {
@@ -653,7 +655,9 @@ function initDesktopPanel() {
 
 // Landscape trigger
 function isLandscape() {
-  return window.innerWidth > window.innerHeight;
+  // Touch-apparaat check: telefoon/tablet heeft coarse pointer, laptop niet
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  return isTouch && window.innerWidth > window.innerHeight;
 }
 
 function applyLandscape() {

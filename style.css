@@ -365,466 +365,113 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 
 /* ═══════════════════════════════════════════
    LANDSCAPE RESPONSIVE
-   /* Landscape layout via JS body.is-landscape klasse */
 
-  /* ── Navigatie: links verticaal in landscape ── */
-  body.is-landscape .nav {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-210px);
-      top: 0;
-      bottom: 0;
-      right: auto;
-      width: 60px;
-      height: 100dvh;
-      flex-direction: column;
-      border-top: none;
-      border-right: 1px solid var(--border);
-      padding: 8px 0;
-      z-index: 50;
-      overflow-y: auto;
-    }
-  body.is-landscape .nav-btn {
-      flex: none;
-      width: 52px;
-      height: 52px;
-      border-radius: 10px;
-      margin: 1px 4px;
-      flex-direction: column;
-      gap: 2px;
-    }
-  body.is-landscape .nav-btn.active {
-      background: var(--blauw-l);
-    }
-  body.is-landscape .nav-btn span:last-child {
-      font-size: 6.5px;
-    }
+/* ══════════════════════════════════════════════════
+   LANDSCAPE — Alleen touchscreens (telefoon/tablet)
+   pointer:coarse = touchscreen, niet laptop/muis
+══════════════════════════════════════════════════ */
+@media (orientation: landscape) and (pointer: coarse) {
 
-  /* ── Main content: ruimte voor linker nav ── */
-    .page-wrap .page-header,
-    .page-wrap .form-wrap,
-    .page-wrap .home-hero,
-  body.is-landscape .page-wrap > div:not(.nav) {
-      padding-left: calc(60px + 12px);
-    }
-  /* Maar nav zelf niet verschuiven */
-  body.is-landscape .nav {
-      padding-left: 0;
-    }
-
-  /* ── Page header: compacter ── */
-  body.is-landscape .page-header {
-      padding-top: calc(10px + env(safe-area-inset-top));
-      padding-bottom: 8px;
-      position: sticky;
-      top: 0;
-    }
-  body.is-landscape .page-header-row {
-      min-height: 24px;
-    }
-  body.is-landscape .page-title {
-      font-size: 16px;
-    }
-
-  /* ── Start: hero compacter ── */
-  body.is-landscape .home-hero {
-      padding-top: calc(10px + env(safe-area-inset-top));
-    }
-  body.is-landscape .home-title {
-      font-size: 22px;
-    }
-
-  /* ── Start: 2-koloms layout ── */
-  body.is-landscape .start-two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      padding: 10px 12px;
-    }
-
-  /* ── Opstelling: veld + bench naast elkaar ── */
-  body.is-landscape .opst-layout {
-      display: flex;
-      gap: 10px;
-      padding: 8px 12px;
-      height: calc(100dvh - 48px);
-      overflow: hidden;
-    }
-  body.is-landscape .opst-field-col {
-      flex: 1.3;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-  body.is-landscape .opst-bench-col {
-      width: 160px;
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-    }
-  body.is-landscape .field-wrap {
-      flex: 1;
-      min-height: 0;
-    }
-  body.is-landscape .field-svg {
-      height: 100%;
-      width: 100%;
-    }
-  body.is-landscape .field-actions {
-      flex-shrink: 0;
-    }
-
-  /* ── Trainen: master-detail ── */
-  body.is-landscape .trainen-layout {
-      display: flex;
-      height: calc(100dvh - 48px);
-      overflow: hidden;
-    }
-  body.is-landscape .trainen-master {
-      width: 220px;
-      border-right: 1px solid var(--border);
-      overflow-y: auto;
-      flex-shrink: 0;
-      padding: 8px;
-    }
-  body.is-landscape .trainen-detail {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px 12px;
-    }
-
-  /* ── Selectie: lijst + detail ── */
-  body.is-landscape .sel-layout {
-      display: flex;
-      height: calc(100dvh - 48px);
-      overflow: hidden;
-    }
-  body.is-landscape .sel-master {
-      width: 200px;
-      border-right: 1px solid var(--border);
-      overflow-y: auto;
-      flex-shrink: 0;
-    }
-  body.is-landscape .sel-detail {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px 12px;
-    }
-
-  /* ── Wedstrijden: lijst + detail ── */
-  body.is-landscape .wed-layout {
-      display: flex;
-      height: calc(100dvh - 48px);
-      overflow: hidden;
-    }
-  body.is-landscape .wed-master {
-      width: 200px;
-      border-right: 1px solid var(--border);
-      overflow-y: auto;
-      flex-shrink: 0;
-      padding: 8px;
-    }
-  body.is-landscape .wed-detail {
-      flex: 1;
-      overflow-y: auto;
-    }
-
-  /* ── Oefeningen: sidebar + detail ── */
-  body.is-landscape .oef-layout {
-      display: flex;
-      height: calc(100dvh - 48px);
-      overflow: hidden;
-    }
-  body.is-landscape .oef-sidebar {
-      width: 180px;
-      border-right: 1px solid var(--border);
-      overflow-y: auto;
-      flex-shrink: 0;
-      padding: 8px;
-    }
-  body.is-landscape .oef-main {
-      flex: 1;
-      overflow-y: auto;
-    }
-
-  /* ── Dashboard: zij aan zij ── */
-  body.is-landscape .team-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      padding: 8px 12px;
-      height: calc(100dvh - 48px);
-      overflow: hidden;
-    }
-  body.is-landscape .team-col {
-      overflow-y: auto;
-    }
-
-  /* ── Modals: kleiner in landscape ── */
-  body.is-landscape .modal, body.is-landscape .bmodal {
-      max-height: 90dvh;
-      max-width: 480px;
-      border-radius: var(--r);
-    }
-  body.is-landscape .pr-modal {
-      border-radius: var(--r) var(--r) 0 0;
-      max-height: 90dvh;
-    }
+  /* Nav: links verticaal */
+  .nav {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 60px;
+    height: 100dvh;
+    flex-direction: column;
+    border-top: none;
+    border-right: 1px solid var(--border);
+    padding: 8px 0;
+    z-index: 50;
+    overflow-y: auto;
   }
+  .nav-btn {
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    margin: 2px 4px;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .nav-btn.active { background: var(--blauw-l); }
+  .nav-btn span:last-child { font-size: 6.5px; }
 
-/* ── is-landscape body klasse (via JS gezet) ── */
+  /* Content: ruimte voor linker nav */
+  .page-wrap { padding-left: 60px; }
 
-/* Opstelling: veld links, bench rechts */
-  body.is-landscape .opst-layout-wrap {
+  /* Header compacter */
+  .page-header { padding-top: calc(8px + env(safe-area-inset-top)); }
+
+  /* Home hero kleiner */
+  .home-hero { padding-top: calc(8px + env(safe-area-inset-top)); }
+
+  /* Opstelling: veld links, bench rechts */
+  .opst-layout-wrap {
     display: flex;
     flex-direction: row;
     gap: 10px;
-    padding: 8px 12px;
+    padding: 8px 10px;
     height: calc(100dvh - 46px);
     overflow: hidden;
     padding-bottom: 0;
   }
-  body.is-landscape .field-wrap {
+  .field-wrap {
     flex: 1.3;
     min-height: 0;
     margin-bottom: 0 !important;
   }
-  body.is-landscape .field-svg {
-    height: 100% !important;
-    object-fit: contain;
-  }
-  body.is-landscape .field-actions {
-    margin-top: 6px;
-  }
-  body.is-landscape .opst-bench-col-content {
-    width: 155px;
+  .opst-bench-col-content {
+    width: 150px;
     flex-shrink: 0;
     overflow-y: auto;
     margin-top: 0;
-    display: flex;
-    flex-direction: column;
   }
 
-/* Trainen: master links, detail rechts */
-  body.is-landscape .trainen-responsive {
+  /* Trainen: weeklijst links, detail rechts */
+  .trainen-responsive {
     display: flex;
     flex-direction: row;
     height: calc(100dvh - 46px);
     overflow: hidden;
-    padding: 0;
-    padding-bottom: 0 !important;
+    padding: 0 !important;
   }
-  body.is-landscape .trainen-responsive .schema-section {
-    width: 220px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--border);
-    overflow-y: auto;
-    padding: 8px;
-    height: 100%;
-  }
-  body.is-landscape .trainen-responsive #session-panel {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 12px;
-    height: 100%;
-  }
-
-/* Wedstrijden: lijst links, detail rechts */
-  body.is-landscape .wed-responsive {
-    display: flex;
-    flex-direction: row;
-    height: calc(100dvh - 46px);
-    overflow: hidden;
-    padding: 0;
-    padding-bottom: 0 !important;
-  }
-  body.is-landscape .wed-responsive .wed-list-col {
-    width: 210px;
+  .trainen-responsive .schema-section {
+    width: 200px;
     flex-shrink: 0;
     border-right: 1px solid var(--border);
     overflow-y: auto;
     padding: 8px;
   }
-  body.is-landscape .wed-responsive .wed-detail-col {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 10px;
-  }
-
-/* Selectie: lijst links, detail rechts */
-  body.is-landscape .sel-responsive {
-    display: flex;
-    flex-direction: row;
-    height: calc(100dvh - 46px);
-    overflow: hidden;
-    padding: 0;
-    padding-bottom: 0 !important;
-  }
-  body.is-landscape .sel-responsive .sel-list-col {
-    width: 190px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--border);
-    overflow-y: auto;
-  }
-  body.is-landscape .sel-responsive .sel-detail-col {
+  .trainen-responsive #session-panel {
     flex: 1;
     overflow-y: auto;
     padding: 8px 12px;
   }
 
-/* Oefeningen: categorie sidebar links */
-  body.is-landscape .oef-responsive {
-  /* oef-list wordt flex container */
+  /* Wedstrijden: lijst links, detail rechts */
+  .wed-responsive {
+    display: flex;
+    flex-direction: row;
+    height: calc(100dvh - 46px);
+    overflow: hidden;
+    padding: 0 !important;
   }
 
-/* Dashboard: twee kolommen */
-  body.is-landscape .team-responsive {
+  /* Dashboard: twee kolommen */
+  .team-responsive {
     display: flex;
     flex-direction: row;
     gap: 10px;
     height: calc(100dvh - 46px);
     overflow: hidden;
-    padding: 8px 12px;
-    padding-bottom: 0 !important;
+    padding: 8px 10px !important;
   }
-  body.is-landscape .team-responsive > * {
+  .team-responsive > * {
     flex: 1;
     overflow-y: auto;
     min-width: 0;
   }
-
-/* Landscape: content verschuiven voor linker nav */
-    .form-wrap,
-    .home-hero,
-  body.is-landscape .home-content {
-  /* margin-left via CSS zodat het direct werkt zonder JS */
-  }
-
-/* ═══════════════════════════════════════════
-     DESKTOP / BREED SCHERM
-     App als gecentreerde kolom, nav sticky
-  ═══════════════════════════════════════════ */
-
-@media (min-width: 768px) {
-
-  html {
-    background: #1a1a2e;
-  }
-
-  body {
-    background: #1a1a2e;
-    min-height: 100vh;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-  }
-
-  /* App kolom: 420px gecentreerd */
-  .page-wrap {
-    width: 420px;
-    min-width: 420px;
-    max-width: 420px;
-    min-height: 100vh;
-    background: var(--bg);
-    position: relative;
-    box-shadow: 0 0 80px rgba(0,0,0,.5);
-    flex-shrink: 0;
-  }
-
-  /* Page header: blijft in kolom */
-  .page-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-
-  /* Nav: reset landscape overrides — sticky onderaan in de 420px kolom */
-  .nav {
-    position: sticky !important;
-    bottom: 0 !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    width: 100% !important;
-    height: calc(64px + env(safe-area-inset-bottom)) !important;
-    flex-direction: row !important;
-    transform: none !important;
-    border-right: none !important;
-    border-top: 1px solid var(--border) !important;
-    z-index: 10;
-  }
-  .nav-btn {
-    flex: 1 !important;
-    width: auto !important;
-    height: auto !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-  }
-  /* Content: geen extra links padding nodig */
-  .page-wrap .page-header,
-  .page-wrap .form-wrap,
-  .page-wrap .home-hero,
-  .page-wrap > div:not(.nav) {
-    padding-left: 0 !important;
-  }
-
-  /* Modals: gecentreerd op de kolom */
-  .modal-overlay,
-  .bmodal-overlay,
-  .pr-modal-overlay {
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 420px;
-    max-width: 420px;
-    top: 0;
-    bottom: 0;
-    height: 100vh;
-  }
-
-  /* scroll-top en toast ook in kolom */
-  .scroll-top {
-    right: auto;
-    margin-right: -180px;
-  }
-
-  .toast {
-    max-width: 380px;
-  }
-
-  /* Cursor pointer */
-  button, select, .pos-slot, .nav-btn, .week-hdr, .player-item {
-    cursor: pointer;
-  }
-}
-
-/* Desktop breed (1100px+): sidebar naast de app */
-@media (min-width: 1100px) {
-  body {
-    padding: 40px 0;
-    gap: 40px;
-    align-items: flex-start;
-  }
-
-  .page-wrap {
-    border-radius: 28px;
-    overflow: hidden;
-    min-height: calc(100vh - 80px);
-    max-height: calc(100vh - 80px);
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-
-  /* Nav sticky onderaan scrollbare kolom */
-  .nav {
-    position: sticky;
-    bottom: 0;
-  }
-
-
-
-/* ── Landscape layouts (puur CSS, geen JS nodig) ── */
-
 }
 
 

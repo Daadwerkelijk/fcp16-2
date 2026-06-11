@@ -363,9 +363,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .skill-level-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:var(--badge-radius)}
 
 
-/* ═══════════════════════════════════════════
-   LANDSCAPE RESPONSIVE
-
 /* ══════════════════════════════════════════════════
    LANDSCAPE — Alleen touchscreens (telefoon/tablet)
    pointer:coarse = touchscreen, niet laptop/muis
@@ -397,6 +394,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   .nav-btn.active { background: var(--blauw-l); }
   .nav-btn span:last-child { font-size: 6.5px; }
 
+  /* Content: ruimte voor linker nav */
+  
   /* Content: ruimte voor linker nav */
   .page-wrap { padding-left: 60px; }
 
@@ -563,13 +562,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     border-radius: 0 !important;
     margin: 0 !important;
   }
-  /* Content: geen extra links padding nodig */
-  .page-wrap .page-header,
-  .page-wrap .form-wrap,
-  .page-wrap .home-hero,
-  .page-wrap > div:not(.nav) {
-    padding-left: 0 !important;
-  }
+
 
   /* Modals: gecentreerd op de kolom */
   .modal-overlay,

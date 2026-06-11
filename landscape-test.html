@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Landscape Test</title>
+<style>
+body{font-family:sans-serif;padding:20px;background:#F2F1FF;color:#12113A;margin:0}
+.box{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #E4E3F5}
+.big{font-size:28px;font-weight:700;margin-bottom:4px}
+.ok{color:#0D4A2C}.fail{color:#C62828}
+.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #E4E3F5;font-size:14px}
+.row:last-child{border:none}
+.val{font-weight:600}
+.tick{font-size:18px}
+</style>
+</head>
+<body>
+<div class="box" id="status-box">
+  <div class="big" id="status-text">Meten...</div>
+  <div id="status-sub" style="font-size:14px;color:#4A4870"></div>
+</div>
+<div class="box">
+  <div class="row"><span>Breedte (innerWidth)</span><span class="val" id="w">–</span></div>
+  <div class="row"><span>Hoogte (innerHeight)</span><span class="val" id="h">–</span></div>
+  <div class="row"><span>screen.width</span><span class="val" id="sw">–</span></div>
+  <div class="row"><span>screen.height</span><span class="val" id="sh">–</span></div>
+  <div class="row"><span>devicePixelRatio</span><span class="val" id="dpr">–</span></div>
+</div>
+<div class="box">
+  <div class="row"><span>orientation: landscape</span><span class="val tick" id="mq1">–</span></div>
+  <div class="row"><span>landscape + max-height:400px</span><span class="val tick" id="mq2">–</span></div>
+  <div class="row"><span>landscape + max-height:500px</span><span class="val tick" id="mq3">–</span></div>
+  <div class="row"><span>landscape + max-height:600px</span><span class="val tick" id="mq4">–</span></div>
+  <div class="row"><span>landscape + max-width:767px</span><span class="val tick" id="mq5">–</span></div>
+</div>
+<div class="box">
+  <div style="font-size:12px;color:#8B8AB0">Draai je telefoon en kijk wat verandert. Stuur een screenshot van dit scherm in landscape.</div>
+</div>
+<script>
+function update() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const ls = w > h;
+  document.getElementById('w').textContent = w + 'px';
+  document.getElementById('h').textContent = h + 'px';
+  document.getElementById('sw').textContent = screen.width + 'px';
+  document.getElementById('sh').textContent = screen.height + 'px';
+  document.getElementById('dpr').textContent = window.devicePixelRatio;
+  document.getElementById('status-text').textContent = ls ? '✓ LANDSCAPE' : '✗ PORTRAIT';
+  document.getElementById('status-text').className = 'big ' + (ls ? 'ok' : 'fail');
+  document.getElementById('status-sub').textContent = w + ' × ' + h + 'px';
+  const mqs = [
+    ['(orientation: landscape)', 'mq1'],
+    ['(orientation: landscape) and (max-height: 400px)', 'mq2'],
+    ['(orientation: landscape) and (max-height: 500px)', 'mq3'],
+    ['(orientation: landscape) and (max-height: 600px)', 'mq4'],
+    ['(orientation: landscape) and (max-width: 767px)', 'mq5'],
+  ];
+  mqs.forEach(([q, id]) => {
+    const matches = window.matchMedia(q).matches;
+    const el = document.getElementById(id);
+    el.textContent = matches ? '✓ JA' : '✗ NEE';
+    el.style.color = matches ? '#0D4A2C' : '#C62828';
+  });
+}
+update();
+window.addEventListener('resize', update);
+window.addEventListener('orientationchange', () => setTimeout(update, 200));
+</script>
+</body>
+</html>

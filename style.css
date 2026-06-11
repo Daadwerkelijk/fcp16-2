@@ -369,7 +369,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
    Triggers op mobiel in landscape mode
 ═══════════════════════════════════════════ */
 
-@media (orientation: landscape) and (max-width: 1024px) {
+@media (orientation: landscape) and (max-height: 500px) {
 
   /* ── Navigatie: onderaan → links verticaal ── */
   .nav {
@@ -694,4 +694,102 @@ body.is-landscape .form-wrap,
 body.is-landscape .home-hero,
 body.is-landscape .home-content {
   /* margin-left via CSS zodat het direct werkt zonder JS */
+}
+
+
+/* ═══════════════════════════════════════════
+   DESKTOP / BREED SCHERM (≥ 768px)
+   App-shell: gecentreerde telefoon-kolom
+   met optionele sidebar op ≥ 1100px
+═══════════════════════════════════════════ */
+
+@media (min-width: 768px) {
+
+  /* App shell: body als centering container */
+  html, body {
+    background: #1a1a2e;
+    height: 100%;
+  }
+
+  /* App kolom gecentreerd */
+  .page-wrap {
+    max-width: 420px;
+    margin: 0 auto;
+    min-height: 100dvh;
+    background: var(--bg);
+    position: relative;
+    box-shadow: 0 0 60px rgba(0,0,0,.4);
+  }
+
+  /* Nav: sticky onderaan in de 420px kolom */
+  .nav {
+    position: sticky;
+    bottom: 0;
+    max-width: 420px;
+    left: auto;
+    right: auto;
+  }
+
+  /* Home hero ook in kolom */
+  .home-hero {
+    max-width: 420px;
+  }
+
+  /* Modals: gecentreerd in de app kolom */
+  .modal-overlay,
+  .bmodal-overlay,
+  .pr-modal-overlay {
+    max-width: 420px;
+    width: 420px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+  }
+
+  /* Page header sticky binnen kolom */
+  .page-header {
+    max-width: 420px;
+  }
+
+  /* Cursor pointer voor interactieve elementen */
+  .nav-btn, button, select, .pos-slot, .player-item, .week-hdr {
+    cursor: pointer;
+  }
+}
+
+/* ── Breed scherm ≥ 1100px: sidebar naast app ── */
+@media (min-width: 1100px) {
+
+  body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    padding: 40px 0;
+    min-height: 100dvh;
+  }
+
+  /* App kolom */
+  .page-wrap {
+    flex-shrink: 0;
+    border-radius: 32px;
+    min-height: calc(100dvh - 80px);
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,.5);
+  }
+
+  /* Sticky nav in gesimuleerde telefoon */
+  .nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+  }
+
+  /* Sidebar rechts van de app */
+  body::after {
+    content: '';
+    display: block;
+  }
 }

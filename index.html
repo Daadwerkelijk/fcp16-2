@@ -46,7 +46,8 @@
 <div class="toast" id="toast"></div>
 
 <div class="page-wrap">
-  <div class="home-hero">
+  <div id="ls-debug" style="display:none;background:#1B7A4B;color:#fff;text-align:center;font-size:11px;font-weight:700;padding:4px;letter-spacing:.05em">✓ LANDSCAPE ACTIEF</div>
+<div class="home-hero">
     <div style="padding:0 16px 14px">
       <div style="display:flex;align-items:flex-end;justify-content:space-between">
         <div>
@@ -273,11 +274,11 @@ function renderPrincipes() {
   const grid = document.getElementById('principle-grid');
   if (!grid) return;
   const kleuren = [
-    {bg:'var(--bg)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--bg)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--bg)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--bg)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--bg)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
     {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
   ];
   grid.innerHTML = principes.map((p,i) => {

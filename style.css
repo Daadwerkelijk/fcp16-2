@@ -367,7 +367,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
    LANDSCAPE — Alleen touchscreens (telefoon/tablet)
    pointer:coarse = touchscreen, niet laptop/muis
 ══════════════════════════════════════════════════ */
-@media (orientation: landscape) and (pointer: coarse) {
+@media (orientation: landscape) {
 
   /* Nav: links verticaal */
   .nav {

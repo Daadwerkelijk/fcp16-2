@@ -369,11 +369,11 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
    Triggers op mobiel in landscape mode
 ═══════════════════════════════════════════ */
 
-@media (orientation: landscape) and (max-height: 500px) {
+@media (orientation: landscape) and (max-width: 1024px) {
 
   /* ── Navigatie: onderaan → links verticaal ── */
-  .nav,
-  .nav.nav-landscape {
+  .nav {
+    /* Puur CSS landscape - werkt ook zonder JS */
     position: fixed;
     left: 0; top: 0; bottom: 0; right: auto;
     width: 60px;
@@ -402,9 +402,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   }
 
   /* ── Main content: ruimte maken voor linker nav ── */
-  .page-wrap {
-    margin-left: 60px;
-    padding-bottom: 0;
+  .form-wrap,
+  .home-hero,
+  [class*="-responsive"] {
+    /* Marge wordt via JS .is-landscape body klasse gezet */
   }
 
   /* ── Page header: compacter ── */
@@ -686,4 +687,11 @@ body.is-landscape .team-responsive > * {
   flex: 1;
   overflow-y: auto;
   min-width: 0;
+}
+
+/* Landscape: content verschuiven voor linker nav */
+body.is-landscape .form-wrap,
+body.is-landscape .home-hero,
+body.is-landscape .home-content {
+  /* margin-left via CSS zodat het direct werkt zonder JS */
 }

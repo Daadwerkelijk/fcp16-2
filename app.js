@@ -545,7 +545,7 @@ const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oe
 
 // ─── LANDSCAPE RESPONSIVE ───
 function isLandscape() {
-  return window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
+  return window.matchMedia('(orientation: landscape)').matches && window.innerHeight < window.innerWidth;
 }
 
 function applyLandscape() {
@@ -556,18 +556,14 @@ function applyLandscape() {
   const nav = document.querySelector('.nav');
   if (nav) nav.classList.toggle('nav-landscape', ls);
 
-  // page-wrap: margin-left aanpassen
-  const wrap = document.querySelector('.page-wrap');
-  if (wrap) wrap.style.marginLeft = ls ? '60px' : '';
-
-  // Home hero: padding aanpassen
-  const hero = document.querySelector('.home-hero');
-  if (hero) {
-    hero.style.paddingTop = ls ? 'calc(8px + env(safe-area-inset-top))' : '';
-  }
+  // Alle content containers: ruimte voor linker nav
+  document.querySelectorAll('.form-wrap, .home-hero, .page-header').forEach(el => {
+    el.style.marginLeft = '';  // CSS regelt dit via body.is-landscape
+  });
 }
 
 // Draai bij laden en bij oriëntatie wijziging
 window.addEventListener('DOMContentLoaded', applyLandscape);
 window.addEventListener('resize', applyLandscape);
-screen.orientation && screen.orientation.addEventListener('change', applyLandscape);
+window.addEventListener('orientationchange', function(){ setTimeout(applyLandscape, 150); });
+if (screen.orientation) screen.orientation.addEventListener('change', function(){ setTimeout(applyLandscape, 150); });

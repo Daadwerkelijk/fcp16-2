@@ -568,54 +568,73 @@ window.addEventListener('resize', applyLandscape);
 window.addEventListener('orientationchange', function(){ setTimeout(applyLandscape, 150); });
 if (screen.orientation) screen.orientation.addEventListener('change', function(){ setTimeout(applyLandscape, 150); });
 
-
-// ─── DESKTOP INFO PANEL ───
+// ─── DESKTOP SIDEBAR PANEL ───
 function initDesktopPanel() {
-  if (window.innerWidth < 1100) return;
-
-  // Verwijder bestaand panel
   const existing = document.getElementById('desktop-panel');
   if (existing) existing.remove();
+  if (window.innerWidth < 1100) return;
 
   const panel = document.createElement('div');
   panel.id = 'desktop-panel';
-  panel.style.cssText = `
-    width: 280px;
-    flex-shrink: 0;
-    margin-left: 32px;
-    padding: 32px 0 0;
-    color: rgba(255,255,255,.7);
-    font-family: 'DM Sans', sans-serif;
-  `;
+  panel.style.cssText = [
+    'width:220px',
+    'flex-shrink:0',
+    'padding:48px 0 0',
+    'font-family:\'DM Sans\',sans-serif',
+  ].join(';');
+
+  const page = window.location.pathname.split('/').pop() || 'index.html';
+  const links = [
+    ['index.html','Start'],
+    ['opstelling.html','Opstelling'],
+    ['selectie.html','Selectie'],
+    ['wedstrijden.html','Wedstrijden'],
+    ['trainen.html','Trainen'],
+    ['oefeningen.html','Oefeningen'],
+    ['team.html','Dashboard'],
+    ['instellingen.html','Instellingen'],
+  ];
+
   panel.innerHTML = `
-    <div style="font-size:28px;font-weight:800;color:#fff;margin-bottom:4px">FCP <span style="opacity:.5">16-2</span></div>
-    <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:32px">Seizoen 2026/2027</div>
-    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Navigatie</div>
-    ${[
-      ['index.html','Start'],
-      ['opstelling.html','Opstelling'],
-      ['selectie.html','Selectie'],
-      ['wedstrijden.html','Wedstrijden'],
-      ['trainen.html','Trainen'],
-      ['oefeningen.html','Oefeningen'],
-      ['team.html','Dashboard'],
-      ['instellingen.html','Instellingen'],
-    ].map(([href, label]) => {
-      const active = window.location.pathname.endsWith(href) ||
-        (href === 'index.html' && (window.location.pathname.endsWith('/') || window.location.pathname.endsWith('index.html')));
-      return `<a href="${href}" style="display:block;padding:8px 12px;border-radius:9px;text-decoration:none;font-size:13px;font-weight:${active?'700':'500'};color:${active?'#fff':'rgba(255,255,255,.5)'};background:${active?'rgba(255,255,255,.12)':'transparent'};margin-bottom:2px;">${label}</a>`;
+    <div style="font-size:26px;font-weight:800;color:#fff;margin-bottom:2px">FCP <span style="opacity:.4">16-2</span></div>
+    <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:28px">Seizoen 2026/2027</div>
+    <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Navigatie</div>
+    ${links.map(([href, label]) => {
+      const active = page === href || (href === 'index.html' && (page === '' || page === '/'));
+      return `<a href="${href}" style="display:block;padding:7px 12px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:${active?'600':'400'};color:${active?'#fff':'rgba(255,255,255,.45)'};background:${active?'rgba(255,255,255,.1)':'transparent'};margin-bottom:2px;transition:background .15s"
+        onmouseover="this.style.background=this.style.background||'rgba(255,255,255,.05)'"
+        onmouseout="this.style.background='${active?'rgba(255,255,255,.1)':'transparent'}'"
+      >${label}</a>`;
     }).join('')}
-    <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.3);line-height:1.6">
-      Gebruik de app zoals je gewend bent.<br>Op mobiel draai je je telefoon voor landscape.
+    <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.25);line-height:1.7">
+      Draai je telefoon<br>voor landscape modus.
     </div>
   `;
+
   document.body.appendChild(panel);
+}
+
+// Landscape trigger
+function isLandscape() {
+  return window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
+}
+
+function applyLandscape() {
+  const ls = isLandscape();
+  document.body.classList.toggle('is-landscape', ls);
+  const nav = document.querySelector('.nav');
+  if (nav) nav.classList.toggle('nav-landscape', ls);
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   initDesktopPanel();
+  applyLandscape();
 });
 window.addEventListener('resize', () => {
-  if (window.innerWidth >= 1100) initDesktopPanel();
-  else { const p = document.getElementById('desktop-panel'); if (p) p.remove(); }
+  initDesktopPanel();
+  applyLandscape();
 });
+window.addEventListener('orientationchange', () => { setTimeout(applyLandscape, 150); });
+if (typeof screen !== 'undefined' && screen.orientation) {
+  screen.orientation.addEventListener('change', () => { setTimeout(applyLandscape, 150); });
+}

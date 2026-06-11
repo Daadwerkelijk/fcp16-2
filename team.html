@@ -124,7 +124,7 @@ function renderAanwOverzicht() {
   // Samenvatting: totaal aantal trainingen met opgeslagen aanwezigheid
   const metData = trainingen.filter(t => aanwezigheid[t.nk] && Object.keys(aanwezigheid[t.nk]).length > 0);
   const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
-  const aantalWed = wedstrijden.length;
+  const aantalWed = wedstrijden.filter(w => w.gespeeld).length;
   document.getElementById('aanw-samenvatting').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
       <div style="padding:11px 13px;background:var(--blauw-l);border:1px solid var(--blauw-m);border-radius:var(--r)">
@@ -170,7 +170,7 @@ function renderAanwOverzicht() {
     const detailRows = trainingsDetails.filter(d => d.isAfw).map(d =>
       `<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line2)">
         <span style="font-size:11px;color:var(--text3);flex:1">${d.week} · ${d.label}</span>
-        <span style="font-size:11px;color:var(--red)">${d.reden || '—'}</span>
+        <span style="font-size:11px;color:var(--text3)">${d.reden || '—'}</span>
       </div>`
     ).join('');
 
@@ -181,7 +181,7 @@ function renderAanwOverzicht() {
           <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${redenBadges}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:18px;font-weight:700;color:${totaalAfw>3?'var(--red)':'var(--text2)'}">${totaalAfw}×</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text2)">${totaalAfw}×</div>
           <div style="font-size:10px;color:var(--text3)">afwezig</div>
         </div>
       </div>

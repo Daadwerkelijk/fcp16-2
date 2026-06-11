@@ -152,26 +152,24 @@ function renderStartCards() {
     let gevondenWeek = null, gevondenSessie = null, gevondenWi = -1, gevondenSi = -1;
     const gesorteerd = weken.map((w,i)=>({w,i})).filter(x=>x.w.isoDate).sort((a,b)=>a.w.isoDate.localeCompare(b.w.isoDate));
     for (const {w, i} of gesorteerd) {
-      const d = w.isoDate.substring(0,10).split('-');
-      const startDag = parseInt(d[0])*10000 + parseInt(d[1])*100 + parseInt(d[2]);
-      if (startDag + 6 >= todayDag) {
-        gevondenWeek = w; gevondenWi = i;
-        if (w.sessies && w.sessies.length) {
-          const DAGMAP = {maandag:0,dinsdag:1,woensdag:2,donderdag:3,vrijdag:4,zaterdag:5,zondag:6};
-          for (let si = 0; si < w.sessies.length; si++) {
-            const s = w.sessies[si];
-            const dagTxt = (s.dag||'').toLowerCase();
-            const dagNr = Object.entries(DAGMAP).find(([d]) => dagTxt.includes(d));
-            if (dagNr) {
-              const sessieD = new Date(w.isoDate); sessieD.setDate(sessieD.getDate() + dagNr[1]);
-              const sessieDag = sessieD.getFullYear()*10000 + (sessieD.getMonth()+1)*100 + sessieD.getDate();
-              if (sessieDag >= todayDag) { gevondenSessie = s; gevondenSi = si; break; }
-            }
+      if (!w.isoDate || !w.sessies || !w.sessies.length) continue;
+      const DAGMAP = {maandag:0,dinsdag:1,woensdag:2,donderdag:3,vrijdag:4,zaterdag:5,zondag:6};
+      for (let si = 0; si < w.sessies.length; si++) {
+        const s = w.sessies[si];
+        const dagTxt = (s.dag||'').toLowerCase();
+        const dagEntry = Object.entries(DAGMAP).find(([d]) => dagTxt.includes(d));
+        if (dagEntry) {
+          const sessieD = new Date(w.isoDate);
+          sessieD.setDate(sessieD.getDate() + dagEntry[1]);
+          const sessieDag = sessieD.getFullYear()*10000 + (sessieD.getMonth()+1)*100 + sessieD.getDate();
+          if (sessieDag >= todayDag) {
+            gevondenWeek = w; gevondenWi = i;
+            gevondenSessie = s; gevondenSi = si;
+            break;
           }
-          if (!gevondenSessie) { gevondenSessie = w.sessies[0]; gevondenSi = 0; }
         }
-        break;
       }
+      if (gevondenSessie) break;
     }
     if (gevondenWeek && gevondenSessie) {
       const nk = 'cw' + gevondenWi + '_' + gevondenSi;
@@ -201,7 +199,9 @@ function renderStartCards() {
   const wedCard = document.getElementById('start-wedstrijd-card');
   const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
   if (wedCard) {
-    const vandaagIso = today.toISOString().substring(0,10);
+    const vandaagIso = today.getFullYear() + '-' +
+      String(today.getMonth()+1).padStart(2,'0') + '-' +
+      String(today.getDate()).padStart(2,'0');
     const komend = wedstrijden.filter(w => !w.gespeeld && w.isoDate).sort((a,b) => a.isoDate.localeCompare(b.isoDate));
     const eersteKomend = komend.find(w => w.isoDate >= vandaagIso) || komend[0];
     if (eersteKomend) {

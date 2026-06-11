@@ -369,11 +369,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
    Triggers op mobiel in landscape mode
 ═══════════════════════════════════════════ */
 
-@media (orientation: landscape) and (max-height: 500px) {
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 767px) {
 
-  /* ── Navigatie: onderaan → links verticaal ── */
+  /* ── Navigatie: onderaan → links verticaal — ALLEEN MOBIEL ── */
   .nav {
-    /* Puur CSS landscape - werkt ook zonder JS */
     position: fixed;
     left: 0; top: 0; bottom: 0; right: auto;
     width: 60px;
@@ -571,7 +570,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 /* ── is-landscape body klasse (via JS gezet) ── */
 
 /* Opstelling: veld links, bench rechts */
-body.is-landscape .opst-layout-wrap {
+@media (max-width: 767px) { body.is-landscape .opst-layout-wrap {
   display: flex;
   flex-direction: row;
   gap: 10px;
@@ -580,19 +579,19 @@ body.is-landscape .opst-layout-wrap {
   overflow: hidden;
   padding-bottom: 0;
 }
-body.is-landscape .field-wrap {
+@media (max-width: 767px) { body.is-landscape .field-wrap {
   flex: 1.3;
   min-height: 0;
   margin-bottom: 0 !important;
 }
-body.is-landscape .field-svg {
+@media (max-width: 767px) { body.is-landscape .field-svg {
   height: 100% !important;
   object-fit: contain;
 }
-body.is-landscape .field-actions {
+@media (max-width: 767px) { body.is-landscape .field-actions {
   margin-top: 6px;
 }
-body.is-landscape .opst-bench-col-content {
+@media (max-width: 767px) { body.is-landscape .opst-bench-col-content {
   width: 155px;
   flex-shrink: 0;
   overflow-y: auto;
@@ -602,7 +601,7 @@ body.is-landscape .opst-bench-col-content {
 }
 
 /* Trainen: master links, detail rechts */
-body.is-landscape .trainen-responsive {
+@media (max-width: 767px) { body.is-landscape .trainen-responsive {
   display: flex;
   flex-direction: row;
   height: calc(100dvh - 46px);
@@ -610,7 +609,7 @@ body.is-landscape .trainen-responsive {
   padding: 0;
   padding-bottom: 0 !important;
 }
-body.is-landscape .trainen-responsive .schema-section {
+@media (max-width: 767px) { body.is-landscape .trainen-responsive .schema-section {
   width: 220px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
@@ -618,7 +617,7 @@ body.is-landscape .trainen-responsive .schema-section {
   padding: 8px;
   height: 100%;
 }
-body.is-landscape .trainen-responsive #session-panel {
+@media (max-width: 767px) { body.is-landscape .trainen-responsive #session-panel {
   flex: 1;
   overflow-y: auto;
   padding: 8px 12px;
@@ -626,7 +625,7 @@ body.is-landscape .trainen-responsive #session-panel {
 }
 
 /* Wedstrijden: lijst links, detail rechts */
-body.is-landscape .wed-responsive {
+@media (max-width: 767px) { body.is-landscape .wed-responsive {
   display: flex;
   flex-direction: row;
   height: calc(100dvh - 46px);
@@ -634,21 +633,21 @@ body.is-landscape .wed-responsive {
   padding: 0;
   padding-bottom: 0 !important;
 }
-body.is-landscape .wed-responsive .wed-list-col {
+@media (max-width: 767px) { body.is-landscape .wed-responsive .wed-list-col {
   width: 210px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   overflow-y: auto;
   padding: 8px;
 }
-body.is-landscape .wed-responsive .wed-detail-col {
+@media (max-width: 767px) { body.is-landscape .wed-responsive .wed-detail-col {
   flex: 1;
   overflow-y: auto;
   padding: 8px 10px;
 }
 
 /* Selectie: lijst links, detail rechts */
-body.is-landscape .sel-responsive {
+@media (max-width: 767px) { body.is-landscape .sel-responsive {
   display: flex;
   flex-direction: row;
   height: calc(100dvh - 46px);
@@ -656,25 +655,25 @@ body.is-landscape .sel-responsive {
   padding: 0;
   padding-bottom: 0 !important;
 }
-body.is-landscape .sel-responsive .sel-list-col {
+@media (max-width: 767px) { body.is-landscape .sel-responsive .sel-list-col {
   width: 190px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   overflow-y: auto;
 }
-body.is-landscape .sel-responsive .sel-detail-col {
+@media (max-width: 767px) { body.is-landscape .sel-responsive .sel-detail-col {
   flex: 1;
   overflow-y: auto;
   padding: 8px 12px;
 }
 
 /* Oefeningen: categorie sidebar links */
-body.is-landscape .oef-responsive {
+@media (max-width: 767px) { body.is-landscape .oef-responsive {
   /* oef-list wordt flex container */
 }
 
 /* Dashboard: twee kolommen */
-body.is-landscape .team-responsive {
+@media (max-width: 767px) { body.is-landscape .team-responsive {
   display: flex;
   flex-direction: row;
   gap: 10px;
@@ -683,16 +682,16 @@ body.is-landscape .team-responsive {
   padding: 8px 12px;
   padding-bottom: 0 !important;
 }
-body.is-landscape .team-responsive > * {
+@media (max-width: 767px) { body.is-landscape .team-responsive > * {
   flex: 1;
   overflow-y: auto;
   min-width: 0;
 }
 
 /* Landscape: content verschuiven voor linker nav */
-body.is-landscape .form-wrap,
-body.is-landscape .home-hero,
-body.is-landscape .home-content {
+@media (max-width: 767px) { body.is-landscape .form-wrap,
+@media (max-width: 767px) { body.is-landscape .home-hero,
+@media (max-width: 767px) { body.is-landscape .home-content {
   /* margin-left via CSS zodat het direct werkt zonder JS */
 }
 

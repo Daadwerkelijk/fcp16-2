@@ -426,6 +426,9 @@ function applyThema(key) {
   // Veld altijd groen
   r.setProperty('--field-bg',     '#1B5E20');
   r.setProperty('--field-border', '#2E7D32');
+  // Status bar kleur mee veranderen met thema
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.setAttribute('content', t.topbar);
   localStorage.setItem('fcp_thema', key);
 }
 // Thema direct toepassen bij laden
@@ -545,7 +548,7 @@ const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oe
 
 // ─── LANDSCAPE RESPONSIVE ───
 function isLandscape() {
-  return window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
+  return window.matchMedia('(orientation: landscape) and (max-height: 500px) and (max-width: 767px)').matches;
 }
 
 function applyLandscape() {
@@ -616,7 +619,7 @@ function initDesktopPanel() {
 
 // Landscape trigger
 function isLandscape() {
-  return window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
+  return window.matchMedia('(orientation: landscape) and (max-height: 500px) and (max-width: 767px)').matches;
 }
 
 function applyLandscape() {

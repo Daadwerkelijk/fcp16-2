@@ -507,7 +507,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
    App als gecentreerde kolom, nav sticky
 ═══════════════════════════════════════════ */
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
 
   html {
     background: #1a1a2e;

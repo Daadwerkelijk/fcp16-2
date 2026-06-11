@@ -369,7 +369,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
    Triggers op mobiel in landscape mode
 ═══════════════════════════════════════════ */
 
-@media (orientation: landscape) and (max-height: 500px) and (max-width: 767px) {
+@media (orientation: landscape) and (max-width: 1024px) {
 
   /* ── Navigatie: onderaan → links verticaal — ALLEEN MOBIEL ── */
   .nav {

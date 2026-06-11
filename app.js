@@ -548,7 +548,7 @@ const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oe
 
 // ─── LANDSCAPE RESPONSIVE ───
 function isLandscape() {
-  return window.matchMedia('(orientation: landscape) and (max-height: 500px) and (max-width: 767px)').matches;
+  return window.innerWidth > window.innerHeight && window.innerWidth <= 1024;
 }
 
 function applyLandscape() {
@@ -619,7 +619,7 @@ function initDesktopPanel() {
 
 // Landscape trigger
 function isLandscape() {
-  return window.matchMedia('(orientation: landscape) and (max-height: 500px) and (max-width: 767px)').matches;
+  return window.innerWidth > window.innerHeight && window.innerWidth <= 1024;
 }
 
 function applyLandscape() {

@@ -467,6 +467,30 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     flex-direction: column;
   }
 
+  /* Skills: twee kolommen in landscape */
+  .skills-layout {
+    display: flex;
+    gap: 12px;
+    height: calc(100dvh - 160px);
+    overflow: hidden;
+  }
+
+  .skills-list {
+    flex: 1;
+    overflow-y: auto;
+    min-width: 0;
+  }
+
+  .skills-detail {
+    width: 200px;
+    flex-shrink: 0;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 12px;
+    overflow-y: auto;
+  }
+
 }
 
 /* ════════════════════════════════════════

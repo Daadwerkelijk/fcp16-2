@@ -81,8 +81,15 @@
 
   <!-- Skills panel -->
   <div id="dpanel-skills" style="display:none;padding:0 16px 16px">
-    <div id="profiel-content" style="font-size:13px;color:var(--text3);line-height:1.7">
-      Formulieren worden automatisch ingeladen zodra spelers ze invullen.
+    <!-- Portrait: enkele kolom. Landscape: twee kolommen via CSS -->
+    <div class="skills-layout">
+      <div id="profiel-content" class="skills-list" style="font-size:13px;color:var(--text3);line-height:1.7">
+        Formulieren worden automatisch ingeladen zodra spelers ze invullen.
+      </div>
+      <div id="skills-detail-panel" class="skills-detail" style="display:none">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px" id="skills-detail-title">Detail</div>
+        <div id="skills-detail-content"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -345,8 +352,25 @@ function renderTeamProfiel() {
 }
 
 function toggleDetail(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  const isLandscape = window.innerWidth > window.innerHeight;
+  if (isLandscape) {
+    // In landscape: toon detail in rechter paneel
+    const panel = document.getElementById('skills-detail-panel');
+    const content = document.getElementById('skills-detail-content');
+    const title = document.getElementById('skills-detail-title');
+    const el = document.getElementById(id);
+    if (!el || !panel || !content) return;
+    // Haal skill naam uit het id (sk-Balcontrole → Balcontrole)
+    const skillNaam = id.replace('sk-', '').replace(/_/g, ' ');
+    if (title) title.textContent = skillNaam;
+    // Kopieer inhoud van het inline detail element naar het panel
+    content.innerHTML = el.innerHTML;
+    panel.style.display = 'block';
+  } else {
+    // In portrait: inline uitklappen zoals voorheen
+    const el = document.getElementById(id);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
 }
 
 async function onSupabaseReady() {

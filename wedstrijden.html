@@ -208,7 +208,7 @@ function wedTab(wid, tab) {
     btn.style.borderBottom = actief ? '2px solid var(--accent)' : '2px solid transparent';
     btn.style.color = actief ? 'var(--accent)' : 'var(--text3)';
   });
-  if (tab === 'opstelling') buildWedField(wid);
+  if (tab === 'opstelling') { buildWedField(wid); buildWedBench(wid); }
   if (tab === 'aanwezig')   renderWedAanwezig(wid);
 }
 
@@ -284,6 +284,31 @@ async function saveWedAanwezig(wid) {
 // ─── WEDSTRIJD OPSTELLING ───
 const wedLineups = {};
 
+function buildWedBench(wid) {
+  const w = wedstrijden.find(x => x.id === wid); if (!w) return;
+  const cont = document.getElementById('wbench-' + wid); if (!cont) return;
+  const opgesteld = new Set(Object.values(wedLineups[wid] || {}).filter(Boolean));
+  const afwezigPids = new Set((w.afwezig||[]).map(e => e.pid));
+  const wisselspelers = sortedPlayers(players).filter(p =>
+    !opgesteld.has(p.id) && !afwezigPids.has(p.id)
+  );
+  if (!wisselspelers.length) {
+    cont.innerHTML = '<div style="font-size:11px;color:var(--text3)">Alle spelers opgesteld of afwezig.</div>';
+    return;
+  }
+  cont.innerHTML = wisselspelers.map(p => {
+    const parts = p.naam.trim().split(' ');
+    const init = parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : p.naam.slice(0,2).toUpperCase();
+    return `<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 9px;margin-bottom:6px;display:flex;align-items:center;gap:7px">
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--blauw-l);border:1.5px solid var(--blauw-m);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--topbar);flex-shrink:0">${init}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.naam}</div>
+        <div style="font-size:9px;color:var(--text3)">${(p.posities||[]).slice(0,3).join(' · ') || '–'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function buildWedField(wid) {
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
   const formatieKey = document.getElementById('wform-sel-' + wid)?.value || w.formatie || '4222';
@@ -343,6 +368,7 @@ function buildWedField(wid) {
     slot.onclick = () => openWedPositieModal(wid, pos, formatieKey);
     cont.appendChild(slot);
   });
+  buildWedBench(wid);
 }
 
 let wedModalWid=null, wedModalPos=null;
@@ -366,7 +392,7 @@ function openWedPositieModal(wid, pos, formatieKey) {
       saveWedstrijden(wedstrijden);
       if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup)});
     }
-    buildWedField(wid); closeWedPosModal();
+    buildWedField(wid); buildWedBench(wid); closeWedPosModal();
   };
   lijst.appendChild(leegBtn);
   if (!pool.length) { lijst.innerHTML += '<div style="font-size:12px;color:var(--text3);padding:8px 0">Markeer eerst aanwezige spelers op het Aanwezig tabblad.</div>'; }
@@ -389,7 +415,7 @@ function openWedPositieModal(wid, pos, formatieKey) {
         if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup),formatie:w2.formatie})
           .then(r => { if (r && r._error) showToast('⚠️ Supabase fout: ' + JSON.stringify(r)); });
       }
-      buildWedField(wid); closeWedPosModal(); showToast(p.naam+' → '+pos.label);
+      buildWedField(wid); buildWedBench(wid); closeWedPosModal(); showToast(p.naam+' → '+pos.label);
     };
     lijst.appendChild(btn);
   });

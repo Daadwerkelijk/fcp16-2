@@ -299,11 +299,12 @@ function buildWedBench(wid) {
   cont.innerHTML = wisselspelers.map(p => {
     const parts = p.naam.trim().split(' ');
     const init = parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : p.naam.slice(0,2).toUpperCase();
+    const badges = getRolBadges(p.posities);
     return `<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 9px;margin-bottom:6px;display:flex;align-items:center;gap:7px">
       <div style="width:28px;height:28px;border-radius:50%;background:var(--blauw-l);border:1.5px solid var(--blauw-m);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--topbar);flex-shrink:0">${init}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.naam}</div>
-        <div style="font-size:9px;color:var(--text3)">${(p.posities||[]).slice(0,3).join(' · ') || '–'}</div>
+        <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">${badges || `<span style="font-size:10px;color:var(--text3)">Geen positie</span>`}</div>
       </div>
     </div>`;
   }).join('');

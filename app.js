@@ -511,6 +511,32 @@ const SKILL_CATS = [
   { cat:'Mentaal',  skills:['Gedrag','Motivatie','Aandacht','Discipline','Omgaan met tegenslag'] },
 ];
 const SKILL_LEVELS = ['Ontwikkel punt','Voldoende','Goed','Zeer goed'];
+
+// ─── POSITIE BADGES ───
+function getRolBadges(posities) {
+  if (!posities || !posities.length) return '';
+  const ROLE_MAP = {
+    'GK':'keeper','LB':'back','CB-L':'cb','CB-R':'cb','RB':'back',
+    'VM-L':'dm','VM-R':'dm','AM-L':'am','AM-R':'am','ST-L':'st','ST-R':'st','CF':'st'
+  };
+  const rollen = new Set();
+  posities.forEach(p => {
+    const r = ROLE_MAP[p];
+    if (r === 'keeper') rollen.add('K');
+    else if (r === 'back' || r === 'cb') rollen.add('V');
+    else if (r === 'dm' || r === 'am') rollen.add('M');
+    else if (r === 'st') rollen.add('A');
+  });
+  const stijl = {
+    'K': 'background:#E6F1FB;color:#0C447C;border:1px solid #B5D4F4',
+    'V': 'background:#EAF3DE;color:#27500A;border:1px solid #C0DD97',
+    'M': 'background:#EEEDFE;color:#3C3489;border:1px solid #CECBF6',
+    'A': 'background:#FAECE7;color:#712B13;border:1px solid #F5C4B3',
+  };
+  return ['K','V','M','A'].filter(r => rollen.has(r))
+    .map(r => `<span style="${stijl[r]};font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px">${r}</span>`)
+    .join('');
+}
 const SKILL_COLORS = {
   'Ontwikkel punt': { bg:'#FFEBEE', c:'#C62828' },
   'Voldoende':      { bg:'#FFF3E0', c:'#E65100' },

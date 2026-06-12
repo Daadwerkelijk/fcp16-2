@@ -853,30 +853,38 @@ function renderWedstrijden() {
 
         <!-- Tab: Opstelling -->
         <div id="wpanel-opstelling-${w.id}" style="display:none;padding:12px 14px">
-          <div style="margin-bottom:8px">
-            <select id="wform-sel-${w.id}" onchange="buildWedField('${w.id}')"
-              style="width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none">
-              ${Object.entries(FORMATIES).map(([k,f])=>`<option value="${k}" ${(w.formatie||'4222')===k?'selected':''}>${f.label}</option>`).join('')}
-            </select>
+          <div class="opst-layout-wrap">
+            <div class="field-wrap">
+              <div style="margin-bottom:8px">
+                <select id="wform-sel-${w.id}" onchange="buildWedField('${w.id}')"
+                  style="width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none">
+                  ${Object.entries(FORMATIES).map(([k,f])=>`<option value="${k}" ${(w.formatie||'4222')===k?'selected':''}>${f.label}</option>`).join('')}
+                </select>
+              </div>
+              <div class="field-container" style="position:relative;background:var(--field-bg);border-radius:10px;overflow:hidden;border:2px solid var(--field-border)">
+                <svg class="field-svg" viewBox="0 0 400 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+                  <rect width="400" height="340" fill="var(--field-bg)"/>
+                  <rect x="8" y="8" width="384" height="324" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+                  <line x1="8" y1="170" x2="392" y2="170" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                  <circle cx="200" cy="140" r="32" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                  <circle cx="200" cy="170" r="2" fill="rgba(255,255,255,0.4)"/>
+                  <rect x="128" y="8" width="144" height="62" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                  <rect x="128" y="270" width="144" height="62" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                  <path d="M 164 70 A 34 34 0 0 0 236 70" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                  <path d="M 164 270 A 34 34 0 0 1 236 270" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                </svg>
+                <div id="wfield-${w.id}" style="position:absolute;top:0;left:0;width:100%;height:100%"></div>
+              </div>
+              <div class="field-actions" style="margin-top:10px">
+                <button class="session-save-btn" style="flex:1" onclick="saveWedOpstelling('${w.id}')">💾 Opslaan</button>
+                <button onclick="deelWedOpstelling('${w.id}')" style="padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0">📲</button>
+              </div>
+            </div>
+            <div class="opst-bench-col-content" style="padding:0 2px">
+              <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px">Wisselspelers</div>
+              <div id="wbench-${w.id}"></div>
+            </div>
           </div>
-          <div style="position:relative;background:var(--field-bg);border-radius:10px;overflow:hidden;border:2px solid var(--field-border)">
-            <svg viewBox="0 0 400 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
-              <rect width="400" height="340" fill="var(--field-bg)"/>
-              <rect x="8" y="8" width="384" height="324" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
-              <line x1="8" y1="170" x2="392" y2="170" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
-              <circle cx="200" cy="140" r="32" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-              <circle cx="200" cy="170" r="2" fill="rgba(255,255,255,0.4)"/>
-              <rect x="128" y="8" width="144" height="62" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-              <rect x="128" y="270" width="144" height="62" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-              <path d="M 164 70 A 34 34 0 0 0 236 70" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-              <path d="M 164 270 A 34 34 0 0 1 236 270" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-            </svg>
-            <div id="wfield-${w.id}" style="position:absolute;top:0;left:0;width:100%;height:100%"></div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-          <button class="session-save-btn" style="flex:1" onclick="saveWedOpstelling('${w.id}')">💾 Opslaan</button>
-          <button onclick="deelWedOpstelling('${w.id}')" style="padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0">📲</button>
-        </div>
         </div>
 
         <!-- Tab: Wedstrijd -->

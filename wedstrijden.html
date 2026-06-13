@@ -823,9 +823,13 @@ function renderWedstrijden() {
     const lineupOpties = Object.keys(FORMATIES).map(f =>
       `<option value="${f}" ${w.formatie===f?'selected':''}>${FORMATIES[f].label}</option>`
     ).join('');
+    const ratRid = 'rat-wrap-' + w.id;
     const ratingsHtml = players.length ? `
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">Spelersbeoordelingen (1–10)</div>
-      <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line2);cursor:pointer;margin-top:8px" onclick="(function(el){el.nextElementSibling.style.display=el.nextElementSibling.style.display==='none'?'flex':'none';el.querySelector('.rat-chev').style.transform=el.nextElementSibling.style.display==='none'?'':'rotate(180deg)'})(this)">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Spelersbeoordelingen (1–10)</div>
+        <svg class="rat-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text3);transition:transform .2s"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div style="display:none;flex-direction:column;gap:5px;margin-bottom:8px">
         ${sortedPlayers(players).map(p => {
           const rating = w.ratings && w.ratings[p.id] || '';
           return `<div style="display:flex;align-items:center;gap:8px">

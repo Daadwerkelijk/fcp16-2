@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#2B1FA0">
 <title>Wedstrijden — FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
@@ -31,7 +32,7 @@
 </head>
 <body>
 <nav class="nav">
-  <a class="nav-btn" href="index.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><polyline points="9 22 9 13 15 13 15 22"/></svg></span><span class="nav-dot"></span><span>Start</span></a>
+  <a class="nav-btn" href="index.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><polyline points="9 22 9 13 15 13 15 22"/></svg></span><span class="nav-dot"></span><span>Start</span></a>
   <a class="nav-btn" href="opstelling.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="3"/><line x1="12" y1="3" x2="12" y2="21"/><circle cx="12" cy="12" r="3"/><rect x="2" y="8.5" width="3.5" height="7" rx="1"/><rect x="18.5" y="8.5" width="3.5" height="7" rx="1"/></svg></span><span class="nav-dot"></span><span>Opstelling</span></a>
   <a class="nav-btn" href="selectie.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l4-3h10l4 3-3 3v12H6V9z"/><path d="M9 3c0 1.7 1.3 3 3 3s3-1.3 3-3"/></svg></span><span class="nav-dot"></span><span>Selectie</span></a>
   <a class="nav-btn active" href="wedstrijden.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="12" y1="5" x2="12" y2="19"/><text x="5" y="15" font-size="6" fill="currentColor" stroke="none" font-family="DM Sans" font-weight="700">3</text><text x="15" y="15" font-size="6" fill="currentColor" stroke="none" font-family="DM Sans" font-weight="700">1</text></svg></span><span class="nav-dot"></span><span>Wedstrijden</span></a>
@@ -41,6 +42,40 @@
 </nav>
 <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
 <div class="toast" id="toast"></div>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <div class="page-header-row">
+      <div class="page-title">Wedstrijden</div>
+      <button class="topbar-btn" onclick="toggleNieuweWedstrijd()">+ Wedstrijd</button>
+    </div>
+  </div>
+
+  <div class="form-wrap" style="padding-top:12px">
+    <!-- Nieuwe wedstrijd form -->
+    <div class="add-form" id="nieuwe-wed-form" style="display:none">
+      <div class="form-title">Wedstrijd toevoegen</div>
+      <div class="form-row">
+        <input class="form-input" id="wed-teg" placeholder="Tegenstander" type="text">
+      </div>
+      <div class="form-row">
+        <input class="form-input" id="wed-datum" type="date">
+        <input class="form-input" id="wed-tijd" type="time" placeholder="HH:MM" style="max-width:120px">
+      </div>
+      <div class="form-section">Locatie</div>
+      <div class="thu-uit-btns">
+        <button class="thu-uit-btn active" id="btn-thuis" onclick="setThuisUit('thuis')">Thuis</button>
+        <button class="thu-uit-btn" id="btn-uit" onclick="setThuisUit('uit')">Uit</button>
+      </div>
+      <div class="form-row" style="margin-top:8px">
+        <button class="form-btn" onclick="addWedstrijd()" style="width:100%">Toevoegen</button>
+      </div>
+    </div>
+
+    <!-- Wedstrijden lijst -->
+    <div id="wed-list"></div>
+  </div>
+</div>
 
 <!-- Wedstrijd afwezig picker modal -->
 <div class="bmodal-overlay" id="wedAfwezigModal" onclick="if(event.target===this)closeWedAfwezigPicker()">

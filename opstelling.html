@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#2B1FA0">
 <title>Opstelling — FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
@@ -32,7 +31,7 @@
 </head>
 <body>
 <nav class="nav">
-  <a class="nav-btn" href="index.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><polyline points="9 22 9 13 15 13 15 22"/></svg></span><span class="nav-dot"></span><span>Start</span></a>
+  <a class="nav-btn" href="index.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><polyline points="9 22 9 13 15 13 15 22"/></svg></span><span class="nav-dot"></span><span>Start</span></a>
   <a class="nav-btn active" href="opstelling.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="3"/><line x1="12" y1="3" x2="12" y2="21"/><circle cx="12" cy="12" r="3"/><rect x="2" y="8.5" width="3.5" height="7" rx="1"/><rect x="18.5" y="8.5" width="3.5" height="7" rx="1"/></svg></span><span class="nav-dot"></span><span>Opstelling</span></a>
   <a class="nav-btn" href="selectie.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l4-3h10l4 3-3 3v12H6V9z"/><path d="M9 3c0 1.7 1.3 3 3 3s3-1.3 3-3"/></svg></span><span class="nav-dot"></span><span>Selectie</span></a>
   <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="12" y1="5" x2="12" y2="19"/><text x="5" y="15" font-size="6" fill="currentColor" stroke="none" font-family="DM Sans" font-weight="700">3</text><text x="15" y="15" font-size="6" fill="currentColor" stroke="none" font-family="DM Sans" font-weight="700">1</text></svg></span><span class="nav-dot"></span><span>Wedstrijden</span></a>
@@ -49,52 +48,58 @@
       <div class="page-title">Opstelling</div>
     </div>
   </div>
-
-  <div style="padding:10px 16px 4px">
+  <div style="padding:10px 16px 4px;background:var(--bg)">
     <select id="formatie-select" onchange="setFormatie(this.value)"
-      style="width:100%;padding:10px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:14px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%232B1FA0%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 12px center;background-size:12px;box-shadow:var(--card-shadow)">
-    </select>
+        style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23a8e040%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;background-size:12px">
+      </select>
   </div>
-
   <div class="opst-layout-wrap">
     <div class="field-wrap">
       <div class="field-container" id="fieldContainer">
         <svg class="field-svg" viewBox="0 0 400 380" xmlns="http://www.w3.org/2000/svg">
         <rect width="400" height="380" fill="var(--field-bg)"/>
-        <rect x="0" y="0" width="400" height="38" fill="rgba(0,0,0,0.07)"/>
-        <rect x="0" y="76" width="400" height="38" fill="rgba(0,0,0,0.07)"/>
-        <rect x="0" y="152" width="400" height="38" fill="rgba(0,0,0,0.07)"/>
-        <rect x="0" y="228" width="400" height="38" fill="rgba(0,0,0,0.07)"/>
-        <rect x="0" y="304" width="400" height="38" fill="rgba(0,0,0,0.07)"/>
-        <rect x="8" y="8" width="384" height="364" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
-        <line x1="8" y1="190" x2="392" y2="190" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
-        <circle cx="200" cy="190" r="46" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
-        <circle cx="200" cy="190" r="2" fill="rgba(255,255,255,0.4)"/>
-        <rect x="120" y="8" width="160" height="66" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
-        <rect x="160" y="8" width="80" height="28" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
-        <rect x="120" y="306" width="160" height="66" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
-        <rect x="160" y="344" width="80" height="28" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
-        <path d="M120 74 A80 80 0 0 0 280 74" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
-        <path d="M120 306 A80 80 0 0 1 280 306" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
-        </svg>
+        <rect x="8" y="8" width="384" height="364" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <line x1="8" y1="190" x2="392" y2="190" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <circle cx="200" cy="190" r="38" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        <circle cx="200" cy="190" r="2.5" fill="rgba(255,255,255,0.6)"/>
+        <rect x="116" y="8" width="168" height="68" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <rect x="148" y="8" width="104" height="30" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <circle cx="200" cy="54" r="2.5" fill="rgba(255,255,255,0.45)"/>
+        <path d="M 156 76 A 44 44 0 0 0 244 76" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
+        <rect x="116" y="304" width="168" height="68" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <rect x="148" y="342" width="104" height="30" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <circle cx="200" cy="326" r="2.5" fill="rgba(255,255,255,0.45)"/>
+        <path d="M 156 304 A 44 44 0 0 1 244 304" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
+      </svg>
         <div class="field-positions" id="fieldPositions"></div>
       </div>
       <div class="field-actions">
-        <button class="field-btn" onclick="clearOpstelling()">Wissen</button>
-        <button class="field-btn primary" onclick="saveOpstelling()">Opslaan</button>
+        <button class="field-btn" onclick="clearLineup()">🗑 Wis</button>
+        <button class="field-btn" onclick="shareWhatsApp()">📲 Delen</button>
+        <button class="field-btn primary" onclick="saveLineupAction()">💾 Opslaan</button>
       </div>
     </div>
-    <div class="opst-bench-col-content" id="benchCol"></div>
+
+    <!-- Wisselspelers naast veld (in landscape), onder veld (in portrait) -->
+    <div id="bench-section" class="opst-bench-col-content" style="padding:0 2px">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between">
+        <span>Wisselspelers</span>
+        <span id="bench-count" style="font-size:10px;font-weight:600;color:var(--text3)"></span>
+      </div>
+      <div id="bench-list"></div>
+    </div>
+  </div>
   </div>
 
 </div>
 
-<!-- Speler kiezen modal -->
-<div class="modal-overlay" id="posModal" onclick="if(event.target===this)closePosModal()">
+<!-- Modal: speler kiezen -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
-    <div class="modal-title" id="posModalTitel">Kies speler</div>
-    <div class="modal-list" id="posModalLijst"></div>
-    <button class="modal-cancel" onclick="closePosModal()">Annuleer</button>
+    <div class="modal-title" id="modal-title">Kies speler</div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div class="modal-list" id="modal-list"></div>
+    <button class="modal-cancel" onclick="closeModal()">Annuleer</button>
   </div>
 </div>
 

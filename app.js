@@ -116,10 +116,16 @@ function saveCategories(cats)      { localStorage.setItem('fcp_cats',         JS
 function saveWedstrijden(wed)      { localStorage.setItem('fcp_wed',          JSON.stringify(wed)); }
 function saveAanwezigheid(aanw)    { localStorage.setItem('fcp_aanw',         JSON.stringify(aanw)); }
 function saveCustomWeken(weken)    { localStorage.setItem('fcp_custom_weken', JSON.stringify(weken)); }
+async function syncCustomWeken(weken) {
+  saveCustomWeken(weken);
+  if (!supabaseReady) return;
+  await sbFetch('custom_weken?id=eq.singleton', 'DELETE');
+  await sbFetch('custom_weken', 'POST', { id:'singleton', data: JSON.stringify(weken) });
+}
 
 // ─── SUPABASE LOAD ALL ───
 async function loadFromSupabase() {
-  const [pl, lu, sn, oe, ca, wd, pr, aanw] = await Promise.all([
+  const [pl, lu, sn, oe, ca, wd, pr, aanw, cw] = await Promise.all([
     sbFetch('players?select=*&order=created_at'),
     sbFetch('lineup?select=*'),
     sbFetch('session_notes?select=*'),
@@ -127,7 +133,8 @@ async function loadFromSupabase() {
     sbFetch('categories?select=*&order=sort_order'),
     sbFetch('wedstrijden?select=*&order=created_at'),
     sbFetch('principes?select=*&order=sort_order'),
-    sbFetch('aanwezigheid?select=*')
+    sbFetch('aanwezigheid?select=*'),
+    sbFetch('custom_weken?id=eq.singleton&select=*'),
   ]);
   const result = {};
   if (pl && !pl._error) { result.players = pl; savePlayers(pl); }
@@ -140,24 +147,63 @@ async function loadFromSupabase() {
     const notes = {};
     sn.forEach(r => { notes[r.note_key] = r.content; });
     result.sessionNotes = notes; saveSessionNotes(notes);
+    // absRedenen laden als die in session_notes staan
+    if (notes['abs_redenen']) {
+      try {
+        const redenen = JSON.parse(notes['abs_redenen']);
+        if (Array.isArray(redenen)) { result.absRedenen = redenen; localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen)); }
+      } catch(e) {}
+    }
+    if (notes['team_config']) {
+      try {
+        const cfg = JSON.parse(notes['team_config']);
+        if (cfg && cfg.naam) { result.teamConfig = cfg; localStorage.setItem('fcp_team_config', JSON.stringify(cfg)); }
+      } catch(e) {}
+    }
   }
   if (oe && !oe._error) {
-    const oef = oe.map(o => ({ ...o, stappen: o.stappen || [], pr: [] }));
+    const oef = oe.map(o => ({ ...o, desc: o.desc || o.beschrijving || '', stappen: o.stappen || [], pr: [] }));
     result.customOef = oef; saveCustomOef(oef);
   }
   if (ca && !ca._error && ca.length) {
     const cats = ca.map(c => c.naam);
     result.categories = cats; saveCategories(cats);
   }
-  if (wd && !wd._error) { result.wedstrijden = wd; saveWedstrijden(wd); }
+  if (wd && !wd._error) {
+    const wedstrijden = wd.map(w => ({
+      ...w,
+      isoDate:    w.iso_date || w.isoDate || '',
+      ratings:    typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
+      motm:       w.motm || null,
+      gespeeld:   w.gespeeld || false,
+      afwezig:    typeof w.afwezig === 'string' ? JSON.parse(w.afwezig || '[]') : (w.afwezig || []),
+      aanwezig:   typeof w.aanwezig === 'string' ? JSON.parse(w.aanwezig || '[]') : (w.aanwezig || []),
+      wed_lineup: typeof w.wed_lineup === 'string' ? JSON.parse(w.wed_lineup || '{}') : (w.wed_lineup || {}),
+    }));
+    result.wedstrijden = wedstrijden; saveWedstrijden(wedstrijden);
+  }
   if (pr && !pr._error && pr.length) { result.principes = pr; }
   if (aanw && !aanw._error) {
     const aanwObj = {};
-    aanw.forEach(r => {
+    aanw.filter(r => r.training_key && r.training_key !== '[object Object]' && r.training_key.length < 20).forEach(r => {
       if (!aanwObj[r.training_key]) aanwObj[r.training_key] = {};
-      aanwObj[r.training_key][r.player_id] = r.aanwezig;
+      // Ondersteuning voor oud formaat (boolean) en nieuw formaat ({afwezig, reden})
+      if (typeof r.aanwezig === 'boolean') {
+        aanwObj[r.training_key][r.player_id] = { afwezig: !r.aanwezig, reden: r.reden || '' };
+      } else {
+        aanwObj[r.training_key][r.player_id] = r.aanwezig;
+      }
     });
-    result.aanwezigheid = aanwObj; saveAanwezigheid(aanwObj);
+    result.aanwezigheid = aanwObj;
+    // Opschonen - verwijder corrupte keys (te lang of object Object)
+    Object.keys(aanwObj).forEach(k => {
+      if (k.length > 20 || k.includes('[object') || k.startsWith('{')) delete aanwObj[k];
+    });
+    localStorage.setItem('fcp_aanw', JSON.stringify(aanwObj));
+  }
+  if (cw && !cw._error && cw.length) {
+    const weken = typeof cw[0].data === 'string' ? JSON.parse(cw[0].data) : cw[0].data;
+    result.customWeken = weken; saveCustomWeken(weken);
   }
   return result;
 }
@@ -190,22 +236,23 @@ const DEFAULT_PRINCIPES = [
     kleur_bg:'#101800', kleur_border:'#304010', kleur_text:'#a8e040' },
 ];
 
-// ─── FORMATIES ───
-const FORMATIES = {
+// ─── FORMATIES LIBRARY ───
+// Standaard formaties - uitbreidbaar via instellingen
+const FORMATIES_BUILTIN = {
   '4222': { label:'4-2-2-2', pos:[
     {id:'GK',   label:'GK',   role:'keeper', x:50, y:88},
     {id:'LB',   label:'LB',   role:'back',   x:14, y:72},
     {id:'CB_L', label:'CB-L', role:'cb',     x:36, y:75},
     {id:'CB_R', label:'CB-R', role:'cb',     x:64, y:75},
     {id:'RB',   label:'RB',   role:'back',   x:86, y:72},
-    {id:'VM_L', label:'VM-L', role:'dm',     x:36, y:57},
-    {id:'VM_R', label:'VM-R', role:'dm',     x:64, y:57},
-    {id:'AM_L', label:'AM-L', role:'am',     x:22, y:38},
-    {id:'AM_R', label:'AM-R', role:'am',     x:78, y:38},
+    {id:'VM_L', label:'VM-L', role:'dm',     x:36, y:53},
+    {id:'VM_R', label:'VM-R', role:'dm',     x:64, y:53},
+    {id:'AM_L', label:'AM-L', role:'am',     x:24, y:36},
+    {id:'AM_R', label:'AM-R', role:'am',     x:76, y:36},
     {id:'ST_L', label:'ST-L', role:'st',     x:14, y:16},
     {id:'ST_R', label:'ST-R', role:'st',     x:86, y:16},
   ]},
-  '4231': { label:'4-2-3-1', pos:[
+  '14231': { label:'4-2-3-1', pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
     {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
@@ -218,23 +265,222 @@ const FORMATIES = {
     {id:'RAM', label:'RAM', role:'am',     x:82, y:38},
     {id:'CF',  label:'CF',  role:'st',     x:50, y:16},
   ]},
-  '442': { label:'4-4-2 ruit', pos:[
-    {id:'GK',   label:'GK',   role:'keeper', x:50, y:88},
-    {id:'LB',   label:'LB',   role:'back',   x:14, y:72},
-    {id:'CB_L', label:'CB-L', role:'cb',     x:36, y:75},
-    {id:'CB_R', label:'CB-R', role:'cb',     x:64, y:75},
-    {id:'RB',   label:'RB',   role:'back',   x:86, y:72},
-    {id:'LM',   label:'LM',   role:'dm',     x:14, y:52},
-    {id:'CM_A', label:'CM-A', role:'dm',     x:50, y:40},
-    {id:'CM_V', label:'CM-V', role:'am',     x:50, y:60},
-    {id:'RM',   label:'RM',   role:'dm',     x:86, y:52},
-    {id:'ST_L', label:'ST-L', role:'st',     x:35, y:18},
-    {id:'ST_R', label:'ST-R', role:'st',     x:65, y:18},
+  '433a': { label:'4-3-3 (punt achter)', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:64, y:75},
+    {id:'RB',  label:'RB',  role:'back',   x:86, y:72},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:22, y:52},
+    {id:'CM_C',label:'CM-C',role:'dm',     x:50, y:60},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:78, y:52},
+    {id:'LW',  label:'LW',  role:'am',     x:14, y:28},
+    {id:'ST',  label:'ST',  role:'st',     x:50, y:16},
+    {id:'RW',  label:'RW',  role:'am',     x:86, y:28},
+  ]},
+  '352': { label:'3-5-2 (punt voor)', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:26, y:75},
+    {id:'CB_C',label:'CB-C',role:'cb',     x:50, y:78},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:74, y:75},
+    {id:'LWB', label:'LWB', role:'back',   x:10, y:55},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:32, y:55},
+    {id:'CM_C',label:'CM-C',role:'dm',     x:50, y:60},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:68, y:55},
+    {id:'RWB', label:'RWB', role:'back',   x:90, y:55},
+    {id:'ST_L',label:'ST-L',role:'st',     x:36, y:22},
+    {id:'ST_R',label:'ST-R',role:'st',     x:64, y:22},
+  ]},
+  '13421': { label:'3-4-2-1', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:26, y:75},
+    {id:'CB_C',label:'CB-C',role:'cb',     x:50, y:78},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:74, y:75},
+    {id:'LM',  label:'LM',  role:'dm',     x:10, y:57},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:36, y:60},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:64, y:60},
+    {id:'RM',  label:'RM',  role:'dm',     x:90, y:57},
+    {id:'AM_L',label:'AM-L',role:'am',     x:36, y:38},
+    {id:'AM_R',label:'AM-R',role:'am',     x:64, y:38},
+    {id:'CF',  label:'CF',  role:'st',     x:50, y:16},
+  ]},
+  '442v': { label:'4-4-2 vlak', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:64, y:75},
+    {id:'RB',  label:'RB',  role:'back',   x:86, y:72},
+    {id:'LM',  label:'LM',  role:'dm',     x:14, y:52},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:38, y:55},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:62, y:55},
+    {id:'RM',  label:'RM',  role:'dm',     x:86, y:52},
+    {id:'ST_L',label:'ST-L',role:'st',     x:36, y:20},
+    {id:'ST_R',label:'ST-R',role:'st',     x:64, y:20},
+  ]},
+  '442r': { label:'4-4-2 ruit', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:64, y:75},
+    {id:'RB',  label:'RB',  role:'back',   x:86, y:72},
+    {id:'LM',  label:'LM',  role:'dm',     x:14, y:52},
+    {id:'CM_A',label:'CM-A',role:'dm',     x:50, y:40},
+    {id:'CM_V',label:'CM-V',role:'am',     x:50, y:60},
+    {id:'RM',  label:'RM',  role:'dm',     x:86, y:52},
+    {id:'ST_L',label:'ST-L',role:'st',     x:36, y:20},
+    {id:'ST_R',label:'ST-R',role:'st',     x:64, y:20},
+  ]},
+  '532': { label:'5-3-2', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'LWB', label:'LWB', role:'back',   x:8,  y:68},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:28, y:75},
+    {id:'CB_C',label:'CB-C',role:'cb',     x:50, y:78},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:72, y:75},
+    {id:'RWB', label:'RWB', role:'back',   x:92, y:68},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:28, y:52},
+    {id:'CM_C',label:'CM-C',role:'dm',     x:50, y:55},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:72, y:52},
+    {id:'ST_L',label:'ST-L',role:'st',     x:36, y:22},
+    {id:'ST_R',label:'ST-R',role:'st',     x:64, y:22},
+  ]},
+  '433b': { label:'4-3-3 (punt voor)', pos:[
+    {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
+    {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
+    {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
+    {id:'CB_R',label:'CB-R',role:'cb',     x:64, y:75},
+    {id:'RB',  label:'RB',  role:'back',   x:86, y:72},
+    {id:'CM_L',label:'CM-L',role:'dm',     x:36, y:55},
+    {id:'CM_C',label:'CM-C',role:'am',     x:50, y:45},
+    {id:'CM_R',label:'CM-R',role:'dm',     x:64, y:55},
+    {id:'LW',  label:'LW',  role:'am',     x:14, y:28},
+    {id:'ST',  label:'ST',  role:'st',     x:50, y:16},
+    {id:'RW',  label:'RW',  role:'am',     x:86, y:28},
   ]},
 };
 
+// Laad gebruikersformaties uit localStorage
+function loadFormaties() {
+  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
+  return { ...FORMATIES_BUILTIN, ...custom };
+}
+function saveCustomFormatie(key, formatie) {
+  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
+  custom[key] = formatie;
+  localStorage.setItem('fcp_custom_formaties', JSON.stringify(custom));
+}
+function deleteCustomFormatie(key) {
+  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
+  delete custom[key];
+  localStorage.setItem('fcp_custom_formaties', JSON.stringify(custom));
+}
+
+// Backwards compat - FORMATIES verwijst nu naar de geladen set
+let FORMATIES = loadFormaties();
+
 const POS_LABELS = { keeper:'Keeper', back:'Back', cb:'Centrale back', dm:'Middenveld', am:'Aanvallend midden', st:'Spits' };
 const ALL_POS_OPTS = ['Keeper','LB','RB','CB-L','CB-R','VM-L','VM-R','AM-L','AM-R','ST-L','ST-R','DM-L','DM-R','LAM','CAM','RAM','CF','LM','CM-L','CM-R','RM'];
+
+// ─── THEMA'S ───
+const THEMAS = {
+  licht:      { name:'Licht (standaard)', topbar:'#2B1FA0', accent:'#2B1FA0', bg:'#F2F1FF', white:'#ffffff', text:'#12113A', text2:'#4A4870', text3:'#8B8AB0', border:'#E4E3F5' },
+  licht_groen:{ name:'Licht Groen',       topbar:'#1B5E20', accent:'#1B7A4B', bg:'#F1F8F4', white:'#ffffff', text:'#0D2B14', text2:'#2E6645', text3:'#6B9E7A', border:'#D4EBD9' },
+  licht_blauw:{ name:'Licht Blauw',       topbar:'#0D47A1', accent:'#1565C0', bg:'#F0F4FF', white:'#ffffff', text:'#0D1B4A', text2:'#2B4EA0', text3:'#6B82CC', border:'#C7D4FC' },
+  fcp:        { name:'FCP Purmerend', topbar:'#1a1a1a', accent:'#F5C000', bg:'#111111', white:'#1e1e1e', text:'#F5F5F5', text2:'#CCCCCC', text3:'#888888', border:'#333333' },
+  donker:     { name:'Donker',             topbar:'#080c14', accent:'#c8a840', bg:'#080c14', white:'#0e1524', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', border:'#1e2e48' },
+};
+
+function loadThema() { return localStorage.getItem('fcp_thema') || 'licht'; }
+function applyThema(key) {
+  const t = THEMAS[key] || THEMAS.licht;
+  const r = document.documentElement.style;
+  // Topbar
+  r.setProperty('--topbar',    t.topbar);
+  r.setProperty('--topbar-dark', t.topbar);
+  r.setProperty('--accent',    t.accent);
+  r.setProperty('--accent2',   t.accent);
+  // Achtergronden
+  r.setProperty('--bg',        t.bg);
+  r.setProperty('--white',     t.white);
+  r.setProperty('--bg2',       t.white);
+  r.setProperty('--bg3',       t.bg);
+  r.setProperty('--bg4',       t.bg);
+  // Tekst
+  r.setProperty('--text',      t.text);
+  r.setProperty('--text2',     t.text2);
+  r.setProperty('--text3',     t.text3);
+  // Borders
+  r.setProperty('--border',    t.border);
+  r.setProperty('--border2',   t.border);
+  r.setProperty('--line',      t.border);
+  r.setProperty('--line2',     t.border);
+  // Fonts altijd DM Sans
+  r.setProperty('--font-ui',      "'DM Sans',sans-serif");
+  r.setProperty('--font-mono',    "'DM Mono',monospace");
+  r.setProperty('--font-display', "'DM Sans',sans-serif");
+  r.setProperty('--font-weight-title', '700');
+  r.setProperty('--title-style', 'normal');
+  r.setProperty('--badge-radius', '100px');
+  r.setProperty('--card-shadow', '0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)');
+  r.setProperty('--r',   '14px');
+  r.setProperty('--rsm', '10px');
+  // Veld altijd groen
+  r.setProperty('--field-bg',     '#1B5E20');
+  r.setProperty('--field-border', '#2E7D32');
+  // Status bar kleur mee veranderen met thema
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.setAttribute('content', t.topbar);
+
+  // Dynamische accentkleuren passend bij het thema
+  const isDark = ['donker','fcp'].includes(key);
+  if (isDark) {
+    // Donker thema: lichte tekst op donkere achtergrond
+    r.setProperty('--blauw-l',  'rgba(43,92,230,.2)');
+    r.setProperty('--blauw-m',  'rgba(43,92,230,.4)');
+    r.setProperty('--groen-l',  'rgba(27,122,75,.2)');
+    r.setProperty('--groen-m',  'rgba(27,122,75,.4)');
+    r.setProperty('--goud-l',   'rgba(184,134,11,.2)');
+    r.setProperty('--goud-m',   'rgba(184,134,11,.4)');
+    r.setProperty('--rood-l',   'rgba(198,40,40,.2)');
+    r.setProperty('--rood-m',   'rgba(198,40,40,.4)');
+    r.setProperty('--blauw',    '#7aacff');
+    r.setProperty('--groen',    '#6ee0a0');
+    r.setProperty('--goud',     '#f0d080');
+    r.setProperty('--rood',     '#ff8080');
+    r.setProperty('--card-shadow', 'none');
+  } else {
+    r.setProperty('--blauw-l',  '#EEF2FF');
+    r.setProperty('--blauw-m',  '#C7D4FC');
+    r.setProperty('--groen-l',  '#E8F5EE');
+    r.setProperty('--groen-m',  '#C3E8D2');
+    r.setProperty('--goud-l',   '#FFF8E1');
+    r.setProperty('--goud-m',   '#FFE082');
+    r.setProperty('--rood-l',   '#FFEBEE');
+    r.setProperty('--rood-m',   '#FFCDD2');
+    r.setProperty('--blauw',    '#2B5CE6');
+    r.setProperty('--groen',    '#1B7A4B');
+    r.setProperty('--goud',     '#B8860B');
+    r.setProperty('--rood',     '#C62828');
+    r.setProperty('--card-shadow', '0 1px 3px rgba(43,31,160,.06),0 1px 2px rgba(0,0,0,.04)');
+  }
+
+  localStorage.setItem('fcp_thema', key);
+}
+// Thema direct toepassen bij laden
+applyThema(loadThema());
+
+// ─── TEAM INSTELLINGEN ───
+function loadTeamInstellingen() {
+  return JSON.parse(localStorage.getItem('fcp_team_config') || '{"naam":"FCP 16-2","subtitel":"Seizoen 2026/2027","trainer":"Stefan & Onno"}');
+}
+function saveTeamInstellingen(config) {
+  localStorage.setItem('fcp_team_config', JSON.stringify(config));
+  // Sync naar Supabase via session_notes
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    sbFetch('session_notes?note_key=eq.team_config', 'DELETE').then(() =>
+      sbFetch('session_notes', 'POST', { note_key:'team_config', content:JSON.stringify(config) })
+    );
+  }
+}
 
 // ─── SCHEMA DATA ───
 const SCHEMA_DATES  = {1:'2026-08-03',2:'2026-08-10',3:'2026-08-17',4:'2026-08-24',5:'2026-08-31',6:'2026-09-07',7:'2026-09-14',8:'2026-09-21',9:'2026-09-28',10:'2026-10-05',11:'2026-10-12',12:'2026-10-19'};
@@ -265,15 +511,50 @@ const SKILL_CATS = [
   { cat:'Mentaal',  skills:['Gedrag','Motivatie','Aandacht','Discipline','Omgaan met tegenslag'] },
 ];
 const SKILL_LEVELS = ['Ontwikkel punt','Voldoende','Goed','Zeer goed'];
+
+// ─── POSITIE BADGES ───
+function getRolBadges(posities) {
+  if (!posities || !posities.length) return '';
+  const ROLE_MAP = {
+    'GK':'keeper','LB':'back','CB-L':'cb','CB-R':'cb','RB':'back',
+    'VM-L':'dm','VM-R':'dm','AM-L':'am','AM-R':'am','ST-L':'st','ST-R':'st','CF':'st'
+  };
+  const rollen = new Set();
+  posities.forEach(p => {
+    const r = ROLE_MAP[p];
+    if (r === 'keeper') rollen.add('K');
+    else if (r === 'back' || r === 'cb') rollen.add('V');
+    else if (r === 'dm' || r === 'am') rollen.add('M');
+    else if (r === 'st') rollen.add('A');
+  });
+  const stijl = {
+    'K': 'background:#E6F1FB;color:#0C447C;border:1px solid #B5D4F4',
+    'V': 'background:#EAF3DE;color:#27500A;border:1px solid #C0DD97',
+    'M': 'background:#EEEDFE;color:#3C3489;border:1px solid #CECBF6',
+    'A': 'background:#FAECE7;color:#712B13;border:1px solid #F5C4B3',
+  };
+  return ['K','V','M','A'].filter(r => rollen.has(r))
+    .map(r => `<span style="${stijl[r]};font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px">${r}</span>`)
+    .join('');
+}
 const SKILL_COLORS = {
-  'Ontwikkel punt': { bg:'#3a1000', c:'#f07040' },
-  'Voldoende':      { bg:'#1a2800', c:'#a8e040' },
-  'Goed':           { bg:'#0a2010', c:'#60d080' },
-  'Zeer goed':      { bg:'#003818', c:'#40f090' },
+  'Ontwikkel punt': { bg:'#FFEBEE', c:'#C62828' },
+  'Voldoende':      { bg:'#FFF3E0', c:'#E65100' },
+  'Goed':           { bg:'#F1F8E9', c:'#558B2F' },
+  'Zeer goed':      { bg:'#E8F5E9', c:'#1B5E20' },
 };
 
 // ─── UTILITIES ───
 function genId() { return 'i' + Date.now() + Math.random().toString(36).slice(2, 6); }
+
+function safeEncode(str) {
+  try { return btoa(unescape(encodeURIComponent(str))); }
+  catch(e) { return btoa(str.replace(/[^ -]/g, '?')); }
+}
+function safeDecode(str) {
+  try { return decodeURIComponent(escape(atob(str))); }
+  catch(e) { return atob(str); }
+}
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -321,64 +602,106 @@ function initScrollTop() {
 }
 
 // ─── MANIFEST ───
-function initManifest() {
-  const manifest = {
-    name:'FCP 16-2', short_name:'FCP 16-2', display:'standalone',
-    background_color:'#0a1200', theme_color:'#0a1200', start_url:'index.html',
-    icons:[{ src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a1200'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='%23a8e040'>⚽</text></svg>", sizes:'192x192', type:'image/svg+xml' }]
-  };
-  const el = document.getElementById('manifest-link');
-  if (el) el.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type:'application/json' }));
+function initManifest() { /* manifest.json is statisch, geen actie nodig */ }
+
+const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oefeningen via + Nieuw
+
+// ─── LANDSCAPE RESPONSIVE ───
+function isLandscape() {
+  // Touch-apparaat check: telefoon/tablet heeft coarse pointer, laptop niet
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  return isTouch && window.innerWidth > window.innerHeight;
 }
 
-const BUILTIN_OEF=[
-  {id:'b01',cat:'opwarmen',title:'Passeer-estafette namen leren',duur:'10–15 min',spelers:'12–18',pr:['P6'],url:'',desc:'Tweetallen op 10m. Naam noemen bij ontvangst.',stappen:['Tweetallen op 10m','Pas en loop','Naam passeur noemen','Zwakke voet dubbel','Na 5 min: 15m'],tip:'Namen leren. Luchtig houden.'},
-  {id:'b02',cat:'opwarmen',title:'Rondo met positie-herstel',duur:'10 min',spelers:'12–18',pr:['P4','P6'],url:'',desc:'5+1. Na verovering positie herpakken.',stappen:['Cirkel 8m, 5 vs 1','Max 2 touch','Na verovering: bezitter druk'],tip:'Reflex, niet straf.'},
-  {id:'b03',cat:'opwarmen',title:'Rondo VM+2 omhoog',duur:'10 min',spelers:'14–16',pr:['P5','P6'],url:'',desc:'VM verlaat cirkel naar hogere positie.',stappen:['Cirkel 10m, 7 vs 2','VM stapt uit na 3 passes','Cirkel vult aan'],tip:'VM blijft niet statisch.'},
-  {id:'b04',cat:'opwarmen',title:'Tikspel met smal kanaal',duur:'10 min',spelers:'12–16',pr:['P2','P6'],url:'',desc:'Smal veld 30x12m. Langs de middenas.',stappen:['Veld 30x12m, 2 tikkers','Langs middenas blijven'],tip:'Smalheid dwingt verticaal denken.'},
-  {id:'b05',cat:'opwarmen',title:'Tikspel gepakt = twee persen',duur:'10 min',spelers:'12–16',pr:['P4'],url:'',desc:'Bij tikken: samen persen.',stappen:['20x20m, 2 tikkers','Als gepakt: samen persen'],tip:'Counterpressing als opwarm.'},
-  {id:'b06',cat:'opwarmen',title:'Positie activatie eigen plek',duur:'10 min',spelers:'14–18',pr:['P6'],url:'',desc:'Korte passes door het systeem.',stappen:['Eigen positie','Keeper → backs → VM → AM → ST'],tip:'Goed voor lichte training.'},
-  {id:'b07',cat:'opwarmen',title:'Loosening keeper warming-up',duur:'15 min',spelers:'alle',pr:['P6'],url:'',desc:'Rustige opwarm. Keeper apart.',stappen:['Veldspelers: 2 rondjes','Keeper: sprongen + stappen','Keeper: laag + hoge ballen'],tip:'Keeper heeft andere opwarm nodig.'},
-  {id:'b08',cat:'opwarmen',title:'Favoriete rondo van de groep',duur:'10 min',spelers:'12–18',pr:['P6'],url:'',desc:'Spelers kiezen zelf.',stappen:['Vraag de groep','Groep leidt warming-up'],tip:'Eigenaarschap.'},
-  {id:'b09',cat:'conditie',title:'Shuttle runs met bal',duur:'15 min',spelers:'alle',pr:['P6'],url:'',desc:'5-10-15m, terugloop met bal.',stappen:['Kegels op 5, 10 en 15m','Sprint heen, terugloop met bal','4 series'],tip:'Basisconditie met bal.'},
-  {id:'b10',cat:'conditie',title:'Loopladder + smalle sprints',duur:'12 min',spelers:'alle',pr:['P2'],url:'',desc:'Loopladder dan sprint door smal kanaal.',stappen:['Loopladder 6m','Sprint kanaal 2m x 20m'],tip:'Smalheid: leer rechtdoor.'},
-  {id:'b11',cat:'conditie',title:'Interval passing sprint',duur:'15 min',spelers:'12–16',pr:['P6'],url:'',desc:'A past naar B, sprint naar kegel.',stappen:['A en B op 15m','A past → sprint','6 herhalingen'],tip:'Wedstrijdritme.'},
-  {id:'b12',cat:'conditie',title:'Duurloop met tempowisseling',duur:'15 min',spelers:'alle',pr:['P6'],url:'',desc:'3 rondjes rustig, op signaal sprint.',stappen:['Rustig 3 rondjes','Op fluit: 20m sprint'],tip:'Duurvermogen.'},
-  {id:'b13',cat:'conditie',title:'Interval pressing blok',duur:'15 min',spelers:'12–16',pr:['P4','P5'],url:'',desc:'3 min positiespel, op signaal druk.',stappen:['6 spelers 20x15m','3 min positiespel','Op fluit: 2 worden inpikkers'],tip:'Counterpressing als conditie.'},
-  {id:'b14',cat:'conditie',title:'4x4 min positiespel hoge intensiteit',duur:'20 min',spelers:'12–16',pr:['P4','P5'],url:'',desc:'4 blokken van 4 min, 1 min rust.',stappen:['Veld 20x15m','4 min, 1 min rust, 4x'],tip:'Gebruik pas in maand 2.'},
-  {id:'b15',cat:'conditie',title:'Intensiteitsblok 3x5\'',duur:'20 min',spelers:'14–18',pr:['P1'],url:'',desc:'3x5 min op 70%, daarna 2 min vol.',stappen:['5 min op 70%','2 min max','Herhaal 3x'],tip:'Tempowisseling.'},
-  {id:'b16',cat:'techniek',title:'Driehoek A-B-C doorlopen',duur:'15 min',spelers:'12–18',pr:['P6','P1'],url:'',desc:'A→B→C, C loopt door naar positie A.',stappen:['Driehoek kegels op 8m','A past naar B','B past naar C, B loopt naar A'],tip:'Basis 4-2-2-2.'},
-  {id:'b17',cat:'techniek',title:'Aannemen onder lichte druk',duur:'15 min',spelers:'12–16',pr:['P6'],url:'',desc:'A ontvangt, B druk, C vrij.',stappen:['A midden, B op 3m, C op 8m','A: draai of kaats naar C'],tip:'Hardop zeggen wat je ziet.'},
-  {id:'b18',cat:'techniek',title:'AM in smal kanaal ontvangen',duur:'15 min',spelers:'12–16',pr:['P2','P6'],url:'',desc:'AM in smal kanaal. Kegels op 3m.',stappen:['AM centraal op 25m','Aanspeler op 15m','Ontvangen in kanaal'],tip:'Oplossing altijd verticaal of terug.'},
-  {id:'b19',cat:'techniek',title:'Derde-man combinatie back',duur:'15 min',spelers:'12–16',pr:['P3','P6'],url:'',desc:'Back speelt op VM, loopt diep.',stappen:['Back start met bal','Kort op VM, back loopt door','AM trekt centrum'],tip:'Trigger: touch van VM.'},
-  {id:'b20',cat:'techniek',title:'Afwerken na combinatie via AM',duur:'15 min',spelers:'14–16',pr:['P2','P5'],url:'',desc:'ST en AM combineren, VM loopt mee.',stappen:['Aanspeler geeft op AM','AM combineert met ST','VM loopt mee omhoog'],tip:'VM meeloopt = veld veroverd.'},
-  {id:'b21',cat:'techniek',title:'1v1 afronden + rebound',duur:'15 min',spelers:'12–18',pr:['P6'],url:'',desc:'Aanvaller vs verdediger, keeper op doel.',stappen:['Aanvaller en verdediger op 20m','2e aanvaller pakt rebound'],tip:'Keeper: positie na schot.'},
-  {id:'b22',cat:'techniek',title:'Afwerken na derde-man back',duur:'15 min',spelers:'14–16',pr:['P3'],url:'',desc:'Back loopt diep. Beide kanten.',stappen:['Back start met bal','Past op VM, loopt diep','VM speelt diep'],tip:'Backs herhalen dit spontaan.'},
-  {id:'b23',cat:'positiespel',title:'Rondo ruimte creëren',duur:'15 min',spelers:'12–16',pr:['P1','P6'],url:'',desc:'4+2 op 15x15m. Altijd driehoek.',stappen:['15x15m, 4 vs 2','Stop bij twee naast elkaar'],tip:'Ruimte = doel.'},
-  {id:'b24',cat:'positiespel',title:'4-2-2-2 posities stilstaand',duur:'20 min',spelers:'14–18',pr:['P6'],url:'',desc:'Per positie zone en beweging.',stappen:['Eigen positie','Trainer loopt systeem door'],tip:'Vroeg in maand 1.'},
-  {id:'b25',cat:'positiespel',title:'3-zones opbouw',duur:'20 min',spelers:'14–18',pr:['P1','P6'],url:'',desc:'Bal mag niet terug over zonegrens.',stappen:['3 horizontale zones','Terugspelen = balverlies'],tip:'Eerst flexibel.'},
-  {id:'b26',cat:'positiespel',title:'Opbouw keeper + backs',duur:'20 min',spelers:'14–18',pr:['P1','P3'],url:'',desc:'Keeper uit via backs, VM, AM, ST.',stappen:['Keeper start','VM vraagt bal','VM → AM → ST'],tip:'Begin zonder tegenstander.'},
-  {id:'b27',cat:'positiespel',title:'Opbouw VM omhoog schuiven',duur:'20 min',spelers:'14–18',pr:['P1','P5'],url:'',desc:'Na 2e pas schuift VM 10m omhoog.',stappen:['Keeper uit via backs','Back → VM','VM schuift 10m op'],tip:'Golf, niet anker.'},
-  {id:'b28',cat:'positiespel',title:'Backs derde-man run triggeren',duur:'20 min',spelers:'14–18',pr:['P3','P1'],url:'',desc:'Touch van VM triggert diepterun back.',stappen:['Back past op VM','AM trekt centraal','Back maakt diepterun'],tip:'Trigger = touch.'},
-  {id:'b29',cat:'positiespel',title:'Smalle aanval via centraal kanaal',duur:'20 min',spelers:'14–18',pr:['P2','P5'],url:'',desc:'Aanval via 3 centrale banen.',stappen:['3 centrale banen actief','AM en ST centraal'],tip:'Smalheid dwingt creativiteit.'},
-  {id:'b30',cat:'positiespel',title:'Centrale zone beheersen',duur:'20 min',spelers:'14–16',pr:['P1','P5'],url:'',desc:'VM als draaipunt, max 2 touch.',stappen:['Vak 30x20m','VM max 2 touch','8 passes = punt'],tip:'Simpel, snel, direct.'},
-  {id:'b31',cat:'positiespel',title:'Geduldig circuleren tot opening',duur:'20 min',spelers:'14–18',pr:['P1','P6'],url:'',desc:'Punt na 6+ passes.',stappen:['Teams van 7','Punt na 6+ passes'],tip:'Ruimte door geduld.'},
-  {id:'b32',cat:'positiespel',title:'Overbezetting flank creëren',duur:'20 min',spelers:'14–18',pr:['P3','P1'],url:'',desc:'AM trekt centrum, back steekt door.',stappen:['AM naar centrum','Back steekt door'],tip:'Beweging AM = signaal.'},
-  {id:'b33',cat:'positiespel',title:'3 aanvalsvarianten kiezen',duur:'25 min',spelers:'14–18',pr:['P2','P3'],url:'',desc:'Teams kiezen per aanval.',stappen:['Bespreek 3 varianten','Teams kiezen'],tip:'Laat spelers beslissen.'},
-  {id:'b34',cat:'positiespel',title:'Wat als tegenstander hoog druk zet?',duur:'20 min',spelers:'14–18',pr:['P1','P6'],url:'',desc:'Keeper + backs uitspelen onder druk.',stappen:['Keeper + backs vs 3 drukkers','VM als noodoptie'],tip:'Geen paniek.'},
-  {id:'b35',cat:'counterpressing',title:'Pressing trigger herkennen',duur:'15 min',spelers:'12–16',pr:['P4'],url:'',desc:'3 triggers stilstaand bespreken.',stappen:['3 triggers op veld','Demo met 4 spelers'],tip:'Collectief signaal.'},
-  {id:'b36',cat:'counterpressing',title:'5 sec counterpressing reflex',duur:'15 min',spelers:'12–16',pr:['P4','P6'],url:'',desc:'Trainer telt. Druk bij 3.',stappen:['Positiespel 5+2','Trainer telt','Druk bij 3'],tip:'Gaat om de gewoonte.'},
-  {id:'b37',cat:'counterpressing',title:'2v2+1 counterpressing na verlies',duur:'15 min',spelers:'12–16',pr:['P4'],url:'',desc:'Na verovering: direct terugdrukken.',stappen:['Veld 15x10m','Verovering: aanvallers worden drukkers'],tip:'Neutraal = superioriteit.'},
-  {id:'b38',cat:'counterpressing',title:'Groepspressing vanuit AM',duur:'20 min',spelers:'14–18',pr:['P4','P5'],url:'',desc:'AM lokt, VM sluit aan.',stappen:['4-2-2-2 op half veld','AM lokt','VM sluit aan'],tip:'VM wacht op signaal.'},
-  {id:'b39',cat:'counterpressing',title:'Hoge pressing als blok',duur:'20 min',spelers:'14–18',pr:['P4','P5'],url:'',desc:'Alle linies max 10m uit elkaar.',stappen:['Start op 40m lijn tegenstander','Max 10m alle linies'],tip:'Één uitvaller breekt systeem.'},
-  {id:'b40',cat:'partijvorm',title:'Partijspel vrij observeren',duur:'25 min',spelers:'14–18',pr:['P6'],url:'',desc:'Vrij. Trainers observeren.',stappen:['Teams van 7','Geen regels'],tip:'Wat doet het team zonder sturing?'},
-  {id:'b41',cat:'partijvorm',title:'Partijspel bonus driehoek',duur:'25 min',spelers:'14–18',pr:['P1','P6'],url:'',desc:'Extra punt na 3-passes driehoek.',stappen:['Extra punt na driehoek'],tip:'Bonuspunt = thema.'},
-  {id:'b42',cat:'partijvorm',title:'Partijspel pressing punt',duur:'25 min',spelers:'14–18',pr:['P4'],url:'',desc:'Extra punt voor verovering binnen 5 sec.',stappen:['Extra punt: verovering binnen 5 sec'],tip:'Pressing even belangrijk.'},
-  {id:'b43',cat:'partijvorm',title:'Partijspel punt voor opbouw via backs',duur:'25 min',spelers:'14–18',pr:['P3','P1'],url:'',desc:'Extra punt na opbouw via keeper + backs.',stappen:['Extra punt na opbouw'],tip:'Beloont Como patroon.'},
-  {id:'b44',cat:'partijvorm',title:'Partijspel centraal kanaal bonus',duur:'25 min',spelers:'14–18',pr:['P2','P6'],url:'',desc:'Dubbel punt via centraal kanaal.',stappen:['Dubbel punt via 2 centrale banen'],tip:'Spelers ontdekken het zelf.'},
-  {id:'b45',cat:'partijvorm',title:'Backs-als-aanvallers partijvorm',duur:'25 min',spelers:'14–18',pr:['P3','P1'],url:'',desc:'Bonuspunt als back aanvallende zone bereikt.',stappen:['Bonuspunt: back bereikt aanvallende zone'],tip:'Backs herhalen het spontaan.'},
-  {id:'b46',cat:'partijvorm',title:'Wedstrijdsimulatie 2x15\'',duur:'40 min',spelers:'14–18',pr:['P1','P4'],url:'',desc:'Twee helften 15 min.',stappen:['Geen stoppage','Rust: spelers benoemen 1 punt'],tip:'1 thema bij rust.'},
-  {id:'b47',cat:'partijvorm',title:'Wedstrijdsimulatie 2x20\' spelers analyseren',duur:'50 min',spelers:'14–18',pr:['P1','P4','P5'],url:'',desc:'Spelers leiden nabespreking.',stappen:['Geen stoppage','Rust: spelers analyseren'],tip:'Laten analyseren vergroot begrip.'},
-  {id:'b48',cat:'partijvorm',title:'Intern toernooi 4v4 smal veld',duur:'30 min',spelers:'12–18',pr:['P2','P6'],url:'',desc:'Klein toernooi 20x10m.',stappen:['3-4 teams van 4','Veld 20x10m'],tip:'Goed voor einde maand 1 en begin maand 3.'},
-  {id:'b49',cat:'partijvorm',title:'Partijspel spelers coachen zichzelf',duur:'30 min',spelers:'14–18',pr:['P6','P1'],url:'',desc:'Trainers zwijgen volledig.',stappen:['Trainers zwijgen','Na 15 min: stop'],tip:'Bewijs of systeem erin zit.'}
-];
+function applyLandscape() {
+  const ls = isLandscape();
+  document.body.classList.toggle('is-landscape', ls);
+
+  // Nav: voeg klasse toe zodat CSS hem links zet
+  const nav = document.querySelector('.nav');
+  if (nav) nav.classList.toggle('nav-landscape', ls);
+
+  // Alle content containers: ruimte voor linker nav
+  document.querySelectorAll('.form-wrap, .home-hero, .page-header').forEach(el => {
+    el.style.marginLeft = '';  // CSS regelt dit via body.is-landscape
+  });
+}
+
+// Draai bij laden en bij oriëntatie wijziging
+window.addEventListener('DOMContentLoaded', applyLandscape);
+window.addEventListener('resize', applyLandscape);
+window.addEventListener('orientationchange', function(){ setTimeout(applyLandscape, 150); });
+if (screen.orientation) screen.orientation.addEventListener('change', function(){ setTimeout(applyLandscape, 150); });
+
+// ─── DESKTOP SIDEBAR PANEL ───
+function initDesktopPanel() {
+  const existing = document.getElementById('desktop-panel');
+  if (existing) existing.remove();
+  if (window.innerWidth < 1100) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'desktop-panel';
+  panel.style.cssText = [
+    'width:220px',
+    'flex-shrink:0',
+    'padding:48px 0 0',
+    'font-family:\'DM Sans\',sans-serif',
+  ].join(';');
+
+  const page = window.location.pathname.split('/').pop() || 'index.html';
+  const links = [
+    ['index.html','Start'],
+    ['opstelling.html','Opstelling'],
+    ['selectie.html','Selectie'],
+    ['wedstrijden.html','Wedstrijden'],
+    ['trainen.html','Trainen'],
+    ['oefeningen.html','Oefeningen'],
+    ['team.html','Dashboard'],
+    ['instellingen.html','Instellingen'],
+  ];
+
+  panel.innerHTML = `
+    <div style="font-size:26px;font-weight:800;color:#fff;margin-bottom:2px">FCP <span style="opacity:.4">16-2</span></div>
+    <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:28px">Seizoen 2026/2027</div>
+    <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Navigatie</div>
+    ${links.map(([href, label]) => {
+      const active = page === href || (href === 'index.html' && (page === '' || page === '/'));
+      return `<a href="${href}" style="display:block;padding:7px 12px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:${active?'600':'400'};color:${active?'#fff':'rgba(255,255,255,.45)'};background:${active?'rgba(255,255,255,.1)':'transparent'};margin-bottom:2px;transition:background .15s"
+        onmouseover="this.style.background=this.style.background||'rgba(255,255,255,.05)'"
+        onmouseout="this.style.background='${active?'rgba(255,255,255,.1)':'transparent'}'"
+      >${label}</a>`;
+    }).join('')}
+    <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.25);line-height:1.7">
+      Draai je telefoon<br>voor landscape modus.
+    </div>
+  `;
+
+  document.body.appendChild(panel);
+}
+
+// Landscape trigger
+function isLandscape() {
+  // Touch-apparaat check: telefoon/tablet heeft coarse pointer, laptop niet
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  return isTouch && window.innerWidth > window.innerHeight;
+}
+
+function applyLandscape() {
+  const ls = isLandscape();
+  document.body.classList.toggle('is-landscape', ls);
+  const nav = document.querySelector('.nav');
+  if (nav) nav.classList.toggle('nav-landscape', ls);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initDesktopPanel();
+  applyLandscape();
+});
+window.addEventListener('resize', () => {
+  initDesktopPanel();
+  applyLandscape();
+});
+window.addEventListener('orientationchange', () => { setTimeout(applyLandscape, 150); });
+if (typeof screen !== 'undefined' && screen.orientation) {
+  screen.orientation.addEventListener('change', () => { setTimeout(applyLandscape, 150); });
+}

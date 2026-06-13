@@ -17,118 +17,96 @@
 <link rel="stylesheet" href="style.css">
 <script>
 (function(){
-  const T={'licht':{'--topbar':'#2B1FA0','--topbar-dark':'#1a1262','--accent':'#2B1FA0','--bg':'#F2F1FF','--white':'#ffffff','--text':'#12113A','--text2':'#4A4870','--text3':'#8B8AB0','--border':'#E4E3F5','--border2':'#D0CFED','--line':'#E4E3F5','--line2':'#D0CFED','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},'licht_groen':{'--topbar':'#1B5E20','--topbar-dark':'#0D3B12','--accent':'#1B7A4B','--bg':'#F1F8F4','--white':'#ffffff','--text':'#0D2B14','--text2':'#2E6645','--text3':'#6B9E7A','--border':'#D4EBD9','--border2':'#B8DABD','--line':'#D4EBD9','--line2':'#B8DABD','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},'licht_blauw':{'--topbar':'#0D47A1','--topbar-dark':'#082f6e','--accent':'#1565C0','--bg':'#F0F4FF','--white':'#ffffff','--text':'#0D1B4A','--text2':'#2B4EA0','--text3':'#6B82CC','--border':'#C7D4FC','--border2':'#A8BCFA','--line':'#C7D4FC','--line2':'#A8BCFA','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},'fcp':{'--topbar':'#1a1a1a','--topbar-dark':'#000000','--accent':'#F5C000','--bg':'#111111','--white':'#1e1e1e','--text':'#F5F5F5','--text2':'#CCCCCC','--text3':'#888888','--border':'#333333','--border2':'#444444','--line':'#333333','--line2':'#444444','--red':'#ff4444','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'none'},'donker':{'--topbar':'#080c14','--topbar-dark':'#030508','--accent':'#c8a840','--bg':'#080c14','--white':'#0e1524','--text':'#e8eef8','--text2':'#9aaccc','--text3':'#5a7090','--border':'#1e2e48','--border2':'#2a3e5c','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'none'}};
+  const T={
+    'licht':{'--topbar':'#2B1FA0','--topbar-dark':'#1a1262','--accent':'#2B1FA0','--bg':'#F2F1FF','--white':'#ffffff','--bg2':'#ffffff','--bg3':'#F2F1FF','--bg4':'#F2F1FF','--text':'#12113A','--text2':'#4A4870','--text3':'#8B8AB0','--border':'#E4E3F5','--border2':'#D0CFED','--line':'#E4E3F5','--line2':'#D0CFED','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},
+    'licht_groen':{'--topbar':'#1B5E20','--topbar-dark':'#0D3B12','--accent':'#1B7A4B','--bg':'#F1F8F4','--white':'#ffffff','--bg2':'#ffffff','--bg3':'#F1F8F4','--bg4':'#F1F8F4','--text':'#0D2B14','--text2':'#2E6645','--text3':'#6B9E7A','--border':'#D4EBD9','--border2':'#B8DABD','--line':'#D4EBD9','--line2':'#B8DABD','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},
+    'licht_blauw':{'--topbar':'#0D47A1','--topbar-dark':'#082f6e','--accent':'#1565C0','--bg':'#F0F4FF','--white':'#ffffff','--bg2':'#ffffff','--bg3':'#F0F4FF','--bg4':'#F0F4FF','--text':'#0D1B4A','--text2':'#2B4EA0','--text3':'#6B82CC','--border':'#C7D4FC','--border2':'#A8BCFA','--line':'#C7D4FC','--line2':'#A8BCFA','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},
+    'fcp':{'--topbar':'#1a1a1a','--topbar-dark':'#000000','--accent':'#F5C000','--bg':'#111111','--white':'#1e1e1e','--bg2':'#1e1e1e','--bg3':'#111111','--bg4':'#111111','--text':'#F5F5F5','--text2':'#CCCCCC','--text3':'#888888','--border':'#333333','--border2':'#444444','--line':'#333333','--line2':'#444444','--red':'#ff4444','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'none'},
+    'donker':{'--topbar':'#080c14','--topbar-dark':'#030508','--accent':'#c8a840','--bg':'#080c14','--white':'#0e1524','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#e8eef8','--text2':'#9aaccc','--text3':'#5a7090','--border':'#1e2e48','--border2':'#2a3e5c','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'none'}
+  };
   const k=localStorage.getItem('fcp_thema')||'licht';
   const m=T[k]||T.licht;
   const r=document.documentElement.style;
   Object.entries(m).forEach(([p,v])=>r.setProperty(p,v));
 })();
 </script>
+
 </head>
 <body>
-
 <nav class="nav">
-  <a class="nav-btn active" href="index.html">
-    <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 21V13h6v8" fill="white" stroke="white" stroke-width="1.2"/></svg></span>
-    <span class="nav-dot"></span><span>Start</span>
-  </a>
-  <a class="nav-btn" href="opstelling.html">
-    <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="3"/><line x1="12" y1="3" x2="12" y2="21"/><circle cx="12" cy="12" r="3"/><rect x="2" y="8.5" width="3.5" height="7" rx="1"/><rect x="18.5" y="8.5" width="3.5" height="7" rx="1"/></svg></span>
-    <span class="nav-dot"></span><span>Opstelling</span>
-  </a>
-  <a class="nav-btn" href="selectie.html">
-    <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l4-3h10l4 3-3 3v12H6V9z"/><path d="M9 3c0 1.7 1.3 3 3 3s3-1.3 3-3"/></svg></span>
-    <span class="nav-dot"></span><span>Selectie</span>
-  </a>
-  <a class="nav-btn" href="wedstrijden.html">
-    <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="12" y1="5" x2="12" y2="19"/><text x="5" y="15" font-size="6" fill="currentColor" stroke="none" font-family="DM Sans" font-weight="700">3</text><text x="15" y="15" font-size="6" fill="currentColor" stroke="none" font-family="DM Sans" font-weight="700">1</text></svg></span>
-    <span class="nav-dot"></span><span>Wedstrijden</span>
-  </a>
-  <a class="nav-btn" href="trainen.html">
-    <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/><path d="M19 5l1.5 1.5"/></svg></span>
-    <span class="nav-dot"></span><span>Trainen</span>
-  </a>
-  <a class="nav-btn" href="oefeningen.html">
-    <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21L10.5 6h3L16 21H8z"/><line x1="7" y1="13" x2="17" y2="13"/><line x1="6" y1="21" x2="18" y2="21"/></svg></span>
-    <span class="nav-dot"></span><span>Oefeningen</span>
-  </a>
-  <a class="nav-btn" href="team.html">
-    <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v7a4 4 0 0 1-8 0z"/><path d="M8 7H5a2 2 0 0 0 2 3.8"/><path d="M16 7h3a2 2 0 0 1-2 3.8"/><line x1="12" y1="15" x2="12" y2="19"/><line x1="9" y1="19" x2="15" y2="19"/></svg></span>
-    <span class="nav-dot"></span><span>Dashboard</span>
-  </a>
+  <a class="nav-btn active" href="index.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 21V13h6v8" fill="white" stroke="white" stroke-width="1.2"/></svg></span><span class="nav-dot"></span><span>Start</span></a>
+  <a class="nav-btn" href="opstelling.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="3"/><line x1="12" y1="3" x2="12" y2="21"/><circle cx="12" cy="12" r="3"/><rect x="2" y="8.5" width="3.5" height="7" rx="1"/><rect x="18.5" y="8.5" width="3.5" height="7" rx="1"/></svg></span><span class="nav-dot"></span><span>Opstelling</span></a>
+  <a class="nav-btn" href="selectie.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l4-3h10l4 3-3 3v12H6V9z"/><path d="M9 3c0 1.7 1.3 3 3 3s3-1.3 3-3"/></svg></span><span class="nav-dot"></span><span>Selectie</span></a>
+  <a class="nav-btn" href="wedstrijden.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="12" y1="5" x2="12" y2="19"/><text x="5" y="15" font-size="6" fill="currentColor" stroke="none" font-family="DM Sans" font-weight="700">3</text><text x="15" y="15" font-size="6" fill="currentColor" stroke="none" font-family="DM Sans" font-weight="700">1</text></svg></span><span class="nav-dot"></span><span>Wedstrijden</span></a>
+  <a class="nav-btn" href="trainen.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/><path d="M19 5l1.5 1.5"/></svg></span><span class="nav-dot"></span><span>Trainen</span></a>
+  <a class="nav-btn" href="oefeningen.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21L10.5 6h3L16 21H8z"/><line x1="7" y1="13" x2="17" y2="13"/><line x1="6" y1="21" x2="18" y2="21"/></svg></span><span class="nav-dot"></span><span>Oefeningen</span></a>
+  <a class="nav-btn" href="team.html"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v7a4 4 0 0 1-8 0z"/><path d="M8 7H5a2 2 0 0 0 2 3.8"/><path d="M16 7h3a2 2 0 0 1-2 3.8"/><line x1="12" y1="15" x2="12" y2="19"/><line x1="9" y1="19" x2="15" y2="19"/></svg></span><span class="nav-dot"></span><span>Dashboard</span></a>
 </nav>
-
 <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
 <div class="toast" id="toast"></div>
 
 <div class="page-wrap">
-
-  <!-- TOPBAR -->
-  <div class="page-header">
-    <div class="page-header-row">
-      <div>
-        <div class="page-title" id="home-titel">FCP 16-2</div>
-        <div class="page-sub" id="home-subtitel">Seizoen 2026/2027</div>
+<div class="home-hero">
+    <div style="padding:0 16px 14px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between">
+        <div>
+          <h1 class="home-title" id="home-titel" style="color:#fff">FCP <em>16-2</em></h1>
+          <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px" id="home-subtitel">Seizoen 2026/2027</div>
+        </div>
+        <a href="instellingen.html" class="topbar-btn" style="text-decoration:none;align-self:flex-end">⚙️</a>
       </div>
-      <a href="instellingen.html" class="topbar-icon-btn" style="text-decoration:none">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 17 1.65 1.65 0 0 0 3.17 16H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </a>
     </div>
   </div>
 
-  <!-- CONTENT -->
-  <div style="padding:14px 16px 0">
-
-    <!-- Training + Wedstrijd -->
-    <div id="start-cards-wrap" style="display:grid;grid-template-columns:1fr;gap:10px">
+  <!-- Beide kaarten + stats: landscape = 2 kolommen -->
+  <div class="start-two-col" style="padding:12px 16px 0;background:var(--bg);display:flex;flex-direction:column;gap:10px">
+    <div id="start-left-col">
       <div id="start-training-card"></div>
+    </div>
+    <div id="start-right-col">
       <div id="start-wedstrijd-card"></div>
     </div>
-
-    <!-- Stat strip -->
-    <div style="margin-top:14px">
-      <div class="statstrip">
-        <a href="selectie.html" class="ss" style="text-decoration:none">
-          <span class="ss-v" id="stat-spelers">0</span>
-          <span class="ss-l">Spelers</span>
-        </a>
-        <a href="oefeningen.html" class="ss" style="text-decoration:none">
-          <span class="ss-v" id="stat-oef">0</span>
-          <span class="ss-l">Oefeningen</span>
-        </a>
-        <div class="ss">
-          <span class="ss-v" id="stat-wedstrijden">0</span>
-          <span class="ss-l">Wedstr.</span>
-        </div>
-        <div class="ss">
-          <span class="ss-v" id="stat-wins">0</span>
-          <span class="ss-l">Gewonnen</span>
-        </div>
-        <div class="ss" style="border-right:none">
-          <span class="ss-v" id="stat-doelsaldo">0</span>
-          <span class="ss-l">Doelsaldo</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Kernprincipes -->
-    <div style="margin-top:18px">
-      <div class="section-t" style="padding:0 0 10px">
-        Kernprincipes
-      </div>
-      <div class="principle-grid" id="principle-grid" style="padding:0"></div>
-    </div>
-
   </div>
 
-  <!-- Supabase compat -->
-  <div id="config-banner" style="display:none"><input id="sb-url" type="hidden"><input id="sb-key" type="hidden"></div>
+  <!-- Statistieken balk -->
+  <div style="padding:0 16px 12px;background:var(--bg)">
+    <div style="display:flex;gap:0;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;box-shadow:var(--card-shadow)">
+      <a href="selectie.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border);text-decoration:none">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-spelers">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">spelers</div>
+      </a>
+      <a href="oefeningen.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border);text-decoration:none">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-oef">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">oefeningen</div>
+      </a>
+      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-wedstrijden">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">wedstrijden</div>
+      </div>
+      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-wins">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">gewonnen</div>
+      </div>
+      <div style="flex:1;padding:10px 6px;text-align:center">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-doelsaldo">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">doelsaldo</div>
+      </div>
+    </div>
+  </div>
 
+  <div class="principle-section" style="background:var(--bg);padding-top:16px">
+    <div class="section-label">Kernprincipes</div>
+    <div class="principle-grid" id="principle-grid"></div>
+  </div>
+
+  <!-- Supabase hidden inputs voor app.js compatibiliteit -->
+  <div id="config-banner" style="display:none"><input id="sb-url" type="hidden"><input id="sb-key" type="hidden"></div>
+  
 </div>
 
-<!-- Principe detail modal -->
+<!-- Principe modal -->
 <div id="prModalOverlay" onclick="if(event.target===this)closePrModal()" style="display:none;position:fixed;inset:0;background:rgba(18,17,58,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center">
-  <div class="pr-modal" id="prModal" style="background:#ffffff;color:#12113A">
+  <div class="pr-modal" id="prModal" style="background:#ffffff !important;color:#12113A !important">
     <div id="pr-code" style="font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:#12113A;font-family:'DM Sans',sans-serif"></div>
     <div id="pr-naam" style="font-size:16px;font-weight:600;color:#2B1FA0;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #E4E3F5;font-family:'DM Sans',sans-serif"></div>
     <div style="font-size:11px;font-weight:700;color:#8B8AB0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:'DM Sans',sans-serif">Beschrijving</div>
@@ -136,8 +114,8 @@
     <div style="font-size:11px;font-weight:700;color:#8B8AB0;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 5px;font-family:'DM Sans',sans-serif">Voorbeeld in het spel</div>
     <div id="pr-voorbeeld" style="font-size:14px;line-height:1.7;color:#4A4870;font-family:'DM Sans',sans-serif"></div>
     <div style="display:flex;gap:8px;margin-top:20px">
-      <button id="pr-edit-btn" onclick="openPrEdit()" style="flex:1;padding:13px;background:#2B1FA0;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <button id="pr-edit-btn" onclick="openPrEdit()" class="btn-secondary" style="display:flex;align-items:center;gap:6px;padding:10px 16px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);font-size:14px;font-weight:600;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Bewerken
       </button>
       <button onclick="closePrModal()" style="padding:13px 20px;background:#ffffff;color:#4A4870;border:1px solid #E4E3F5;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Sluiten</button>
@@ -168,16 +146,6 @@ const state = loadState();
 let principes = state.principes || DEFAULT_PRINCIPES;
 let activePrId = null;
 
-// Landscape: 2 kolommen voor training + wedstrijd
-function checkLayout() {
-  const wrap = document.getElementById('start-cards-wrap');
-  if (!wrap) return;
-  const isLandscape = window.matchMedia('(orientation: landscape) and (max-width: 767px)').matches;
-  wrap.style.gridTemplateColumns = isLandscape ? '1fr 1fr' : '1fr';
-}
-window.addEventListener('resize', checkLayout);
-checkLayout();
-
 function renderStartCards() {
   const weken = JSON.parse(localStorage.getItem('fcp_custom_weken') || '[]');
   const trainCard = document.getElementById('start-training-card');
@@ -207,7 +175,6 @@ function renderStartCards() {
       }
       if (gevondenSessie) break;
     }
-
     if (gevondenWeek && gevondenSessie) {
       const nk = 'cw' + gevondenWi + '_' + gevondenSi;
       const url = 'trainen.html#' + nk;
@@ -218,21 +185,16 @@ function renderStartCards() {
       const aanwNum = spelers.length - afwNum;
       const dagNaam = gevondenSessie.dag || 'Training';
       const teller = spelers.length > 0 ? (aanwNum + '/' + spelers.length) : '–';
-      trainCard.innerHTML = `<a href="${url}" class="nextup-card">
-        <div class="nextup-label">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/></svg>
-          Eerstvolgende training
-        </div>
-        <div class="nextup-title">${dagNaam}</div>
-        <div class="nextup-sub">${gevondenWeek.focus || ''}</div>
-        <div class="nextup-footer">
-          <span class="nextup-meta">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-            ${teller} aanwezig
-          </span>
-          <span class="nextup-badge">${teller}</span>
-        </div>
-      </a>`;
+      trainCard.innerHTML = '<a href="' + url + '" style="display:block;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:10px;text-decoration:none;box-shadow:var(--card-shadow)">'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+        + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--topbar)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/></svg>'
+        + '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Eerstvolgende training</div>'
+        + '</div>'
+        + '<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:10px">' + dagNaam + '</div>'
+        + '<div style="display:flex;justify-content:flex-end">'
+        + '<span style="background:var(--topbar);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px">' + teller + '</span>'
+        + '</div>'
+        + '</a>';
     } else {
       trainCard.innerHTML = '';
     }
@@ -248,33 +210,37 @@ function renderStartCards() {
     const eersteKomend = komend.find(w => w.isoDate >= vandaagIso) || komend[0];
     if (eersteKomend) {
       const w = eersteKomend;
+      const sp = JSON.parse(localStorage.getItem('fcp_players')||'[]');
+      const afw = (w.afwezig||[]).length;
+      const aanwTeller = sp.length > 0 ? ((sp.length - afw) + '/' + sp.length) : '–';
       const thuisTeam = w.thuis_uit === 'thuis' ? 'FCP JO16-2' : (w.tegenstander||'?');
       const uitTeam = w.thuis_uit === 'thuis' ? (w.tegenstander||'?') : 'FCP JO16-2';
-      const thuisInit = thuisTeam.split(' ').map(x=>x[0]).join('').substring(0,3).toUpperCase();
-      const uitInit = uitTeam.split(' ').map(x=>x[0]).join('').substring(0,3).toUpperCase();
       const datumTekst = (w.datum||'–') + (w.starttijd ? ' · ' + w.starttijd : '') + ' · ' + (w.thuis_uit||'–');
-      wedCard.innerHTML = `<a href="wedstrijden.html" class="hero-card">
-        <div class="hero-label">Eerstvolgende wedstrijd</div>
-        <div class="hero-vs">
-          <div class="hero-team">
-            <div class="hero-crest ${w.thuis_uit==='thuis'?'home':''}">${thuisInit}</div>
-            <div class="hero-team-name">${thuisTeam}</div>
-          </div>
-          <div class="hero-x">VS</div>
-          <div class="hero-team">
-            <div class="hero-crest ${w.thuis_uit==='uit'?'home':''}">${uitInit}</div>
-            <div class="hero-team-name">${uitTeam}</div>
-          </div>
-        </div>
-        <div class="hero-footer">
-          <span class="hero-meta">${datumTekst}</span>
-        </div>
-      </a>`;
+      const bolSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M12 2.5c0 0-3 3.5-3 9.5s3 9.5 3 9.5"/><path d="M12 2.5c0 0 3 3.5 3 9.5s-3 9.5-3 9.5"/><line x1="2.5" y1="9" x2="21.5" y2="9"/><line x1="2.5" y1="15" x2="21.5" y2="15"/></svg>';
+      const teamDiv = function(naam) {
+        return '<div style="text-align:center;flex:1">'
+          + '<div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);margin:0 auto 4px;display:flex;align-items:center;justify-content:center">' + bolSvg + '</div>'
+          + '<div style="font-size:12px;font-weight:700;color:#fff">' + naam + '</div>'
+          + '</div>';
+      };
+      wedCard.innerHTML = '<a href="wedstrijden.html" style="display:block;background:linear-gradient(135deg,var(--topbar) 0%,color-mix(in srgb,var(--topbar) 70%,#000) 100%);border-radius:var(--r);padding:13px;margin-bottom:10px;text-decoration:none;box-shadow:var(--card-shadow)">'
+        + '<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Eerstvolgende wedstrijd</div>'
+        + '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px">'
+        + teamDiv(thuisTeam)
+        + '<div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.6);flex-shrink:0">vs</div>'
+        + teamDiv(uitTeam)
+        + '</div>'
+        + '<div style="display:flex;align-items:center;justify-content:space-between">'
+        + '<div style="font-size:10px;color:rgba(255,255,255,.6)">' + datumTekst + '</div>'
+        + '<span style="background:rgba(255,255,255,.2);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:100px">' + aanwTeller + '</span>'
+        + '</div>'
+        + '</a>';
     } else {
       wedCard.innerHTML = '';
     }
   }
 }
+
 
 function updateStats() {
   const wed = JSON.parse(localStorage.getItem('fcp_wed')||'[]');
@@ -286,7 +252,9 @@ function updateStats() {
   document.getElementById('stat-oef').textContent         = oef.length;
   document.getElementById('stat-wins').textContent        = wed.filter(w=>w.score_eigen>w.score_tegen).length;
   const saldoEl = document.getElementById('stat-doelsaldo');
-  if (saldoEl) saldoEl.textContent = (doelsaldo > 0 ? '+' : '') + doelsaldo;
+  if (saldoEl) {
+    saldoEl.textContent = (doelsaldo > 0 ? '+' : '') + doelsaldo;
+  }
 }
 
 function applyTeamConfig(cfg) {
@@ -295,7 +263,9 @@ function applyTeamConfig(cfg) {
   const sub   = document.getElementById('home-subtitel');
   if (titel) {
     const delen = c.naam.split(' ');
-    titel.textContent = c.naam;
+    titel.innerHTML = delen.length > 1
+      ? delen.slice(0,-1).join(' ') + ' <em>' + delen[delen.length-1] + '</em>'
+      : '<em>' + c.naam + '</em>';
   }
   if (sub) sub.textContent = c.subtitel || '';
 }
@@ -303,12 +273,23 @@ function applyTeamConfig(cfg) {
 function renderPrincipes() {
   const grid = document.getElementById('principle-grid');
   if (!grid) return;
-  grid.innerHTML = principes.map((p,i) => `
-    <div class="pr-card" onclick="openPrModal('${p.id}')">
-      <div class="pr-code">${p.code}</div>
-      <div class="pr-name">${p.naam}</div>
-    </div>`).join('');
+  const kleuren = [
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+  ];
+  grid.innerHTML = principes.map((p,i) => {
+    const k = kleuren[i % kleuren.length];
+    return `<div style="background:${k.bg};border:1px solid ${k.border};border-radius:12px;padding:10px 12px;cursor:pointer" onclick="openPrModal('${p.id}')">
+      <div style="font-size:18px;font-weight:800;color:${k.codeClr};line-height:1;margin-bottom:4px">${p.code}</div>
+      <div style="font-size:12px;font-weight:600;color:${k.nameClr};line-height:1.3">${p.naam}</div>
+    </div>`;
+  }).join('');
 }
+
 
 function openPrModal(id) {
   const p = principes.find(x => x.id === id); if (!p) return;
@@ -317,6 +298,8 @@ function openPrModal(id) {
   document.getElementById('pr-naam').textContent     = p.naam;
   document.getElementById('pr-desc').textContent     = p.beschrijving;
   document.getElementById('pr-voorbeeld').textContent = p.voorbeeld;
+  const editBtn = document.getElementById('pr-edit-btn');
+  editBtn.style.cssText = 'background:#2B1FA0;color:#ffffff;border:none';
   document.getElementById('prModalOverlay').style.display = 'flex';
 }
 function closePrModal() { document.getElementById('prModalOverlay').style.display = 'none'; }
@@ -367,7 +350,8 @@ initSupabase().then(ok => { if (ok) onSupabaseReady(); });
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/fcp16-2/sw.js').catch(e => console.log('SW:', e));
+    navigator.serviceWorker.register('/fcp16-2/sw.js')
+      .catch(e => console.log('SW registratie mislukt:', e));
   });
 }
 </script>

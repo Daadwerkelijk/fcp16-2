@@ -315,7 +315,7 @@ function renderRankingPanel() {
 }
 
 function dashTab(tab) {
-  const tabs = ['afwezig','skills'];
+  const tabs = ['afwezig','skills','ranking'];
   tabs.forEach(t => {
     const panel = document.getElementById('dpanel-' + t);
     const btn   = document.getElementById('dtab-' + t);
@@ -325,6 +325,7 @@ function dashTab(tab) {
     btn.style.borderColor = actief ? 'var(--topbar)' : 'var(--border)';
     btn.querySelector('div:nth-child(2)').style.color = actief ? 'var(--topbar)' : 'var(--text)';
   });
+  if (tab === 'ranking') renderRankingPanel();
 }
 
 function toggleSpelerDetail(id) {

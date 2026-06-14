@@ -87,6 +87,14 @@
         <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-wins">0</div>
         <div style="font-size:9px;color:var(--text3);margin-top:1px">gewonnen</div>
       </div>
+      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-gelijk">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">gelijk</div>
+      </div>
+      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-verloren">0</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">verloren</div>
+      </div>
       <div style="flex:1;padding:10px 6px;text-align:center">
         <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-doelsaldo">0</div>
         <div style="font-size:9px;color:var(--text3);margin-top:1px">doelsaldo</div>
@@ -251,6 +259,10 @@ function updateStats() {
   document.getElementById('stat-spelers').textContent     = pl.length;
   document.getElementById('stat-oef').textContent         = oef.length;
   document.getElementById('stat-wins').textContent        = wed.filter(w=>w.score_eigen>w.score_tegen).length;
+  const gelijkEl = document.getElementById('stat-gelijk');
+  if (gelijkEl) gelijkEl.textContent = wed.filter(w=>w.score_eigen===w.score_tegen&&w.gespeeld).length;
+  const verlorenEl = document.getElementById('stat-verloren');
+  if (verlorenEl) verlorenEl.textContent = wed.filter(w=>w.score_eigen<w.score_tegen).length;
   const saldoEl = document.getElementById('stat-doelsaldo');
   if (saldoEl) {
     saldoEl.textContent = (doelsaldo > 0 ? '+' : '') + doelsaldo;

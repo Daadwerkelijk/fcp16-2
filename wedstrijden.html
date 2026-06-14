@@ -698,7 +698,7 @@ async function saveWedstrijd(id) {
   w.score_tegen = parseInt(document.getElementById('ws-tegen-' + id).value) || 0;
   w.opmerkingen = document.getElementById('ws-opm-' + id).value;
   w.motm        = document.getElementById('ws-motm-' + id).value || null;
-  w.formatie    = document.getElementById('ws-form-' + id).value || null;
+  const wsForm  = document.getElementById('ws-form-' + id); w.formatie = wsForm ? wsForm.value || null : w.formatie || null;
   if (!w.ratings) w.ratings = {};
   players.forEach(p => {
     const el = document.getElementById('rat-' + id + '-' + p.id);

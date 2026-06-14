@@ -121,6 +121,7 @@ const state = loadState();
 let players      = state.players;
 let aanwezigheid = state.aanwezigheid;
 let customWeken  = state.customWeken;
+let wedstrijdenData = state.wedstrijden || JSON.parse(localStorage.getItem('fcp_wed') || '[]');
 let absRedenen   = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]');
 function saveAbsRedenen(r) {
   localStorage.setItem('fcp_abs_redenen', JSON.stringify(r));
@@ -151,7 +152,7 @@ function renderAanwOverzicht() {
 
   // Samenvatting: totaal aantal trainingen met opgeslagen aanwezigheid
   const metData = trainingen.filter(t => aanwezigheid[t.nk] && Object.keys(aanwezigheid[t.nk]).length > 0);
-  const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
+  const wedstrijden = wedstrijdenData;
   const aantalWed = wedstrijden.filter(w => w.gespeeld).length;
   document.getElementById('aanw-samenvatting').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
@@ -247,7 +248,7 @@ function sortRanking(mode) {
 }
 
 function renderRankingPanel() {
-  const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
+  const wedstrijden = wedstrijdenData;
   const motmEl = document.getElementById('ranking-motm');
   const cijferEl = document.getElementById('ranking-cijfers');
   if (!motmEl || !cijferEl) return;
@@ -453,25 +454,8 @@ function renderTeamProfiel() {
 }
 
 function toggleDetail(id) {
-  const isLandscape = window.innerWidth >= 768;
-  if (isLandscape) {
-    // In landscape: toon detail in rechter paneel
-    const panel = document.getElementById('skills-detail-panel');
-    const content = document.getElementById('skills-detail-content');
-    const title = document.getElementById('skills-detail-title');
-    const el = document.getElementById(id);
-    if (!el || !panel || !content) return;
-    // Haal skill naam uit het id (sk-Balcontrole → Balcontrole)
-    const skillNaam = id.replace('sk-', '').replace(/_/g, ' ');
-    if (title) title.textContent = skillNaam;
-    // Kopieer inhoud van het inline detail element naar het panel
-    content.innerHTML = el.innerHTML;
-    panel.style.display = 'block';
-  } else {
-    // In portrait: inline uitklappen zoals voorheen
-    const el = document.getElementById(id);
-    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-  }
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 async function onSupabaseReady() {
@@ -481,6 +465,16 @@ async function onSupabaseReady() {
   if (data.customWeken)  { customWeken  = data.customWeken; }
   if (data.absRedenen)   { absRedenen   = data.absRedenen; }
   if (data.teamConfig)   { const sub = document.getElementById('dashboard-sub'); if (sub) sub.textContent = data.teamConfig.subtitel || ''; }
+  // Laad wedstrijden apart voor ranking
+  const wedRes = await sbFetch('wedstrijden?order=iso_date.asc', 'GET');
+  if (wedRes && !wedRes._error) {
+    wedstrijdenData = wedRes.map(w => ({
+      ...w,
+      ratings: typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
+      afwezig: typeof w.afwezig === 'string' ? JSON.parse(w.afwezig || '[]') : (w.afwezig || []),
+    }));
+    saveWedstrijden(wedstrijdenData);
+  }
   await laadAlleFormulieren();
   renderAanwOverzicht();
   renderTeamProfiel();

@@ -270,24 +270,18 @@ async function runChecks() {
 
   // ── 5. SERVICE WORKER VERSIE ──
   let swHtml = '';
-  if ('serviceWorker' in navigator) {
-    try {
+  try {
+    const swRes = await fetch('./sw.js?v=' + Date.now());
+    const swText = await swRes.text();
+    const match = swText.match(/CACHE\s*=\s*['"]([^'"]+)['"]/);
+    const versie = match ? match[1] : 'onbekend';
+    swHtml = checkItem('✓', 'App versie', versie, 'ok');
+    if ('serviceWorker' in navigator) {
       const reg = await navigator.serviceWorker.getRegistration();
-      if (reg && reg.active) {
-        // Fetch sw.js en lees eerste regel
-        const swRes = await fetch('/fcp16-2/sw.js?v=' + Date.now());
-        const swText = await swRes.text();
-        const match = swText.match(/CACHE\s*=\s*['"]([^'"]+)['"]/);
-        const versie = match ? match[1] : 'onbekend';
-        swHtml = checkItem('✓', 'Service Worker actief', versie, 'ok');
-      } else {
-        swHtml = checkItem('⚠', 'Service Worker niet actief', 'Herlaad de pagina', 'warn');
-      }
-    } catch(e) {
-      swHtml = checkItem('⚠', 'SW versie ophalen mislukt', e.message, 'warn');
+      swHtml += checkItem('✓', 'Service Worker', reg ? 'Geregistreerd' : 'Niet geregistreerd — herlaad', reg ? 'ok' : 'warn');
     }
-  } else {
-    swHtml = checkItem('⚠', 'Service Worker niet ondersteund', 'Gebruik Chrome of Safari', 'warn');
+  } catch(e) {
+    swHtml = checkItem('⚠', 'Versie ophalen mislukt', e.message, 'warn');
   }
   document.getElementById('check-sw').innerHTML = swHtml;
 

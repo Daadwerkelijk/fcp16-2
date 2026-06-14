@@ -683,6 +683,15 @@ async function addWedstrijd() {
   showToast(teg + ' toegevoegd');
 }
 
+function toggleRatings(wrapId, hdr) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? 'flex' : 'none';
+  const chev = hdr.querySelector('svg');
+  if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
+}
+
 async function saveWedstrijd(id) {
   const w = wedstrijden.find(x => x.id === id); if (!w) return;
   w.score_eigen = parseInt(document.getElementById('ws-eigen-' + id).value) || 0;
@@ -823,22 +832,22 @@ function renderWedstrijden() {
     const lineupOpties = Object.keys(FORMATIES).map(f =>
       `<option value="${f}" ${w.formatie===f?'selected':''}>${FORMATIES[f].label}</option>`
     ).join('');
-    const ratRid = 'rat-wrap-' + w.id;
+    const ratRowsHtml = sortedPlayers(players).map(p => {
+      const rating = w.ratings && w.ratings[p.id] || '';
+      return '<div style="display:flex;align-items:center;gap:8px">'
+        + '<span style="flex:1;font-size:12px;color:var(--text)">' + p.naam + '</span>'
+        + '<input type="number" min="1" max="10" step="0.5" placeholder="—" value="' + rating + '"'
+        + ' id="rat-' + w.id + '-' + p.id + '"'
+        + ' style="width:52px;padding:4px 6px;background:var(--bg3);border:1px solid var(--line2);border-radius:4px;color:var(--accent);font-family:var(--font-display);font-size:16px;font-weight:600;text-align:center;outline:none">'
+        + '</div>';
+    }).join('');
     const ratingsHtml = players.length ? `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line2);cursor:pointer;margin-top:8px" onclick="(function(el){el.nextElementSibling.style.display=el.nextElementSibling.style.display==='none'?'flex':'none';el.querySelector('.rat-chev').style.transform=el.nextElementSibling.style.display==='none'?'':'rotate(180deg)'})(this)">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Spelersbeoordelingen (1–10)</div>
-        <svg class="rat-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text3);transition:transform .2s"><path d="m6 9 6 6 6-6"/></svg>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:10px;border-top:1px solid var(--line2);cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="toggleRatings('rat-wrap-${w.id}',this)">
+        <span>Spelersbeoordelingen (1–10)</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
       </div>
-      <div style="display:none;flex-direction:column;gap:5px;margin-bottom:8px">
-        ${sortedPlayers(players).map(p => {
-          const rating = w.ratings && w.ratings[p.id] || '';
-          return `<div style="display:flex;align-items:center;gap:8px">
-            <span style="flex:1;font-size:12px;color:var(--text)">${p.naam}</span>
-            <input type="number" min="1" max="10" step="0.5" placeholder="—" value="${rating}"
-              id="rat-${w.id}-${p.id}"
-              style="width:52px;padding:4px 6px;background:var(--bg3);border:1px solid var(--line2);border-radius:4px;color:var(--accent);font-family:var(--font-display);font-size:16px;font-weight:600;text-align:center;outline:none">
-          </div>`;
-        }).join('')}
+      <div id="rat-wrap-${w.id}" style="display:none;flex-direction:column;gap:5px;margin-bottom:8px">
+        ${ratRowsHtml}
       </div>` : '';
       const afwezigCount = (w.afwezig||[]).length;
       const aanwezig_count = Math.max(0, players.length - afwezigCount);

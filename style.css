@@ -362,6 +362,20 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .pr-card:active{opacity:.7}
 .skill-level-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:var(--badge-radius)}
 
+
+/* Start pagina: training en wedstrijd kaart gelijke hoogte */
+.start-two-col { align-items: stretch; }
+#start-left-col, #start-right-col { display: flex; flex-direction: column; }
+#start-training-card > *, #start-wedstrijd-card > * { flex: 1; }
+
+/* Aanwezig teller badge uniform */
+.aanw-badge {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 3px 10px !important;
+  border-radius: 100px !important;
+}
+
 /* ════════════════════════════════════════
    LANDSCAPE TELEFOON (≤767px + landscape)
    Triggert als telefoon gedraaid is
@@ -511,10 +525,11 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   .nav-btn span:last-child { font-size: 7px; }
 
   .nav-btn.active {
-    background: var(--blauw-l);
+    background: rgba(43,31,160,.1);
     color: var(--topbar);
   }
 
+  /* Donker thema: andere active kleur */
   .nav-dot { display: none; }
 
   /* Alle pagina's: ruimte voor sidebar */
@@ -615,9 +630,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     padding-top: 12px;
   }
 
-  /* Skills: volledige breedte, detail inline */
-  .skills-layout { display: block; }
-  .skills-detail { display: none; }
+  /* Skills: laat app zelf landscape/portrait bepalen via JS */
 
   /* Oefeningen: dropdown ipv filter scroll */
   .filter-scroll { display: none; }

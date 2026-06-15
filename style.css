@@ -570,8 +570,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   #start-training-card > a, #start-wedstrijd-card > a { flex: 1; }
 
   /* Geen bottom nav padding meer */
-  body { padding-bottom: 0 !important; }
-  .page-wrap { padding-bottom: 40px !important; }
+  body { padding-bottom: 0 !important; min-height: 100dvh; }
+  .page-wrap { padding-bottom: 40px !important; min-height: 100dvh; }
+  /* Verberg app.js desktop panel - wij hebben eigen nav sidebar */
+  #desktop-panel { display: none !important; }
   .scroll-top { bottom: 20px; right: 16px; }
   .toast { bottom: 20px; }
 

@@ -663,12 +663,15 @@ async function addWedstrijd() {
   const teg = document.getElementById('wed-teg').value.trim();
   if (!teg) { showToast('Vul een tegenstander in'); return; }
   const rawDatum = document.getElementById('wed-datum').value;
-  const datum = rawDatum ? formatDatumShort(rawDatum) : '';
+  if (!rawDatum) { showToast('Datum is verplicht'); return; }
+  const vandaag = new Date(); vandaag.setHours(0,0,0,0);
+  const datumD = new Date(rawDatum);
+  const inVerleden = datumD < vandaag;
+  const datum = formatDatumShort(rawDatum);
   const rawTijd = document.getElementById('wed-tijd')?.value || '';
   const w = { id:genId(), tegenstander:teg, datum, isoDate:rawDatum, starttijd:rawTijd, thuis_uit:thuisUit, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null, gespeeld:false };
   if (supabaseReady) {
-    // Alleen de basiskolommen sturen bij aanmaken
-    const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate||'', thuis_uit:w.thuis_uit, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
+    const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate, thuis_uit:w.thuis_uit, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
     if (!res || res._error) { showToast('Opslaan mislukt — ' + (res?.message||'check Supabase')); return; }
   }
   wedstrijden.push(w);
@@ -676,7 +679,8 @@ async function addWedstrijd() {
   renderWedstrijden();
   document.getElementById('wed-teg').value = '';
   document.getElementById('wed-datum').value = '';
-  showToast(teg + ' toegevoegd');
+  if (inVerleden) showToast(teg + ' toegevoegd (datum ligt in het verleden)');
+  else showToast(teg + ' toegevoegd');
 }
 
 function toggleRatings(wrapId, hdr) {
@@ -763,6 +767,7 @@ async function saveEditWed() {
   const teg = document.getElementById('edit-wed-teg').value.trim();
   if (!teg) { showToast('Vul een tegenstander in'); return; }
   const rawDatum = document.getElementById('edit-wed-datum').value;
+  if (!rawDatum) { showToast('Datum is verplicht'); return; }
   w.tegenstander = teg;
   w.isoDate = rawDatum;
   w.datum = rawDatum ? formatDatumShort(rawDatum) : w.datum;
@@ -804,16 +809,36 @@ function renderWedstrijden() {
   if (!wedstrijden.length) { list.innerHTML = '<div style="font-size:12px;color:var(--text3)">Nog geen wedstrijden.</div>'; return; }
   list.innerHTML = '';
 
-  const gespeeld  = wedstrijden.filter(w => wedCategorie(w) === 'gespeeld');
-  const volgend   = wedstrijden.filter(w => wedCategorie(w) === 'volgend');
-  const toekomst  = wedstrijden.filter(w => wedCategorie(w) === 'toekomst');
+  function sorteerWed(lijst) {
+    return [...lijst].sort((a,b) => {
+      const da = (a.isoDate||'9999-99-99') + (a.starttijd||'00:00');
+      const db = (b.isoDate||'9999-99-99') + (b.starttijd||'00:00');
+      return da.localeCompare(db);
+    });
+  }
+  const gespeeld  = sorteerWed(wedstrijden.filter(w => wedCategorie(w) === 'gespeeld'));
+  const volgend   = sorteerWed(wedstrijden.filter(w => wedCategorie(w) === 'volgend'));
+  const toekomst  = sorteerWed(wedstrijden.filter(w => wedCategorie(w) === 'toekomst'));
 
-  function renderGroep(titel, kleur, border, lijst, omgekeerd = false) {
+  function renderGroep(titel, kleur, border, lijst, omgekeerd = false, inklapbaar = false) {
     if (!lijst.length) return;
+    const sectieId = 'groep-' + titel.replace(/\s/g,'');
     const hdr = document.createElement('div');
-    hdr.style.cssText = `font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${kleur};margin:14px 0 6px;padding-left:2px;display:flex;align-items:center;gap:8px`;
-    hdr.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${kleur};flex-shrink:0"></span>${titel}`;
+    hdr.style.cssText = `font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${kleur};margin:14px 0 6px;padding-left:2px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:${inklapbaar?'pointer':'default'}`;
+    hdr.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${kleur};flex-shrink:0"></span>${titel} <span style="font-weight:400;opacity:.6">(${lijst.length})</span></div>${inklapbaar?'<svg id="chev-'+sectieId+'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="transform:rotate(180deg);transition:transform .2s"><path d="m6 9 6 6 6-6"/></svg>':''}`;
+    if (inklapbaar) {
+      hdr.onclick = () => {
+        const cont = document.getElementById(sectieId);
+        const chev = document.getElementById('chev-'+sectieId);
+        const open = cont.style.display !== 'none';
+        cont.style.display = open ? 'none' : 'block';
+        if (chev) chev.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+      };
+    }
     list.appendChild(hdr);
+    const cont = document.createElement('div');
+    cont.id = sectieId;
+    list.appendChild(cont);
     const groep = omgekeerd ? [...lijst].reverse() : lijst;
     groep.forEach(w => {
       const card = document.createElement('div');

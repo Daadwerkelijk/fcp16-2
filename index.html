@@ -347,7 +347,14 @@ async function onSupabaseReady() {
   // Laad wedstrijden uit Supabase voor statstrip en wedstrijd kaart
   const wedRes = await sbFetch('wedstrijden?order=iso_date.asc', 'GET');
   if (wedRes && !wedRes._error) {
-    localStorage.setItem('fcp_wed', JSON.stringify(wedRes));
+    // Supabase gebruikt iso_date, lokale state gebruikt isoDate — normaliseer
+    const genormaliseerd = wedRes.map(w => ({
+      ...w,
+      isoDate: w.isoDate || w.iso_date || '',
+      ratings: typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
+      afwezig: typeof w.afwezig === 'string' ? JSON.parse(w.afwezig || '[]') : (w.afwezig || []),
+    }));
+    localStorage.setItem('fcp_wed', JSON.stringify(genormaliseerd));
   }
   updateStats();
   renderStartCards();

@@ -344,6 +344,11 @@ async function onSupabaseReady() {
   if (data.principes) { principes = data.principes; localStorage.setItem('fcp_principes', JSON.stringify(principes)); }
   if (data.teamConfig) applyTeamConfig(data.teamConfig);
   renderPrincipes();
+  // Laad wedstrijden uit Supabase voor statstrip en wedstrijd kaart
+  const wedRes = await sbFetch('wedstrijden?order=iso_date.asc', 'GET');
+  if (wedRes && !wedRes._error) {
+    localStorage.setItem('fcp_wed', JSON.stringify(wedRes));
+  }
   updateStats();
   renderStartCards();
 }

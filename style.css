@@ -569,7 +569,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   #start-training-card, #start-wedstrijd-card { flex: 1; display: flex; flex-direction: column; }
   #start-training-card > a, #start-wedstrijd-card > a { flex: 1; }
 
-  /* Scroll-to-top hoger want geen bottom nav */
+  /* Geen bottom nav padding meer */
+  body { padding-bottom: 0 !important; }
+  .page-wrap { padding-bottom: 40px !important; }
   .scroll-top { bottom: 20px; right: 16px; }
   .toast { bottom: 20px; }
 
@@ -693,7 +695,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     color: #fff;
   }
 
-  body { padding-left: 200px; }
+  body { padding-left: 200px; padding-bottom: 0 !important; }
+  .page-wrap { padding-bottom: 40px !important; }
 
   .page-header { padding-left: 24px; padding-right: 24px; }
   .home-hero { padding-left: 24px; padding-right: 24px; }

@@ -357,6 +357,11 @@ renderStartCards();
 initScrollTop();
 initManifest();
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });
+
+// Herlaad stats bij terugkeer naar pagina (bijv. na wedstrijd toevoegen)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { updateStats(); renderStartCards(); }
+});
 </script>
 
 <script>

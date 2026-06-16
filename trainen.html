@@ -655,7 +655,7 @@ function renderPickOefList() {
   const formatieFilter = document.getElementById('pick-formatie')?.value || 'alle';
   let all = [...BUILTIN_OEF, ...customOef].filter(o => o.cat === cat);
   if (formatieFilter !== 'alle') {
-    all = all.filter(o => !o.formaties || o.formaties.length === 0 || o.formaties.includes(formatieFilter));
+    all = all.filter(o => o.formaties && o.formaties.includes(formatieFilter));
   }
   const cont = document.getElementById('pick-oef-list'); cont.innerHTML = '';
   if (!all.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Geen oefeningen. Maak er hieronder een aan.</div>'; return; }

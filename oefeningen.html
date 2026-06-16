@@ -186,7 +186,7 @@ function renderOef() {
   const all = [...BUILTIN_OEF, ...customOef];
   let filtered = activeFilter === 'alle' ? all : all.filter(o => o.cat === activeFilter);
   if (activeFormatieFilter !== 'alle') {
-    filtered = filtered.filter(o => !o.formaties || o.formaties.length === 0 || o.formaties.includes(activeFormatieFilter));
+    filtered = filtered.filter(o => o.formaties && o.formaties.includes(activeFormatieFilter));
   }
   document.getElementById('oef-count').textContent = filtered.length + ' oefeningen';
   const list = document.getElementById('oef-list'); list.innerHTML = '';

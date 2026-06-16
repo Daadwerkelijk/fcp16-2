@@ -1,6 +1,6 @@
 {
-  "name": "FCP 16-2 Trainingsapp",
-  "short_name": "FCP 16-2",
+  "name": "Voetbaltrainer-app",
+  "short_name": "Voetbaltrainer",
   "description": "Trainingsapp voor FCP 16-2 seizoen 2026/2027",
   "start_url": "/fcp16-2/",
   "scope": "/fcp16-2/",
@@ -9,7 +9,17 @@
   "theme_color": "#080c14",
   "orientation": "any",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }

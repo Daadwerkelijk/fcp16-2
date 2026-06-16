@@ -508,15 +508,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     background: var(--white);
   }
 
-  /* FCP logo boven de nav items */
-  .nav::before {
-    content: 'FCP';
-    display: flex; align-items: center; justify-content: center;
-    width: 40px; height: 40px; border-radius: 10px;
-    background: var(--topbar); color: #fff;
-    font-weight: 700; font-size: 11px; font-family: var(--font-ui);
-    margin: 0 auto 10px; flex: 0 0 auto;
-  }
+  /* FCP logo verborgen - icoon via nav-logo div */
+  .nav::before { display: none; }
 
   .nav-btn {
     flex: none;
@@ -664,13 +657,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     border-right: none;
   }
 
-  /* Logo groter */
-  .nav::before {
-    width: 44px; height: 44px;
-    font-size: 13px; border-radius: 11px;
-    background: rgba(255,255,255,.2);
-    margin: 0 auto 16px;
-  }
+  /* Logo via nav-logo div */
+  .nav::before { display: none; }
 
   /* Nav items: horizontaal met label */
   .nav-btn {

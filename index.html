@@ -341,7 +341,7 @@ function openPrModal(id) {
   document.getElementById('pr-desc').textContent     = p.beschrijving;
   document.getElementById('pr-voorbeeld').textContent = p.voorbeeld;
   const editBtn = document.getElementById('pr-edit-btn');
-  editBtn.style.cssText = 'background:#2B1FA0;color:#ffffff;border:none';
+  editBtn.style.cssText = 'background:var(--topbar);color:#fff;border:none;font-family:var(--font-ui);font-size:14px;font-weight:600;padding:11px 20px;border-radius:var(--rsm);cursor:pointer';
   document.getElementById('prModalOverlay').style.display = 'flex';
 }
 function closePrModal() { document.getElementById('prModalOverlay').style.display = 'none'; }

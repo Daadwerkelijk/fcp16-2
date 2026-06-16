@@ -157,7 +157,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 
 /* ─── BUTTONS ─── */
 .btn{width:100%;border-radius:var(--rsm);padding:13px;font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .15s;letter-spacing:-.1px}
-.btn-primary{background:var(--topbar);color:#fff}
+.btn-primary{background:var(--topbar);border:1px solid var(--topbar);color:#fff}
 .btn-primary:active{background:var(--topbar-dark);transform:scale(.98)}
 .btn-secondary{background:var(--white);color:var(--text2);border:1px solid var(--border);margin-bottom:8px}
 .btn-secondary:active{background:var(--bg);transform:scale(.98)}
@@ -171,7 +171,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .form-btn:active{opacity:.8;transform:scale(.97)}
 
 /* Save btn */
-.save-btn{flex:1;padding:10px;background:var(--topbar);border:none;border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
+.save-btn{flex:1;padding:10px;background:var(--topbar);border:1px solid var(--topbar);border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
 .save-btn:active{opacity:.8;transform:scale(.97)}
 
 /* Del btn */
@@ -179,7 +179,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .del-btn:active{background:var(--rood-l)}
 
 /* Session save btn */
-.session-save-btn{margin-top:6px;width:100%;padding:10px;background:var(--topbar);border:none;border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.session-save-btn{margin-top:6px;width:100%;padding:10px;background:var(--topbar);border:1px solid var(--topbar);border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
 .session-save-btn:active{opacity:.8;transform:scale(.97)}
 
 /* ─── FORMS ─── */
@@ -375,6 +375,43 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   padding: 3px 10px !important;
   border-radius: 100px !important;
 }
+
+
+/* Bench/wisselspeler avatar — thema-proof */
+.bench-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--bg); border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: var(--text);
+  flex-shrink: 0;
+}
+
+/* Opslaan/edit knoppen altijd border in accent kleur */
+.save-btn { border: 1px solid var(--topbar) !important; }
+.session-save-btn { border: 1px solid var(--topbar) !important; }
+.btn-primary { border: 1px solid var(--topbar); }
+
+/* Edit/bewerken knop standaard stijl */
+.edit-btn-std {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 16px; background: var(--white);
+  border: 1px solid var(--accent); border-radius: var(--rsm);
+  color: var(--accent); font-family: var(--font-ui);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .15s;
+}
+.edit-btn-std:active { background: var(--bg); }
+
+/* Video play knop */
+.video-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; background: var(--white);
+  border: 1px solid var(--accent); border-radius: var(--rsm);
+  color: var(--accent); font-family: var(--font-ui);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  text-decoration: none; transition: all .15s;
+}
+.video-btn:active { background: var(--bg); }
 
 /* ════════════════════════════════════════
    LANDSCAPE TELEFOON (≤767px + landscape)

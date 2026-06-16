@@ -210,10 +210,10 @@ function renderOef() {
         ${o.desc   ? `<div class="oef-section">Omschrijving</div><div class="oef-desc">${o.desc}</div>` : ''}
         ${o.stappen?.length ? `<div class="oef-section">Stappen</div><ul class="oef-steps">${o.stappen.filter(s=>s).map(s=>`<li>${s}</li>`).join('')}</ul>` : ''}
         ${o.tip    ? `<div class="oef-tip">💡 ${o.tip}</div>` : ''}
-        ${o.url    ? `<div style="margin-top:10px"><a href="${o.url}" target="_blank" rel="noopener" class="form-btn" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:11px">▶️ Bekijk video</a></div>`
+        ${o.url    ? `<div style="margin-top:10px"><a href="${o.url}" target="_blank" rel="noopener" class="video-btn" style="text-decoration:none">▶️ Bekijk video</a></div>`
                    : `<div style="margin-top:8px"><a href="https://www.youtube.com/results?search_query=voetbal+oefening+${encodeURIComponent(o.title)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--text3);text-decoration:none;border:1px solid var(--line2);padding:4px 10px;border-radius:var(--rsm);display:inline-block">🔍 Zoek op YouTube</a></div>`}
         ${isCustom ? `<div class="player-actions" style="margin-top:10px">
-          <button class="save-btn" onclick="openOefModal('${o.id}')">✏️ Bewerken</button>
+          <button class="edit-btn-std" onclick="openOefModal('${o.id}')">✏️ Bewerken</button>
           <button class="del-btn" onclick="deleteOef('${o.id}')">Verwijder</button>
         </div>` : ''}
       </div>`;

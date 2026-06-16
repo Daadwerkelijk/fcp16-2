@@ -411,8 +411,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     background: rgba(255,255,255,.18);
     color: #fff;
   }
-
-  /* Donker thema: expliciete witte kleur voor active */
   .nav-btn.active .nav-icon { color: #fff; }
   .nav-dot { display: none; }
 
@@ -523,11 +521,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   .nav-btn span:last-child { font-size: 7px; }
 
   .nav-btn.active {
-    background: rgba(43,31,160,.1);
-    color: var(--topbar);
+    background: rgba(var(--accent-rgb,43,31,160),.12);
+    color: var(--accent);
   }
-
-  /* Donker thema: andere active kleur */
   .nav-dot { display: none; }
 
   /* Alle pagina's: ruimte voor sidebar */
@@ -697,3 +693,92 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   .oef-list { padding-left: 24px; padding-right: 24px; }
 
 }
+
+/* ════════════════════════════════════════
+   DONKER + FCP THEMA OVERRIDES
+   Corrigeert hardcoded kleuren die niet
+   meegaan met het donkere thema
+════════════════════════════════════════ */
+
+/* Detectie via CSS: als --bg donker is, past alles zich aan */
+/* app.js zet --bg op #080c14 (donker) of #111111 (fcp) */
+
+/* Nav active state: licht in donker thema */
+@media (orientation: landscape) and (max-width: 767px) {
+  .nav-btn.active {
+    background: rgba(255,255,255,.15) !important;
+    color: #fff !important;
+  }
+}
+
+/* Tablet/desktop nav active: gebruik accent kleur achtergrond */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .nav-btn.active {
+    background: rgba(var(--accent-rgb, 43,31,160), .12);
+    color: var(--accent);
+  }
+}
+
+/* Kernprincipes modal: altijd thema-kleuren */
+.pr-modal {
+  background: var(--white) !important;
+  color: var(--text) !important;
+}
+.pr-modal .pr-title { color: var(--accent) !important; }
+.pr-modal .pr-desc,
+.pr-modal .pr-ex { color: var(--text2) !important; }
+.pr-modal .pr-label { color: var(--text3) !important; }
+.pr-modal .pr-sep { border-color: var(--border) !important; }
+
+/* Dashboard subtabs: duidelijke selected state */
+.dtab-active,
+[id^="dtab-"].active-tab {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+/* Kaart achtergronden: gebruik altijd var(--white) */
+.card, .week-item, .wed-card, .pcard, .oef-card {
+  background: var(--white) !important;
+  border-color: var(--border) !important;
+}
+
+/* Tekst in kaarten altijd leesbaar */
+.card *, .week-item *, .wed-card *, .pcard * {
+  /* Niet overschrijven want dit breekt icoon kleuren */
+}
+
+/* Page header tekst altijd wit (op topbar achtergrond) */
+.page-header .page-title,
+.page-header .page-subtitle,
+.home-hero .page-title,
+.home-hero .page-subtitle {
+  color: #fff !important;
+}
+
+/* Pos-tag/badge leesbaarheid in donker thema */
+.pos-tag { 
+  background: rgba(255,255,255,.15) !important;
+  color: #fff !important;
+}
+
+/* Week header text in donker thema */
+.week-nr { color: var(--text3) !important; }
+.week-focus { color: var(--text) !important; }
+
+/* Session blok tags altijd leesbaar */
+.blok-tag { color: #fff !important; }
+
+/* Wedstrijd score groot */
+.wed-score-big { color: var(--text) !important; }
+
+/* Wisselspelers naam */
+.bench-naam { color: var(--text) !important; }
+
+/* Stat strip tekst */
+.home-stat-num { color: var(--text) !important; }
+.home-stat-label { color: var(--text3) !important; }
+
+/* Kernprincipes kaarten op startpagina */
+.pr-card-num { color: var(--accent) !important; }
+.pr-card-naam { color: var(--text) !important; }

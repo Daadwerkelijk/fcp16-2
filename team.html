@@ -322,8 +322,8 @@ function dashTab(tab) {
     if (!panel || !btn) return;
     const actief = t === tab;
     panel.style.display = actief ? 'block' : 'none';
-    btn.style.borderColor = actief ? 'var(--topbar)' : 'var(--border)';
-    btn.querySelector('div:nth-child(2)').style.color = actief ? 'var(--topbar)' : 'var(--text)';
+    btn.style.borderColor = actief ? 'var(--accent)' : 'var(--border)';
+    btn.querySelector('div:nth-child(2)').style.color = actief ? 'var(--accent)' : 'var(--text)';
   });
   if (tab === 'ranking') renderRankingPanel();
 }

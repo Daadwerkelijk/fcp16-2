@@ -56,10 +56,19 @@
       </div>
     </div>
   </div>
-  <!-- Dropdown buiten header voor gelijke headerhoogte -->
-  <div style="padding:10px 16px 2px;background:var(--bg)">
+  <!-- Dropdowns voor categorie + formatie filter -->
+  <div style="padding:10px 16px 2px;background:var(--bg);display:flex;gap:8px">
     <select id="cat-dropdown" onchange="setActiveFilter(this.value)"
-      style="width:100%;padding:10px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:14px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;box-shadow:var(--card-shadow)">
+      style="flex:1;padding:10px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:14px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;box-shadow:var(--card-shadow)">
+    </select>
+    <select id="formatie-filter" onchange="setFormatieFilter(this.value)"
+      style="flex:1;padding:10px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:14px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;box-shadow:var(--card-shadow)">
+      <option value="alle">Alle formaties</option>
+      <option value="4222">4-2-2-2</option>
+      <option value="14231">4-2-3-1</option>
+      <option value="13421">3-4-2-1</option>
+      <option value="442v">4-4-2 vlak</option>
+      <option value="442r">4-4-2 ruit</option>
     </select>
   </div>
   <div class="oef-toolbar">
@@ -85,6 +94,14 @@
     <input class="bmodal-input" id="oef-f-tip" placeholder="Bijv: Altijd doorlopen na de pas">
     <div class="bmodal-label">URL / YouTube</div>
     <input class="bmodal-input" id="oef-f-url" placeholder="https://..." type="url">
+    <div class="bmodal-label">Formaties (leeg = voor alle formaties)</div>
+    <div id="oef-f-formaties" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg)"><input type="checkbox" value="4222" style="accent-color:var(--accent)"> 4-2-2-2</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg)"><input type="checkbox" value="14231" style="accent-color:var(--accent)"> 4-2-3-1</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg)"><input type="checkbox" value="13421" style="accent-color:var(--accent)"> 3-4-2-1</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg)"><input type="checkbox" value="442v" style="accent-color:var(--accent)"> 4-4-2 vlak</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg)"><input type="checkbox" value="442r" style="accent-color:var(--accent)"> 4-4-2 ruit</label>
+    </div>
     <div class="bmodal-label">Stappen</div>
     <div class="bmodal-stappen" id="oef-f-stappen"></div>
     <button class="bmodal-add-stap" onclick="addStap()">+ Stap toevoegen</button>
@@ -130,7 +147,13 @@ const state = loadState();
 let customOef  = state.customOef;
 let categories = state.categories;
 let activeFilter = 'alle';
+let activeFormatieFilter = 'alle';
 let editingOefId = null;
+
+function setFormatieFilter(val) {
+  activeFormatieFilter = val;
+  renderOef();
+}
 
 function getCatStyle(cat) {
   return CAT_BG[cat] || { bg:'#181818', c:'#888' };
@@ -154,7 +177,10 @@ function renderCatFilters() {
 
 function renderOef() {
   const all = [...BUILTIN_OEF, ...customOef];
-  const filtered = activeFilter === 'alle' ? all : all.filter(o => o.cat === activeFilter);
+  let filtered = activeFilter === 'alle' ? all : all.filter(o => o.cat === activeFilter);
+  if (activeFormatieFilter !== 'alle') {
+    filtered = filtered.filter(o => !o.formaties || o.formaties.length === 0 || o.formaties.includes(activeFormatieFilter));
+  }
   document.getElementById('oef-count').textContent = filtered.length + ' oefeningen';
   const list = document.getElementById('oef-list'); list.innerHTML = '';
   filtered.forEach(o => {
@@ -168,7 +194,7 @@ function renderOef() {
         <div class="oef-dot" style="background:${col.c}"></div>
         <div class="oef-meta">
           <div class="oef-title">${o.title}</div>
-          <div class="oef-sub">${o.cat}${o.spelers ? ' · ' + o.spelers + ' spelers' : ''}${o.duur ? ' · ' + o.duur : ''}</div>
+          <div class="oef-sub">${o.cat}${o.spelers ? ' · ' + o.spelers + ' spelers' : ''}${o.duur ? ' · ' + o.duur : ''}${o.formaties?.length ? ' · ' + o.formaties.map(f => ({'4222':'4-2-2-2','14231':'4-2-3-1','13421':'3-4-2-1','442v':'4-4-2 vlak','442r':'4-4-2 ruit'})[f]||f).join(', ') : ''}</div>
           ${tagsHtml ? `<div class="oef-tags">${tagsHtml}</div>` : ''}
         </div>
         <span class="oef-chev">▾</span>
@@ -202,6 +228,11 @@ function openOefModal(id, defaultCat) {
   categories.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; if (c === useCat) opt.selected = true; sel.appendChild(opt); });
   const sc = document.getElementById('oef-f-stappen'); sc.innerHTML = '';
   (o?.stappen?.length ? o.stappen : ['', '']).forEach(s => addStapWith(s));
+  // Formaties laden
+  const oefFormaties = o?.formaties || [];
+  document.querySelectorAll('#oef-f-formaties input[type=checkbox]').forEach(cb => {
+    cb.checked = oefFormaties.includes(cb.value);
+  });
   document.getElementById('bmodalOef').classList.add('open');
 }
 
@@ -215,12 +246,13 @@ function addStapWith(val)   {
 
 // Zet lokaal oef-object om naar alleen de kolommen die in Supabase bestaan
 function toSbOef(o) {
-  return { id:o.id, cat:o.cat, title:o.title, duur:o.duur||'', spelers:o.spelers||'', beschrijving:o.desc||o.beschrijving||'', stappen:o.stappen||[], tip:o.tip||'', url:o.url||'' };
+  return { id:o.id, cat:o.cat, title:o.title, duur:o.duur||'', spelers:o.spelers||'', beschrijving:o.desc||o.beschrijving||'', stappen:o.stappen||[], tip:o.tip||'', url:o.url||'', formaties:o.formaties||[] };
 }
 
 async function saveOef() {
   const title = document.getElementById('oef-f-title').value.trim(); if (!title) { showToast('Vul een naam in'); return; }
   const stappen = [...document.querySelectorAll('#oef-f-stappen .bmodal-stap-input')].map(i => i.value.trim()).filter(Boolean);
+  const formaties = [...document.querySelectorAll('#oef-f-formaties input[type=checkbox]:checked')].map(cb => cb.value);
   const oef = {
     id:           editingOefId || genId(),
     title,
@@ -231,7 +263,7 @@ async function saveOef() {
     tip:          document.getElementById('oef-f-tip').value.trim(),
     url:          document.getElementById('oef-f-url').value.trim(),
     duur:         '',
-    stappen,      pr: [],
+    stappen,      pr: [], formaties,
   };
   if (editingOefId) {
     const idx = customOef.findIndex(x => x.id === editingOefId);

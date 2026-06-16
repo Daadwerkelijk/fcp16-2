@@ -86,6 +86,9 @@
     <input class="bmodal-input" id="oef-f-title" placeholder="Naam oefening">
     <div class="bmodal-label">Categorie</div>
     <select class="bmodal-select" id="oef-f-cat"></select>
+    <div class="bmodal-label">Formaties <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--text3)">(leeg = voor alle formaties)</span></div>
+    <select class="bmodal-select" id="oef-f-formaties-select" multiple size="4" style="height:auto;min-height:80px;padding:4px" onchange="updateFormatieChips()"></select>
+    <div id="oef-f-formatie-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;min-height:0"></div>
     <div class="bmodal-label">Aantal spelers</div>
     <input class="bmodal-input" id="oef-f-spelers" placeholder="Bijv: 8–12">
     <div class="bmodal-label">Omschrijving</div>
@@ -94,14 +97,6 @@
     <input class="bmodal-input" id="oef-f-tip" placeholder="Bijv: Altijd doorlopen na de pas">
     <div class="bmodal-label">URL / YouTube</div>
     <input class="bmodal-input" id="oef-f-url" placeholder="https://..." type="url">
-    <div class="bmodal-label">Formaties (leeg = voor alle formaties)</div>
-    <div id="oef-f-formaties" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg)"><input type="checkbox" value="4222" style="accent-color:var(--accent)"> 4-2-2-2</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg)"><input type="checkbox" value="14231" style="accent-color:var(--accent)"> 4-2-3-1</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg)"><input type="checkbox" value="13421" style="accent-color:var(--accent)"> 3-4-2-1</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg)"><input type="checkbox" value="442v" style="accent-color:var(--accent)"> 4-4-2 vlak</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg)"><input type="checkbox" value="442r" style="accent-color:var(--accent)"> 4-4-2 ruit</label>
-    </div>
     <div class="bmodal-label">Stappen</div>
     <div class="bmodal-stappen" id="oef-f-stappen"></div>
     <button class="bmodal-add-stap" onclick="addStap()">+ Stap toevoegen</button>
@@ -171,7 +166,19 @@ function renderCatFilters() {
     dd.innerHTML = '<option value="alle">Alle categorieën</option>' +
       categories.map(c => `<option value="${c}" ${activeFilter===c?'selected':''}>${c}</option>`).join('');
     dd.value = activeFilter;
-    // Topbar is altijd donker dus witte tekst werkt altijd
+  }
+  // Formatie filter ook dynamisch vullen
+  const fd = document.getElementById('formatie-filter');
+  if (fd) {
+    const huidig = fd.value;
+    fd.innerHTML = '<option value="alle">Alle formaties</option>';
+    const alleF = typeof loadFormaties === 'function' ? loadFormaties() : {};
+    Object.entries(alleF).forEach(([key,f]) => {
+      const opt = document.createElement('option');
+      opt.value = key; opt.textContent = f.label || key;
+      if (key === huidig) opt.selected = true;
+      fd.appendChild(opt);
+    });
   }
 }
 
@@ -226,14 +233,29 @@ function openOefModal(id, defaultCat) {
   const sel = document.getElementById('oef-f-cat'); sel.innerHTML = '';
   const useCat = o?.cat || defaultCat || categories[0] || '';
   categories.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; if (c === useCat) opt.selected = true; sel.appendChild(opt); });
+  // Formaties multi-select vullen vanuit loadFormaties()
+  const fsel = document.getElementById('oef-f-formaties-select'); fsel.innerHTML = '';
+  const alleFormaties = typeof loadFormaties === 'function' ? loadFormaties() : {'4222':{label:'4-2-2-2'},'14231':{label:'4-2-3-1'},'13421':{label:'3-4-2-1'},'442v':{label:'4-4-2 vlak'},'442r':{label:'4-4-2 ruit'}};
+  const oefFormaties = o?.formaties || [];
+  Object.entries(alleFormaties).forEach(([key,f]) => {
+    const opt = document.createElement('option');
+    opt.value = key; opt.textContent = f.label || key;
+    opt.selected = oefFormaties.includes(key);
+    fsel.appendChild(opt);
+  });
+  fsel.size = Math.min(Object.keys(alleFormaties).length, 6);
+  updateFormatieChips();
   const sc = document.getElementById('oef-f-stappen'); sc.innerHTML = '';
   (o?.stappen?.length ? o.stappen : ['', '']).forEach(s => addStapWith(s));
-  // Formaties laden
-  const oefFormaties = o?.formaties || [];
-  document.querySelectorAll('#oef-f-formaties input[type=checkbox]').forEach(cb => {
-    cb.checked = oefFormaties.includes(cb.value);
-  });
   document.getElementById('bmodalOef').classList.add('open');
+}
+
+function updateFormatieChips() {
+  const sel = document.getElementById('oef-f-formaties-select');
+  const chips = document.getElementById('oef-f-formatie-chips');
+  if (!sel || !chips) return;
+  const gekozen = [...sel.selectedOptions].map(o => o.textContent);
+  chips.innerHTML = gekozen.map(n => `<span style="font-size:11px;padding:3px 9px;border-radius:100px;background:var(--accent);color:#fff;font-weight:600">${n}</span>`).join('');
 }
 
 function addStap()          { addStapWith(''); }
@@ -252,7 +274,7 @@ function toSbOef(o) {
 async function saveOef() {
   const title = document.getElementById('oef-f-title').value.trim(); if (!title) { showToast('Vul een naam in'); return; }
   const stappen = [...document.querySelectorAll('#oef-f-stappen .bmodal-stap-input')].map(i => i.value.trim()).filter(Boolean);
-  const formaties = [...document.querySelectorAll('#oef-f-formaties input[type=checkbox]:checked')].map(cb => cb.value);
+  const formaties = [...document.getElementById('oef-f-formaties-select').selectedOptions].map(o => o.value);
   const oef = {
     id:           editingOefId || genId(),
     title,

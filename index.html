@@ -114,13 +114,13 @@
 
 <!-- Principe modal -->
 <div id="prModalOverlay" onclick="if(event.target===this)closePrModal()" style="display:none;position:fixed;inset:0;background:rgba(18,17,58,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center">
-  <div class="pr-modal" id="prModal" style="background:var(--white);color:var(--text)">
-    <div id="pr-code" style="font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:var(--text);font-family:'DM Sans',sans-serif"></div>
-    <div id="pr-naam" style="font-size:16px;font-weight:600;color:var(--accent);padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--border);font-family:'DM Sans',sans-serif"></div>
+  <div class="pr-modal" id="prModal">
+    <div id="pr-code" class="pr-modal-code"></div>
+    <div id="pr-naam" class="pr-modal-naam"></div>
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:'DM Sans',sans-serif">Beschrijving</div>
-    <div id="pr-desc" style="font-size:14px;line-height:1.7;color:var(--text2);margin-bottom:4px;font-family:'DM Sans',sans-serif"></div>
+    <div id="pr-desc" class="pr-modal-text" style="margin-bottom:4px"></div>
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 5px;font-family:'DM Sans',sans-serif">Voorbeeld in het spel</div>
-    <div id="pr-voorbeeld" style="font-size:14px;line-height:1.7;color:var(--text2);font-family:'DM Sans',sans-serif"></div>
+    <div id="pr-voorbeeld" class="pr-modal-text"></div>
     <div style="display:flex;gap:8px;margin-top:20px">
       <button id="pr-edit-btn" onclick="openPrEdit()" class="btn-secondary" style="display:flex;align-items:center;gap:6px;padding:10px 16px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);font-size:14px;font-weight:600;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -341,7 +341,7 @@ function openPrModal(id) {
   document.getElementById('pr-desc').textContent     = p.beschrijving;
   document.getElementById('pr-voorbeeld').textContent = p.voorbeeld;
   const editBtn = document.getElementById('pr-edit-btn');
-  editBtn.style.cssText = 'background:var(--topbar);color:#fff;border:none;font-family:var(--font-ui);font-size:14px;font-weight:600;padding:11px 20px;border-radius:var(--rsm);cursor:pointer';
+  editBtn.textContent = '✏️ Bewerken';
   document.getElementById('prModalOverlay').style.display = 'flex';
 }
 function closePrModal() { document.getElementById('prModalOverlay').style.display = 'none'; }

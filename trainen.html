@@ -108,6 +108,11 @@
     <div class="bmodal-label">Formatie</div>
     <select class="bmodal-select" id="pick-formatie" onchange="renderPickOefList()">
       <option value="alle">Alle formaties</option>
+      <option value="4222">4-2-2-2</option>
+      <option value="14231">4-2-3-1</option>
+      <option value="13421">3-4-2-1</option>
+      <option value="442v">4-4-2 vlak</option>
+      <option value="442r">4-4-2 ruit</option>
     </select>
     <div id="pick-oef-list" style="display:flex;flex-direction:column;gap:5px;margin:10px 0;max-height:40dvh;overflow-y:auto"></div>
     <button class="bmodal-add-stap" onclick="openNieuweOef()">+ Nieuwe oefening aanmaken</button>
@@ -629,17 +634,6 @@ function openPickOef(ti) {
   activePickTi = ti;
   const sel = document.getElementById('pick-cat'); sel.innerHTML = '';
   categories.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
-  // Formatie filter dynamisch vullen
-  const fsel = document.getElementById('pick-formatie');
-  if (fsel) {
-    fsel.innerHTML = '<option value="alle">Alle formaties</option>';
-    const alleF = typeof loadFormaties === 'function' ? loadFormaties() : {};
-    Object.entries(alleF).forEach(([key,f]) => {
-      const opt = document.createElement('option'); opt.value = key; opt.textContent = f.label || key; fsel.appendChild(opt);
-    });
-    // Zet standaard op alle formaties
-    fsel.value = 'alle';
-  }
   pickOefCallback = oef => {
     weekBlokken[activePickTi].push({ cat:oef.cat, oefNaam:oef.title, tip:oef.tip||'', url:oef.url||'' });
     renderWeekBlokken(activePickTi);
@@ -654,7 +648,7 @@ function renderPickOefList() {
   const formatieFilter = document.getElementById('pick-formatie')?.value || 'alle';
   let all = [...BUILTIN_OEF, ...customOef].filter(o => o.cat === cat);
   if (formatieFilter !== 'alle') {
-    all = all.filter(o => o.formaties && o.formaties.includes(formatieFilter));
+    all = all.filter(o => !o.formaties || o.formaties.length === 0 || o.formaties.includes(formatieFilter));
   }
   const cont = document.getElementById('pick-oef-list'); cont.innerHTML = '';
   if (!all.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Geen oefeningen. Maak er hieronder een aan.</div>'; return; }

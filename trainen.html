@@ -637,9 +637,8 @@ function openPickOef(ti) {
     Object.entries(alleF).forEach(([key,f]) => {
       const opt = document.createElement('option'); opt.value = key; opt.textContent = f.label || key; fsel.appendChild(opt);
     });
-    // Zet op actieve formatie van de app
-    const actief = localStorage.getItem('fcp_formatie');
-    if (actief && fsel.querySelector(`option[value="${actief}"]`)) fsel.value = actief;
+    // Zet standaard op alle formaties
+    fsel.value = 'alle';
   }
   pickOefCallback = oef => {
     weekBlokken[activePickTi].push({ cat:oef.cat, oefNaam:oef.title, tip:oef.tip||'', url:oef.url||'' });

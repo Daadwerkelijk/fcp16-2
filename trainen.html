@@ -237,33 +237,42 @@ function isHuidigeWeek(w) {
   return nuDag >= startDag && nuDag <= startDag + 6;
 }
 
-
-function sessieDatum(weekIsoDate, dagNaam) {
-  if (!weekIsoDate) return '';
-  const DAGEN = { maandag:0, dinsdag:1, woensdag:2, donderdag:3, vrijdag:4, zaterdag:5, zondag:6 };
-  const dag = (dagNaam || '').toLowerCase().trim();
-  const offset = Object.entries(DAGEN).find(([d]) => dag.startsWith(d));
-  if (!offset) return '';
-  // weekIsoDate is de ISO datum van die week (maandag)
-  const base = new Date(weekIsoDate);
-  // Zorg dat base op maandag staat
-  const dow = base.getDay(); // 0=zo, 1=ma
-  const toMa = dow === 0 ? -6 : 1 - dow;
-  base.setDate(base.getDate() + toMa);
-  // Tel dag offset op
-  base.setDate(base.getDate() + offset[1]);
-  const MAANDEN = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-  return base.getDate() + ' ' + MAANDEN[base.getMonth()];
-}
-
 function buildWeekHtml(w, type, wi) {
   const wid = type === 'custom' ? 'cw' + wi : 'w' + w.week;
   const isoDate = type === 'schema' ? SCHEMA_DATES[w.week] : null;
   const weekNr  = type === 'schema' ? SCHEMA_WEEKNR[w.week] : null;
   const datumStr = isoDate ? formatDatumShort(isoDate) : (w.datum || '');
   const huidig  = isHuidigeWeek(w);
+  let weekDatumRange = '';
+  if (type === 'custom' && w.isoDate && w.sessies && w.sessies.length) {
+    const MAANDEN = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+    const DAGMAP = { maandag:0,dinsdag:1,woensdag:2,donderdag:3,vrijdag:4,zaterdag:5,zondag:6 };
+    const base = new Date(w.isoDate);
+    // Zet base op maandag
+    const dow = base.getDay();
+    const toMa = dow === 0 ? -6 : 1 - dow;
+    base.setDate(base.getDate() + toMa);
+    // Verzamel datums van alle sessies
+    const datums = w.sessies.map(sess => {
+      const dag = (sess.dag||'').toLowerCase().trim();
+      const entry = Object.entries(DAGMAP).find(([d]) => dag.startsWith(d));
+      if (!entry) return null;
+      const d = new Date(base); d.setDate(d.getDate() + entry[1]);
+      return d;
+    }).filter(Boolean).sort((a,b) => a-b);
+    if (datums.length >= 2) {
+      const d1 = datums[0], d2 = datums[datums.length-1];
+      if (d1.getMonth() === d2.getMonth()) {
+        weekDatumRange = d1.getDate() + ' en ' + d2.getDate() + ' ' + MAANDEN[d1.getMonth()];
+      } else {
+        weekDatumRange = d1.getDate() + ' ' + MAANDEN[d1.getMonth()] + ' en ' + d2.getDate() + ' ' + MAANDEN[d2.getMonth()];
+      }
+    } else if (datums.length === 1) {
+      weekDatumRange = datums[0].getDate() + ' ' + MAANDEN[datums[0].getMonth()];
+    }
+  }
   const weekLabel = type === 'custom'
-    ? `<span style="font-size:11px;font-weight:700;color:${huidig?'var(--accent)':'var(--text3)'};">${w.weekNr || 'Eigen week'}</span>`
+    ? `<span style="font-size:11px;font-weight:700;color:${huidig?'var(--accent)':'var(--text3)'};">${w.weekNr || 'Eigen week'}</span>${weekDatumRange ? '<span style="font-size:11px;font-weight:400;color:var(--text3);margin-left:6px">'+weekDatumRange+'</span>' : ''}`
     : `Week ${weekNr} · ${datumStr}`;
   const btnS = 'font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text3);cursor:pointer;line-height:1.4;vertical-align:middle';
   const btnR = 'font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--red);cursor:pointer;line-height:1.4;font-weight:600';
@@ -288,7 +297,7 @@ function buildWeekHtml(w, type, wi) {
     const prs = (sess.pr || []).map(p => { const t = PR_TAGS[p]; return t ? `<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:4px;background:${t.bg};color:${t.c}">${p}</span>` : ''; }).join('');
     const sessNr = si + 1;
     const nkData    = aanwezigheid[nk] || {};
-    const nkAfwezig = players.filter(p => { const e=nkData[p.id]; return e===false||(e&&e.afwezig===true); }).length;
+    const nkAfwezig = players.filter(p => { const e=nkData[p.id]; return e===false||(e&&(e.afwezig===true||e.reden)); }).length;
     const nkAanwezig = players.length - nkAfwezig;
     const tellerTxt  = players.length ? `<span style="font-size:11px;font-weight:600;color:${nkAfwezig>0?'var(--red)':'var(--text3)'}">${nkAanwezig}/${players.length}</span>` : '';
     html += `<div class="session-item" id="${sid}">
@@ -296,7 +305,7 @@ function buildWeekHtml(w, type, wi) {
         <div>
           <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:2px">Training ${sessNr}</div>
           <div style="display:flex;align-items:center;gap:8px">
-            <div class="session-day">${sess.dag}${(type==='custom'&&w.isoDate) ? '<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:6px">'+sessieDatum(w.isoDate,sess.dag)+'</span>' : ''}</div>
+            <div class="session-day">${sess.dag}</div>
             ${tellerTxt}
           </div>
           <div class="session-prs">${prs}</div>

@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2B1FA0">
-<title>Trainen — Voetbaltrainer-app</title>
+<title>Trainen — FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -105,15 +105,6 @@
     <div class="bmodal-title">Oefening kiezen</div>
     <div class="bmodal-label">Categorie</div>
     <select class="bmodal-select" id="pick-cat" onchange="renderPickOefList()"></select>
-    <div class="bmodal-label">Formatie</div>
-    <select class="bmodal-select" id="pick-formatie" onchange="renderPickOefList()">
-      <option value="alle">Alle formaties</option>
-      <option value="4222">4-2-2-2</option>
-      <option value="14231">4-2-3-1</option>
-      <option value="13421">3-4-2-1</option>
-      <option value="442v">4-4-2 vlak</option>
-      <option value="442r">4-4-2 ruit</option>
-    </select>
     <div id="pick-oef-list" style="display:flex;flex-direction:column;gap:5px;margin:10px 0;max-height:40dvh;overflow-y:auto"></div>
     <button class="bmodal-add-stap" onclick="openNieuweOef()">+ Nieuwe oefening aanmaken</button>
     <div class="bmodal-actions">
@@ -246,6 +237,25 @@ function isHuidigeWeek(w) {
   return nuDag >= startDag && nuDag <= startDag + 6;
 }
 
+
+function sessieDatum(weekIsoDate, dagNaam) {
+  if (!weekIsoDate) return '';
+  const DAGEN = { maandag:0, dinsdag:1, woensdag:2, donderdag:3, vrijdag:4, zaterdag:5, zondag:6 };
+  const dag = (dagNaam || '').toLowerCase().trim();
+  const offset = Object.entries(DAGEN).find(([d]) => dag.startsWith(d));
+  if (!offset) return '';
+  // weekIsoDate is de ISO datum van die week (maandag)
+  const base = new Date(weekIsoDate);
+  // Zorg dat base op maandag staat
+  const dow = base.getDay(); // 0=zo, 1=ma
+  const toMa = dow === 0 ? -6 : 1 - dow;
+  base.setDate(base.getDate() + toMa);
+  // Tel dag offset op
+  base.setDate(base.getDate() + offset[1]);
+  const MAANDEN = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  return base.getDate() + ' ' + MAANDEN[base.getMonth()];
+}
+
 function buildWeekHtml(w, type, wi) {
   const wid = type === 'custom' ? 'cw' + wi : 'w' + w.week;
   const isoDate = type === 'schema' ? SCHEMA_DATES[w.week] : null;
@@ -286,7 +296,7 @@ function buildWeekHtml(w, type, wi) {
         <div>
           <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:2px">Training ${sessNr}</div>
           <div style="display:flex;align-items:center;gap:8px">
-            <div class="session-day">${sess.dag}</div>
+            <div class="session-day">${sess.dag}${(type==='custom'&&w.isoDate) ? '<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:6px">'+sessieDatum(w.isoDate,sess.dag)+'</span>' : ''}</div>
             ${tellerTxt}
           </div>
           <div class="session-prs">${prs}</div>
@@ -645,11 +655,7 @@ function openPickOef(ti) {
 
 function renderPickOefList() {
   const cat = document.getElementById('pick-cat').value;
-  const formatieFilter = document.getElementById('pick-formatie')?.value || 'alle';
-  let all = [...BUILTIN_OEF, ...customOef].filter(o => o.cat === cat);
-  if (formatieFilter !== 'alle') {
-    all = all.filter(o => !o.formaties || o.formaties.length === 0 || o.formaties.includes(formatieFilter));
-  }
+  const all = [...BUILTIN_OEF, ...customOef].filter(o => o.cat === cat);
   const cont = document.getElementById('pick-oef-list'); cont.innerHTML = '';
   if (!all.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Geen oefeningen. Maak er hieronder een aan.</div>'; return; }
   all.forEach(o => {

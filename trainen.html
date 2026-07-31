@@ -297,9 +297,9 @@ function buildWeekHtml(w, type, wi) {
     const prs = (sess.pr || []).map(p => { const t = PR_TAGS[p]; return t ? `<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:4px;background:${t.bg};color:${t.c}">${p}</span>` : ''; }).join('');
     const sessNr = si + 1;
     const nkData    = aanwezigheid[nk] || {};
-    const nkAfwezig = players.filter(p => { const e=nkData[p.id]; return e===false||(e&&(e.afwezig===true||e.reden)); }).length;
+    const nkAfwezig = players.filter(p => { const e=nkData[p.id]; return e===false||(e&&e.afwezig===true); }).length;
     const nkAanwezig = players.length - nkAfwezig;
-    const tellerTxt  = players.length ? `<span style="font-size:11px;font-weight:600;color:${nkAfwezig>0?'var(--red)':'var(--text3)'}">${nkAanwezig}/${players.length}</span>` : '';
+    const tellerTxt  = players.length ? `<span id="teller-${nk}" style="font-size:11px;font-weight:600;color:${nkAfwezig>0?'var(--red)':'var(--text3)'}">${nkAanwezig}/${players.length}</span>` : '';
     html += `<div class="session-item" id="${sid}">
       <div class="session-hdr" onclick="toggleSession('${sid}')">
         <div>
@@ -452,6 +452,15 @@ async function saveAanwezigheid(nk) {
       if (res && res._error) succes = false;
     }
     if (!succes) showToast('⚠️ Niet alle data opgeslagen in Supabase');
+  }
+  // Update teller na vakantie verwerking
+  const tellerEl = document.getElementById('teller-' + nk);
+  if (tellerEl && players.length) {
+    const nkDataNu = aanwezigheid[nk] || {};
+    const afwNu = players.filter(p => { const e=nkDataNu[p.id]; return e===false||(e&&e.afwezig===true); }).length;
+    const aanwNu = players.length - afwNu;
+    tellerEl.textContent = aanwNu + '/' + players.length;
+    tellerEl.style.color = afwNu > 0 ? 'var(--red)' : 'var(--text3)';
   }
   const nkData2 = aanwezigheid[nk] || {};
   const afw = players.filter(p => nkData2[p.id]?.afwezig === true).map(p => p.naam);

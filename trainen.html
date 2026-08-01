@@ -226,6 +226,8 @@ function buildSchema() {
   container.appendChild(sec);
 
   customWeken.forEach((w, wi) => w.sessies.forEach((_, si) => renderAanw('cw' + wi + '_' + si)));
+  // Vakantiecheck direct bij laden zodat teller meteen klopt
+  customWeken.forEach((w, wi) => w.sessies.forEach((_, si) => checkVakantiesEnZetAfwezig('cw' + wi + '_' + si)));
 }
 
 function isHuidigeWeek(w) {

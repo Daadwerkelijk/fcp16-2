@@ -453,15 +453,6 @@ async function saveAanwezigheid(nk) {
     }
     if (!succes) showToast('⚠️ Niet alle data opgeslagen in Supabase');
   }
-  // Update teller na vakantie verwerking
-  const tellerEl = document.getElementById('teller-' + nk);
-  if (tellerEl && players.length) {
-    const nkDataNu = aanwezigheid[nk] || {};
-    const afwNu = players.filter(p => { const e=nkDataNu[p.id]; return e===false||(e&&e.afwezig===true); }).length;
-    const aanwNu = players.length - afwNu;
-    tellerEl.textContent = aanwNu + '/' + players.length;
-    tellerEl.style.color = afwNu > 0 ? 'var(--red)' : 'var(--text3)';
-  }
   const nkData2 = aanwezigheid[nk] || {};
   const afw = players.filter(p => nkData2[p.id]?.afwezig === true).map(p => p.naam);
   showToast(afw.length ? 'Afwezig opgeslagen ✓' : 'Iedereen aanwezig ✓');
@@ -525,6 +516,13 @@ async function checkVakantiesEnZetAfwezig(nk) {
   if (gewijzigd) {
     localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
     renderAanw(nk);
+    const tellerEl = document.getElementById('teller-' + nk);
+    if (tellerEl && players.length) {
+      const nkDataNu = aanwezigheid[nk] || {};
+      const afwNu = players.filter(p => { const e=nkDataNu[p.id]; return e===false||(e&&e.afwezig===true); }).length;
+      tellerEl.textContent = (players.length - afwNu) + '/' + players.length;
+      tellerEl.style.color = afwNu > 0 ? 'var(--red)' : 'var(--text3)';
+    }
   }
 }
 

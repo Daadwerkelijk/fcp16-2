@@ -208,6 +208,7 @@
 <script>
 let wedstrijden = loadState().wedstrijden;
 let players     = loadState().players;
+let absRedenen  = loadState().absRedenen || ['Ziek','Geblesseerd','Leren','Feest','Vakantie','Anders','Onbekend'];
 let thuisUit    = 'thuis';
 
 // ─── WEDSTRIJD TABS ───
@@ -261,7 +262,8 @@ function openWedAfwezigPicker(wid) {
   const selSpeler = document.getElementById('wedAfwezigSpeler');
   const selReden  = document.getElementById('wedAfwezigReden');
   selSpeler.innerHTML = beschikbaar.map(p => `<option value="${p.id}">${p.naam}</option>`).join('');
-  selReden.innerHTML  = ['Ziek','Geblesseerd','Leren','Feest','Anders','Onbekend'].map(r => `<option value="${r}">${r}</option>`).join('');
+  const redenenLijst = (typeof absRedenen !== 'undefined' && absRedenen.length) ? absRedenen : ['Ziek','Geblesseerd','Leren','Feest','Vakantie','Anders','Onbekend'];
+  selReden.innerHTML = redenenLijst.map(r => `<option value="${r}">${r}</option>`).join('');
   document.getElementById('wedAfwezigModal').classList.add('open');
 }
 function closeWedAfwezigPicker() { document.getElementById('wedAfwezigModal').classList.remove('open'); }

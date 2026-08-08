@@ -226,8 +226,6 @@ function buildSchema() {
   container.appendChild(sec);
 
   customWeken.forEach((w, wi) => w.sessies.forEach((_, si) => renderAanw('cw' + wi + '_' + si)));
-  // Vakantiecheck direct bij laden zodat teller meteen klopt
-  customWeken.forEach((w, wi) => w.sessies.forEach((_, si) => checkVakantiesEnZetAfwezig('cw' + wi + '_' + si)));
 }
 
 function isHuidigeWeek(w) {
@@ -245,36 +243,8 @@ function buildWeekHtml(w, type, wi) {
   const weekNr  = type === 'schema' ? SCHEMA_WEEKNR[w.week] : null;
   const datumStr = isoDate ? formatDatumShort(isoDate) : (w.datum || '');
   const huidig  = isHuidigeWeek(w);
-  let weekDatumRange = '';
-  if (type === 'custom' && w.isoDate && w.sessies && w.sessies.length) {
-    const MAANDEN = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-    const DAGMAP = { maandag:0,dinsdag:1,woensdag:2,donderdag:3,vrijdag:4,zaterdag:5,zondag:6 };
-    const base = new Date(w.isoDate);
-    // Zet base op maandag
-    const dow = base.getDay();
-    const toMa = dow === 0 ? -6 : 1 - dow;
-    base.setDate(base.getDate() + toMa);
-    // Verzamel datums van alle sessies
-    const datums = w.sessies.map(sess => {
-      const dag = (sess.dag||'').toLowerCase().trim();
-      const entry = Object.entries(DAGMAP).find(([d]) => dag.startsWith(d));
-      if (!entry) return null;
-      const d = new Date(base); d.setDate(d.getDate() + entry[1]);
-      return d;
-    }).filter(Boolean).sort((a,b) => a-b);
-    if (datums.length >= 2) {
-      const d1 = datums[0], d2 = datums[datums.length-1];
-      if (d1.getMonth() === d2.getMonth()) {
-        weekDatumRange = d1.getDate() + ' en ' + d2.getDate() + ' ' + MAANDEN[d1.getMonth()];
-      } else {
-        weekDatumRange = d1.getDate() + ' ' + MAANDEN[d1.getMonth()] + ' en ' + d2.getDate() + ' ' + MAANDEN[d2.getMonth()];
-      }
-    } else if (datums.length === 1) {
-      weekDatumRange = datums[0].getDate() + ' ' + MAANDEN[datums[0].getMonth()];
-    }
-  }
   const weekLabel = type === 'custom'
-    ? `<span style="font-size:11px;font-weight:700;color:${huidig?'var(--accent)':'var(--text3)'};">${w.weekNr || 'Eigen week'}</span>${weekDatumRange ? '<span style="font-size:11px;font-weight:400;color:var(--text3);margin-left:6px">'+weekDatumRange+'</span>' : ''}`
+    ? `<span style="font-size:11px;font-weight:700;color:${huidig?'var(--accent)':'var(--text3)'};">${w.weekNr || 'Eigen week'}</span>`
     : `Week ${weekNr} · ${datumStr}`;
   const btnS = 'font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text3);cursor:pointer;line-height:1.4;vertical-align:middle';
   const btnR = 'font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--red);cursor:pointer;line-height:1.4;font-weight:600';
@@ -301,7 +271,7 @@ function buildWeekHtml(w, type, wi) {
     const nkData    = aanwezigheid[nk] || {};
     const nkAfwezig = players.filter(p => { const e=nkData[p.id]; return e===false||(e&&e.afwezig===true); }).length;
     const nkAanwezig = players.length - nkAfwezig;
-    const tellerTxt  = players.length ? `<span id="teller-${nk}" style="font-size:11px;font-weight:600;color:${nkAfwezig>0?'var(--red)':'var(--text3)'}">${nkAanwezig}/${players.length}</span>` : '';
+    const tellerTxt  = players.length ? `<span style="font-size:11px;font-weight:600;color:${nkAfwezig>0?'var(--red)':'var(--text3)'}">${nkAanwezig}/${players.length}</span>` : '';
     html += `<div class="session-item" id="${sid}">
       <div class="session-hdr" onclick="toggleSession('${sid}')">
         <div>
@@ -518,13 +488,6 @@ async function checkVakantiesEnZetAfwezig(nk) {
   if (gewijzigd) {
     localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
     renderAanw(nk);
-    const tellerEl = document.getElementById('teller-' + nk);
-    if (tellerEl && players.length) {
-      const nkDataNu = aanwezigheid[nk] || {};
-      const afwNu = players.filter(p => { const e=nkDataNu[p.id]; return e===false||(e&&e.afwezig===true); }).length;
-      tellerEl.textContent = (players.length - afwNu) + '/' + players.length;
-      tellerEl.style.color = afwNu > 0 ? 'var(--red)' : 'var(--text3)';
-    }
   }
 }
 

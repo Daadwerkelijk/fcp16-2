@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2B1FA0">
-<title>Dashboard — Voetbaltrainer-app</title>
+<title>Dashboard — FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -59,7 +59,7 @@
   </div>
 
   <!-- Menu blokken -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:10px 16px 14px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 16px 14px">
     <button onclick="dashTab('afwezig')" id="dtab-afwezig"
       style="background:var(--white);border:2px solid var(--topbar);border-radius:var(--r);padding:14px;text-align:left;cursor:pointer;box-shadow:var(--card-shadow);transition:all .15s">
       <div style="font-size:22px;margin-bottom:6px">📋</div>
@@ -72,32 +72,11 @@
       <div style="font-size:13px;font-weight:700;color:var(--text)">Skills</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">Team overzicht</div>
     </button>
-    <button onclick="dashTab('ranking')" id="dtab-ranking"
-      style="background:var(--white);border:2px solid var(--border);border-radius:var(--r);padding:14px;text-align:left;cursor:pointer;box-shadow:var(--card-shadow);transition:all .15s">
-      <div style="font-size:22px;margin-bottom:6px">🏆</div>
-      <div style="font-size:13px;font-weight:700;color:var(--text)">Ranking</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px">MOTM &amp; cijfers</div>
-    </button>
   </div>
 
   <!-- Afwezigheid panel -->
   <div id="dpanel-afwezig" style="padding:0 16px 16px">
     <div id="aanw-tabel"></div>
-  </div>
-
-  <!-- Ranking panel -->
-  <div id="dpanel-ranking" style="display:none;padding:0 16px 16px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:600;color:var(--text)">Sorteren:</div>
-      <button id="sort-alfa" onclick="sortRanking('alfa')" style="padding:5px 14px;border-radius:100px;background:var(--topbar);color:#fff;border:none;font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer">Alfabetisch</button>
-      <button id="sort-cijfer" onclick="sortRanking('cijfer')" style="padding:5px 14px;border-radius:100px;background:var(--white);color:var(--text2);border:1px solid var(--border);font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer">Hoogste cijfer</button>
-    </div>
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Man of the Match</div>
-    <div id="ranking-motm" style="margin-bottom:20px"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Gemiddeld cijfer</div>
-    </div>
-    <div id="ranking-cijfers"></div>
   </div>
 
   <!-- Skills panel -->
@@ -121,7 +100,6 @@ const state = loadState();
 let players      = state.players;
 let aanwezigheid = state.aanwezigheid;
 let customWeken  = state.customWeken;
-let wedstrijdenData = state.wedstrijden || JSON.parse(localStorage.getItem('fcp_wed') || '[]');
 let absRedenen   = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]');
 function saveAbsRedenen(r) {
   localStorage.setItem('fcp_abs_redenen', JSON.stringify(r));
@@ -152,17 +130,17 @@ function renderAanwOverzicht() {
 
   // Samenvatting: totaal aantal trainingen met opgeslagen aanwezigheid
   const metData = trainingen.filter(t => aanwezigheid[t.nk] && Object.keys(aanwezigheid[t.nk]).length > 0);
-  const wedstrijden = wedstrijdenData;
+  const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
   const aantalWed = wedstrijden.filter(w => w.gespeeld).length;
   document.getElementById('aanw-samenvatting').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
-      <div style="padding:11px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--card-shadow)">
-        <div style="font-size:24px;font-weight:700;color:var(--text)">${trainingen.length}</div>
-        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Trainingen</div>
+      <div style="padding:11px 13px;background:var(--blauw-l);border:1px solid var(--blauw-m);border-radius:var(--r)">
+        <div style="font-size:24px;font-weight:700;color:#1a3799">${trainingen.length}</div>
+        <div style="font-size:10px;font-weight:700;color:var(--blauw);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Trainingen</div>
       </div>
-      <div style="padding:11px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--card-shadow)">
-        <div style="font-size:24px;font-weight:700;color:var(--text)">${aantalWed}</div>
-        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Wedstrijden</div>
+      <div style="padding:11px 13px;background:var(--blauw-l);border:1px solid var(--blauw-m);border-radius:var(--r)">
+        <div style="font-size:24px;font-weight:700;color:#1a3799">${aantalWed}</div>
+        <div style="font-size:10px;font-weight:700;color:var(--blauw);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Wedstrijden</div>
       </div>
     </div>`;
 
@@ -234,98 +212,17 @@ function renderAanwOverzicht() {
   document.getElementById('aanw-tabel').innerHTML = html;
 }
 
-let rankingSortMode = 'alfa';
-
-function sortRanking(mode) {
-  rankingSortMode = mode;
-  document.getElementById('sort-alfa').style.background = mode === 'alfa' ? 'var(--topbar)' : 'var(--white)';
-  document.getElementById('sort-alfa').style.color = mode === 'alfa' ? '#fff' : 'var(--text2)';
-  document.getElementById('sort-alfa').style.border = mode === 'alfa' ? 'none' : '1px solid var(--border)';
-  document.getElementById('sort-cijfer').style.background = mode === 'cijfer' ? 'var(--topbar)' : 'var(--white)';
-  document.getElementById('sort-cijfer').style.color = mode === 'cijfer' ? '#fff' : 'var(--text2)';
-  document.getElementById('sort-cijfer').style.border = mode === 'cijfer' ? 'none' : '1px solid var(--border)';
-  renderRankingPanel();
-}
-
-function renderRankingPanel() {
-  const wedstrijden = wedstrijdenData;
-  const motmEl = document.getElementById('ranking-motm');
-  const cijferEl = document.getElementById('ranking-cijfers');
-  if (!motmEl || !cijferEl) return;
-
-  // MOTM tellen
-  const motmMap = {};
-  players.forEach(p => motmMap[p.id] = 0);
-  wedstrijden.forEach(w => { if (w.motm && motmMap[w.motm] !== undefined) motmMap[w.motm]++; });
-  const motmRanked = players
-    .map(p => ({ p, motm: motmMap[p.id] || 0 }))
-    .filter(x => x.motm > 0)
-    .sort((a,b) => b.motm - a.motm);
-
-  if (!motmRanked.length) {
-    motmEl.innerHTML = '<div style="font-size:13px;color:var(--text3)">Nog geen Man of the Match toegewezen.</div>';
-  } else {
-    motmEl.innerHTML = motmRanked.map((x,i) => `
-      <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:13px;font-weight:700;color:var(--text3);min-width:20px">${i+1}</span>
-        <span style="flex:1;font-size:14px;font-weight:600;color:var(--text)">${x.p.naam}</span>
-        <span style="font-size:13px;font-weight:700;color:var(--topbar)">${x.motm}× ⭐</span>
-      </div>`).join('');
-  }
-
-  // Cijfers berekenen
-  const ratingMap = {};
-  players.forEach(p => ratingMap[p.id] = { sum:0, count:0 });
-  wedstrijden.forEach(w => {
-    if (w.ratings) Object.entries(w.ratings).forEach(([pid,val]) => {
-      if (ratingMap[pid]) { ratingMap[pid].sum += val; ratingMap[pid].count++; }
-    });
-  });
-
-  let lijst = players.map(p => ({
-    p,
-    avg: ratingMap[p.id].count ? Math.round(ratingMap[p.id].sum / ratingMap[p.id].count * 10) / 10 : null,
-    count: ratingMap[p.id].count
-  })).filter(x => x.avg !== null);
-
-  if (rankingSortMode === 'cijfer') {
-    lijst.sort((a,b) => b.avg - a.avg);
-  } else {
-    lijst.sort((a,b) => a.p.naam.localeCompare(b.p.naam));
-  }
-
-  if (!lijst.length) {
-    cijferEl.innerHTML = '<div style="font-size:13px;color:var(--text3)">Nog geen beoordelingen ingevuld.</div>';
-  } else {
-    const maxAvg = Math.max(...lijst.map(x => x.avg));
-    cijferEl.innerHTML = lijst.map((x,i) => {
-      const col = x.avg>=8?'#1B7A4B':x.avg>=6.5?'#558B2F':x.avg>=5?'#E65100':'#C62828';
-      const pct = Math.round((x.avg / 10) * 100);
-      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-        ${rankingSortMode === 'cijfer' ? '<span style="font-size:13px;font-weight:700;color:var(--text3);min-width:20px">'+(i+1)+'</span>' : ''}
-        <span style="flex:1;font-size:14px;font-weight:500;color:var(--text)">${x.p.naam}</span>
-        <div style="width:80px;height:6px;background:var(--border);border-radius:100px;overflow:hidden;flex-shrink:0">
-          <div style="width:${pct}%;height:100%;background:${col};border-radius:100px"></div>
-        </div>
-        <span style="font-size:15px;font-weight:700;color:${col};min-width:32px;text-align:right">${x.avg}</span>
-        <span style="font-size:11px;color:var(--text3)">${x.count}×</span>
-      </div>`;
-    }).join('');
-  }
-}
-
 function dashTab(tab) {
-  const tabs = ['afwezig','skills','ranking'];
+  const tabs = ['afwezig','skills'];
   tabs.forEach(t => {
     const panel = document.getElementById('dpanel-' + t);
     const btn   = document.getElementById('dtab-' + t);
     if (!panel || !btn) return;
     const actief = t === tab;
     panel.style.display = actief ? 'block' : 'none';
-    btn.style.borderColor = actief ? 'var(--accent)' : 'var(--border)';
-    btn.querySelector('div:nth-child(2)').style.color = actief ? 'var(--accent)' : 'var(--text)';
+    btn.style.borderColor = actief ? 'var(--topbar)' : 'var(--border)';
+    btn.querySelector('div:nth-child(2)').style.color = actief ? 'var(--topbar)' : 'var(--text)';
   });
-  if (tab === 'ranking') renderRankingPanel();
 }
 
 function toggleSpelerDetail(id) {
@@ -455,8 +352,25 @@ function renderTeamProfiel() {
 }
 
 function toggleDetail(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  const isLandscape = window.innerWidth > window.innerHeight;
+  if (isLandscape) {
+    // In landscape: toon detail in rechter paneel
+    const panel = document.getElementById('skills-detail-panel');
+    const content = document.getElementById('skills-detail-content');
+    const title = document.getElementById('skills-detail-title');
+    const el = document.getElementById(id);
+    if (!el || !panel || !content) return;
+    // Haal skill naam uit het id (sk-Balcontrole → Balcontrole)
+    const skillNaam = id.replace('sk-', '').replace(/_/g, ' ');
+    if (title) title.textContent = skillNaam;
+    // Kopieer inhoud van het inline detail element naar het panel
+    content.innerHTML = el.innerHTML;
+    panel.style.display = 'block';
+  } else {
+    // In portrait: inline uitklappen zoals voorheen
+    const el = document.getElementById(id);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
 }
 
 async function onSupabaseReady() {
@@ -466,21 +380,9 @@ async function onSupabaseReady() {
   if (data.customWeken)  { customWeken  = data.customWeken; }
   if (data.absRedenen)   { absRedenen   = data.absRedenen; }
   if (data.teamConfig)   { const sub = document.getElementById('dashboard-sub'); if (sub) sub.textContent = data.teamConfig.subtitel || ''; }
-  // Laad wedstrijden apart voor ranking
-  const wedRes = await sbFetch('wedstrijden?order=iso_date.asc', 'GET');
-  if (wedRes && !wedRes._error) {
-    wedstrijdenData = wedRes.map(w => ({
-      ...w,
-      ratings: typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
-      afwezig: typeof w.afwezig === 'string' ? JSON.parse(w.afwezig || '[]') : (w.afwezig || []),
-    }));
-    saveWedstrijden(wedstrijdenData);
-  }
   await laadAlleFormulieren();
   renderAanwOverzicht();
   renderTeamProfiel();
-  // Zorg dat eerste tab direct active styling heeft
-  setTimeout(() => { dashTab('afwezig'); }, 50);
 }
 
 const cfg = loadTeamInstellingen(); const sub = document.getElementById('dashboard-sub'); if (sub) sub.textContent = cfg.subtitel || '';

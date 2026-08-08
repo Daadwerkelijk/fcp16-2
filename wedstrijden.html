@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2B1FA0">
-<title>Wedstrijden — Voetbaltrainer-app</title>
+<title>Wedstrijden — FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -76,6 +76,13 @@
     <input class="bmodal-input" id="edit-wed-datum" type="date">
     <div class="bmodal-label">Starttijd</div>
     <input class="bmodal-input" id="edit-wed-tijd" type="time" placeholder="HH:MM">
+    <div class="bmodal-label">Type</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+      <button class="thu-uit-btn" id="edit-btn-type-competitie" onclick="setWedType('competitie','edit')">Competitie</button>
+      <button class="thu-uit-btn" id="edit-btn-type-beker" onclick="setWedType('beker','edit')">Beker</button>
+      <button class="thu-uit-btn active" id="edit-btn-type-oefenwedstrijd" onclick="setWedType('oefenwedstrijd','edit')">Oefenwedstrijd</button>
+    </div>
+    <div id="edit-fase-wrap"></div>
     <div class="bmodal-label">Locatie</div>
     <div style="display:flex;gap:7px;margin-bottom:2px">
       <button class="thu-uit-btn active" id="edit-btn-thuis" onclick="setEditThuisUit('thuis')">Thuis</button>
@@ -104,6 +111,14 @@
         <input class="form-input" id="wed-datum" type="date" style="flex:1;min-width:120px">
         <input class="form-input" id="wed-tijd" type="time" style="flex:0 0 80px;min-width:80px" placeholder="HH:MM">
       </div>
+      <div class="form-row" style="gap:6px">
+        <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1">
+          <button class="thu-uit-btn" id="btn-type-competitie" onclick="setWedType('competitie','new')">Competitie</button>
+          <button class="thu-uit-btn" id="btn-type-beker" onclick="setWedType('beker','new')">Beker</button>
+          <button class="thu-uit-btn active" id="btn-type-oefenwedstrijd" onclick="setWedType('oefenwedstrijd','new')">Oefenwedstrijd</button>
+        </div>
+      </div>
+      <div id="new-fase-wrap"></div>
       <div class="form-row">
         <div class="thu-uit-btns" style="flex:1">
           <button class="thu-uit-btn active" id="btn-thuis" onclick="setThuisUit('thuis')">Thuis</button>
@@ -115,7 +130,11 @@
 
     <div id="wed-list"><div style="font-size:12px;color:var(--text3)">Nog geen wedstrijden.</div></div>
 
-
+    <!-- Ranking -->
+    <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--line2)">
+      <div style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--text);margin-bottom:10px">Seizoen ranking</div>
+      <div id="ranking-cont"><div style="font-size:12px;color:var(--text3)">Vul cijfers in bij wedstrijden om de ranking te zien.</div></div>
+    </div>
   </div>
 </div>
 
@@ -297,7 +316,7 @@ function buildWedBench(wid) {
     const init = parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : p.naam.slice(0,2).toUpperCase();
     const badges = getRolBadges(p.posities);
     return `<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 9px;margin-bottom:6px;display:flex;align-items:center;gap:7px">
-      <div class="bench-avatar" style="width:28px;height:28px;font-size:9px">${init}</div>
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--blauw-l);border:1.5px solid var(--blauw-m);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--topbar);flex-shrink:0">${init}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.naam}</div>
         <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">${badges || `<span style="font-size:10px;color:var(--text3)">Geen positie</span>`}</div>
@@ -663,15 +682,11 @@ async function addWedstrijd() {
   const teg = document.getElementById('wed-teg').value.trim();
   if (!teg) { showToast('Vul een tegenstander in'); return; }
   const rawDatum = document.getElementById('wed-datum').value;
-  if (!rawDatum) { showToast('Datum is verplicht'); return; }
-  const vandaag = new Date(); vandaag.setHours(0,0,0,0);
-  const datumD = new Date(rawDatum);
-  const inVerleden = datumD < vandaag;
-  const datum = formatDatumShort(rawDatum);
+  const datum = rawDatum ? formatDatumShort(rawDatum) : '';
   const rawTijd = document.getElementById('wed-tijd')?.value || '';
-  const w = { id:genId(), tegenstander:teg, datum, isoDate:rawDatum, starttijd:rawTijd, thuis_uit:thuisUit, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null, gespeeld:false };
+  const w = { id:genId(), tegenstander:teg, datum, isoDate:rawDatum, starttijd:rawTijd, thuis_uit:thuisUit, wed_type:newWedType, wed_fase:newWedFase, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null, gespeeld:false };
   if (supabaseReady) {
-    const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate, thuis_uit:w.thuis_uit, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
+    const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate||'', thuis_uit:w.thuis_uit, wed_type:w.wed_type, wed_fase:w.wed_fase, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
     if (!res || res._error) { showToast('Opslaan mislukt — ' + (res?.message||'check Supabase')); return; }
   }
   wedstrijden.push(w);
@@ -679,17 +694,7 @@ async function addWedstrijd() {
   renderWedstrijden();
   document.getElementById('wed-teg').value = '';
   document.getElementById('wed-datum').value = '';
-  if (inVerleden) showToast(teg + ' toegevoegd (datum ligt in het verleden)');
-  else showToast(teg + ' toegevoegd');
-}
-
-function toggleRatings(wrapId, hdr) {
-  const wrap = document.getElementById(wrapId);
-  if (!wrap) return;
-  const open = wrap.style.display === 'none';
-  wrap.style.display = open ? 'flex' : 'none';
-  const chev = hdr.querySelector('svg');
-  if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
+  showToast(teg + ' toegevoegd');
 }
 
 async function saveWedstrijd(id) {
@@ -698,7 +703,7 @@ async function saveWedstrijd(id) {
   w.score_tegen = parseInt(document.getElementById('ws-tegen-' + id).value) || 0;
   w.opmerkingen = document.getElementById('ws-opm-' + id).value;
   w.motm        = document.getElementById('ws-motm-' + id).value || null;
-  const wsForm  = document.getElementById('ws-form-' + id); w.formatie = wsForm ? wsForm.value || null : w.formatie || null;
+  w.formatie    = document.getElementById('ws-form-' + id).value || null;
   if (!w.ratings) w.ratings = {};
   players.forEach(p => {
     const el = document.getElementById('rat-' + id + '-' + p.id);
@@ -742,6 +747,55 @@ function setMotm(wedId, playerId) {
 
 let editWedId = null;
 let editThuisUit = 'thuis';
+let editWedType = 'oefenwedstrijd';
+let editWedFase = '';
+let newWedType = 'oefenwedstrijd';
+let newWedFase = '';
+
+const WED_FASES = {
+  competitie: ['Fase 1', 'Fase 2', 'Fase 3'],
+  beker: [],
+  oefenwedstrijd: []
+};
+
+function setWedType(val, mode) {
+  if (mode === 'new') {
+    newWedType = val;
+    newWedFase = '';
+    ['competitie','beker','oefenwedstrijd'].forEach(t => {
+      const btn = document.getElementById('btn-type-' + t);
+      if (btn) btn.classList.toggle('active', t === val);
+    });
+    renderFaseSelector('new-fase-wrap', val, newWedFase, 'new');
+  } else {
+    editWedType = val;
+    editWedFase = '';
+    ['competitie','beker','oefenwedstrijd'].forEach(t => {
+      const btn = document.getElementById('edit-btn-type-' + t);
+      if (btn) btn.classList.toggle('active', t === val);
+    });
+    renderFaseSelector('edit-fase-wrap', val, editWedFase, 'edit');
+  }
+}
+
+function setWedFase(val, mode) {
+  if (mode === 'new') newWedFase = val;
+  else editWedFase = val;
+  const wrap = document.getElementById(mode === 'new' ? 'new-fase-wrap' : 'edit-fase-wrap');
+  if (!wrap) return;
+  wrap.querySelectorAll('.fase-btn').forEach(b => b.classList.toggle('active', b.dataset.fase === val));
+}
+
+function renderFaseSelector(wrapperId, type, huidigeFase, mode) {
+  const wrap = document.getElementById(wrapperId);
+  if (!wrap) return;
+  const fases = WED_FASES[type] || [];
+  if (!fases.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = '<div class="bmodal-label" style="margin-top:8px">Fase</div>'
+    + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">'
+    + fases.map(f => `<button class="thu-uit-btn fase-btn${f===huidigeFase?' active':''}" data-fase="${f}" onclick="setWedFase('${f}','${mode}')">${f}</button>`).join('')
+    + '</div>';
+}
 
 function setEditThuisUit(val) {
   editThuisUit = val;
@@ -757,6 +811,13 @@ function openEditWed(id) {
   document.getElementById('edit-wed-tijd').value = w.starttijd || '';
   editThuisUit = w.thuis_uit || 'thuis';
   setEditThuisUit(editThuisUit);
+  editWedType = w.wed_type || 'oefenwedstrijd';
+  editWedFase = w.wed_fase || '';
+  ['competitie','beker','oefenwedstrijd'].forEach(t => {
+    const btn = document.getElementById('edit-btn-type-' + t);
+    if (btn) btn.classList.toggle('active', t === editWedType);
+  });
+  renderFaseSelector('edit-fase-wrap', editWedType, editWedFase, 'edit');
   document.getElementById('bmodalEditWed').classList.add('open');
 }
 function closeEditWed() {
@@ -767,16 +828,18 @@ async function saveEditWed() {
   const teg = document.getElementById('edit-wed-teg').value.trim();
   if (!teg) { showToast('Vul een tegenstander in'); return; }
   const rawDatum = document.getElementById('edit-wed-datum').value;
-  if (!rawDatum) { showToast('Datum is verplicht'); return; }
   w.tegenstander = teg;
   w.isoDate = rawDatum;
   w.datum = rawDatum ? formatDatumShort(rawDatum) : w.datum;
   w.starttijd = document.getElementById('edit-wed-tijd').value || '';
   w.thuis_uit = editThuisUit;
+  w.wed_type = editWedType;
+  w.wed_fase = editWedFase;
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
     await sbFetch('wedstrijden?id=eq.' + editWedId, 'PATCH', {
-      tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate||'', thuis_uit: w.thuis_uit
+      tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate||'', thuis_uit: w.thuis_uit,
+      wed_type: w.wed_type, wed_fase: w.wed_fase
     });
   }
   closeEditWed();
@@ -809,36 +872,16 @@ function renderWedstrijden() {
   if (!wedstrijden.length) { list.innerHTML = '<div style="font-size:12px;color:var(--text3)">Nog geen wedstrijden.</div>'; return; }
   list.innerHTML = '';
 
-  function sorteerWed(lijst) {
-    return [...lijst].sort((a,b) => {
-      const da = (a.isoDate||'9999-99-99') + (a.starttijd||'00:00');
-      const db = (b.isoDate||'9999-99-99') + (b.starttijd||'00:00');
-      return da.localeCompare(db);
-    });
-  }
-  const gespeeld  = sorteerWed(wedstrijden.filter(w => wedCategorie(w) === 'gespeeld'));
-  const volgend   = sorteerWed(wedstrijden.filter(w => wedCategorie(w) === 'volgend'));
-  const toekomst  = sorteerWed(wedstrijden.filter(w => wedCategorie(w) === 'toekomst'));
+  const gespeeld  = wedstrijden.filter(w => wedCategorie(w) === 'gespeeld');
+  const volgend   = wedstrijden.filter(w => wedCategorie(w) === 'volgend');
+  const toekomst  = wedstrijden.filter(w => wedCategorie(w) === 'toekomst');
 
-  function renderGroep(titel, kleur, border, lijst, omgekeerd = false, inklapbaar = false) {
+  function renderGroep(titel, kleur, border, lijst, omgekeerd = false) {
     if (!lijst.length) return;
-    const sectieId = 'groep-' + titel.replace(/\s/g,'');
     const hdr = document.createElement('div');
-    hdr.style.cssText = `font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${kleur};margin:14px 0 6px;padding-left:2px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:${inklapbaar?'pointer':'default'}`;
-    hdr.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${kleur};flex-shrink:0"></span>${titel} <span style="font-weight:400;opacity:.6">(${lijst.length})</span></div>${inklapbaar?'<svg id="chev-'+sectieId+'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="transform:rotate(180deg);transition:transform .2s"><path d="m6 9 6 6 6-6"/></svg>':''}`;
-    if (inklapbaar) {
-      hdr.onclick = () => {
-        const cont = document.getElementById(sectieId);
-        const chev = document.getElementById('chev-'+sectieId);
-        const open = cont.style.display !== 'none';
-        cont.style.display = open ? 'none' : 'block';
-        if (chev) chev.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-      };
-    }
+    hdr.style.cssText = `font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${kleur};margin:14px 0 6px;padding-left:2px;display:flex;align-items:center;gap:8px`;
+    hdr.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${kleur};flex-shrink:0"></span>${titel}`;
     list.appendChild(hdr);
-    const cont = document.createElement('div');
-    cont.id = sectieId;
-    list.appendChild(cont);
     const groep = omgekeerd ? [...lijst].reverse() : lijst;
     groep.forEach(w => {
       const card = document.createElement('div');
@@ -853,22 +896,18 @@ function renderWedstrijden() {
     const lineupOpties = Object.keys(FORMATIES).map(f =>
       `<option value="${f}" ${w.formatie===f?'selected':''}>${FORMATIES[f].label}</option>`
     ).join('');
-    const ratRowsHtml = sortedPlayers(players).map(p => {
-      const rating = w.ratings && w.ratings[p.id] || '';
-      return '<div style="display:flex;align-items:center;gap:8px">'
-        + '<span style="flex:1;font-size:12px;color:var(--text)">' + p.naam + '</span>'
-        + '<input type="number" min="1" max="10" step="0.5" placeholder="—" value="' + rating + '"'
-        + ' id="rat-' + w.id + '-' + p.id + '"'
-        + ' style="width:52px;padding:4px 6px;background:var(--bg3);border:1px solid var(--line2);border-radius:4px;color:var(--accent);font-family:var(--font-display);font-size:16px;font-weight:600;text-align:center;outline:none">'
-        + '</div>';
-    }).join('');
     const ratingsHtml = players.length ? `
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:10px;border-top:1px solid var(--line2);cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="toggleRatings('rat-wrap-${w.id}',this)">
-        <span>Spelersbeoordelingen (1–10)</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
-      </div>
-      <div id="rat-wrap-${w.id}" style="display:none;flex-direction:column;gap:5px;margin-bottom:8px">
-        ${ratRowsHtml}
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">Spelersbeoordelingen (1–10)</div>
+      <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
+        ${sortedPlayers(players).map(p => {
+          const rating = w.ratings && w.ratings[p.id] || '';
+          return `<div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:12px;color:var(--text)">${p.naam}</span>
+            <input type="number" min="1" max="10" step="0.5" placeholder="—" value="${rating}"
+              id="rat-${w.id}-${p.id}"
+              style="width:52px;padding:4px 6px;background:var(--bg3);border:1px solid var(--line2);border-radius:4px;color:var(--accent);font-family:var(--font-display);font-size:16px;font-weight:600;text-align:center;outline:none">
+          </div>`;
+        }).join('')}
       </div>` : '';
       const afwezigCount = (w.afwezig||[]).length;
       const aanwezig_count = Math.max(0, players.length - afwezigCount);
@@ -878,7 +917,7 @@ function renderWedstrijden() {
         <div class="wed-score-big" style="color:${rc}">${w.score_eigen}–${w.score_tegen}</div>
         <div class="card-info">
           <div class="card-title">${w.tegenstander}</div>
-          <div class="card-sub">${w.datum||'–'}${w.starttijd ? ' ' + w.starttijd : ''} · ${w.thuis_uit} · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}</div>
+          <div class="card-sub">${w.datum||'–'}${w.starttijd ? ' ' + w.starttijd : ''} · ${w.thuis_uit}${w.wed_type ? ' · ' + (w.wed_type==='oefenwedstrijd'?'Oefenwedstrijd':w.wed_type==='beker'?'Beker':'Competitie') + (w.wed_fase?' · '+w.wed_fase:'') : ''} · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}</div>
         </div>
         <button onclick="event.stopPropagation();openEditWed('${w.id}')" style="padding:4px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0">✏️</button>
         <span class="card-chev" style="margin-left:4px">▾</span>
@@ -1022,7 +1061,7 @@ function renderRanking() {
       html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <span style="font-size:11px;color:var(--text3);min-width:16px">${i+1}</span>
         <span style="flex:1;font-size:13px;color:var(--text)">${x.p.naam}</span>
-        <span style="font-size:13px;color:var(--goud)">⭐ × ${x.motm}</span>
+        <span style="font-size:13px;color:#f0c040">⭐ × ${x.motm}</span>
       </div>`;
     });
   }

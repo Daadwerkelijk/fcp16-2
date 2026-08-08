@@ -899,7 +899,7 @@ function renderWedstrijden() {
         <div class="wed-score-big" style="color:${rc}">${w.score_eigen}–${w.score_tegen}</div>
         <div class="card-info">
           <div class="card-title">${w.tegenstander}</div>
-          <div class="card-sub">${w.datum||'–'}${w.starttijd ? ' ' + w.starttijd : ''} · ${w.thuis_uit}${w.wed_type && w.wed_type!=='oefenwedstrijd' ? ' · '+(w.wed_type==='beker'?'Beker':'Competitie')+(w.wed_fase?' · '+w.wed_fase:'') : ''} · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}</div>
+          <div class="card-sub">${w.datum||'–'}${w.starttijd ? ' ' + w.starttijd : ''} · ${w.thuis_uit}${w.wed_type ? ' · '+(w.wed_type==='beker'?'Beker':w.wed_type==='oefenwedstrijd'?'Oefenwedstrijd':'Competitie')+(w.wed_fase?' · '+w.wed_fase:'') : ''} · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}</div>
         </div>
         <button onclick="event.stopPropagation();openEditWed('${w.id}')" style="padding:4px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0">✏️</button>
         <span class="card-chev" style="margin-left:4px">▾</span>
@@ -1053,8 +1053,24 @@ function renderRanking() {
 
 async function onSupabaseReady() {
   const data = await loadFromSupabase();
-  if (data.players)     players     = data.players;
-  if (data.wedstrijden) wedstrijden = data.wedstrijden;
+  if (data.players) players = data.players;
+  // Haal wedstrijden direct op met correcte mapping
+  const wedRes = await sbFetch('wedstrijden?order=iso_date.asc', 'GET');
+  if (wedRes && !wedRes._error) {
+    wedstrijden = wedRes.map(w => ({
+      ...w,
+      isoDate:   w.isoDate   || w.iso_date   || '',
+      starttijd: w.starttijd || w.start_tijd  || '',
+      wed_type:  w.wed_type  || 'oefenwedstrijd',
+      wed_fase:  w.wed_fase  || '',
+      ratings:   typeof w.ratings    === 'string' ? JSON.parse(w.ratings    || '{}') : (w.ratings    || {}),
+      afwezig:   typeof w.afwezig    === 'string' ? JSON.parse(w.afwezig    || '[]') : (w.afwezig    || []),
+      wed_lineup:typeof w.wed_lineup === 'string' ? JSON.parse(w.wed_lineup || '{}') : (w.wed_lineup || {}),
+    }));
+    saveWedstrijden(wedstrijden);
+  } else if (data.wedstrijden) {
+    wedstrijden = data.wedstrijden;
+  }
   renderWedstrijden();
 }
 

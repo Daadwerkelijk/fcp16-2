@@ -272,18 +272,16 @@ function buildWeekHtml(w, type, wi) {
     const nkAfwezig = players.filter(p => { const e=nkData[p.id]; return e===false||(e&&e.afwezig===true); }).length;
     const nkAanwezig = players.length - nkAfwezig;
     const tellerTxt  = players.length ? `<span style="font-size:11px;font-weight:600;color:${nkAfwezig>0?'var(--red)':'var(--text3)'}">${nkAanwezig}/${players.length}</span>` : '';
-    const verwijderBtn = type==='custom' ? `<button onclick="event.stopPropagation();verwijderSessie(${wi},${si})" title="Training verwijderen" style="width:26px;height:26px;border-radius:6px;background:transparent;border:1px solid var(--red);color:var(--red);cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button>` : '';
     html += `<div class="session-item" id="${sid}">
-      <div class="session-hdr" style="cursor:pointer" onclick="toggleSession('${sid}')">
-        <div style="flex:1">
+      <div class="session-hdr" onclick="toggleSession('${sid}')">
+        <div>
           <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:2px">Training ${sessNr}</div>
           <div style="display:flex;align-items:center;gap:8px">
-            <div class="session-day">${sess.dag}${(type==='custom'&&w.isoDate)?'<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:6px">'+sessieDatum(w.isoDate,sess.dag)+'</span>':''}</div>
-            <span id="teller-${nk}" style="font-size:11px;font-weight:600;color:${nkAfwezig>0?'var(--red)':'var(--text3)'}">${nkAanwezig}/${players.length}</span>
+            <div class="session-day">${sess.dag}</div>
+            ${tellerTxt}
           </div>
           <div class="session-prs">${prs}</div>
         </div>
-        ${verwijderBtn}
         <span class="session-chev">▾</span>
       </div><div class="session-body">`;
     html += buildBlokkenHtml(nk, sess.blokken || []);
@@ -490,13 +488,6 @@ async function checkVakantiesEnZetAfwezig(nk) {
   if (gewijzigd) {
     localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
     renderAanw(nk);
-    const tellerEl = document.getElementById('teller-'+nk);
-    if (tellerEl && players.length) {
-      const nd=aanwezigheid[nk]||{};
-      const afwNu=players.filter(p=>{const e=nd[p.id];return e===false||(e&&e.afwezig===true);}).length;
-      tellerEl.textContent=(players.length-afwNu)+'/'+players.length;
-      tellerEl.style.color=afwNu>0?'var(--red)':'var(--text3)';
-    }
   }
 }
 
@@ -561,7 +552,7 @@ function removeAfwezig(nk, pid) {
 
 function addExtraTraining(wid, customIdx) {
   const naam = prompt('Naam extra training:', 'Extra training'); if (!naam) return;
-  const newSess = { dag:naam, pr:['P6'], blokken:[] };
+  const newSess = { dag:naam, pr:[], blokken:[] };
   if (customIdx !== null && customIdx !== undefined) {
     customWeken[customIdx].sessies.push(newSess); syncCustomWeken(customWeken);
   } else {
@@ -695,8 +686,8 @@ function saveNieuweWeek() {
   const tr1naam = document.getElementById('tr1-naam').value.trim() || 'Training 1';
   const tr2naam = document.getElementById('tr2-naam').value.trim() || 'Training 2';
   const sessies = [
-    { dag:tr1naam, pr:['P6'], blokken:weekBlokken[0].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
-    { dag:tr2naam, pr:['P6'], blokken:weekBlokken[1].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
+    { dag:tr1naam, pr:[], blokken:weekBlokken[0].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
+    { dag:tr2naam, pr:[], blokken:weekBlokken[1].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
   ];
   const week = { focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
   if (editingWeekIdx !== null) { customWeken[editingWeekIdx] = week; showToast('Week bijgewerkt'); }
@@ -765,37 +756,6 @@ function saveKopieerWeek() {
   closeBModalKopieer();
   buildSchema();
   showToast('Week gekopieerd: ' + focus);
-}
-
-function sessieDatum(weekIsoDate, dagNaam) {
-  if (!weekIsoDate) return '';
-  const DAGMAP = {maandag:0,dinsdag:1,woensdag:2,donderdag:3,vrijdag:4,zaterdag:5,zondag:6};
-  const dag = (dagNaam||'').toLowerCase().trim();
-  const entry = Object.entries(DAGMAP).find(([d])=>dag.startsWith(d));
-  if (!entry) return '';
-  const base = new Date(weekIsoDate);
-  const dow = base.getDay(); base.setDate(base.getDate()+(dow===0?-6:1-dow)+entry[1]);
-  const M=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-  return base.getDate()+' '+M[base.getMonth()];
-}
-
-async function verwijderSessie(wi, si) {
-  const week = customWeken[wi]; if (!week) return;
-  const dagNaam = week.sessies[si]?.dag || 'deze training';
-  if (!confirm('Training "' + dagNaam + '" verwijderen? Aanwezigheidsdata wordt ook verwijderd.')) return;
-  const nk = 'cw'+wi+'_'+si;
-  const aanw = JSON.parse(localStorage.getItem('fcp_aanw')||'{}');
-  delete aanw[nk];
-  const aantalSessies = week.sessies.length;
-  for (let s=si+1; s<aantalSessies; s++) {
-    const oldKey='cw'+wi+'_'+s, newKey='cw'+wi+'_'+(s-1);
-    if (aanw[oldKey]!==undefined) { aanw[newKey]=aanw[oldKey]; delete aanw[oldKey]; }
-  }
-  localStorage.setItem('fcp_aanw', JSON.stringify(aanw));
-  week.sessies.splice(si,1);
-  syncCustomWeken(customWeken);
-  buildSchema();
-  showToast('Training verwijderd');
 }
 
 function deleteCustomWeek(wi) {

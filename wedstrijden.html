@@ -872,7 +872,10 @@ function renderWedstrijden() {
       card.className = 'card'; card.id = 'wcard-' + w.id;
       card.style.borderLeft = `3px solid ${border}`;
       const rc = w.score_eigen > w.score_tegen ? 'var(--accent)' : w.score_eigen < w.score_tegen ? 'var(--red)' : 'var(--text3)';
-      const rl = w.score_eigen > w.score_tegen ? 'W' : w.score_eigen < w.score_tegen ? 'V' : 'G';
+      const rl = w.score_eigen > w.score_tegen ? 'Gewonnen' : w.score_eigen < w.score_tegen ? 'Verloren' : 'Gelijk';
+      const formatieLabel = w.formatie && FORMATIES[w.formatie] ? FORMATIES[w.formatie].label : (w.formatie || '');
+      const resultaatTxt = w.gespeeld ? ` · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}` : '';
+      const formatieTxt = formatieLabel ? ` · ${formatieLabel}` : '';
       const motmP = w.motm ? players.find(p => p.id === w.motm) : null;
     const motmOptions = sortedPlayers(players).map(p =>
       `<option value="${p.id}" ${w.motm===p.id?'selected':''}>${p.naam}</option>`
@@ -901,7 +904,7 @@ function renderWedstrijden() {
         <div class="wed-score-big" style="color:${rc}">${w.score_eigen}–${w.score_tegen}</div>
         <div class="card-info">
           <div class="card-title">${w.tegenstander}</div>
-          <div class="card-sub">${w.datum||'–'}${w.starttijd ? ' ' + w.starttijd : ''} · ${w.thuis_uit}${w.wed_type ? ' · '+(w.wed_type==='beker'?'Beker':w.wed_type==='oefenwedstrijd'?'Oefenwedstrijd':'Competitie')+(w.wed_fase?' · '+w.wed_fase:'') : ''} · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}</div>
+          <div class="card-sub">${w.datum||'–'}${w.starttijd ? ' ' + w.starttijd : ''} · ${w.thuis_uit}${w.wed_type ? ' · '+(w.wed_type==='beker'?'Beker':w.wed_type==='oefenwedstrijd'?'Oefenwedstrijd':'Competitie')+(w.wed_fase?' · '+w.wed_fase:'') : ''}${formatieTxt}${resultaatTxt}</div>
         </div>
         <button onclick="event.stopPropagation();openEditWed('${w.id}')" style="padding:4px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0">✏️</button>
         <span class="card-chev" style="margin-left:4px">▾</span>

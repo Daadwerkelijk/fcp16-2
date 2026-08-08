@@ -63,7 +63,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 /* ─── BOTTOM NAV ─── */
 .nav{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:100;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(43,31,160,.07)}
 .nav-btn{flex:1;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--text3);font-family:var(--font-ui);font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:color .15s}
-.nav-btn.active{color:var(--topbar)}
+.nav-btn.active{color:var(--accent)}
 .nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
 .nav-dot{width:4px;height:4px;border-radius:50%;background:transparent;margin-top:1px}
 .nav-btn.active .nav-dot{background:var(--topbar)}
@@ -108,7 +108,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .stat-g .stat-num{color:#0D4A2C}
 .stat-g .stat-label{color:var(--groen)}
 .stat-b{background:var(--blauw-l);border-color:var(--blauw-m)}
-.stat-b .stat-num{color:#1a3799}
+.stat-b .stat-num{color:var(--accent)}
 .stat-b .stat-label{color:var(--blauw)}
 .stat-o{background:var(--goud-l);border-color:var(--goud-m)}
 .stat-o .stat-num{color:#6B4E00}
@@ -150,14 +150,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 /* ─── BADGES ─── */
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600}
 .badge.g{background:var(--groen-l);color:#0D4A2C;border:1px solid var(--groen-m)}
-.badge.b{background:var(--blauw-l);color:#1a3799;border:1px solid var(--blauw-m)}
+.badge.b{background:var(--bg);color:var(--accent);border:1px solid var(--border)}
 .badge.o{background:var(--goud-l);color:#6B4E00;border:1px solid var(--goud-m)}
 .badge.r{background:var(--rood-l);color:#8B1A1A;border:1px solid var(--rood-m)}
 .badge.grey{background:#F5F5F5;color:#555;border:1px solid #E0E0E0}
 
 /* ─── BUTTONS ─── */
 .btn{width:100%;border-radius:var(--rsm);padding:13px;font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .15s;letter-spacing:-.1px}
-.btn-primary{background:var(--topbar);border:1px solid var(--topbar);color:#fff}
+.btn-primary{background:var(--topbar);color:#fff}
 .btn-primary:active{background:var(--topbar-dark);transform:scale(.98)}
 .btn-secondary{background:var(--white);color:var(--text2);border:1px solid var(--border);margin-bottom:8px}
 .btn-secondary:active{background:var(--bg);transform:scale(.98)}
@@ -171,7 +171,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .form-btn:active{opacity:.8;transform:scale(.97)}
 
 /* Save btn */
-.save-btn{flex:1;padding:10px;background:var(--topbar);border:1px solid var(--topbar);border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
+.save-btn{flex:1;padding:10px;background:var(--topbar);border:none;border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
 .save-btn:active{opacity:.8;transform:scale(.97)}
 
 /* Del btn */
@@ -179,7 +179,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .del-btn:active{background:var(--rood-l)}
 
 /* Session save btn */
-.session-save-btn{margin-top:6px;width:100%;padding:10px;background:var(--topbar);border:1px solid var(--topbar);border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.session-save-btn{margin-top:6px;width:100%;padding:10px;background:var(--topbar);border:none;border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
 .session-save-btn:active{opacity:.8;transform:scale(.97)}
 
 /* ─── FORMS ─── */
@@ -201,7 +201,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .player-textarea:focus{border-color:var(--accent)}
 .pos-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}
 .pos-tag{padding:6px 13px;border-radius:var(--badge-radius);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--white);color:var(--text2);transition:all .15s}
-.pos-tag.active{background:var(--topbar);border-color:var(--topbar);color:#fff}
+.pos-tag.active{background:var(--accent);border-color:var(--accent);color:var(--white)}
 .player-actions{display:flex;gap:8px;margin-top:12px}
 
 /* ─── SCHEMA / TRAINEN ─── */
@@ -296,7 +296,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .oef-steps{list-style:none;counter-reset:s}
 .oef-steps li{counter-increment:s;font-size:13px;color:var(--text2);padding:5px 0 5px 26px;position:relative;line-height:1.5;border-bottom:1px solid var(--border)}
 .oef-steps li:last-child{border-bottom:none}
-.oef-steps li::before{content:counter(s);position:absolute;left:0;top:6px;width:18px;height:18px;border-radius:50%;background:var(--bg);border:1px solid var(--border);font-size:10px;color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700}
+.oef-steps li::before{content:counter(s);position:absolute;left:0;top:6px;width:18px;height:18px;border-radius:50%;background:var(--blauw-l);font-size:10px;color:var(--blauw);display:flex;align-items:center;justify-content:center;font-weight:700}
 .oef-tip{font-size:13px;color:var(--text2);background:var(--goud-l);border-radius:var(--rsm);padding:10px 13px;margin-top:9px;border-left:3px solid var(--goud);line-height:1.6}
 
 /* ─── SYNC / CONFIG ─── */
@@ -317,8 +317,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .modal-sub{font-size:12px;color:var(--text3);margin-bottom:14px;font-weight:500}
 .modal-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
 .modal-btn{padding:13px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:14px;font-weight:500;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;transition:all .15s}
-.modal-btn:active{background:var(--bg);transform:scale(.98)}
-.modal-btn.current{border-color:var(--topbar);color:var(--topbar);background:var(--bg)}
+.modal-btn:active{background:var(--blauw-l);transform:scale(.98)}
+.modal-btn.current{border-color:var(--accent);color:var(--accent);background:var(--bg)}
 .modal-cancel{width:100%;padding:13px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text3);font-family:var(--font-ui);font-size:14px;font-weight:500;cursor:pointer;margin-top:6px}
 .bmodal-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;margin-top:12px;font-weight:700}
 .bmodal-input,.bmodal-select,.bmodal-textarea{width:100%;padding:12px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:14px;outline:none;margin-bottom:2px;transition:border-color .15s;-webkit-appearance:none}
@@ -342,12 +342,12 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .pr-modal-overlay.open{display:flex}
 .pr-modal{background:var(--white);color:var(--text);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-height:88dvh;overflow-y:auto;box-shadow:0 -4px 24px rgba(0,0,0,.08)}
 .pr-modal-code{font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:var(--text)}
-.pr-modal-naam{font-size:16px;font-weight:600;margin-bottom:12px;color:var(--accent);padding-bottom:12px;border-bottom:1px solid var(--border)}
-.pr-modal-section{font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 5px}
+.pr-modal-naam{font-size:16px;font-weight:600;margin-bottom:12px;color:#2B1FA0;padding-bottom:12px;border-bottom:1px solid #E4E3F5}
+.pr-modal-section{font-size:11px;color:#8B8AB0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 5px}
 .pr-modal-text{font-size:14px;line-height:1.7;color:var(--text2)}
 .pr-modal-actions{display:flex;gap:8px;margin-top:18px}
-.pr-modal-edit{flex:1;padding:13px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--accent);text-align:center;background:var(--white);color:var(--accent)}
-.pr-modal-close{padding:13px 18px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;background:var(--white);border:1px solid var(--border);color:var(--text2)}
+.pr-modal-edit{flex:1;padding:13px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;text-align:center;background:#2B1FA0;color:#ffffff}
+.pr-modal-close{padding:13px 18px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;background:#ffffff;border:1px solid #E4E3F5;color:#4A4870}
 
 /* ─── UTILITIES ─── */
 .scroll-top{position:fixed;bottom:78px;right:14px;width:36px;height:36px;background:var(--white);border:1px solid var(--border);border-radius:50%;display:none;align-items:center;justify-content:center;font-size:14px;color:var(--topbar);cursor:pointer;z-index:50;font-weight:700;box-shadow:var(--card-shadow)}
@@ -362,124 +362,63 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .pr-card:active{opacity:.7}
 .skill-level-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:var(--badge-radius)}
 
-
-/* Start pagina: training en wedstrijd kaart gelijke hoogte */
-.start-two-col { align-items: stretch; }
-#start-left-col, #start-right-col { display: flex; flex-direction: column; }
-#start-training-card > *, #start-wedstrijd-card > * { flex: 1; }
-
-/* Aanwezig teller badge uniform */
-.aanw-badge {
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  padding: 3px 10px !important;
-  border-radius: 100px !important;
-}
-
-
-/* Bench/wisselspeler avatar — thema-proof */
-.bench-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: var(--bg); border: 1.5px solid var(--border2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; color: var(--text);
-  flex-shrink: 0;
-}
-
-/* Opslaan/edit knoppen altijd border in accent kleur */
-.save-btn { border: 1px solid var(--topbar) !important; }
-.session-save-btn { border: 1px solid var(--topbar) !important; }
-.btn-primary { border: 1px solid var(--topbar); }
-
-/* Edit/bewerken knop standaard stijl */
-.edit-btn-std {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 9px 16px; background: var(--white);
-  border: 1px solid var(--accent); border-radius: var(--rsm);
-  color: var(--accent); font-family: var(--font-ui);
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: all .15s;
-}
-.edit-btn-std:active { background: var(--bg); }
-
-/* Video play knop */
-.video-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 14px; background: var(--white);
-  border: 1px solid var(--accent); border-radius: var(--rsm);
-  color: var(--accent); font-family: var(--font-ui);
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  text-decoration: none; transition: all .15s;
-}
-.video-btn:active { background: var(--bg); }
-
 /* ════════════════════════════════════════
-   LANDSCAPE TELEFOON (≤767px + landscape)
+   LANDSCAPE — mobiel/tablet
    Triggert als telefoon gedraaid is
 ════════════════════════════════════════ */
-@media (orientation: landscape) and (max-width: 767px) {
+@media (orientation: landscape) {
 
-  /* Nav: van onderaan naar links, smal */
+  /* Nav: van onderaan naar links verticaal */
   .nav {
     position: fixed;
-    left: 0; top: 0; bottom: 0; right: auto;
-    width: 56px; height: 100%;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+    height: 100%;
     flex-direction: column;
     border-top: none;
     border-right: 1px solid var(--border);
-    padding: 6px 0;
-    z-index: 100;
-    overflow: hidden; /* geen scrollbar */
-    box-shadow: none;
+    padding: 8px 0;
+    z-index: 50;
+    overflow-y: auto;
   }
 
   .nav-btn {
     flex: none;
-    width: 48px; height: 44px;
+    width: 52px;
+    height: 52px;
     border-radius: 10px;
-    margin: 1px 4px;
+    margin: 2px 4px;
     flex-direction: column;
-    gap: 1px;
+    gap: 2px;
   }
 
-  .nav-btn span:last-child { font-size: 6.5px; }
+  .nav-btn span:last-child {
+    font-size: 6.5px;
+  }
 
   .nav-btn.active {
-    background: rgba(255,255,255,.18);
-    color: #fff;
+    background: var(--blauw-l);
   }
-  .nav-btn.active .nav-icon { color: #fff; }
-  .nav-dot { display: none; }
 
-  /* Body en pagina's verschuiven naar rechts */
-  body { padding-left: 56px; padding-bottom: 0; }
-  .page-wrap { padding-left: 0; }
+  /* Alle pagina content: 60px naar rechts */
+  .page-wrap {
+    padding-left: 60px;
+  }
 
-  /* Topbar compacter */
+  /* Headers compacter */
   .page-header {
-    padding-top: calc(6px + env(safe-area-inset-top));
+    padding-top: calc(8px + env(safe-area-inset-top));
     padding-bottom: 10px;
-    min-height: auto;
   }
+
   .home-hero {
-    padding-top: calc(6px + env(safe-area-inset-top));
+    padding-top: calc(8px + env(safe-area-inset-top));
     padding-bottom: 12px;
   }
 
-  /* Start: training + wedstrijd naast elkaar */
-  .start-two-col {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    flex-direction: unset !important;
-    align-items: stretch;
-    margin-bottom: 10px;
-  }
-  #start-left-col, #start-right-col { display: flex !important; flex-direction: column; }
-  #start-training-card, #start-wedstrijd-card { flex: 1; display: flex; flex-direction: column; }
-  #start-training-card > a, #start-wedstrijd-card > a { flex: 1; }
-
-  /* Opstelling: veld links, bench rechts */
+  /* Opstelling: veld links, bench rechts naast elkaar */
   .opst-layout-wrap {
     display: flex;
     flex-direction: row;
@@ -490,329 +429,140 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     overflow: hidden;
   }
 
+  /* Veld kolom: neemt alle resterende ruimte */
   .opst-layout-wrap .field-wrap {
-    flex: 1; min-width: 0; min-height: 0;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
     margin-bottom: 0 !important;
-    display: flex; flex-direction: column;
-  }
-
-  .opst-layout-wrap .field-wrap .field-container {
-    flex: 1; min-height: 0; position: relative;
-  }
-
-  .opst-layout-wrap .field-wrap .field-container .field-svg {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-  }
-
-  .opst-layout-wrap .field-wrap .field-actions { flex-shrink: 0; margin-top: 6px; }
-
-  .opst-layout-wrap .opst-bench-col-content {
-    width: 145px; flex-shrink: 0; overflow-y: auto;
-    margin-top: 0; display: flex; flex-direction: column;
-  }
-
-  /* Skills: twee kolommen */
-  .skills-layout { display: flex; gap: 12px; height: calc(100dvh - 160px); overflow: hidden; }
-  .skills-list { flex: 1; overflow-y: auto; min-width: 0; }
-  .skills-detail {
-    width: 200px; flex-shrink: 0;
-    background: var(--white); border: 1px solid var(--border);
-    border-radius: var(--r); padding: 12px; overflow-y: auto;
-  }
-
-}
-
-/* ════════════════════════════════════════
-   TABLET (≥768px) — sidebar nav altijd
-   Werkt voor portrait én landscape
-════════════════════════════════════════ */
-@media (min-width: 768px) {
-
-  /* Nav wordt vaste icon-sidebar links */
-  .nav {
-    position: fixed;
-    left: 0; top: 0; bottom: 0; right: auto;
-    width: 68px; height: 100%;
-    flex-direction: column;
-    border-top: none;
-    border-right: 1px solid var(--border);
-    padding: 12px 0;
-    z-index: 100;
-    overflow: hidden;
-    box-shadow: none;
-    background: var(--white);
-  }
-
-  /* FCP logo verborgen - icoon via nav-logo div */
-  .nav::before { display: none; }
-
-  .nav-btn {
-    flex: none;
-    width: 52px; height: 48px;
-    border-radius: 10px;
-    margin: 1px 8px;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .nav-btn span:last-child { font-size: 7px; }
-
-  .nav-btn.active {
-    background: rgba(var(--accent-rgb,43,31,160),.12);
-    color: var(--accent);
-  }
-  .nav-dot { display: none; }
-
-  /* Alle pagina's: ruimte voor sidebar */
-  body {
-    padding-left: 68px;
-    padding-bottom: 0;
-  }
-
-  .page-wrap { padding-left: 0; }
-
-  /* Topbar: minder iOS-padding nodig */
-  .page-header {
-    padding-top: calc(16px + env(safe-area-inset-top));
-    padding-bottom: 14px;
-    min-height: auto;
-  }
-  .home-hero {
-    padding-top: calc(16px + env(safe-area-inset-top));
-    padding-bottom: 16px;
-  }
-
-  /* Start: training + wedstrijd naast elkaar */
-  .start-two-col {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    flex-direction: unset !important;
-    align-items: stretch;
-    margin-bottom: 10px;
-  }
-  #start-left-col, #start-right-col { display: flex !important; flex-direction: column; }
-  #start-training-card, #start-wedstrijd-card { flex: 1; display: flex; flex-direction: column; }
-  #start-training-card > a, #start-wedstrijd-card > a { flex: 1; }
-
-  /* Geen bottom nav padding meer */
-  body { padding-bottom: 0 !important; min-height: 100dvh; }
-  .page-wrap { padding-bottom: 40px !important; min-height: 100dvh; }
-  /* Verberg app.js desktop panel - wij hebben eigen nav sidebar */
-  #desktop-panel { display: none !important; }
-  .scroll-top { bottom: 20px; right: 16px; }
-  .toast { bottom: 20px; }
-
-  /* Modals: centered dialog ipv bottom sheet */
-  .modal-overlay,
-  .bmodal-overlay {
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-
-  .modal, .bmodal {
-    border-radius: 16px;
-    max-width: 500px;
-    width: 100%;
-    padding-bottom: 24px;
-    box-shadow: 0 8px 40px rgba(43,31,160,.18);
-  }
-
-  .pr-modal-overlay {
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-
-  .pr-modal {
-    border-radius: 16px;
-    max-width: 460px;
-    width: 100%;
-    padding-bottom: 24px;
-  }
-
-  /* Opstelling: veld links, bench rechts (ook in portrait) */
-  .opst-layout-wrap {
     display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    gap: 10px;
-    padding: 10px 14px;
-    height: calc(100dvh - 60px);
-    overflow: hidden;
-  }
-
-  .opst-layout-wrap .field-wrap {
-    flex: 1; min-width: 0; min-height: 0;
-    margin-bottom: 0 !important;
-    display: flex; flex-direction: column;
+    flex-direction: column;
   }
 
   .opst-layout-wrap .field-wrap .field-container {
-    flex: 1; min-height: 0; position: relative;
+    flex: 1;
+    min-height: 0;
+    position: relative;
   }
 
   .opst-layout-wrap .field-wrap .field-container .field-svg {
-    position: absolute; inset: 0; width: 100%; height: 100%;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
   }
 
-  .opst-layout-wrap .field-wrap .field-actions { flex-shrink: 0; margin-top: 8px; }
+  .opst-layout-wrap .field-wrap .field-actions {
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
 
+  /* Bench kolom: vaste breedte rechts */
   .opst-layout-wrap .opst-bench-col-content {
-    width: 160px; flex-shrink: 0; overflow-y: auto;
-    margin-top: 0; display: flex; flex-direction: column;
-    padding-top: 4px;
+    width: 145px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
   }
 
-  /* Selectie: spelerdetail 2-koloms (links info, rechts formulier) */
-  .sel-responsive {
-    padding-top: 12px;
+  /* Skills: twee kolommen in landscape */
+  .skills-layout {
+    display: flex;
+    gap: 12px;
+    height: calc(100dvh - 160px);
+    overflow: hidden;
   }
 
-  /* Skills: laat app zelf landscape/portrait bepalen via JS */
+  .skills-list {
+    flex: 1;
+    overflow-y: auto;
+    min-width: 0;
+  }
 
-  /* Oefeningen: dropdown ipv filter scroll */
-  .filter-scroll { display: none; }
+  .skills-detail {
+    width: 200px;
+    flex-shrink: 0;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 12px;
+    overflow-y: auto;
+  }
 
 }
 
 /* ════════════════════════════════════════
-   TABLET LANDSCAPE + DESKTOP (≥1024px)
-   Bredere sidebar met labels
+   DESKTOP (≥1024px): reset landscape nav
+   App gecentreerd als kolom
 ════════════════════════════════════════ */
 @media (min-width: 1024px) {
 
-  .nav {
-    width: 200px;
-    padding: 16px 0;
-    background: var(--topbar);
-    border-right: none;
+  html, body {
+    background: #1a1a2e;
   }
 
-  /* Logo via nav-logo div */
-  .nav::before { display: none; }
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
 
-  /* Nav items: horizontaal met label */
+  .page-wrap {
+    width: 420px;
+    min-width: 420px;
+    max-width: 420px;
+    min-height: 100vh;
+    background: var(--bg);
+    box-shadow: 0 0 80px rgba(0,0,0,.5);
+    flex-shrink: 0;
+    /* Reset landscape padding */
+    padding-left: 0 !important;
+  }
+
+  /* Nav: reset naar onderaan in de kolom */
+  .nav {
+    position: sticky !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    flex-direction: row !important;
+    border-right: none !important;
+    border-top: 1px solid var(--border) !important;
+    transform: none !important;
+    z-index: 10;
+  }
+
   .nav-btn {
-    width: 176px; height: 44px;
-    border-radius: 11px;
-    margin: 2px 12px;
-    flex-direction: row;
-    gap: 11px;
-    justify-content: flex-start;
-    padding: 0 14px;
-    font-size: 13px;
-    letter-spacing: 0;
-    text-transform: none;
-    color: rgba(255,255,255,.7);
+    flex: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    flex-direction: column !important;
+    gap: 1px !important;
   }
 
   .nav-btn span:last-child {
-    font-size: 13px !important;
-    font-weight: 600;
+    font-size: 7px !important;
   }
 
-  .nav-btn.active {
-    background: rgba(255,255,255,.16);
-    color: #fff;
+  /* Modals gecentreerd over de 420px kolom */
+  .modal-overlay,
+  .bmodal-overlay,
+  .pr-modal-overlay {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    max-width: 420px;
   }
 
-  body { padding-left: 200px; padding-bottom: 0 !important; }
-  .page-wrap { padding-bottom: 40px !important; }
-
-  .page-header { padding-left: 24px; padding-right: 24px; }
-  .home-hero { padding-left: 24px; padding-right: 24px; }
-
-  /* Content iets ruimer */
-  .form-wrap { padding-left: 24px; padding-right: 24px; }
-  .week-list { padding-left: 24px; padding-right: 24px; }
-  .oef-list { padding-left: 24px; padding-right: 24px; }
-
-}
-
-/* ════════════════════════════════════════
-   DONKER + FCP THEMA OVERRIDES
-   Corrigeert hardcoded kleuren die niet
-   meegaan met het donkere thema
-════════════════════════════════════════ */
-
-/* Detectie via CSS: als --bg donker is, past alles zich aan */
-/* app.js zet --bg op #080c14 (donker) of #111111 (fcp) */
-
-/* Nav active state: licht in donker thema */
-@media (orientation: landscape) and (max-width: 767px) {
-  .nav-btn.active {
-    background: rgba(255,255,255,.2) !important;
-    color: #fff !important;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.3);
+  button, select, .pos-slot, .nav-btn, .week-hdr {
+    cursor: pointer;
   }
 }
-
-/* Tablet/desktop nav active: gebruik accent kleur achtergrond */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .nav-btn.active {
-    background: rgba(var(--accent-rgb, 43,31,160), .12);
-    color: var(--accent);
-  }
-}
-
-/* Kernprincipes modal: altijd thema-kleuren */
-.pr-modal {
-  background: var(--white) !important;
-  color: var(--text) !important;
-}
-.pr-modal .pr-title { color: var(--accent) !important; }
-.pr-modal .pr-desc,
-.pr-modal .pr-ex { color: var(--text2) !important; }
-.pr-modal .pr-label { color: var(--text3) !important; }
-.pr-modal .pr-sep { border-color: var(--border) !important; }
-
-/* Dashboard subtabs: duidelijke selected state */
-.dtab-active,
-[id^="dtab-"].active-tab {
-  border-color: var(--accent) !important;
-  color: var(--accent) !important;
-}
-
-/* Kaart achtergronden: gebruik altijd var(--white) */
-.card, .week-item, .wed-card, .pcard, .oef-card {
-  background: var(--white) !important;
-  border-color: var(--border) !important;
-}
-
-/* Tekst in kaarten altijd leesbaar */
-.card *, .week-item *, .wed-card *, .pcard * {
-  /* Niet overschrijven want dit breekt icoon kleuren */
-}
-
-/* Page header tekst altijd wit (op topbar achtergrond) */
-.page-header .page-title,
-.page-header .page-subtitle,
-.home-hero .page-title,
-.home-hero .page-subtitle {
-  color: #fff !important;
-}
-
-/* pos-tag: thema gebruikt var(--white) en var(--text2) - werkt in alle themas */
-
-/* Week header text in donker thema */
-.week-nr { color: var(--text3) !important; }
-.week-focus { color: var(--text) !important; }
-
-/* Session blok tags altijd leesbaar */
-.blok-tag { color: #fff !important; }
-
-/* Wedstrijd score groot */
-.wed-score-big { color: var(--text) !important; }
-
-/* Wisselspelers naam */
-.bench-naam { color: var(--text) !important; }
-
-/* Stat strip tekst */
-.home-stat-num { color: var(--text) !important; }
-.home-stat-label { color: var(--text3) !important; }
-
-/* Kernprincipes kaarten op startpagina */
-.pr-card-num { color: var(--accent) !important; }
-.pr-card-naam { color: var(--text) !important; }

@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2B1FA0">
-<title>Opstelling — Voetbaltrainer-app</title>
+<title>Opstelling — FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -191,7 +191,7 @@ function renderBench() {
     const init = parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : p.naam.slice(0,2).toUpperCase();
     const badges = getRolBadges(p.posities);
     return `<div style="display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);padding:9px 12px;margin-bottom:6px">
-      <div class="bench-avatar">${init}</div>
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);flex-shrink:0">${init}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.naam}</div>
         <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">${badges || `<span style="font-size:10px;color:var(--text3)">Geen positie</span>`}</div>

@@ -76,13 +76,6 @@
     <input class="bmodal-input" id="edit-wed-datum" type="date">
     <div class="bmodal-label">Starttijd</div>
     <input class="bmodal-input" id="edit-wed-tijd" type="time" placeholder="HH:MM">
-    <div class="bmodal-label">Type</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-      <button class="thu-uit-btn" id="edit-btn-type-competitie" onclick="setWedType('competitie','edit')">Competitie</button>
-      <button class="thu-uit-btn" id="edit-btn-type-beker" onclick="setWedType('beker','edit')">Beker</button>
-      <button class="thu-uit-btn active" id="edit-btn-type-oefenwedstrijd" onclick="setWedType('oefenwedstrijd','edit')">Oefenwedstrijd</button>
-    </div>
-    <div id="edit-fase-wrap"></div>
     <div class="bmodal-label">Locatie</div>
     <div style="display:flex;gap:7px;margin-bottom:2px">
       <button class="thu-uit-btn active" id="edit-btn-thuis" onclick="setEditThuisUit('thuis')">Thuis</button>
@@ -111,14 +104,6 @@
         <input class="form-input" id="wed-datum" type="date" style="flex:1;min-width:120px">
         <input class="form-input" id="wed-tijd" type="time" style="flex:0 0 80px;min-width:80px" placeholder="HH:MM">
       </div>
-      <div class="form-row" style="gap:6px">
-        <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1">
-          <button class="thu-uit-btn" id="btn-type-competitie" onclick="setWedType('competitie','new')">Competitie</button>
-          <button class="thu-uit-btn" id="btn-type-beker" onclick="setWedType('beker','new')">Beker</button>
-          <button class="thu-uit-btn active" id="btn-type-oefenwedstrijd" onclick="setWedType('oefenwedstrijd','new')">Oefenwedstrijd</button>
-        </div>
-      </div>
-      <div id="new-fase-wrap"></div>
       <div class="form-row">
         <div class="thu-uit-btns" style="flex:1">
           <button class="thu-uit-btn active" id="btn-thuis" onclick="setThuisUit('thuis')">Thuis</button>
@@ -316,7 +301,7 @@ function buildWedBench(wid) {
     const init = parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : p.naam.slice(0,2).toUpperCase();
     const badges = getRolBadges(p.posities);
     return `<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 9px;margin-bottom:6px;display:flex;align-items:center;gap:7px">
-      <div style="width:28px;height:28px;border-radius:50%;background:var(--blauw-l);border:1.5px solid var(--blauw-m);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--topbar);flex-shrink:0">${init}</div>
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text);flex-shrink:0">${init}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.naam}</div>
         <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">${badges || `<span style="font-size:10px;color:var(--text3)">Geen positie</span>`}</div>
@@ -684,9 +669,10 @@ async function addWedstrijd() {
   const rawDatum = document.getElementById('wed-datum').value;
   const datum = rawDatum ? formatDatumShort(rawDatum) : '';
   const rawTijd = document.getElementById('wed-tijd')?.value || '';
-  const w = { id:genId(), tegenstander:teg, datum, isoDate:rawDatum, starttijd:rawTijd, thuis_uit:thuisUit, wed_type:newWedType, wed_fase:newWedFase, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null, gespeeld:false };
+  const w = { id:genId(), tegenstander:teg, datum, isoDate:rawDatum, starttijd:rawTijd, thuis_uit:thuisUit, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null, gespeeld:false };
   if (supabaseReady) {
-    const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate||'', thuis_uit:w.thuis_uit, wed_type:w.wed_type, wed_fase:w.wed_fase, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
+    // Alleen de basiskolommen sturen bij aanmaken
+    const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate||'', thuis_uit:w.thuis_uit, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
     if (!res || res._error) { showToast('Opslaan mislukt — ' + (res?.message||'check Supabase')); return; }
   }
   wedstrijden.push(w);
@@ -747,55 +733,6 @@ function setMotm(wedId, playerId) {
 
 let editWedId = null;
 let editThuisUit = 'thuis';
-let editWedType = 'oefenwedstrijd';
-let editWedFase = '';
-let newWedType = 'oefenwedstrijd';
-let newWedFase = '';
-
-const WED_FASES = {
-  competitie: ['Fase 1', 'Fase 2', 'Fase 3'],
-  beker: [],
-  oefenwedstrijd: []
-};
-
-function setWedType(val, mode) {
-  if (mode === 'new') {
-    newWedType = val;
-    newWedFase = '';
-    ['competitie','beker','oefenwedstrijd'].forEach(t => {
-      const btn = document.getElementById('btn-type-' + t);
-      if (btn) btn.classList.toggle('active', t === val);
-    });
-    renderFaseSelector('new-fase-wrap', val, newWedFase, 'new');
-  } else {
-    editWedType = val;
-    editWedFase = '';
-    ['competitie','beker','oefenwedstrijd'].forEach(t => {
-      const btn = document.getElementById('edit-btn-type-' + t);
-      if (btn) btn.classList.toggle('active', t === val);
-    });
-    renderFaseSelector('edit-fase-wrap', val, editWedFase, 'edit');
-  }
-}
-
-function setWedFase(val, mode) {
-  if (mode === 'new') newWedFase = val;
-  else editWedFase = val;
-  const wrap = document.getElementById(mode === 'new' ? 'new-fase-wrap' : 'edit-fase-wrap');
-  if (!wrap) return;
-  wrap.querySelectorAll('.fase-btn').forEach(b => b.classList.toggle('active', b.dataset.fase === val));
-}
-
-function renderFaseSelector(wrapperId, type, huidigeFase, mode) {
-  const wrap = document.getElementById(wrapperId);
-  if (!wrap) return;
-  const fases = WED_FASES[type] || [];
-  if (!fases.length) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = '<div class="bmodal-label" style="margin-top:8px">Fase</div>'
-    + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">'
-    + fases.map(f => `<button class="thu-uit-btn fase-btn${f===huidigeFase?' active':''}" data-fase="${f}" onclick="setWedFase('${f}','${mode}')">${f}</button>`).join('')
-    + '</div>';
-}
 
 function setEditThuisUit(val) {
   editThuisUit = val;
@@ -811,13 +748,6 @@ function openEditWed(id) {
   document.getElementById('edit-wed-tijd').value = w.starttijd || '';
   editThuisUit = w.thuis_uit || 'thuis';
   setEditThuisUit(editThuisUit);
-  editWedType = w.wed_type || 'oefenwedstrijd';
-  editWedFase = w.wed_fase || '';
-  ['competitie','beker','oefenwedstrijd'].forEach(t => {
-    const btn = document.getElementById('edit-btn-type-' + t);
-    if (btn) btn.classList.toggle('active', t === editWedType);
-  });
-  renderFaseSelector('edit-fase-wrap', editWedType, editWedFase, 'edit');
   document.getElementById('bmodalEditWed').classList.add('open');
 }
 function closeEditWed() {
@@ -833,13 +763,10 @@ async function saveEditWed() {
   w.datum = rawDatum ? formatDatumShort(rawDatum) : w.datum;
   w.starttijd = document.getElementById('edit-wed-tijd').value || '';
   w.thuis_uit = editThuisUit;
-  w.wed_type = editWedType;
-  w.wed_fase = editWedFase;
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
     await sbFetch('wedstrijden?id=eq.' + editWedId, 'PATCH', {
-      tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate||'', thuis_uit: w.thuis_uit,
-      wed_type: w.wed_type, wed_fase: w.wed_fase
+      tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate||'', thuis_uit: w.thuis_uit
     });
   }
   closeEditWed();
@@ -917,7 +844,7 @@ function renderWedstrijden() {
         <div class="wed-score-big" style="color:${rc}">${w.score_eigen}–${w.score_tegen}</div>
         <div class="card-info">
           <div class="card-title">${w.tegenstander}</div>
-          <div class="card-sub">${w.datum||'–'}${w.starttijd ? ' ' + w.starttijd : ''} · ${w.thuis_uit}${w.wed_type ? ' · ' + (w.wed_type==='oefenwedstrijd'?'Oefenwedstrijd':w.wed_type==='beker'?'Beker':'Competitie') + (w.wed_fase?' · '+w.wed_fase:'') : ''} · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}</div>
+          <div class="card-sub">${w.datum||'–'}${w.starttijd ? ' ' + w.starttijd : ''} · ${w.thuis_uit} · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}</div>
         </div>
         <button onclick="event.stopPropagation();openEditWed('${w.id}')" style="padding:4px 8px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0">✏️</button>
         <span class="card-chev" style="margin-left:4px">▾</span>

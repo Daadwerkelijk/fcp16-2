@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FCP 16-2">
 <meta name="theme-color" content="#2B1FA0">
-<title>Voetbaltrainer-app</title>
+<title>FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -53,23 +53,22 @@
           <h1 class="home-title" id="home-titel" style="color:#fff">FCP <em>16-2</em></h1>
           <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px" id="home-subtitel">Seizoen 2026/2027</div>
         </div>
-        <a href="instellingen.html" class="topbar-btn" style="text-decoration:none;align-self:flex-end;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fff"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15 1.65 1.65 0 0 0 3.17 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
+        <a href="instellingen.html" class="topbar-btn" style="text-decoration:none;align-self:flex-end">⚙️</a>
       </div>
     </div>
   </div>
 
   <!-- Beide kaarten + stats: landscape = 2 kolommen -->
-  <div class="start-two-col" style="padding:12px 16px 0;background:var(--bg);display:flex;flex-direction:column;gap:10px;align-items:stretch;margin-bottom:10px">
-    <div id="start-left-col" style="display:flex;flex-direction:column">
-      <div id="start-training-card" style="flex:1;display:flex;flex-direction:column"></div>
+  <div class="start-two-col" style="padding:12px 16px 0;background:var(--bg)">
+    <div id="start-left-col">
+      <div id="start-training-card"></div>
+      <div id="start-wedstrijd-card"></div>
     </div>
-    <div id="start-right-col" style="display:flex;flex-direction:column">
-      <div id="start-wedstrijd-card" style="flex:1;display:flex;flex-direction:column"></div>
-    </div>
+    <div id="start-right-col" style="display:none"></div>
   </div>
 
   <!-- Statistieken balk -->
-  <div style="padding:0 16px 12px;background:var(--bg);margin-top:0">
+  <div style="padding:0 16px 12px;background:var(--bg)">
     <div style="display:flex;gap:0;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;box-shadow:var(--card-shadow)">
       <a href="selectie.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border);text-decoration:none">
         <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-spelers">0</div>
@@ -86,14 +85,6 @@
       <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
         <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-wins">0</div>
         <div style="font-size:9px;color:var(--text3);margin-top:1px">gewonnen</div>
-      </div>
-      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
-        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-gelijk">0</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:1px">gelijk</div>
-      </div>
-      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
-        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-verloren">0</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:1px">verloren</div>
       </div>
       <div style="flex:1;padding:10px 6px;text-align:center">
         <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-doelsaldo">0</div>
@@ -115,18 +106,18 @@
 <!-- Principe modal -->
 <div id="prModalOverlay" onclick="if(event.target===this)closePrModal()" style="display:none;position:fixed;inset:0;background:rgba(18,17,58,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center">
   <div class="pr-modal" id="prModal">
-    <div id="pr-code" class="pr-modal-code"></div>
-    <div id="pr-naam" class="pr-modal-naam"></div>
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:'DM Sans',sans-serif">Beschrijving</div>
-    <div id="pr-desc" class="pr-modal-text" style="margin-bottom:4px"></div>
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 5px;font-family:'DM Sans',sans-serif">Voorbeeld in het spel</div>
-    <div id="pr-voorbeeld" class="pr-modal-text"></div>
+    <div id="pr-code" style="font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:var(--text);font-family:'DM Sans',sans-serif"></div>
+    <div id="pr-naam" style="font-size:16px;font-weight:600;color:#2B1FA0;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #E4E3F5;font-family:'DM Sans',sans-serif"></div>
+    <div style="font-size:11px;font-weight:700;color:#8B8AB0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:'DM Sans',sans-serif">Beschrijving</div>
+    <div id="pr-desc" style="font-size:14px;line-height:1.7;color:#4A4870;margin-bottom:4px;font-family:'DM Sans',sans-serif"></div>
+    <div style="font-size:11px;font-weight:700;color:#8B8AB0;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 5px;font-family:'DM Sans',sans-serif">Voorbeeld in het spel</div>
+    <div id="pr-voorbeeld" style="font-size:14px;line-height:1.7;color:#4A4870;font-family:'DM Sans',sans-serif"></div>
     <div style="display:flex;gap:8px;margin-top:20px">
       <button id="pr-edit-btn" onclick="openPrEdit()" class="btn-secondary" style="display:flex;align-items:center;gap:6px;padding:10px 16px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);font-size:14px;font-weight:600;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Bewerken
       </button>
-      <button onclick="closePrModal()" style="padding:13px 20px;background:var(--white);color:var(--text2);border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Sluiten</button>
+      <button onclick="closePrModal()" style="padding:13px 20px;background:#ffffff;color:#4A4870;border:1px solid #E4E3F5;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Sluiten</button>
     </div>
   </div>
 </div>
@@ -193,28 +184,13 @@ function renderStartCards() {
       const aanwNum = spelers.length - afwNum;
       const dagNaam = gevondenSessie.dag || 'Training';
       const teller = spelers.length > 0 ? (aanwNum + '/' + spelers.length) : '–';
-      // Datum van de sessie berekenen
-      const DAGMAP = {maandag:0,dinsdag:1,woensdag:2,donderdag:3,vrijdag:4,zaterdag:5,zondag:6};
-      const dagTxt = (gevondenSessie.dag||'').toLowerCase();
-      const dagEntry = Object.entries(DAGMAP).find(([d]) => dagTxt.includes(d));
-      let sessieDatumTekst = '';
-      if (dagEntry && gevondenWeek.isoDate) {
-        const sd = new Date(gevondenWeek.isoDate);
-        sd.setDate(sd.getDate() + dagEntry[1]);
-        const MAANDEN = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-        sessieDatumTekst = sd.getDate() + ' ' + MAANDEN[sd.getMonth()];
-      }
-      const clockSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--topbar)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/></svg>';
-      trainCard.innerHTML = '<a href="' + url + '" style="display:flex;flex-direction:column;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;text-decoration:none;box-shadow:var(--card-shadow);flex:1">'
-        + '<div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">'
-        + clockSvg
+      trainCard.innerHTML = '<a href="' + url + '" style="display:block;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:10px;text-decoration:none;box-shadow:var(--card-shadow)">'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+        + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--topbar)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/></svg>'
         + '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Eerstvolgende training</div>'
         + '</div>'
-        + '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px">'
-        + '<div style="font-size:16px;font-weight:700;color:var(--text)">' + dagNaam + '</div>'
-        + (sessieDatumTekst ? '<div style="font-size:12px;color:var(--text3)">' + sessieDatumTekst + '</div>' : '')
-        + '</div>'
-        + '<div style="display:flex;justify-content:flex-end;margin-top:10px">'
+        + '<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:10px">' + dagNaam + '</div>'
+        + '<div style="display:flex;justify-content:flex-end">'
         + '<span style="background:var(--topbar);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px">' + teller + '</span>'
         + '</div>'
         + '</a>';
@@ -229,11 +205,7 @@ function renderStartCards() {
     const vandaagIso = today.getFullYear() + '-' +
       String(today.getMonth()+1).padStart(2,'0') + '-' +
       String(today.getDate()).padStart(2,'0');
-    const komend = wedstrijden.filter(w => !w.gespeeld && w.isoDate).sort((a,b) => {
-      const da = a.isoDate + (a.starttijd||'00:00');
-      const db = b.isoDate + (b.starttijd||'00:00');
-      return da.localeCompare(db);
-    });
+    const komend = wedstrijden.filter(w => !w.gespeeld && w.isoDate).sort((a,b) => a.isoDate.localeCompare(b.isoDate));
     const eersteKomend = komend.find(w => w.isoDate >= vandaagIso) || komend[0];
     if (eersteKomend) {
       const w = eersteKomend;
@@ -242,35 +214,24 @@ function renderStartCards() {
       const aanwTeller = sp.length > 0 ? ((sp.length - afw) + '/' + sp.length) : '–';
       const thuisTeam = w.thuis_uit === 'thuis' ? 'FCP JO16-2' : (w.tegenstander||'?');
       const uitTeam = w.thuis_uit === 'thuis' ? (w.tegenstander||'?') : 'FCP JO16-2';
-      // Datum voluit: "zondag 22 juni"
-      let datumVoluit = w.datum || '–';
-      if (w.isoDate) {
-        const wd = new Date(w.isoDate);
-        const DAGEN = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
-        const MAANDEN2 = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
-        datumVoluit = DAGEN[wd.getDay()] + ' ' + wd.getDate() + ' ' + MAANDEN2[wd.getMonth()];
-        if (w.starttijd) datumVoluit += ' · ' + w.starttijd;
-      }
-      const bolSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><path d="M12 2c0 0-3.5 4-3.5 10s3.5 10 3.5 10"/><path d="M12 2c0 0 3.5 4 3.5 10s-3.5 10-3.5 10"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/></svg>';
+      const datumTekst = (w.datum||'–') + (w.starttijd ? ' · ' + w.starttijd : '') + ' · ' + (w.thuis_uit||'–');
+      const bolSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M12 2.5c0 0-3 3.5-3 9.5s3 9.5 3 9.5"/><path d="M12 2.5c0 0 3 3.5 3 9.5s-3 9.5-3 9.5"/><line x1="2.5" y1="9" x2="21.5" y2="9"/><line x1="2.5" y1="15" x2="21.5" y2="15"/></svg>';
       const teamDiv = function(naam) {
         return '<div style="text-align:center;flex:1">'
-          + '<div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);margin:0 auto 5px;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><path d="M12 2c0 0-3 4-3 10s3 10 3 10"/><path d="M12 2c0 0 3 4 3 10s-3 10-3 10"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/></svg></div>'
+          + '<div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);margin:0 auto 4px;display:flex;align-items:center;justify-content:center">' + bolSvg + '</div>'
           + '<div style="font-size:12px;font-weight:700;color:#fff">' + naam + '</div>'
           + '</div>';
       };
-      wedCard.innerHTML = '<a href="wedstrijden.html" style="display:flex;flex-direction:column;background:linear-gradient(135deg,var(--topbar) 0%,color-mix(in srgb,var(--topbar) 70%,#000) 100%);border-radius:var(--r);padding:13px;text-decoration:none;box-shadow:var(--card-shadow);flex:1">'
-        + '<div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">'
-        + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="12" y1="5" x2="12" y2="19"/></svg>'
-        + '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.07em">Eerstvolgende wedstrijd</div>'
+      wedCard.innerHTML = '<a href="wedstrijden.html" style="display:block;background:linear-gradient(135deg,var(--topbar) 0%,color-mix(in srgb,var(--topbar) 70%,#000) 100%);border-radius:var(--r);padding:13px;margin-bottom:10px;text-decoration:none;box-shadow:var(--card-shadow)">'
+        + '<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Eerstvolgende wedstrijd</div>'
+        + '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px">'
+        + teamDiv(thuisTeam)
+        + '<div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.6);flex-shrink:0">vs</div>'
+        + teamDiv(uitTeam)
         + '</div>'
-        + '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:10px">'
-        + '<div style="font-size:14px;font-weight:700;color:#fff;text-align:right;flex:1">' + thuisTeam + '</div>'
-        + '<div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.45);flex-shrink:0">vs</div>'
-        + '<div style="font-size:14px;font-weight:700;color:#fff;text-align:left;flex:1">' + uitTeam + '</div>'
-        + '</div>'
-        + '<div style="position:relative;text-align:center;padding:2px 40px 0">'
-        + '<div style="font-size:10px;color:rgba(255,255,255,.6);line-height:1.7">' + datumVoluit + '<br>' + (w.thuis_uit||'–') + '</div>'
-        + '<span style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;white-space:nowrap">' + aanwTeller + '</span>'
+        + '<div style="display:flex;align-items:center;justify-content:space-between">'
+        + '<div style="font-size:10px;color:rgba(255,255,255,.6)">' + datumTekst + '</div>'
+        + '<span style="background:rgba(255,255,255,.2);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:100px">' + aanwTeller + '</span>'
         + '</div>'
         + '</a>';
     } else {
@@ -289,10 +250,6 @@ function updateStats() {
   document.getElementById('stat-spelers').textContent     = pl.length;
   document.getElementById('stat-oef').textContent         = oef.length;
   document.getElementById('stat-wins').textContent        = wed.filter(w=>w.score_eigen>w.score_tegen).length;
-  const gelijkEl = document.getElementById('stat-gelijk');
-  if (gelijkEl) gelijkEl.textContent = wed.filter(w=>w.score_eigen===w.score_tegen&&w.gespeeld).length;
-  const verlorenEl = document.getElementById('stat-verloren');
-  if (verlorenEl) verlorenEl.textContent = wed.filter(w=>w.score_eigen<w.score_tegen).length;
   const saldoEl = document.getElementById('stat-doelsaldo');
   if (saldoEl) {
     saldoEl.textContent = (doelsaldo > 0 ? '+' : '') + doelsaldo;
@@ -316,12 +273,12 @@ function renderPrincipes() {
   const grid = document.getElementById('principle-grid');
   if (!grid) return;
   const kleuren = [
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
   ];
   grid.innerHTML = principes.map((p,i) => {
     const k = kleuren[i % kleuren.length];
@@ -341,7 +298,7 @@ function openPrModal(id) {
   document.getElementById('pr-desc').textContent     = p.beschrijving;
   document.getElementById('pr-voorbeeld').textContent = p.voorbeeld;
   const editBtn = document.getElementById('pr-edit-btn');
-  editBtn.textContent = '✏️ Bewerken';
+  editBtn.style.cssText = 'background:#2B1FA0;color:#ffffff;border:none';
   document.getElementById('prModalOverlay').style.display = 'flex';
 }
 function closePrModal() { document.getElementById('prModalOverlay').style.display = 'none'; }
@@ -374,18 +331,6 @@ async function onSupabaseReady() {
   if (data.principes) { principes = data.principes; localStorage.setItem('fcp_principes', JSON.stringify(principes)); }
   if (data.teamConfig) applyTeamConfig(data.teamConfig);
   renderPrincipes();
-  // Laad wedstrijden uit Supabase voor statstrip en wedstrijd kaart
-  const wedRes = await sbFetch('wedstrijden?order=iso_date.asc', 'GET');
-  if (wedRes && !wedRes._error) {
-    // Supabase gebruikt iso_date, lokale state gebruikt isoDate — normaliseer
-    const genormaliseerd = wedRes.map(w => ({
-      ...w,
-      isoDate: w.isoDate || w.iso_date || '',
-      ratings: typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
-      afwezig: typeof w.afwezig === 'string' ? JSON.parse(w.afwezig || '[]') : (w.afwezig || []),
-    }));
-    localStorage.setItem('fcp_wed', JSON.stringify(genormaliseerd));
-  }
   updateStats();
   renderStartCards();
 }
@@ -399,11 +344,6 @@ renderStartCards();
 initScrollTop();
 initManifest();
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });
-
-// Herlaad stats bij terugkeer naar pagina (bijv. na wedstrijd toevoegen)
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) { updateStats(); renderStartCards(); }
-});
 </script>
 
 <script>

@@ -685,7 +685,7 @@ async function addWedstrijd() {
   const w = { id:genId(), tegenstander:teg, datum, isoDate:rawDatum, starttijd:rawTijd, thuis_uit:thuisUit, wed_type:newWedType, wed_fase:newWedFase, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null, gespeeld:false };
   if (supabaseReady) {
     // Alleen de basiskolommen sturen bij aanmaken
-    const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate||'', thuis_uit:w.thuis_uit, wed_type:w.wed_type, wed_fase:w.wed_fase, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
+    const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate||'', starttijd:w.starttijd||'', thuis_uit:w.thuis_uit, wed_type:w.wed_type, wed_fase:w.wed_fase, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
     if (!res || res._error) { showToast('Opslaan mislukt — ' + (res?.message||'check Supabase')); return; }
   }
   wedstrijden.push(w);
@@ -821,7 +821,7 @@ async function saveEditWed() {
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
     await sbFetch('wedstrijden?id=eq.' + editWedId, 'PATCH', {
-      tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate||'', thuis_uit: w.thuis_uit, wed_type: w.wed_type, wed_fase: w.wed_fase
+      tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate||'', starttijd: w.starttijd||'', thuis_uit: w.thuis_uit, wed_type: w.wed_type, wed_fase: w.wed_fase
     });
   }
   closeEditWed();

@@ -767,6 +767,37 @@ function saveKopieerWeek() {
   showToast('Week gekopieerd: ' + focus);
 }
 
+function sessieDatum(weekIsoDate, dagNaam) {
+  if (!weekIsoDate) return '';
+  const DAGMAP = {maandag:0,dinsdag:1,woensdag:2,donderdag:3,vrijdag:4,zaterdag:5,zondag:6};
+  const dag = (dagNaam||'').toLowerCase().trim();
+  const entry = Object.entries(DAGMAP).find(([d])=>dag.startsWith(d));
+  if (!entry) return '';
+  const base = new Date(weekIsoDate);
+  const dow = base.getDay(); base.setDate(base.getDate()+(dow===0?-6:1-dow)+entry[1]);
+  const M=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  return base.getDate()+' '+M[base.getMonth()];
+}
+
+async function verwijderSessie(wi, si) {
+  const week = customWeken[wi]; if (!week) return;
+  const dagNaam = week.sessies[si]?.dag || 'deze training';
+  if (!confirm('Training "' + dagNaam + '" verwijderen? Aanwezigheidsdata wordt ook verwijderd.')) return;
+  const nk = 'cw'+wi+'_'+si;
+  const aanw = JSON.parse(localStorage.getItem('fcp_aanw')||'{}');
+  delete aanw[nk];
+  const aantalSessies = week.sessies.length;
+  for (let s=si+1; s<aantalSessies; s++) {
+    const oldKey='cw'+wi+'_'+s, newKey='cw'+wi+'_'+(s-1);
+    if (aanw[oldKey]!==undefined) { aanw[newKey]=aanw[oldKey]; delete aanw[oldKey]; }
+  }
+  localStorage.setItem('fcp_aanw', JSON.stringify(aanw));
+  week.sessies.splice(si,1);
+  syncCustomWeken(customWeken);
+  buildSchema();
+  showToast('Training verwijderd');
+}
+
 function deleteCustomWeek(wi) {
   if (!confirm('Verwijder deze week?')) return;
   customWeken.splice(wi, 1); syncCustomWeken(customWeken); buildSchema(); showToast('Week verwijderd');

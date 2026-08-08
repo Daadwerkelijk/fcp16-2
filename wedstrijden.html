@@ -873,10 +873,10 @@ function renderWedstrijden() {
       card.style.borderLeft = `3px solid ${border}`;
       const rc = w.score_eigen > w.score_tegen ? 'var(--accent)' : w.score_eigen < w.score_tegen ? 'var(--red)' : 'var(--text3)';
       const rl = w.score_eigen > w.score_tegen ? 'Gewonnen' : w.score_eigen < w.score_tegen ? 'Verloren' : 'Gelijk';
+      const motmP = w.motm ? players.find(p => p.id === w.motm) : null;
       const formatieLabel = w.formatie && typeof FORMATIES !== 'undefined' && FORMATIES[w.formatie] ? FORMATIES[w.formatie].label : (w.formatie || '');
       const resultaatTxt = w.gespeeld ? ` · <span style="color:${rc}">${rl}</span>${motmP ? ' · ⭐ '+motmP.naam : ''}` : '';
       const formatieTxt = formatieLabel ? ` · ${formatieLabel}` : '';
-      const motmP = w.motm ? players.find(p => p.id === w.motm) : null;
     const motmOptions = sortedPlayers(players).map(p =>
       `<option value="${p.id}" ${w.motm===p.id?'selected':''}>${p.naam}</option>`
     ).join('');

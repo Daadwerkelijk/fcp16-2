@@ -503,6 +503,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     background: #1a1a2e;
   }
 
+  /* Verberg app.js desktop panel — wij hebben eigen nav */
+  #desktop-panel { display: none !important; }
+
   body {
     display: flex;
     justify-content: center;

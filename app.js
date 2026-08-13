@@ -574,6 +574,24 @@ function sortedPlayers(players) {
   return [...players].sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
 }
 
+// Deelt spelers in voor de positie-kies-modal (opstelling.html & wedstrijden.html):
+// 1. passend  — spelers wiens positievoorkeur bij deze plek past
+// 2. onbezet  — overige spelers die nog nergens in de huidige opstelling staan
+// 3. bezet    — overige spelers die elders al opgesteld staan
+function splitSpelersVoorPositie(players, pos, lineup) {
+  const posLabel = pos.label.replace('-', '').toLowerCase();
+  const matched = [], onbezet = [], bezet = [];
+  sortedPlayers(players).forEach(p => {
+    const posities = (p.posities || []).map(x => x.toLowerCase().replace('-', ''));
+    const isMatch = posities.includes(posLabel) || posities.includes(pos.label.toLowerCase());
+    const elders = Object.entries(lineup || {}).find(([k, v]) => v === p.id && k !== pos.id);
+    if (isMatch) matched.push(p);
+    else if (elders) bezet.push(p);
+    else onbezet.push(p);
+  });
+  return { matched, onbezet, bezet };
+}
+
 function formatDatumShort(iso) {
   if (!iso) return '';
   const d = new Date(iso);

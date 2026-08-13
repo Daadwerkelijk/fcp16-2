@@ -408,11 +408,14 @@ function openWedPositieModal(wid, pos, formatieKey) {
   };
   lijst.appendChild(leegBtn);
   if (!pool.length) { lijst.innerHTML += '<div style="font-size:12px;color:var(--text3);padding:8px 0">Markeer eerst aanwezige spelers op het Aanwezig tabblad.</div>'; }
-  sortedPlayers(pool).forEach(p => {
+  const formatie = FORMATIES[formatieKey] || FORMATIES[wedstrijden.find(x=>x.id===wid)?.formatie] || {};
+  const posLabelOf = id => (formatie.pos || []).find(ps => ps.id === id)?.label || id;
+  const { matched, onbezet, bezet } = splitSpelersVoorPositie(pool, pos, wedLineups[wid]);
+  const maakBtn = p => {
     const btn = document.createElement('button');
     const alGeplaatst = Object.entries(wedLineups[wid]).find(([k,v]) => v===p.id && k!==pos.id);
     btn.className = 'modal-btn' + (wedLineups[wid][pos.id]===p.id?' current':'');
-    btn.innerHTML = `<span>${p.naam}</span><span style="font-size:11px;color:var(--text3)">${wedLineups[wid][pos.id]===p.id?'✓ Huidig':alGeplaatst?'⟵ '+alGeplaatst[0]:''}</span>`;
+    btn.innerHTML = `<span>${p.naam}</span><span style="font-size:11px;color:var(--text3)">${wedLineups[wid][pos.id]===p.id?'✓ Huidig':alGeplaatst?'⟵ '+posLabelOf(alGeplaatst[0]):''}</span>`;
     btn.onclick = () => {
       if (alGeplaatst && wedLineups[wid][pos.id]!==p.id) {
         // Verplaats: maak oude positie leeg
@@ -429,8 +432,25 @@ function openWedPositieModal(wid, pos, formatieKey) {
       }
       buildWedField(wid); buildWedBench(wid); closeWedPosModal(); showToast(p.naam+' → '+pos.label);
     };
-    lijst.appendChild(btn);
-  });
+    return btn;
+  };
+  const addGroup = (arr, label) => {
+    if (!arr.length) return;
+    if (label) {
+      const hdr = document.createElement('div');
+      hdr.style.cssText = 'font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:.07em;padding:4px 0 6px';
+      hdr.textContent = label;
+      lijst.appendChild(hdr);
+    } else if (lijst.children.length) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'border-top:1px solid var(--line2);margin:6px 0';
+      lijst.appendChild(sep);
+    }
+    arr.forEach(p => lijst.appendChild(maakBtn(p)));
+  };
+  addGroup(matched, 'Passende positie');
+  addGroup(onbezet, null);
+  addGroup(bezet, null);
   document.getElementById('wedPosModal').classList.add('open');
 }
 function closeWedPosModal() { document.getElementById('wedPosModal').classList.remove('open'); }

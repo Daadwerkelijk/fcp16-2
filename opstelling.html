@@ -217,29 +217,26 @@ function openModal(pos) {
     d.textContent = 'Geen spelers. Voeg toe via Selectie.';
     list.appendChild(d);
   } else {
-    // Sorteer: spelers met passende positie eerst, dan de rest
-    const posLabel = pos.label.replace('-','').toLowerCase(); // bijv 'lbl', 'cbr'
-    const matched = [];
-    const rest    = [];
-    sortedPlayers(players).forEach(p => {
-      const posities = (p.posities||[]).map(x=>x.toLowerCase().replace('-',''));
-      if (posities.includes(posLabel) || posities.includes(pos.label.toLowerCase())) matched.push(p);
-      else rest.push(p);
-    });
+    // Sorteer: passende positie eerst, dan nog-niet-opgestelde spelers, dan de rest
+    const { matched, onbezet, bezet } = splitSpelersVoorPositie(players, pos, lineup);
 
-    if (matched.length) {
-      const hdr = document.createElement('div');
-      hdr.style.cssText = 'font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:.07em;padding:4px 0 6px';
-      hdr.textContent = 'Passende positie';
-      list.appendChild(hdr);
-      matched.forEach(p => addPlayerBtn(list, p, pos, lineup));
-      if (rest.length) {
+    const addGroup = (arr, label) => {
+      if (!arr.length) return;
+      if (label) {
+        const hdr = document.createElement('div');
+        hdr.style.cssText = 'font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:.07em;padding:4px 0 6px';
+        hdr.textContent = label;
+        list.appendChild(hdr);
+      } else {
         const sep = document.createElement('div');
         sep.style.cssText = 'border-top:1px solid var(--line2);margin:6px 0';
         list.appendChild(sep);
       }
-    }
-    rest.forEach(p => addPlayerBtn(list, p, pos, lineup));
+      arr.forEach(p => addPlayerBtn(list, p, pos, lineup));
+    };
+    addGroup(matched, 'Passende positie');
+    addGroup(onbezet, null);
+    addGroup(bezet, null);
   }
   document.getElementById('modalOverlay').classList.add('open');
 }

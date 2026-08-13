@@ -1,4 +1,4 @@
-const CACHE = 'fcp162-v80';
+const CACHE = 'fcp162-v81';
 const ASSETS = [
   '/fcp16-2/',
   '/fcp16-2/index.html',
@@ -14,8 +14,8 @@ const ASSETS = [
   '/fcp16-2/app.js',
   '/fcp16-2/style.css',
   '/fcp16-2/manifest.json',
-  '/fcp16-2/icon-192.png',
-  '/fcp16-2/icon-512.png',
+  '/fcp16-2/icon192.png',
+  '/fcp16-2/icon512.png',
 ];
 
 self.addEventListener('install', e => {

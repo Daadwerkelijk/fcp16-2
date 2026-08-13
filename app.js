@@ -162,7 +162,13 @@ async function loadFromSupabase() {
     }
   }
   if (oe && !oe._error) {
-    const oef = oe.map(o => ({ ...o, desc: o.desc || o.beschrijving || '', stappen: o.stappen || [], pr: [] }));
+    const oef = oe.map(o => ({
+      ...o,
+      desc: o.desc || o.beschrijving || '',
+      stappen: o.stappen || [],
+      pr: [],
+      formaties: Array.isArray(o.formaties) ? o.formaties : (typeof o.formaties === 'string' && o.formaties ? JSON.parse(o.formaties) : []),
+    }));
     result.customOef = oef; saveCustomOef(oef);
   }
   if (ca && !ca._error && ca.length) {
@@ -549,7 +555,7 @@ function genId() { return 'i' + Date.now() + Math.random().toString(36).slice(2,
 
 function safeEncode(str) {
   try { return btoa(unescape(encodeURIComponent(str))); }
-  catch(e) { return btoa(str.replace(/[^ -]/g, '?')); }
+  catch(e) { return btoa(str.replace(/[^-]/g, '?')); }
 }
 function safeDecode(str) {
   try { return decodeURIComponent(escape(atob(str))); }

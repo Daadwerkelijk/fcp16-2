@@ -10,9 +10,8 @@
 <meta name="theme-color" content="#2B1FA0">
 <title>FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon192.png" type="image/png">
-<link rel="icon" href="icon192.png" type="image/png">
-<link rel="apple-touch-icon" href="icon192.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -54,42 +53,51 @@
           <h1 class="home-title" id="home-titel" style="color:#fff">FCP <em>16-2</em></h1>
           <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px" id="home-subtitel">Seizoen 2026/2027</div>
         </div>
-        <a href="instellingen.html" class="topbar-btn" style="text-decoration:none;align-self:flex-end">⚙️</a>
+        <a href="instellingen.html" class="topbar-btn" style="text-decoration:none;align-self:flex-end;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fff"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15 1.65 1.65 0 0 0 3.17 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
       </div>
     </div>
   </div>
 
   <!-- Beide kaarten + stats: landscape = 2 kolommen -->
-  <div class="start-two-col" style="padding:12px 16px 0;background:var(--bg)">
+  <div class="start-two-col" style="padding:12px 16px 0;background:var(--bg);display:flex;flex-direction:column;gap:10px">
     <div id="start-left-col">
       <div id="start-training-card"></div>
+    </div>
+    <div id="start-right-col">
       <div id="start-wedstrijd-card"></div>
     </div>
-    <div id="start-right-col" style="display:none"></div>
   </div>
 
   <!-- Statistieken balk -->
   <div style="padding:0 16px 12px;background:var(--bg)">
-    <div style="display:flex;gap:0;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;box-shadow:var(--card-shadow)">
-      <a href="selectie.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border);text-decoration:none">
-        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-spelers">0</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:1px">spelers</div>
+    <div class="stat-bar">
+      <a href="selectie.html" class="stat-tile">
+        <div class="htile-num" id="stat-spelers">0</div>
+        <div class="htile-label">spelers</div>
       </a>
-      <a href="oefeningen.html" style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border);text-decoration:none">
-        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-oef">0</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:1px">oefeningen</div>
+      <a href="oefeningen.html" class="stat-tile">
+        <div class="htile-num" id="stat-oef">0</div>
+        <div class="htile-label">oefeningen</div>
       </a>
-      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
-        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-wedstrijden">0</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:1px">wedstrijden</div>
+      <div class="stat-tile">
+        <div class="htile-num" id="stat-wedstrijden">0</div>
+        <div class="htile-label">wedstrijden</div>
       </div>
-      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
-        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-wins">0</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:1px">gewonnen</div>
+      <div class="stat-tile">
+        <div class="htile-num" id="stat-wins">0</div>
+        <div class="htile-label">gewonnen</div>
       </div>
-      <div style="flex:1;padding:10px 6px;text-align:center">
-        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)" id="stat-doelsaldo">0</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:1px">doelsaldo</div>
+      <div class="stat-tile">
+        <div class="htile-num" id="stat-gelijk">0</div>
+        <div class="htile-label">gelijk</div>
+      </div>
+      <div class="stat-tile">
+        <div class="htile-num" id="stat-verloren">0</div>
+        <div class="htile-label">verloren</div>
+      </div>
+      <div class="stat-tile">
+        <div class="htile-num" id="stat-doelsaldo">0</div>
+        <div class="htile-label">doelsaldo</div>
       </div>
     </div>
   </div>
@@ -106,8 +114,8 @@
 
 <!-- Principe modal -->
 <div id="prModalOverlay" onclick="if(event.target===this)closePrModal()" style="display:none;position:fixed;inset:0;background:rgba(18,17,58,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center">
-  <div class="pr-modal" id="prModal">
-    <div id="pr-code" style="font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:var(--text);font-family:'DM Sans',sans-serif"></div>
+  <div class="pr-modal" id="prModal" style="background:#ffffff !important;color:#12113A !important">
+    <div id="pr-code" style="font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:#12113A;font-family:'DM Sans',sans-serif"></div>
     <div id="pr-naam" style="font-size:16px;font-weight:600;color:#2B1FA0;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #E4E3F5;font-family:'DM Sans',sans-serif"></div>
     <div style="font-size:11px;font-weight:700;color:#8B8AB0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:'DM Sans',sans-serif">Beschrijving</div>
     <div id="pr-desc" style="font-size:14px;line-height:1.7;color:#4A4870;margin-bottom:4px;font-family:'DM Sans',sans-serif"></div>
@@ -251,6 +259,10 @@ function updateStats() {
   document.getElementById('stat-spelers').textContent     = pl.length;
   document.getElementById('stat-oef').textContent         = oef.length;
   document.getElementById('stat-wins').textContent        = wed.filter(w=>w.score_eigen>w.score_tegen).length;
+  const gelijkEl = document.getElementById('stat-gelijk');
+  if (gelijkEl) gelijkEl.textContent = wed.filter(w=>w.score_eigen===w.score_tegen&&w.gespeeld).length;
+  const verlorenEl = document.getElementById('stat-verloren');
+  if (verlorenEl) verlorenEl.textContent = wed.filter(w=>w.score_eigen<w.score_tegen).length;
   const saldoEl = document.getElementById('stat-doelsaldo');
   if (saldoEl) {
     saldoEl.textContent = (doelsaldo > 0 ? '+' : '') + doelsaldo;
@@ -274,12 +286,12 @@ function renderPrincipes() {
   const grid = document.getElementById('principle-grid');
   if (!grid) return;
   const kleuren = [
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
   ];
   grid.innerHTML = principes.map((p,i) => {
     const k = kleuren[i % kleuren.length];
@@ -345,6 +357,11 @@ renderStartCards();
 initScrollTop();
 initManifest();
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });
+
+// Herlaad stats bij terugkeer naar pagina (bijv. na wedstrijd toevoegen)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { updateStats(); renderStartCards(); }
+});
 </script>
 
 <script>

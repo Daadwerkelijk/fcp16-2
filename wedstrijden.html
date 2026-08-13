@@ -917,7 +917,7 @@ function renderWedstrijden() {
 
       card.innerHTML = `
       <div class="card-hdr" onclick="this.closest('.card').classList.toggle('open')">
-        <div class="wed-score-big" style="color:${rc}">${w.score_eigen}–${w.score_tegen}</div>
+        <div class="wed-score-big" style="color:${rc}">${w.score_eigen||0}–${w.score_tegen||0}</div>
         <div class="card-info">
           <div class="card-title">${w.tegenstander}</div>
           <div class="card-sub">${w.datum||'–'}${w.starttijd ? ' ' + w.starttijd : ''} · ${w.thuis_uit}${w.wed_type ? ' · '+(w.wed_type==='beker'?'Beker':w.wed_type==='oefenwedstrijd'?'Oefenwedstrijd':'Competitie')+(w.wed_fase?' · '+w.wed_fase:'') : ''}${formatieTxt}${resultaatTxt}</div>
@@ -994,9 +994,9 @@ function renderWedstrijden() {
         <div id="wpanel-wedstrijd-${w.id}" style="display:none;padding:12px 14px">
           <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Eindstand</div>
           <div class="wed-score-row">
-            <input class="wed-score-input" id="ws-eigen-${w.id}" type="number" min="0" max="99" value="${w.score_eigen}">
+            <input class="wed-score-input" id="ws-eigen-${w.id}" type="number" min="0" max="99" value="${w.score_eigen||0}">
             <span class="wed-score-sep">–</span>
-            <input class="wed-score-input" id="ws-tegen-${w.id}" type="number" min="0" max="99" value="${w.score_tegen}">
+            <input class="wed-score-input" id="ws-tegen-${w.id}" type="number" min="0" max="99" value="${w.score_tegen||0}">
             <span style="font-size:11px;color:var(--text3);margin-left:6px">FCP – ${w.tegenstander}</span>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">

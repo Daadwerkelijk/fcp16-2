@@ -62,8 +62,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 
 /* ─── BOTTOM NAV ─── */
 .nav{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:100;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(43,31,160,.07)}
-.nav-btn{flex:1;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--text3);font-family:var(--font-ui);font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:color .15s}
-.nav-btn.active{color:var(--accent)}
+.nav-btn{flex:1;min-width:0;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--text3);font-family:var(--font-ui);font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:color .15s}
+.nav-btn span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat-bar{display:flex;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;box-shadow:var(--card-shadow)}
+.stat-tile{flex:1;min-width:0;padding:10px 3px;text-align:center;text-decoration:none;border-right:1px solid var(--border)}
+.stat-tile:last-child{border-right:none}
+.stat-tile .htile-num{font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat-tile .htile-label{font-size:9px;color:var(--text3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-btn.active{color:var(--topbar)}
 .nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
 .nav-dot{width:4px;height:4px;border-radius:50%;background:transparent;margin-top:1px}
 .nav-btn.active .nav-dot{background:var(--topbar)}
@@ -108,7 +114,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .stat-g .stat-num{color:#0D4A2C}
 .stat-g .stat-label{color:var(--groen)}
 .stat-b{background:var(--blauw-l);border-color:var(--blauw-m)}
-.stat-b .stat-num{color:var(--accent)}
+.stat-b .stat-num{color:#1a3799}
 .stat-b .stat-label{color:var(--blauw)}
 .stat-o{background:var(--goud-l);border-color:var(--goud-m)}
 .stat-o .stat-num{color:#6B4E00}
@@ -150,7 +156,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 /* ─── BADGES ─── */
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600}
 .badge.g{background:var(--groen-l);color:#0D4A2C;border:1px solid var(--groen-m)}
-.badge.b{background:var(--bg);color:var(--accent);border:1px solid var(--border)}
+.badge.b{background:var(--blauw-l);color:#1a3799;border:1px solid var(--blauw-m)}
 .badge.o{background:var(--goud-l);color:#6B4E00;border:1px solid var(--goud-m)}
 .badge.r{background:var(--rood-l);color:#8B1A1A;border:1px solid var(--rood-m)}
 .badge.grey{background:#F5F5F5;color:#555;border:1px solid #E0E0E0}
@@ -201,7 +207,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .player-textarea:focus{border-color:var(--accent)}
 .pos-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}
 .pos-tag{padding:6px 13px;border-radius:var(--badge-radius);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--white);color:var(--text2);transition:all .15s}
-.pos-tag.active{background:var(--accent);border-color:var(--accent);color:var(--white)}
+.pos-tag.active{background:var(--blauw-l);border-color:var(--blauw-m);color:#1a3799}
 .player-actions{display:flex;gap:8px;margin-top:12px}
 
 /* ─── SCHEMA / TRAINEN ─── */
@@ -318,7 +324,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .modal-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
 .modal-btn{padding:13px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:14px;font-weight:500;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;transition:all .15s}
 .modal-btn:active{background:var(--blauw-l);transform:scale(.98)}
-.modal-btn.current{border-color:var(--accent);color:var(--accent);background:var(--bg)}
+.modal-btn.current{border-color:var(--topbar);color:var(--topbar);background:var(--blauw-l)}
 .modal-cancel{width:100%;padding:13px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text3);font-family:var(--font-ui);font-size:14px;font-weight:500;cursor:pointer;margin-top:6px}
 .bmodal-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;margin-top:12px;font-weight:700}
 .bmodal-input,.bmodal-select,.bmodal-textarea{width:100%;padding:12px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:14px;outline:none;margin-bottom:2px;transition:border-color .15s;-webkit-appearance:none}
@@ -340,11 +346,11 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 /* ─── PRINCIPE MODAL ─── */
 .pr-modal-overlay{position:fixed;inset:0;background:rgba(18,17,58,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;display:none;align-items:flex-end;justify-content:center;padding:0}
 .pr-modal-overlay.open{display:flex}
-.pr-modal{background:var(--white);color:var(--text);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-height:88dvh;overflow-y:auto;box-shadow:0 -4px 24px rgba(0,0,0,.08)}
-.pr-modal-code{font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:var(--text)}
+.pr-modal{background:#ffffff;color:#12113A;border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-height:88dvh;overflow-y:auto;box-shadow:0 -4px 24px rgba(0,0,0,.08)}
+.pr-modal-code{font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:#12113A}
 .pr-modal-naam{font-size:16px;font-weight:600;margin-bottom:12px;color:#2B1FA0;padding-bottom:12px;border-bottom:1px solid #E4E3F5}
 .pr-modal-section{font-size:11px;color:#8B8AB0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 5px}
-.pr-modal-text{font-size:14px;line-height:1.7;color:var(--text2)}
+.pr-modal-text{font-size:14px;line-height:1.7;color:#4A4870}
 .pr-modal-actions{display:flex;gap:8px;margin-top:18px}
 .pr-modal-edit{flex:1;padding:13px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;text-align:center;background:#2B1FA0;color:#ffffff}
 .pr-modal-close{padding:13px 18px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;background:#ffffff;border:1px solid #E4E3F5;color:#4A4870}
@@ -362,63 +368,84 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .pr-card:active{opacity:.7}
 .skill-level-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:var(--badge-radius)}
 
+
+/* Start pagina: training en wedstrijd kaart gelijke hoogte */
+.start-two-col { align-items: stretch; }
+#start-left-col, #start-right-col { display: flex; flex-direction: column; }
+#start-training-card > *, #start-wedstrijd-card > * { flex: 1; }
+
+/* Aanwezig teller badge uniform */
+.aanw-badge {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 3px 10px !important;
+  border-radius: 100px !important;
+}
+
 /* ════════════════════════════════════════
-   LANDSCAPE — mobiel/tablet
+   LANDSCAPE TELEFOON (≤767px + landscape)
    Triggert als telefoon gedraaid is
 ════════════════════════════════════════ */
-@media (orientation: landscape) {
+@media (orientation: landscape) and (max-width: 767px) {
 
-  /* Nav: van onderaan naar links verticaal */
+  /* Nav: van onderaan naar links, smal */
   .nav {
     position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 60px;
-    height: 100%;
+    left: 0; top: 0; bottom: 0; right: auto;
+    width: 56px; height: 100%;
     flex-direction: column;
     border-top: none;
     border-right: 1px solid var(--border);
-    padding: 8px 0;
-    z-index: 50;
-    overflow-y: auto;
+    padding: 6px 0;
+    z-index: 100;
+    overflow: hidden; /* geen scrollbar */
+    box-shadow: none;
   }
 
   .nav-btn {
     flex: none;
-    width: 52px;
-    height: 52px;
+    width: 48px; height: 44px;
     border-radius: 10px;
-    margin: 2px 4px;
+    margin: 1px 4px;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
   }
 
-  .nav-btn span:last-child {
-    font-size: 6.5px;
-  }
+  .nav-btn span:last-child { font-size: 6.5px; }
 
   .nav-btn.active {
-    background: var(--blauw-l);
+    background: rgba(255,255,255,.18);
+    color: #fff;
   }
 
-  /* Alle pagina content: 60px naar rechts */
-  .page-wrap {
-    padding-left: 60px;
-  }
+  /* Donker thema: expliciete witte kleur voor active */
+  .nav-btn.active .nav-icon { color: #fff; }
+  .nav-dot { display: none; }
 
-  /* Headers compacter */
+  /* Body en pagina's verschuiven naar rechts */
+  body { padding-left: 56px; padding-bottom: 0; }
+  .page-wrap { padding-left: 0; }
+
+  /* Topbar compacter */
   .page-header {
-    padding-top: calc(8px + env(safe-area-inset-top));
+    padding-top: calc(6px + env(safe-area-inset-top));
     padding-bottom: 10px;
+    min-height: auto;
   }
-
   .home-hero {
-    padding-top: calc(8px + env(safe-area-inset-top));
+    padding-top: calc(6px + env(safe-area-inset-top));
     padding-bottom: 12px;
   }
 
-  /* Opstelling: veld links, bench rechts naast elkaar */
+  /* Start: training + wedstrijd naast elkaar */
+  .start-two-col {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex-direction: unset !important;
+  }
+
+  /* Opstelling: veld links, bench rechts */
   .opst-layout-wrap {
     display: flex;
     flex-direction: row;
@@ -429,146 +456,247 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     overflow: hidden;
   }
 
-  /* Veld kolom: neemt alle resterende ruimte */
   .opst-layout-wrap .field-wrap {
-    flex: 1;
-    min-width: 0;
-    min-height: 0;
+    flex: 1; min-width: 0; min-height: 0;
     margin-bottom: 0 !important;
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
   }
 
   .opst-layout-wrap .field-wrap .field-container {
-    flex: 1;
-    min-height: 0;
-    position: relative;
+    flex: 1; min-height: 0; position: relative;
   }
 
   .opst-layout-wrap .field-wrap .field-container .field-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    position: absolute; inset: 0; width: 100%; height: 100%;
   }
 
-  .opst-layout-wrap .field-wrap .field-actions {
-    flex-shrink: 0;
-    margin-top: 6px;
-  }
+  .opst-layout-wrap .field-wrap .field-actions { flex-shrink: 0; margin-top: 6px; }
 
-  /* Bench kolom: vaste breedte rechts */
   .opst-layout-wrap .opst-bench-col-content {
-    width: 145px;
-    flex-shrink: 0;
-    overflow-y: auto;
-    margin-top: 0;
-    display: flex;
-    flex-direction: column;
+    width: 145px; flex-shrink: 0; overflow-y: auto;
+    margin-top: 0; display: flex; flex-direction: column;
   }
 
-  /* Skills: twee kolommen in landscape */
-  .skills-layout {
-    display: flex;
-    gap: 12px;
-    height: calc(100dvh - 160px);
-    overflow: hidden;
-  }
-
-  .skills-list {
-    flex: 1;
-    overflow-y: auto;
-    min-width: 0;
-  }
-
+  /* Skills: twee kolommen */
+  .skills-layout { display: flex; gap: 12px; height: calc(100dvh - 160px); overflow: hidden; }
+  .skills-list { flex: 1; overflow-y: auto; min-width: 0; }
   .skills-detail {
-    width: 200px;
-    flex-shrink: 0;
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-    padding: 12px;
-    overflow-y: auto;
+    width: 200px; flex-shrink: 0;
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 12px; overflow-y: auto;
   }
 
 }
 
 /* ════════════════════════════════════════
-   DESKTOP (≥1024px): echte sidebar layout
+   TABLET (≥768px) — sidebar nav altijd
+   Werkt voor portrait én landscape
 ════════════════════════════════════════ */
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
 
-  /* Verberg app.js desktop panel — wij hebben eigen nav */
-  #desktop-panel { display: none !important; }
-
-  body {
-    padding-left: 200px;
-    padding-bottom: 0 !important;
-    min-height: 100dvh;
-  }
-
-  .page-wrap {
-    width: 100% !important;
-    max-width: none !important;
-    min-width: 0 !important;
-    padding-bottom: 40px !important;
-    box-shadow: none !important;
-    padding-left: 0 !important;
-  }
-
-  /* Nav: vaste zijbalk links, 200px breed met labels */
+  /* Nav wordt vaste icon-sidebar links */
   .nav {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    bottom: 0 !important;
-    width: 200px !important;
-    height: 100vh !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    justify-content: flex-start !important;
-    padding: 16px 10px 20px !important;
-    border-right: 1px solid rgba(255,255,255,.1) !important;
-    border-top: none !important;
-    overflow-y: auto;
+    position: fixed;
+    left: 0; top: 0; bottom: 0; right: auto;
+    width: 68px; height: 100%;
+    flex-direction: column;
+    border-top: none;
+    border-right: 1px solid var(--border);
+    padding: 12px 0;
     z-index: 100;
+    overflow: hidden;
+    box-shadow: none;
+    background: var(--white);
+  }
+
+  /* FCP logo boven de nav items */
+  .nav::before {
+    content: 'FCP';
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--topbar); color: #fff;
+    font-weight: 700; font-size: 11px; font-family: var(--font-ui);
+    margin: 0 auto 10px; flex: 0 0 auto;
   }
 
   .nav-btn {
-    flex: 0 0 auto !important;
-    width: 100% !important;
-    flex-direction: row !important;
-    justify-content: flex-start !important;
-    gap: 10px !important;
-    padding: 10px 12px !important;
-    border-radius: 10px !important;
-    margin-bottom: 2px !important;
-    height: auto !important;
+    flex: none;
+    width: 52px; height: 48px;
+    border-radius: 10px;
+    margin: 1px 8px;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-btn span:last-child { font-size: 7px; }
+
+  .nav-btn.active {
+    background: rgba(43,31,160,.1);
+    color: var(--topbar);
+  }
+
+  /* Donker thema: andere active kleur */
+  .nav-dot { display: none; }
+
+  /* Alle pagina's: ruimte voor sidebar */
+  body {
+    padding-left: 68px;
+    padding-bottom: 0;
+  }
+
+  .page-wrap { padding-left: 0; }
+
+  /* Topbar: minder iOS-padding nodig */
+  .page-header {
+    padding-top: calc(16px + env(safe-area-inset-top));
+    padding-bottom: 14px;
+    min-height: auto;
+  }
+  .home-hero {
+    padding-top: calc(16px + env(safe-area-inset-top));
+    padding-bottom: 16px;
+  }
+
+  /* Start: training + wedstrijd naast elkaar */
+  .start-two-col {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex-direction: unset !important;
+  }
+
+  /* Scroll-to-top hoger want geen bottom nav */
+  .scroll-top { bottom: 20px; right: 16px; }
+  .toast { bottom: 20px; }
+
+  /* Modals: centered dialog ipv bottom sheet */
+  .modal-overlay,
+  .bmodal-overlay {
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal, .bmodal {
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    padding-bottom: 24px;
+    box-shadow: 0 8px 40px rgba(43,31,160,.18);
+  }
+
+  .pr-modal-overlay {
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .pr-modal {
+    border-radius: 16px;
+    max-width: 460px;
+    width: 100%;
+    padding-bottom: 24px;
+  }
+
+  /* Opstelling: veld links, bench rechts (ook in portrait) */
+  .opst-layout-wrap {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 14px;
+    height: calc(100dvh - 60px);
+    overflow: hidden;
+  }
+
+  .opst-layout-wrap .field-wrap {
+    flex: 1; min-width: 0; min-height: 0;
+    margin-bottom: 0 !important;
+    display: flex; flex-direction: column;
+  }
+
+  .opst-layout-wrap .field-wrap .field-container {
+    flex: 1; min-height: 0; position: relative;
+  }
+
+  .opst-layout-wrap .field-wrap .field-container .field-svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+  }
+
+  .opst-layout-wrap .field-wrap .field-actions { flex-shrink: 0; margin-top: 8px; }
+
+  .opst-layout-wrap .opst-bench-col-content {
+    width: 160px; flex-shrink: 0; overflow-y: auto;
+    margin-top: 0; display: flex; flex-direction: column;
+    padding-top: 4px;
+  }
+
+  /* Selectie: spelerdetail 2-koloms (links info, rechts formulier) */
+  .sel-responsive {
+    padding-top: 12px;
+  }
+
+  /* Skills: laat app zelf landscape/portrait bepalen via JS */
+
+  /* Oefeningen: dropdown ipv filter scroll */
+  .filter-scroll { display: none; }
+
+}
+
+/* ════════════════════════════════════════
+   TABLET LANDSCAPE + DESKTOP (≥1024px)
+   Bredere sidebar met labels
+════════════════════════════════════════ */
+@media (min-width: 1024px) {
+
+  .nav {
+    width: 200px;
+    padding: 16px 0;
+    background: var(--topbar);
+    border-right: none;
+  }
+
+  /* Logo groter */
+  .nav::before {
+    width: 44px; height: 44px;
+    font-size: 13px; border-radius: 11px;
+    background: rgba(255,255,255,.2);
+    margin: 0 auto 16px;
+  }
+
+  /* Nav items: horizontaal met label */
+  .nav-btn {
+    width: 176px; height: 44px;
+    border-radius: 11px;
+    margin: 2px 12px;
+    flex-direction: row;
+    gap: 11px;
+    justify-content: flex-start;
+    padding: 0 14px;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: rgba(255,255,255,.7);
   }
 
   .nav-btn span:last-child {
     font-size: 13px !important;
-    display: block !important;
-    font-weight: 500 !important;
+    font-weight: 600;
   }
 
-  .nav-btn .nav-icon {
-    width: 20px !important;
-    flex-shrink: 0;
+  .nav-btn.active {
+    background: rgba(255,255,255,.16);
+    color: #fff;
   }
 
-  /* Page header meer ruimte */
+  body { padding-left: 200px; }
+
   .page-header { padding-left: 24px; padding-right: 24px; }
+  .home-hero { padding-left: 24px; padding-right: 24px; }
 
-  /* Modals gecentreerd */
-  .modal-overlay,
-  .bmodal-overlay,
-  .pr-modal-overlay {
-    position: fixed;
-  }
-
-  button, select, .pos-slot, .nav-btn, .week-hdr {
-    cursor: pointer;
-  }
+  /* Content iets ruimer */
+  .form-wrap { padding-left: 24px; padding-right: 24px; }
+  .week-list { padding-left: 24px; padding-right: 24px; }
+  .oef-list { padding-left: 24px; padding-right: 24px; }
 
 }

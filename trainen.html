@@ -106,6 +106,10 @@
     <div class="bmodal-title">Oefening kiezen</div>
     <div class="bmodal-label">Categorie</div>
     <select class="bmodal-select" id="pick-cat" onchange="renderPickOefList()"></select>
+    <div class="bmodal-label">Systeem</div>
+    <select class="bmodal-select" id="pick-formatie" onchange="renderPickOefList()">
+      <option value="alle">Alle systemen</option>
+    </select>
     <div id="pick-oef-list" style="display:flex;flex-direction:column;gap:5px;margin:10px 0;max-height:40dvh;overflow-y:auto"></div>
     <button class="bmodal-add-stap" onclick="openNieuweOef()">+ Nieuwe oefening aanmaken</button>
     <div class="bmodal-actions">
@@ -626,6 +630,8 @@ function openPickOef(ti) {
   activePickTi = ti;
   const sel = document.getElementById('pick-cat'); sel.innerHTML = '';
   categories.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
+  const fmSel = document.getElementById('pick-formatie'); fmSel.innerHTML = '<option value="alle">Alle systemen</option>';
+  Object.entries(loadFormaties()).forEach(([key, f]) => { const opt = document.createElement('option'); opt.value = key; opt.textContent = f.label; fmSel.appendChild(opt); });
   pickOefCallback = oef => {
     weekBlokken[activePickTi].push({ cat:oef.cat, oefNaam:oef.title, tip:oef.tip||'', url:oef.url||'' });
     renderWeekBlokken(activePickTi);
@@ -637,13 +643,16 @@ function openPickOef(ti) {
 
 function renderPickOefList() {
   const cat = document.getElementById('pick-cat').value;
-  const all = [...BUILTIN_OEF, ...customOef].filter(o => o.cat === cat);
+  const formatie = document.getElementById('pick-formatie')?.value || 'alle';
+  let all = [...BUILTIN_OEF, ...customOef].filter(o => o.cat === cat);
+  if (formatie !== 'alle') all = all.filter(o => (o.formaties || []).includes(formatie));
   const cont = document.getElementById('pick-oef-list'); cont.innerHTML = '';
-  if (!all.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Geen oefeningen. Maak er hieronder een aan.</div>'; return; }
+  if (!all.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Geen oefeningen voor deze combinatie. Maak er hieronder een aan.</div>'; return; }
   all.forEach(o => {
     const btn = document.createElement('button');
-    btn.style.cssText = 'width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center';
-    btn.innerHTML = `<span style="flex:1">${o.title}</span>${o.url ? '<span style="font-size:14px">▶️</span>' : ''}`;
+    btn.style.cssText = 'width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:12px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px';
+    const fmLabels = (o.formaties || []).map(k => FORMATIES[k]?.label).filter(Boolean).join(' · ');
+    btn.innerHTML = `<span style="flex:1">${o.title}${fmLabels ? `<span style="display:block;font-size:10px;color:var(--text3);margin-top:2px">${fmLabels}</span>` : ''}</span>${o.url ? '<span style="font-size:14px">▶️</span>' : ''}`;
     btn.onclick = () => { if (pickOefCallback) pickOefCallback(o); };
     cont.appendChild(btn);
   });
@@ -663,9 +672,11 @@ function openNieuweOef() {
 async function saveQuickOef() {
   const naam = document.getElementById('qoef-naam').value.trim(); if (!naam) { showToast('Vul een naam in'); return; }
   const cat  = document.getElementById('qoef-cat').value;
-  const oef  = { id:genId(), title:naam, cat, tip:document.getElementById('qoef-tip').value, url:document.getElementById('qoef-url').value, stappen:[], pr:[], duur:'', spelers:'', desc:document.getElementById('qoef-tip').value };
+  const pickFormatie = document.getElementById('pick-formatie')?.value;
+  const formaties = (pickFormatie && pickFormatie !== 'alle') ? [pickFormatie] : [];
+  const oef  = { id:genId(), title:naam, cat, tip:document.getElementById('qoef-tip').value, url:document.getElementById('qoef-url').value, stappen:[], pr:[], formaties, duur:'', spelers:'', desc:document.getElementById('qoef-tip').value };
   customOef.push(oef); saveCustomOef(customOef);
-  if (supabaseReady) await sbFetch('custom_oef', 'POST', { id:oef.id, title:oef.title, cat:oef.cat, tip:oef.tip, url:oef.url, stappen:oef.stappen, spelers:oef.spelers, duur:oef.duur, beschrijving:oef.tip });
+  if (supabaseReady) await sbFetch('custom_oef', 'POST', { id:oef.id, title:oef.title, cat:oef.cat, tip:oef.tip, url:oef.url, stappen:oef.stappen, spelers:oef.spelers, duur:oef.duur, beschrijving:oef.tip, formaties:oef.formaties });
   showToast(naam + ' aangemaakt');
   closeQuickOef();
   // Reopen picker with new oefening selected

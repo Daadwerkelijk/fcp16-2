@@ -170,15 +170,18 @@ function renderStartCards() {
         const s = w.sessies[si];
         const dagTxt = (s.dag||'').toLowerCase();
         const dagEntry = Object.entries(DAGMAP).find(([d]) => dagTxt.includes(d));
-        if (dagEntry) {
-          const sessieD = new Date(w.isoDate);
-          sessieD.setDate(sessieD.getDate() + dagEntry[1]);
-          const sessieDag = sessieD.getFullYear()*10000 + (sessieD.getMonth()+1)*100 + sessieD.getDate();
-          if (sessieDag >= todayDag) {
-            gevondenWeek = w; gevondenWi = i;
-            gevondenSessie = s; gevondenSi = si;
-            break;
-          }
+        // Weekdag herkend in de naam ("maandag") -> exacte datum. Anders (bv. "Training 1")
+        // -> val terug op de startdatum van de week, zodat de kaart alsnog verschijnt.
+        const offset = dagEntry ? dagEntry[1] : 0;
+        const sessieD = new Date(w.isoDate);
+        sessieD.setDate(sessieD.getDate() + offset);
+        const sessieDag = sessieD.getFullYear()*10000 + (sessieD.getMonth()+1)*100 + sessieD.getDate();
+        const weekEindDag = (() => { const d = new Date(w.isoDate); d.setDate(d.getDate()+6); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); })();
+        // Zonder herkende weekdag: laat de hele week meetellen zolang deze niet voorbij is
+        if ((dagEntry && sessieDag >= todayDag) || (!dagEntry && weekEindDag >= todayDag)) {
+          gevondenWeek = w; gevondenWi = i;
+          gevondenSessie = s; gevondenSi = si;
+          break;
         }
       }
       if (gevondenSessie) break;

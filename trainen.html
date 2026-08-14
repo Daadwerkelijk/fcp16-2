@@ -271,7 +271,6 @@ function buildWeekHtml(w, type, wi) {
     const sid = wid + 's' + si;
     const nk  = wid + '_' + si;
     const sn  = sessionNotes[nk] || '';
-    const prs = (sess.pr || []).map(p => { const t = PR_TAGS[p]; return t ? `<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:4px;background:${t.bg};color:${t.c}">${p}</span>` : ''; }).join('');
     const sessNr = si + 1;
     const nkData    = aanwezigheid[nk] || {};
     const nkAfwezig = players.filter(p => { const e=nkData[p.id]; return e===false||(e&&e.afwezig===true); }).length;
@@ -285,11 +284,16 @@ function buildWeekHtml(w, type, wi) {
             <div class="session-day">${sess.dag}</div>
             ${tellerTxt}
           </div>
-          <div class="session-prs">${prs}</div>
         </div>
-        <span class="session-chev">▾</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;flex-shrink:0">
+          ${type === 'custom' ? `<button onclick="deleteSessie(${wi},${si});event.stopPropagation()" title="Trainingsdag verwijderen" style="font-size:10px;padding:2px 7px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--red);cursor:pointer">✕</button>` : ''}
+          <span class="session-chev">▾</span>
+        </span>
       </div><div class="session-body">`;
     html += buildBlokkenHtml(nk, sess.blokken || []);
+    if (type === 'custom') {
+      html += `<button onclick="addOefToSessie('${nk}')" style="width:100%;padding:9px;background:transparent;border:1px dashed var(--accent);border-radius:var(--rsm);color:var(--accent);font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer;margin-bottom:10px">＋ Oefening toevoegen</button>`;
+    }
     html += `<div class="session-extra">
       <button onclick="shareTraining('${nk}')" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-mono);font-size:11px;cursor:pointer;margin-bottom:12px">📲 Delen via WhatsApp</button>
       <div class="session-extra-label" style="margin-bottom:6px">Afwezigheid</div>
@@ -773,6 +777,74 @@ function saveKopieerWeek() {
 function deleteCustomWeek(wi) {
   if (!confirm('Verwijder deze week?')) return;
   customWeken.splice(wi, 1); syncCustomWeken(customWeken); buildSchema(); showToast('Week verwijderd');
+}
+
+async function deleteSessie(wi, si) {
+  const week = customWeken[wi]; if (!week) return;
+  if (week.sessies.length <= 1) { showToast('Een week heeft minstens 1 training nodig'); return; }
+  if (!confirm('Deze trainingsdag verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
+
+  const oudAantal = week.sessies.length;
+  week.sessies.splice(si, 1);
+  const nieuwAantal = week.sessies.length;
+
+  // Verschuif lokale aanwezigheid/aantekeningen: alles na de verwijderde index één plek naar voren,
+  // zodat data van latere trainingen niet per ongeluk aan de verkeerde dag blijft hangen.
+  const prefix = 'cw' + wi + '_';
+  delete aanwezigheid[prefix + si];
+  delete sessionNotes[prefix + si];
+  for (let s = si + 1; s < oudAantal; s++) {
+    const oldK = prefix + s, newK = prefix + (s - 1);
+    if (aanwezigheid[oldK]  !== undefined) { aanwezigheid[newK]  = aanwezigheid[oldK];  delete aanwezigheid[oldK]; }
+    if (sessionNotes[oldK]  !== undefined) { sessionNotes[newK]  = sessionNotes[oldK];  delete sessionNotes[oldK]; }
+  }
+  localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
+  saveSessionNotes(sessionNotes);
+  syncCustomWeken(customWeken);
+
+  if (supabaseReady) {
+    // Ruim alle oude sleutels van deze week op en zet de (verschoven) huidige sessies opnieuw weg
+    for (let s = 0; s < oudAantal; s++) {
+      const k = prefix + s;
+      await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(k), 'DELETE');
+      await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(k), 'DELETE');
+    }
+    for (let s = 0; s < nieuwAantal; s++) {
+      const k = prefix + s;
+      const nkData = aanwezigheid[k] || {};
+      for (const p of players) {
+        const entry = nkData[p.id] || {};
+        const isAfw = entry.afwezig === true;
+        await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:k, player_id:p.id, aanwezig:!isAfw, reden:entry.reden||'' });
+      }
+      const noteVal = sessionNotes[k];
+      if (noteVal) await sbFetch('session_notes', 'POST', { note_key:k, content:noteVal });
+    }
+  }
+
+  const openWeken   = [...document.querySelectorAll('.week-item.open')].map(el => el.id);
+  const openSessies = [...document.querySelectorAll('.session-item.open')].map(el => el.id);
+  buildSchema();
+  openWeken.forEach(id   => { const el = document.getElementById(id);   if (el) el.classList.add('open'); });
+  openSessies.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('open'); });
+  showToast('Training verwijderd');
+}
+
+function addOefToSessie(nk) {
+  const sel = document.getElementById('pick-cat'); sel.innerHTML = '';
+  categories.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
+  const fmSel = document.getElementById('pick-formatie'); fmSel.innerHTML = '<option value="alle">Alle systemen</option>';
+  Object.entries(loadFormaties()).forEach(([key, f]) => { const opt = document.createElement('option'); opt.value = key; opt.textContent = f.label; fmSel.appendChild(opt); });
+  pickOefCallback = oef => {
+    const blokken = getBlokken(nk); if (!blokken) return;
+    blokken.push({ t:'', cat:normaliseerCat(oef.cat), n:oef.title, tip:oef.tip||'', url:oef.url||'' });
+    persistBlokken(nk);
+    closeBModalPickOefDirect();
+    renderSessieBlokken(nk);
+    showToast(oef.title + ' toegevoegd');
+  };
+  renderPickOefList();
+  document.getElementById('bmodalPickOef').classList.add('open');
 }
 
 async function onSupabaseReady() {

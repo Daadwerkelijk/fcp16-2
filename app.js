@@ -599,6 +599,14 @@ function formatDatumShort(iso) {
   return d.getDate() + ' ' + mnd[d.getMonth()];
 }
 
+function formatDatumVol(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const dagen = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+  const mnd = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  return dagen[d.getDay()] + ' ' + d.getDate() + ' ' + mnd[d.getMonth()];
+}
+
 function getISOWeek(dateStr) {
   const d = new Date(dateStr);
   const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));

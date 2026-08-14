@@ -160,7 +160,7 @@ function renderStartCards() {
   const todayDag = today.getFullYear()*10000 + (today.getMonth()+1)*100 + today.getDate();
 
   if (trainCard) {
-    let gevondenWeek = null, gevondenSessie = null, gevondenWi = -1, gevondenSi = -1;
+    let gevondenWeek = null, gevondenSessie = null, gevondenWi = -1, gevondenSi = -1, gevondenDatumIso = '';
     const gesorteerd = weken.map((w,i)=>({w,i})).filter(x=>x.w.isoDate).sort((a,b)=>a.w.isoDate.localeCompare(b.w.isoDate));
     for (const {w, i} of gesorteerd) {
       if (!w.isoDate || !w.sessies || !w.sessies.length) continue;
@@ -180,6 +180,7 @@ function renderStartCards() {
         if ((dagEntry && sessieDag >= todayDag) || (!dagEntry && weekEindDag >= todayDag)) {
           gevondenWeek = w; gevondenWi = i;
           gevondenSessie = s; gevondenSi = si;
+          gevondenDatumIso = sessieD.getFullYear() + '-' + String(sessieD.getMonth()+1).padStart(2,'0') + '-' + String(sessieD.getDate()).padStart(2,'0');
           break;
         }
       }
@@ -195,12 +196,19 @@ function renderStartCards() {
       const aanwNum = spelers.length - afwNum;
       const dagNaam = gevondenSessie.dag || 'Training';
       const teller = spelers.length > 0 ? (aanwNum + '/' + spelers.length) : '–';
+      const datumTxt = formatDatumVol(gevondenDatumIso);
+      const prTags = (gevondenSessie.pr || []).map(p => {
+        const t = PR_TAGS[p];
+        return t ? '<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:4px;background:' + t.bg + ';color:' + t.c + '">' + p + '</span>' : '';
+      }).join(' ');
       trainCard.innerHTML = '<a href="' + url + '" style="display:block;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:10px;text-decoration:none;box-shadow:var(--card-shadow)">'
         + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
         + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--topbar)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/></svg>'
         + '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Eerstvolgende training</div>'
         + '</div>'
-        + '<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:10px">' + dagNaam + '</div>'
+        + '<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">' + dagNaam + '</div>'
+        + '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">' + datumTxt + '</div>'
+        + (prTags ? '<div style="display:flex;gap:4px;margin-bottom:8px">' + prTags + '</div>' : '')
         + '<div style="display:flex;justify-content:flex-end">'
         + '<span style="background:var(--topbar);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px">' + teller + '</span>'
         + '</div>'

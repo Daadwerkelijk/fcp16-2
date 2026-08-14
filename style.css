@@ -368,12 +368,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .pr-card:active{opacity:.7}
 .skill-level-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:var(--badge-radius)}
 
-
-/* Start pagina: training en wedstrijd kaart gelijke hoogte */
-.start-two-col { align-items: stretch; }
-#start-left-col, #start-right-col { display: flex; flex-direction: column; }
-#start-training-card > *, #start-wedstrijd-card > * { flex: 1; }
-
 /* Aanwezig teller badge uniform */
 .aanw-badge {
   font-size: 11px !important;
@@ -435,14 +429,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   .home-hero {
     padding-top: calc(6px + env(safe-area-inset-top));
     padding-bottom: 12px;
-  }
-
-  /* Start: training + wedstrijd naast elkaar */
-  .start-two-col {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    flex-direction: unset !important;
   }
 
   /* Opstelling: veld links, bench rechts */
@@ -555,14 +541,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   .home-hero {
     padding-top: calc(16px + env(safe-area-inset-top));
     padding-bottom: 16px;
-  }
-
-  /* Start: training + wedstrijd naast elkaar */
-  .start-two-col {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    flex-direction: unset !important;
   }
 
   /* Scroll-to-top hoger want geen bottom nav */

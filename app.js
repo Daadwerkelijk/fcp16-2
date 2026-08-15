@@ -39,11 +39,21 @@ async function sbFetch(path, method = 'GET', body = null) {
 // ervoor dat data (bv. wedstrijduitslagen/opmerkingen) na een refresh weer leek te verdwijnen:
 // de lokale wijziging leek opgeslagen, maar Supabase had 'm nooit ontvangen, dus bij de
 // volgende paginalaad won de oude Supabase-data het weer van de nooit-opgeslagen wijziging.
-async function sbWrite(path, method, body) {
-  const r = await sbFetch(path, method, body);
-  if (r && r._error) {
-    showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message || ('fout ' + r.status)));
+// Wrapper om sbFetch die bij een mislukte schrijfactie (PATCH/POST/DELETE) eerst automatisch
+// een paar keer opnieuw probeert (een kortstondige hapering herstelt daarmee vanzelf, zonder
+// dat de gebruiker er iets van merkt) en pas als dat ook niet lukt een duidelijke, langer
+// zichtbare waarschuwing toont — in plaats van de fout stil te negeren. Dat laatste zorgde
+// ervoor dat data (bv. wedstrijduitslagen/opmerkingen) na een refresh weer leek te verdwijnen:
+// de lokale wijziging leek opgeslagen, maar Supabase had 'm nooit ontvangen, dus bij de
+// volgende paginalaad won de oude Supabase-data het weer van de nooit-opgeslagen wijziging.
+async function sbWrite(path, method, body, pogingen = 3) {
+  let r;
+  for (let i = 0; i < pogingen; i++) {
+    r = await sbFetch(path, method, body);
+    if (!(r && r._error)) return r; // gelukt
+    if (i < pogingen - 1) await new Promise(res => setTimeout(res, 700 * (i + 1)));
   }
+  showToast('⚠️ Opslaan naar Supabase mislukt na ' + pogingen + ' pogingen: ' + (r.message || ('fout ' + r.status)) + ' — probeer het zo nog eens', 6000);
   return r;
 }
 
@@ -575,12 +585,13 @@ function safeDecode(str) {
   catch(e) { return atob(str); }
 }
 
-function showToast(msg) {
+function showToast(msg, duurMs = 2200) {
   const t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => t.classList.remove('show'), duurMs);
 }
 
 function sortedPlayers(players) {

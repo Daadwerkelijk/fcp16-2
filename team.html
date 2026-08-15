@@ -9,6 +9,7 @@
 <title>Dashboard — FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon192.png" type="image/png">
+<link rel="icon" href="icon192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -27,6 +28,107 @@
   const r=document.documentElement.style;
   Object.entries(m).forEach(([p,v])=>r.setProperty(p,v));
 })();
+
+let rankingSortMode = 'alfa';
+let rankingActiveType = 'alle';
+let rankingActiveFases = new Set();
+let wedstrijdenData = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
+
+function onRankingTypeChange() {
+  rankingActiveType = document.getElementById('ranking-type-select').value;
+  rankingActiveFases = new Set();
+  const faseWrap = document.getElementById('ranking-fase-wrap');
+  if (faseWrap) {
+    if (rankingActiveType === 'competitie') {
+      const fases = [...new Set(wedstrijdenData.filter(w=>w.wed_type==='competitie').map(w=>w.wed_fase).filter(Boolean))];
+      if (fases.length) {
+        faseWrap.style.display = 'flex';
+        faseWrap.innerHTML = fases.map(f=>`<button onclick="toggleRankingFase('${f}',this)" style="padding:4px 12px;border-radius:100px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:var(--white);color:var(--text2);font-family:var(--font-ui)">${f}</button>`).join('');
+      } else { faseWrap.style.display = 'none'; }
+    } else { faseWrap.style.display = 'none'; faseWrap.innerHTML = ''; }
+  }
+  renderRankingPanel();
+}
+
+function toggleRankingFase(fase, btn) {
+  if (rankingActiveFases.has(fase)) {
+    rankingActiveFases.delete(fase);
+    btn.style.background = 'var(--white)'; btn.style.color = 'var(--text2)'; btn.style.borderColor = 'var(--border)';
+  } else {
+    rankingActiveFases.add(fase);
+    btn.style.background = 'var(--topbar)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--topbar)';
+  }
+  renderRankingPanel();
+}
+
+function gefilterdWedstrijden() {
+  let lijst = wedstrijdenData;
+  if (rankingActiveType !== 'alle') {
+    lijst = lijst.filter(w => (w.wed_type || 'oefenwedstrijd') === rankingActiveType);
+  }
+  if (rankingActiveFases.size > 0) {
+    lijst = lijst.filter(w => rankingActiveFases.has(w.wed_fase || ''));
+  }
+  return lijst;
+}
+
+function sortRanking(mode) {
+  rankingSortMode = mode;
+  const alfa = document.getElementById('sort-alfa');
+  const cijf = document.getElementById('sort-cijfer');
+  if (alfa) { alfa.style.background = mode==='alfa'?'var(--topbar)':'var(--white)'; alfa.style.color = mode==='alfa'?'#fff':'var(--text2)'; alfa.style.border = mode==='alfa'?'none':'1px solid var(--border)'; }
+  if (cijf) { cijf.style.background = mode==='cijfer'?'var(--topbar)':'var(--white)'; cijf.style.color = mode==='cijfer'?'#fff':'var(--text2)'; cijf.style.border = mode==='cijfer'?'none':'1px solid var(--border)'; }
+  renderRankingPanel();
+}
+
+function renderRankingPanel() {
+  const wed = gefilterdWedstrijden();
+  const gespeeld = wed.filter(w=>w.gespeeld);
+  const gewon = gespeeld.filter(w=>w.score_eigen>w.score_tegen).length;
+  const gelijk = gespeeld.filter(w=>w.score_eigen===w.score_tegen).length;
+  const verl = gespeeld.filter(w=>w.score_eigen<w.score_tegen).length;
+  const saldo = gespeeld.reduce((s,w)=>s+(w.score_eigen||0)-(w.score_tegen||0),0);
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('rk-gespeeld', gespeeld.length);
+  set('rk-gewon', gewon);
+  set('rk-gelijk', gelijk);
+  set('rk-verl', verl);
+  set('rk-saldo', (saldo>0?'+':'')+saldo);
+  document.getElementById('rk-saldo').style.color = saldo>0?'var(--groen)':saldo<0?'var(--red)':'var(--text)';
+
+  const motmEl = document.getElementById('ranking-motm');
+  const cijferEl = document.getElementById('ranking-cijfers');
+  if (!motmEl || !cijferEl) return;
+
+  const motmMap = {};
+  players.forEach(p=>motmMap[p.id]=0);
+  wed.forEach(w=>{ if(w.motm&&motmMap[w.motm]!==undefined) motmMap[w.motm]++; });
+  const motmRanked = players.map(p=>({p,motm:motmMap[p.id]||0})).filter(x=>x.motm>0).sort((a,b)=>b.motm-a.motm);
+  motmEl.innerHTML = motmRanked.length ? motmRanked.map((x,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2)">
+      <span style="font-size:13px;font-weight:700;color:var(--text3);min-width:20px">${i+1}</span>
+      <span style="flex:1;font-size:14px;font-weight:600;color:var(--text)">${x.p.naam}</span>
+      <span style="font-size:13px;font-weight:700;color:var(--accent)">${x.motm}× ⭐</span>
+    </div>`).join('') : '<div style="font-size:13px;color:var(--text3)">Nog geen MOTM toegewezen.</div>';
+
+  const ratingMap = {};
+  players.forEach(p=>ratingMap[p.id]={sum:0,count:0});
+  wed.forEach(w=>{ if(w.ratings) Object.entries(w.ratings).forEach(([pid,val])=>{ if(ratingMap[pid]){ratingMap[pid].sum+=parseFloat(val);ratingMap[pid].count++;} }); });
+  let lijst = players.map(p=>({p,avg:ratingMap[p.id].count?Math.round(ratingMap[p.id].sum/ratingMap[p.id].count*10)/10:null,count:ratingMap[p.id].count})).filter(x=>x.avg!==null);
+  if (rankingSortMode==='cijfer') lijst.sort((a,b)=>b.avg-a.avg); else lijst.sort((a,b)=>a.p.naam.localeCompare(b.p.naam));
+  cijferEl.innerHTML = lijst.length ? lijst.map((x,i)=>{
+    const col=x.avg>=8?'var(--groen)':x.avg>=6.5?'var(--groen)':x.avg>=5?'var(--goud)':'var(--red)';
+    const pct=Math.round((x.avg/10)*100);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2)">
+      ${rankingSortMode==='cijfer'?`<span style="font-size:13px;font-weight:700;color:var(--text3);min-width:20px">${i+1}</span>`:''}
+      <span style="flex:1;font-size:14px;font-weight:500;color:var(--text)">${x.p.naam}</span>
+      <div style="width:80px;height:6px;background:var(--line2);border-radius:100px;overflow:hidden;flex-shrink:0"><div style="width:${pct}%;height:100%;background:${col};border-radius:100px"></div></div>
+      <span style="font-size:15px;font-weight:700;color:${col};min-width:32px;text-align:right">${x.avg}</span>
+      <span style="font-size:11px;color:var(--text3)">${x.count}×</span>
+    </div>`;
+  }).join('') : '<div style="font-size:13px;color:var(--text3)">Geen beoordelingen in deze selectie.</div>';
+}
+
 </script>
 </head>
 <body>
@@ -63,7 +165,7 @@
     <button onclick="dashTab('afwezig')" id="dtab-afwezig"
       style="background:var(--white);border:2px solid var(--topbar);border-radius:var(--r);padding:14px;text-align:left;cursor:pointer;box-shadow:var(--card-shadow);transition:all .15s">
       <div style="font-size:22px;margin-bottom:6px">📋</div>
-      <div style="font-size:13px;font-weight:700;color:var(--topbar)">Afwezigheid</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text)">Afwezigheid</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">Per speler</div>
     </button>
     <button onclick="dashTab('skills')" id="dtab-skills"
@@ -87,16 +189,50 @@
 
   <!-- Ranking panel -->
   <div id="dpanel-ranking" style="display:none;padding:0 16px 16px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:600;color:var(--text)">Sorteren:</div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Filter wedstrijden</div>
+      <select id="ranking-type-select" onchange="onRankingTypeChange()" style="width:100%;padding:8px 12px;background:var(--white);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-ui);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%232B1FA0%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 12px center;background-size:10px">
+        <option value="alle">Alle wedstrijden</option>
+        <option value="competitie">Competitie</option>
+        <option value="beker">Beker</option>
+        <option value="oefenwedstrijd">Oefenwedstrijd</option>
+      </select>
+      <div id="ranking-fase-wrap" style="display:none;margin-top:6px;display:flex;gap:5px;flex-wrap:wrap"></div>
+    </div>
+    <!-- Statistieken strip -->
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr)">
+        <div style="text-align:center;padding:10px 6px;border-right:1px solid var(--border)">
+          <div id="rk-gespeeld" style="font-size:20px;font-weight:700;color:var(--text);font-family:var(--font-display)">0</div>
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-top:2px">Gespeeld</div>
+        </div>
+        <div style="text-align:center;padding:10px 6px;border-right:1px solid var(--border)">
+          <div id="rk-gewon" style="font-size:20px;font-weight:700;color:var(--groen);font-family:var(--font-display)">0</div>
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-top:2px">Gewon.</div>
+        </div>
+        <div style="text-align:center;padding:10px 6px;border-right:1px solid var(--border)">
+          <div id="rk-gelijk" style="font-size:20px;font-weight:700;color:var(--goud);font-family:var(--font-display)">0</div>
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-top:2px">Gelijk</div>
+        </div>
+        <div style="text-align:center;padding:10px 6px;border-right:1px solid var(--border)">
+          <div id="rk-verl" style="font-size:20px;font-weight:700;color:var(--red);font-family:var(--font-display)">0</div>
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-top:2px">Verl.</div>
+        </div>
+        <div style="text-align:center;padding:10px 6px">
+          <div id="rk-saldo" style="font-size:20px;font-weight:700;color:var(--text);font-family:var(--font-display)">0</div>
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-top:2px">Saldo</div>
+        </div>
+      </div>
+    </div>
+    <!-- Sortering -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--text3)">Sorteren:</div>
       <button id="sort-alfa" onclick="sortRanking('alfa')" style="padding:5px 14px;border-radius:100px;background:var(--topbar);color:#fff;border:none;font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer">Alfabetisch</button>
       <button id="sort-cijfer" onclick="sortRanking('cijfer')" style="padding:5px 14px;border-radius:100px;background:var(--white);color:var(--text2);border:1px solid var(--border);font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer">Hoogste cijfer</button>
     </div>
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Man of the Match</div>
     <div id="ranking-motm" style="margin-bottom:20px"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Gemiddeld cijfer</div>
-    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Gemiddeld cijfer</div>
     <div id="ranking-cijfers"></div>
   </div>
 
@@ -121,13 +257,12 @@ const state = loadState();
 let players      = state.players;
 let aanwezigheid = state.aanwezigheid;
 let customWeken  = state.customWeken;
-let wedstrijdenData = state.wedstrijden || JSON.parse(localStorage.getItem('fcp_wed') || '[]');
 let absRedenen   = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]');
 function saveAbsRedenen(r) {
   localStorage.setItem('fcp_abs_redenen', JSON.stringify(r));
   if (supabaseReady) {
     sbFetch('session_notes?note_key=eq.abs_redenen', 'DELETE').then(() =>
-      sbFetch('session_notes', 'POST', { note_key:'abs_redenen', content:JSON.stringify(r) })
+      sbWrite('session_notes', 'POST', { note_key:'abs_redenen', content:JSON.stringify(r) })
     );
   }
 }
@@ -152,17 +287,17 @@ function renderAanwOverzicht() {
 
   // Samenvatting: totaal aantal trainingen met opgeslagen aanwezigheid
   const metData = trainingen.filter(t => aanwezigheid[t.nk] && Object.keys(aanwezigheid[t.nk]).length > 0);
-  const wedstrijden = wedstrijdenData;
+  const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
   const aantalWed = wedstrijden.filter(w => w.gespeeld).length;
   document.getElementById('aanw-samenvatting').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
-      <div style="padding:11px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--card-shadow)">
+      <div style="padding:11px 13px;background:var(--blauw-l);border:1px solid var(--blauw-m);border-radius:var(--r)">
         <div style="font-size:24px;font-weight:700;color:var(--text)">${trainingen.length}</div>
-        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Trainingen</div>
+        <div style="font-size:10px;font-weight:700;color:var(--blauw);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Trainingen</div>
       </div>
-      <div style="padding:11px 13px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--card-shadow)">
+      <div style="padding:11px 13px;background:var(--blauw-l);border:1px solid var(--blauw-m);border-radius:var(--r)">
         <div style="font-size:24px;font-weight:700;color:var(--text)">${aantalWed}</div>
-        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Wedstrijden</div>
+        <div style="font-size:10px;font-weight:700;color:var(--blauw);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Wedstrijden</div>
       </div>
     </div>`;
 
@@ -234,86 +369,6 @@ function renderAanwOverzicht() {
   document.getElementById('aanw-tabel').innerHTML = html;
 }
 
-let rankingSortMode = 'alfa';
-
-function sortRanking(mode) {
-  rankingSortMode = mode;
-  document.getElementById('sort-alfa').style.background = mode === 'alfa' ? 'var(--topbar)' : 'var(--white)';
-  document.getElementById('sort-alfa').style.color = mode === 'alfa' ? '#fff' : 'var(--text2)';
-  document.getElementById('sort-alfa').style.border = mode === 'alfa' ? 'none' : '1px solid var(--border)';
-  document.getElementById('sort-cijfer').style.background = mode === 'cijfer' ? 'var(--topbar)' : 'var(--white)';
-  document.getElementById('sort-cijfer').style.color = mode === 'cijfer' ? '#fff' : 'var(--text2)';
-  document.getElementById('sort-cijfer').style.border = mode === 'cijfer' ? 'none' : '1px solid var(--border)';
-  renderRankingPanel();
-}
-
-function renderRankingPanel() {
-  const wedstrijden = wedstrijdenData;
-  const motmEl = document.getElementById('ranking-motm');
-  const cijferEl = document.getElementById('ranking-cijfers');
-  if (!motmEl || !cijferEl) return;
-
-  // MOTM tellen
-  const motmMap = {};
-  players.forEach(p => motmMap[p.id] = 0);
-  wedstrijden.forEach(w => { if (w.motm && motmMap[w.motm] !== undefined) motmMap[w.motm]++; });
-  const motmRanked = players
-    .map(p => ({ p, motm: motmMap[p.id] || 0 }))
-    .filter(x => x.motm > 0)
-    .sort((a,b) => b.motm - a.motm);
-
-  if (!motmRanked.length) {
-    motmEl.innerHTML = '<div style="font-size:13px;color:var(--text3)">Nog geen Man of the Match toegewezen.</div>';
-  } else {
-    motmEl.innerHTML = motmRanked.map((x,i) => `
-      <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:13px;font-weight:700;color:var(--text3);min-width:20px">${i+1}</span>
-        <span style="flex:1;font-size:14px;font-weight:600;color:var(--text)">${x.p.naam}</span>
-        <span style="font-size:13px;font-weight:700;color:var(--topbar)">${x.motm}× ⭐</span>
-      </div>`).join('');
-  }
-
-  // Cijfers berekenen
-  const ratingMap = {};
-  players.forEach(p => ratingMap[p.id] = { sum:0, count:0 });
-  wedstrijden.forEach(w => {
-    if (w.ratings) Object.entries(w.ratings).forEach(([pid,val]) => {
-      if (ratingMap[pid]) { ratingMap[pid].sum += val; ratingMap[pid].count++; }
-    });
-  });
-
-  let lijst = players.map(p => ({
-    p,
-    avg: ratingMap[p.id].count ? Math.round(ratingMap[p.id].sum / ratingMap[p.id].count * 10) / 10 : null,
-    count: ratingMap[p.id].count
-  })).filter(x => x.avg !== null);
-
-  if (rankingSortMode === 'cijfer') {
-    lijst.sort((a,b) => b.avg - a.avg);
-  } else {
-    lijst.sort((a,b) => a.p.naam.localeCompare(b.p.naam));
-  }
-
-  if (!lijst.length) {
-    cijferEl.innerHTML = '<div style="font-size:13px;color:var(--text3)">Nog geen beoordelingen ingevuld.</div>';
-  } else {
-    const maxAvg = Math.max(...lijst.map(x => x.avg));
-    cijferEl.innerHTML = lijst.map((x,i) => {
-      const col = x.avg>=8?'#1B7A4B':x.avg>=6.5?'#558B2F':x.avg>=5?'#E65100':'#C62828';
-      const pct = Math.round((x.avg / 10) * 100);
-      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-        ${rankingSortMode === 'cijfer' ? '<span style="font-size:13px;font-weight:700;color:var(--text3);min-width:20px">'+(i+1)+'</span>' : ''}
-        <span style="flex:1;font-size:14px;font-weight:500;color:var(--text)">${x.p.naam}</span>
-        <div style="width:80px;height:6px;background:var(--border);border-radius:100px;overflow:hidden;flex-shrink:0">
-          <div style="width:${pct}%;height:100%;background:${col};border-radius:100px"></div>
-        </div>
-        <span style="font-size:15px;font-weight:700;color:${col};min-width:32px;text-align:right">${x.avg}</span>
-        <span style="font-size:11px;color:var(--text3)">${x.count}×</span>
-      </div>`;
-    }).join('');
-  }
-}
-
 function dashTab(tab) {
   const tabs = ['afwezig','skills','ranking'];
   tabs.forEach(t => {
@@ -323,9 +378,8 @@ function dashTab(tab) {
     const actief = t === tab;
     panel.style.display = actief ? 'block' : 'none';
     btn.style.borderColor = actief ? 'var(--topbar)' : 'var(--border)';
-    btn.querySelector('div:nth-child(2)').style.color = actief ? 'var(--topbar)' : 'var(--text)';
+    btn.querySelector('div:nth-child(2)').style.color = actief ? 'var(--accent)' : 'var(--text)';
   });
-  if (tab === 'ranking') renderRankingPanel();
 }
 
 function toggleSpelerDetail(id) {
@@ -455,8 +509,25 @@ function renderTeamProfiel() {
 }
 
 function toggleDetail(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  const isLandscape = window.innerWidth > window.innerHeight;
+  if (isLandscape) {
+    // In landscape: toon detail in rechter paneel
+    const panel = document.getElementById('skills-detail-panel');
+    const content = document.getElementById('skills-detail-content');
+    const title = document.getElementById('skills-detail-title');
+    const el = document.getElementById(id);
+    if (!el || !panel || !content) return;
+    // Haal skill naam uit het id (sk-Balcontrole → Balcontrole)
+    const skillNaam = id.replace('sk-', '').replace(/_/g, ' ');
+    if (title) title.textContent = skillNaam;
+    // Kopieer inhoud van het inline detail element naar het panel
+    content.innerHTML = el.innerHTML;
+    panel.style.display = 'block';
+  } else {
+    // In portrait: inline uitklappen zoals voorheen
+    const el = document.getElementById(id);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
 }
 
 async function onSupabaseReady() {
@@ -466,16 +537,6 @@ async function onSupabaseReady() {
   if (data.customWeken)  { customWeken  = data.customWeken; }
   if (data.absRedenen)   { absRedenen   = data.absRedenen; }
   if (data.teamConfig)   { const sub = document.getElementById('dashboard-sub'); if (sub) sub.textContent = data.teamConfig.subtitel || ''; }
-  // Laad wedstrijden apart voor ranking
-  const wedRes = await sbFetch('wedstrijden?order=iso_date.asc', 'GET');
-  if (wedRes && !wedRes._error) {
-    wedstrijdenData = wedRes.map(w => ({
-      ...w,
-      ratings: typeof w.ratings === 'string' ? JSON.parse(w.ratings || '{}') : (w.ratings || {}),
-      afwezig: typeof w.afwezig === 'string' ? JSON.parse(w.afwezig || '[]') : (w.afwezig || []),
-    }));
-    saveWedstrijden(wedstrijdenData);
-  }
   await laadAlleFormulieren();
   renderAanwOverzicht();
   renderTeamProfiel();

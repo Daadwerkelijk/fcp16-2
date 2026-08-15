@@ -429,7 +429,7 @@ function openWedPositieModal(wid, pos, formatieKey) {
         w2.formatie = document.getElementById('wform-sel-' + wid)?.value || w2.formatie || '4222';
         saveWedstrijden(wedstrijden);
         if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup),formatie:w2.formatie})
-          .then(r => { if (r && r._error) showToast('⚠️ Supabase fout: ' + JSON.stringify(r)); });
+          .then(r => { if (r && r._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message||r.status)); });
       }
       buildWedField(wid); buildWedBench(wid); closeWedPosModal(); showToast(p.naam+' → '+pos.label);
     };
@@ -753,7 +753,10 @@ async function deleteWedstrijd(id) {
   if (!confirm('Verwijder ' + (w ? w.tegenstander : 'wedstrijd') + '?')) return;
   wedstrijden = wedstrijden.filter(x => x.id !== id);
   saveWedstrijden(wedstrijden);
-  if (supabaseReady) await sbFetch('wedstrijden?id=eq.' + id, 'DELETE');
+  if (supabaseReady) {
+    const res = await sbWrite('wedstrijden?id=eq.' + id, 'DELETE');
+    if (res && res._error) { renderWedstrijden(); return; }
+  }
   renderWedstrijden();
   showToast('Wedstrijd verwijderd');
 }

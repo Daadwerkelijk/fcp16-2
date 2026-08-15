@@ -9,6 +9,7 @@
 <title>Selectie — FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon192.png" type="image/png">
+<link rel="icon" href="icon192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -94,7 +95,10 @@ async function deletePlayer(id) {
   Object.keys(lineup).forEach(k => { if (lineup[k] === id) delete lineup[k]; });
   savePlayers(players);
   saveLineup(lineup);
-  if (supabaseReady) await sbFetch('players?id=eq.' + id, 'DELETE');
+  if (supabaseReady) {
+    const res = await sbWrite('players?id=eq.' + id, 'DELETE');
+    if (res && res._error) { renderPlayerList(); return; }
+  }
   renderPlayerList();
   showToast('Speler verwijderd');
 }
@@ -118,7 +122,8 @@ function togglePosTag(pid, pos, el) {
   if (el.classList.contains('active')) { p.posities = p.posities.filter(x => x !== pos); el.classList.remove('active'); }
   else { p.posities.push(pos); el.classList.add('active'); }
   savePlayers(players);
-  if (supabaseReady) sbFetch('players?id=eq.' + pid, 'PATCH', { posities: p.posities });
+  if (supabaseReady) sbFetch('players?id=eq.' + pid, 'PATCH', { posities: p.posities })
+    .then(r => { if (r && r._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message||r.status)); });
 }
 
 function deelSpelerFormulier(pid, naam) { deelFormulier(pid, naam); }

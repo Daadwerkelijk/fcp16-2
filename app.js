@@ -34,11 +34,6 @@ async function sbFetch(path, method = 'GET', body = null) {
   }
 }
 
-// Wrapper om sbFetch die bij een mislukte schrijfactie (PATCH/POST/DELETE) direct een
-// zichtbare waarschuwing toont, in plaats van de fout stil te negeren. Dat laatste zorgde
-// ervoor dat data (bv. wedstrijduitslagen/opmerkingen) na een refresh weer leek te verdwijnen:
-// de lokale wijziging leek opgeslagen, maar Supabase had 'm nooit ontvangen, dus bij de
-// volgende paginalaad won de oude Supabase-data het weer van de nooit-opgeslagen wijziging.
 // Wrapper om sbFetch die bij een mislukte schrijfactie (PATCH/POST/DELETE) eerst automatisch
 // een paar keer opnieuw probeert (een kortstondige hapering herstelt daarmee vanzelf, zonder
 // dat de gebruiker er iets van merkt) en pas als dat ook niet lukt een duidelijke, langer

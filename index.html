@@ -11,6 +11,7 @@
 <title>FCP 16-2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon192.png" type="image/png">
+<link rel="icon" href="icon192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -53,7 +54,7 @@
           <h1 class="home-title" id="home-titel" style="color:#fff">FCP <em>16-2</em></h1>
           <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px" id="home-subtitel">Seizoen 2026/2027</div>
         </div>
-        <a href="instellingen.html" class="topbar-btn" style="text-decoration:none;align-self:flex-end;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fff"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15 1.65 1.65 0 0 0 3.17 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
+        <a href="instellingen.html" class="topbar-btn" style="text-decoration:none;align-self:flex-end">⚙️</a>
       </div>
     </div>
   </div>
@@ -113,8 +114,8 @@
 
 <!-- Principe modal -->
 <div id="prModalOverlay" onclick="if(event.target===this)closePrModal()" style="display:none;position:fixed;inset:0;background:rgba(18,17,58,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center">
-  <div class="pr-modal" id="prModal" style="background:#ffffff !important;color:#12113A !important">
-    <div id="pr-code" style="font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:#12113A;font-family:'DM Sans',sans-serif"></div>
+  <div class="pr-modal" id="prModal">
+    <div id="pr-code" style="font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:var(--text);font-family:'DM Sans',sans-serif"></div>
     <div id="pr-naam" style="font-size:16px;font-weight:600;color:#2B1FA0;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #E4E3F5;font-family:'DM Sans',sans-serif"></div>
     <div style="font-size:11px;font-weight:700;color:#8B8AB0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:'DM Sans',sans-serif">Beschrijving</div>
     <div id="pr-desc" style="font-size:14px;line-height:1.7;color:#4A4870;margin-bottom:4px;font-family:'DM Sans',sans-serif"></div>
@@ -263,11 +264,11 @@ function updateStats() {
   document.getElementById('stat-wedstrijden').textContent = wed.length;
   document.getElementById('stat-spelers').textContent     = pl.length;
   document.getElementById('stat-oef').textContent         = oef.length;
-  document.getElementById('stat-wins').textContent        = wed.filter(w=>w.score_eigen>w.score_tegen).length;
+  document.getElementById('stat-wins').textContent        = wed.filter(w=>w.gespeeld && w.score_eigen>w.score_tegen).length;
   const gelijkEl = document.getElementById('stat-gelijk');
-  if (gelijkEl) gelijkEl.textContent = wed.filter(w=>w.score_eigen===w.score_tegen&&w.gespeeld).length;
+  if (gelijkEl) gelijkEl.textContent = wed.filter(w=>w.gespeeld && w.score_eigen===w.score_tegen).length;
   const verlorenEl = document.getElementById('stat-verloren');
-  if (verlorenEl) verlorenEl.textContent = wed.filter(w=>w.score_eigen<w.score_tegen).length;
+  if (verlorenEl) verlorenEl.textContent = wed.filter(w=>w.gespeeld && w.score_eigen<w.score_tegen).length;
   const saldoEl = document.getElementById('stat-doelsaldo');
   if (saldoEl) {
     saldoEl.textContent = (doelsaldo > 0 ? '+' : '') + doelsaldo;
@@ -291,12 +292,12 @@ function renderPrincipes() {
   const grid = document.getElementById('principle-grid');
   if (!grid) return;
   const kleuren = [
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
-    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--topbar)',nameClr:'var(--text)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
+    {bg:'var(--white)',border:'var(--border)',codeClr:'var(--accent)',nameClr:'var(--text2)'},
   ];
   grid.innerHTML = principes.map((p,i) => {
     const k = kleuren[i % kleuren.length];
@@ -365,11 +366,15 @@ renderStartCards();
 initScrollTop();
 initManifest();
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });
+</script>
 
-// Herlaad stats bij terugkeer naar pagina (bijv. na wedstrijd toevoegen)
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) { updateStats(); renderStartCards(); }
-});
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/fcp16-2/sw.js')
+      .catch(e => console.log('SW registratie mislukt:', e));
+  });
+}
 </script>
 </body>
 </html>

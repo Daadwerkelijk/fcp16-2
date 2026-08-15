@@ -685,7 +685,10 @@ async function saveQuickOef() {
   const formaties = (pickFormatie && pickFormatie !== 'alle') ? [pickFormatie] : [];
   const oef  = { id:genId(), title:naam, cat, tip:document.getElementById('qoef-tip').value, url:document.getElementById('qoef-url').value, stappen:[], pr:[], formaties, duur:'', spelers:'', desc:document.getElementById('qoef-tip').value };
   customOef.push(oef); saveCustomOef(customOef);
-  if (supabaseReady) await sbFetch('custom_oef', 'POST', { id:oef.id, title:oef.title, cat:oef.cat, tip:oef.tip, url:oef.url, stappen:oef.stappen, spelers:oef.spelers, duur:oef.duur, beschrijving:oef.tip, formaties:oef.formaties });
+  if (supabaseReady) {
+    const res = await sbWrite('custom_oef', 'POST', { id:oef.id, title:oef.title, cat:oef.cat, tip:oef.tip, url:oef.url, stappen:oef.stappen, spelers:oef.spelers, duur:oef.duur, beschrijving:oef.tip, formaties:oef.formaties });
+    if (res && res._error) return;
+  }
   showToast(naam + ' aangemaakt');
   closeQuickOef();
   // Reopen picker with new oefening selected

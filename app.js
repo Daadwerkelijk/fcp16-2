@@ -34,6 +34,19 @@ async function sbFetch(path, method = 'GET', body = null) {
   }
 }
 
+// Wrapper om sbFetch die bij een mislukte schrijfactie (PATCH/POST/DELETE) direct een
+// zichtbare waarschuwing toont, in plaats van de fout stil te negeren. Dat laatste zorgde
+// ervoor dat data (bv. wedstrijduitslagen/opmerkingen) na een refresh weer leek te verdwijnen:
+// de lokale wijziging leek opgeslagen, maar Supabase had 'm nooit ontvangen, dus bij de
+// volgende paginalaad won de oude Supabase-data het weer van de nooit-opgeslagen wijziging.
+async function sbWrite(path, method, body) {
+  const r = await sbFetch(path, method, body);
+  if (r && r._error) {
+    showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message || ('fout ' + r.status)));
+  }
+  return r;
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';

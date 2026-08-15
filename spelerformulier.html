@@ -330,8 +330,12 @@ async function submitFormulier() {
   // Opslaan via session_notes met sleutel formulier:<spelerId>
   const ok = await initSupabase();
   if (ok) {
-    const res = await sbFetch('session_notes?note_key=eq.formulier:' + spelerId, 'DELETE');
-    await sbFetch('session_notes', 'POST', { note_key: 'formulier:' + spelerId, content: JSON.stringify(data) });
+    await sbFetch('session_notes?note_key=eq.formulier:' + spelerId, 'DELETE');
+    const res = await sbFetch('session_notes', 'POST', { note_key: 'formulier:' + spelerId, content: JSON.stringify(data) });
+    if (res && res._error) {
+      showToast('⚠️ Opslaan mislukt — probeer het nog eens');
+      return;
+    }
     localStorage.removeItem(autoSaveKey());
     document.getElementById('form-wrap').style.display = 'none';
     document.getElementById('success-msg').style.display = 'block';

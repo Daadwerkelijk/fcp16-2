@@ -402,7 +402,8 @@ function openWedPositieModal(wid, pos, formatieKey) {
     if (w2) {
       w2.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid]));
       saveWedstrijden(wedstrijden);
-      if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup)});
+      if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup)})
+        .then(r => { if (r && r._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message||r.status)); });
     }
     buildWedField(wid); buildWedBench(wid); closeWedPosModal();
   };
@@ -462,11 +463,12 @@ async function saveWedOpstelling(wid) {
   w.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid] || {}));
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
-    await sbFetch('wedstrijden?id=eq.' + wid, 'PATCH', {
+    const res = await sbWrite('wedstrijden?id=eq.' + wid, 'PATCH', {
       formatie:   w.formatie,
       wed_lineup: JSON.stringify(w.wed_lineup),
       aanwezig:   JSON.stringify(w.aanwezig||[]),
     });
+    if (res && res._error) return;
   }
   showToast('Opstelling opgeslagen · ' + Object.values(w.wed_lineup).filter(Boolean).length + '/11');
 }
@@ -522,7 +524,7 @@ window.addEventListener('beforeunload', (e) => {
   }
 });
 
-function closeLive() {
+async function closeLive() {
   stopKlok(); stopSpeech();
   localStorage.removeItem('live_klok_start');
   localStorage.removeItem('live_klok_actief');
@@ -536,7 +538,7 @@ function closeLive() {
       w.opmerkingen=tekst;
     }
     saveWedstrijden(wedstrijden);
-    if(supabaseReady) sbFetch('wedstrijden?id=eq.'+liveWedId,'PATCH',{score_eigen:w.score_eigen,score_tegen:w.score_tegen,opmerkingen:w.opmerkingen});
+    if(supabaseReady) await sbWrite('wedstrijden?id=eq.'+liveWedId,'PATCH',{score_eigen:w.score_eigen,score_tegen:w.score_tegen,opmerkingen:w.opmerkingen});
   }
   document.getElementById('live-overlay').style.display='none';
   renderWedstrijden(); showToast('Wedstrijd opgeslagen');
@@ -720,7 +722,11 @@ async function saveWedstrijd(id) {
   w.score_tegen = parseInt(document.getElementById('ws-tegen-' + id).value) || 0;
   w.opmerkingen = document.getElementById('ws-opm-' + id).value;
   w.motm        = document.getElementById('ws-motm-' + id).value || null;
-  w.formatie    = document.getElementById('ws-form-' + id).value || null;
+  // Let op: 'ws-form-' bestaat niet als los formulierveld op dit tabblad (formatie wordt
+  // beheerd via het Opstelling-tabblad, id 'wform-sel-'). Defensief gemaakt zodat dit nooit
+  // meer crasht — dat liet eerder saveWedstrijd() altijd stuklopen vóórdat er iets werd
+  // opgeslagen, wat precies verklaarde waarom score/opmerkingen na een refresh weer weg waren.
+  w.formatie    = document.getElementById('ws-form-' + id)?.value || w.formatie || null;
   if (!w.ratings) w.ratings = {};
   players.forEach(p => {
     const el = document.getElementById('rat-' + id + '-' + p.id);
@@ -729,13 +735,14 @@ async function saveWedstrijd(id) {
   });
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
-    await sbFetch('wedstrijden?id=eq.' + id, 'PATCH', {
+    const res = await sbWrite('wedstrijden?id=eq.' + id, 'PATCH', {
       score_eigen: w.score_eigen,
       score_tegen: w.score_tegen,
       opmerkingen: w.opmerkingen,
       ratings:     JSON.stringify(w.ratings || {}),
       motm:        w.motm || null,
     });
+    if (res && res._error) { renderRanking(); return; }
   }
   renderRanking();
   showToast('Wedstrijd opgeslagen');
@@ -755,7 +762,8 @@ function setMotm(wedId, playerId) {
   const w = wedstrijden.find(x => x.id === wedId); if (!w) return;
   w.motm = w.motm === playerId ? null : playerId;
   saveWedstrijden(wedstrijden);
-  if (supabaseReady) sbFetch('wedstrijden?id=eq.' + wedId, 'PATCH', { motm: w.motm || null });
+  if (supabaseReady) sbFetch('wedstrijden?id=eq.' + wedId, 'PATCH', { motm: w.motm || null })
+    .then(r => { if (r && r._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message||r.status)); });
   renderWedstrijden();
   renderRanking();
   const p = players.find(pl => pl.id === playerId);
@@ -838,9 +846,10 @@ async function saveEditWed() {
   w.wed_fase = editWedFase;
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
-    await sbFetch('wedstrijden?id=eq.' + editWedId, 'PATCH', {
+    const res = await sbWrite('wedstrijden?id=eq.' + editWedId, 'PATCH', {
       tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate||'', starttijd: w.starttijd||'', thuis_uit: w.thuis_uit, wed_type: w.wed_type, wed_fase: w.wed_fase
     });
+    if (res && res._error) return;
   }
   closeEditWed();
   renderWedstrijden();
@@ -862,7 +871,10 @@ async function markeerGespeeld(id) {
   const w = wedstrijden.find(x => x.id === id); if (!w) return;
   w.gespeeld = true;
   saveWedstrijden(wedstrijden);
-  if (supabaseReady) await sbFetch('wedstrijden?id=eq.' + id, 'PATCH', { gespeeld: true });
+  if (supabaseReady) {
+    const res = await sbWrite('wedstrijden?id=eq.' + id, 'PATCH', { gespeeld: true });
+    if (res && res._error) { w.gespeeld = false; saveWedstrijden(wedstrijden); renderWedstrijden(); return; }
+  }
   renderWedstrijden();
   showToast('Wedstrijd gemarkeerd als gespeeld');
 }

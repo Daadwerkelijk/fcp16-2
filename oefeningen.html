@@ -335,9 +335,10 @@ async function saveCatEdit() {
   categories[editingCatIdx] = val;
   saveCategories(categories);
   if (supabaseReady) {
-    await sbFetch('categories?naam=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { naam: val });
+    const r1 = await sbWrite('categories?naam=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { naam: val });
     // Update ook categorie in custom_oef rijen
-    await sbFetch('custom_oef?cat=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { cat: val });
+    const r2 = await sbWrite('custom_oef?cat=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { cat: val });
+    if ((r1 && r1._error) || (r2 && r2._error)) { closeCatEdit(); renderCatList(); renderCatFilters(); renderOef(); return; }
   }
   closeCatEdit();
   renderCatList();

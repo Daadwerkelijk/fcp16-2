@@ -264,7 +264,7 @@ async function assign(posId, playerId) {
   renderLineup();
   if (supabaseReady) {
     await sbFetch('lineup?pos_id=eq.' + posId, 'DELETE');
-    if (playerId) await sbFetch('lineup', 'POST', { pos_id:posId, player_id:playerId });
+    if (playerId) await sbWrite('lineup', 'POST', { pos_id:posId, player_id:playerId });
   }
   const pos = getPositions().find(ps => ps.id === posId);
   const p   = players.find(pl => pl.id === playerId);

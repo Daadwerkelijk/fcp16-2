@@ -105,7 +105,10 @@ async function savePlayerData(id) {
   p.opmerkingen   = document.getElementById('opm-' + id).value;
   p.ontwikkeling  = document.getElementById('ontw-' + id).value;
   savePlayers(players);
-  if (supabaseReady) await sbFetch('players?id=eq.' + id, 'PATCH', { omschrijving:p.omschrijving, opmerkingen:p.opmerkingen, ontwikkeling:p.ontwikkeling });
+  if (supabaseReady) {
+    const res = await sbWrite('players?id=eq.' + id, 'PATCH', { omschrijving:p.omschrijving, opmerkingen:p.opmerkingen, ontwikkeling:p.ontwikkeling });
+    if (res && res._error) return;
+  }
   showToast(p.naam + ' opgeslagen');
 }
 

@@ -407,14 +407,19 @@ function saveUrl(key) {
   saveSessionNotes(sessionNotes);
   const el = document.getElementById('urlplay-' + key);
   if (el) el.innerHTML = val ? `<a href="${val}" target="_blank" rel="noopener" style="font-size:18px;text-decoration:none">▶️</a>` : '';
-  if (supabaseReady) sbFetch('session_notes?note_key=eq.' + encodeURIComponent(key), 'DELETE').then(() => sbFetch('session_notes', 'POST', { note_key:key, content:val }));
+  if (supabaseReady) sbFetch('session_notes?note_key=eq.' + encodeURIComponent(key), 'DELETE')
+    .then(() => sbWrite('session_notes', 'POST', { note_key:key, content:val }));
 }
 
 async function saveNote(nk) {
   const val = document.getElementById('notes-' + nk)?.value || '';
   sessionNotes[nk] = val;
   saveSessionNotes(sessionNotes);
-  if (supabaseReady) { await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(nk), 'DELETE'); await sbFetch('session_notes', 'POST', { note_key:nk, content:val }); }
+  if (supabaseReady) {
+    await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(nk), 'DELETE');
+    const res = await sbWrite('session_notes', 'POST', { note_key:nk, content:val });
+    if (res && res._error) return;
+  }
   showToast('Aantekening opgeslagen');
 }
 

@@ -761,3 +761,12 @@ window.addEventListener('orientationchange', () => { setTimeout(applyLandscape, 
 if (typeof screen !== 'undefined' && screen.orientation) {
   screen.orientation.addEventListener('change', () => { setTimeout(applyLandscape, 150); });
 }
+
+// Service worker registreren vanaf elke pagina (niet alleen Start), zodat de PWA ook goed werkt
+// als iemand voor het eerst op een andere pagina binnenkomt (bv. via een bookmark of gedeelde link).
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/fcp16-2/sw.js')
+      .catch(e => console.log('SW registratie mislukt:', e));
+  });
+}

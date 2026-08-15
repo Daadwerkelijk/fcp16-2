@@ -371,14 +371,5 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) { updateStats(); renderStartCards(); }
 });
 </script>
-
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/fcp16-2/sw.js')
-      .catch(e => console.log('SW registratie mislukt:', e));
-  });
-}
-</script>
 </body>
 </html>

@@ -277,7 +277,12 @@ async function runChecks() {
     const versie = match ? match[1] : 'onbekend';
     swHtml = checkItem('✓', 'App versie', versie, 'ok');
     if ('serviceWorker' in navigator) {
-      const reg = await navigator.serviceWorker.getRegistration();
+      let reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        // Nog niet geregistreerd (bv. omdat deze pagina rechtstreeks geopend is, zonder eerst
+        // via Start te zijn geweest) — probeer het hier alsnog, i.p.v. enkel te melden dat het ontbreekt.
+        try { reg = await navigator.serviceWorker.register('/fcp16-2/sw.js'); } catch(e) {}
+      }
       swHtml += checkItem('✓', 'Service Worker', reg ? 'Geregistreerd' : 'Niet geregistreerd — herlaad', reg ? 'ok' : 'warn');
     }
   } catch(e) {

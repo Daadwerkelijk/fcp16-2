@@ -340,7 +340,7 @@ async function savePr() {
   p.voorbeeld   = document.getElementById('pr-f-voorbeeld').value;
   localStorage.setItem('fcp_principes', JSON.stringify(principes));
   if (supabaseReady) {
-    const res = await sbWrite('principes?id=eq.'+p.id, 'PATCH', { naam:p.naam, beschrijving:p.beschrijving, voorbeeld:p.voorbeeld });
+    const res = await updatePrincipe(p.id, { naam:p.naam, beschrijving:p.beschrijving, voorbeeld:p.voorbeeld });
     if (res && res._error) { renderPrincipes(); closePrEdit(); return; }
   }
   renderPrincipes();

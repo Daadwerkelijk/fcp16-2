@@ -52,6 +52,14 @@ async function sbWrite(path, method, body, pogingen = 3) {
   return r;
 }
 
+// ─── Datalaag: Principes ───
+// Enige plek die weet hoe een principe wordt opgeslagen (tabelnaam, veldnamen, methode).
+// Doet exact hetzelfde als de eerdere losse aanroep in index.html: zelfde tabel, zelfde
+// velden, zelfde foutafhandeling via sbWrite (incl. automatische herhaalpogingen).
+async function updatePrincipe(id, velden) {
+  return await sbWrite('principes?id=eq.' + id, 'PATCH', velden);
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';

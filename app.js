@@ -60,6 +60,20 @@ async function updatePrincipe(id, velden) {
   return await sbWrite('principes?id=eq.' + id, 'PATCH', velden);
 }
 
+// ─── Datalaag: Spelers ───
+// createPlayer gebruikt bewust sbFetch (geen automatische herhaling): de aanroeper
+// (addPlayer) toont direct een eigen "Opslaan mislukt"-melding zonder wachttijd,
+// dat gedrag blijft ongewijzigd t.o.v. de eerdere losse implementatie.
+async function createPlayer(p) {
+  return await sbFetch('players', 'POST', { id:p.id, naam:p.naam, omschrijving:p.omschrijving, posities:p.posities, opmerkingen:p.opmerkingen, ontwikkeling:p.ontwikkeling });
+}
+async function deletePlayerRemote(id) {
+  return await sbWrite('players?id=eq.' + id, 'DELETE');
+}
+async function updatePlayer(id, velden) {
+  return await sbWrite('players?id=eq.' + id, 'PATCH', velden);
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';

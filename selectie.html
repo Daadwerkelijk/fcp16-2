@@ -77,7 +77,7 @@ async function addPlayer() {
   if (!naam) { showToast('Vul een naam in'); return; }
   const p = { id:genId(), naam, omschrijving:'', posities:[], opmerkingen:'', ontwikkeling:'', skills:null };
   if (supabaseReady) {
-    const res = await sbFetch('players', 'POST', { id:p.id, naam:p.naam, omschrijving:p.omschrijving, posities:p.posities, opmerkingen:p.opmerkingen, ontwikkeling:p.ontwikkeling });
+    const res = await createPlayer(p);
     if (!res || res._error) { showToast('Opslaan mislukt'); return; }
   }
   players.push(p);
@@ -96,7 +96,7 @@ async function deletePlayer(id) {
   savePlayers(players);
   saveLineup(lineup);
   if (supabaseReady) {
-    const res = await sbWrite('players?id=eq.' + id, 'DELETE');
+    const res = await deletePlayerRemote(id);
     if (res && res._error) { renderPlayerList(); return; }
   }
   renderPlayerList();
@@ -110,7 +110,7 @@ async function savePlayerData(id) {
   p.ontwikkeling  = document.getElementById('ontw-' + id).value;
   savePlayers(players);
   if (supabaseReady) {
-    const res = await sbWrite('players?id=eq.' + id, 'PATCH', { omschrijving:p.omschrijving, opmerkingen:p.opmerkingen, ontwikkeling:p.ontwikkeling });
+    const res = await updatePlayer(id, { omschrijving:p.omschrijving, opmerkingen:p.opmerkingen, ontwikkeling:p.ontwikkeling });
     if (res && res._error) return;
   }
   showToast(p.naam + ' opgeslagen');
@@ -122,8 +122,7 @@ function togglePosTag(pid, pos, el) {
   if (el.classList.contains('active')) { p.posities = p.posities.filter(x => x !== pos); el.classList.remove('active'); }
   else { p.posities.push(pos); el.classList.add('active'); }
   savePlayers(players);
-  if (supabaseReady) sbFetch('players?id=eq.' + pid, 'PATCH', { posities: p.posities })
-    .then(r => { if (r && r._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message||r.status)); });
+  if (supabaseReady) updatePlayer(pid, { posities: p.posities });
 }
 
 function deelSpelerFormulier(pid, naam) { deelFormulier(pid, naam); }

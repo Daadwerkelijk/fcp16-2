@@ -129,6 +129,19 @@ function loadState() {
 function savePlayers(players)      { localStorage.setItem('fcp_players',      JSON.stringify(players)); }
 function saveLineup(lineup)        { localStorage.setItem('fcp_lineup',       JSON.stringify(lineup)); }
 function saveSessionNotes(notes)   { localStorage.setItem('fcp_snotes',       JSON.stringify(notes)); }
+
+// Gedeelde sleutel-opbouw voor de session_notes-tabel, die als generieke opslag dient voor
+// meerdere soorten data (trainingsaantekeningen, video-URL's, spelerformulieren, instellingen).
+// Elke soort krijgt een eigen prefix zodat ze structureel nooit kunnen botsen — dit is de
+// ENIGE plek die deze prefixen kent, zodat een nieuwe soort data hier bewust bij moet komen
+// in plaats van dat iedere pagina zelf een sleutel verzint.
+function trainingNoteKey(nk)  { return 'training-note:' + nk; }
+function trainingUrlKey(key)  { return 'training-url:' + key; }
+function stripNoteKeyPrefix(key) {
+  if (key.startsWith('training-note:')) return key.slice('training-note:'.length);
+  if (key.startsWith('training-url:'))  return key.slice('training-url:'.length);
+  return key;
+}
 function saveCustomOef(oef)        { localStorage.setItem('fcp_oef',          JSON.stringify(oef)); }
 function saveCategories(cats)      { localStorage.setItem('fcp_cats',         JSON.stringify(cats)); }
 function saveWedstrijden(wed)      { localStorage.setItem('fcp_wed',          JSON.stringify(wed)); }
@@ -163,7 +176,10 @@ async function loadFromSupabase() {
   }
   if (sn && !sn._error) {
     const notes = {};
-    sn.forEach(r => { notes[r.note_key] = r.content; });
+    // 'training-note:' en 'training-url:' zijn een opslag-detail (voorkomt botsing met
+    // andere soorten data in dezelfde tabel) — de rest van de app blijft gewoon de kale
+    // sleutel ('cw0_1') gebruiken, dus hier strippen we de prefix meteen bij het inlezen.
+    sn.forEach(r => { notes[stripNoteKeyPrefix(r.note_key)] = r.content; });
     result.sessionNotes = notes; saveSessionNotes(notes);
     // absRedenen laden als die in session_notes staan
     if (notes['abs_redenen']) {

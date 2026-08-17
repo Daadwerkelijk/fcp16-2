@@ -407,8 +407,8 @@ function saveUrl(key) {
   saveSessionNotes(sessionNotes);
   const el = document.getElementById('urlplay-' + key);
   if (el) el.innerHTML = val ? `<a href="${val}" target="_blank" rel="noopener" style="font-size:18px;text-decoration:none">▶️</a>` : '';
-  if (supabaseReady) sbFetch('session_notes?note_key=eq.' + encodeURIComponent(key), 'DELETE')
-    .then(() => sbWrite('session_notes', 'POST', { note_key:key, content:val }));
+  if (supabaseReady) sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingUrlKey(key)), 'DELETE')
+    .then(() => sbWrite('session_notes', 'POST', { note_key:trainingUrlKey(key), content:val }));
 }
 
 async function saveNote(nk) {
@@ -416,8 +416,8 @@ async function saveNote(nk) {
   sessionNotes[nk] = val;
   saveSessionNotes(sessionNotes);
   if (supabaseReady) {
-    await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(nk), 'DELETE');
-    const res = await sbWrite('session_notes', 'POST', { note_key:nk, content:val });
+    await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingNoteKey(nk)), 'DELETE');
+    const res = await sbWrite('session_notes', 'POST', { note_key:trainingNoteKey(nk), content:val });
     if (res && res._error) return;
   }
   showToast('Aantekening opgeslagen');
@@ -815,7 +815,7 @@ async function deleteSessie(wi, si) {
     for (let s = 0; s < oudAantal; s++) {
       const k = prefix + s;
       await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(k), 'DELETE');
-      await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(k), 'DELETE');
+      await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingNoteKey(k)), 'DELETE');
     }
     for (let s = 0; s < nieuwAantal; s++) {
       const k = prefix + s;
@@ -826,7 +826,7 @@ async function deleteSessie(wi, si) {
         await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:k, player_id:p.id, aanwezig:!isAfw, reden:entry.reden||'' });
       }
       const noteVal = sessionNotes[k];
-      if (noteVal) await sbFetch('session_notes', 'POST', { note_key:k, content:noteVal });
+      if (noteVal) await sbFetch('session_notes', 'POST', { note_key:trainingNoteKey(k), content:noteVal });
     }
   }
 

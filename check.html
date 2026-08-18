@@ -15,9 +15,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .topbar-title{color:#fff;font-size:20px;font-weight:700}
 .topbar-back{background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:7px 13px;color:#fff;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none}
 .content{padding:16px}
-.card{background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;margin-bottom:12px;box-shadow:var(--card-shadow)}
-.card-hdr{padding:13px 14px;font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.card-body{padding:12px 14px}
+.hc-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;margin-bottom:12px;box-shadow:var(--card-shadow)}
+.hc-card-hdr{padding:13px 14px;font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.hc-card-body{padding:12px 14px}
 .check-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
 .check-item:last-child{border-bottom:none}
 .check-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:700}
@@ -50,41 +50,41 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
   <div id="summary" class="summary loading">⏳ Controle bezig...</div>
 
   <!-- Supabase verbinding -->
-  <div class="card">
-    <div class="card-hdr">🔗 Supabase verbinding</div>
-    <div class="card-body" id="check-verbinding">
+  <div class="hc-card">
+    <div class="hc-card-hdr">🔗 Supabase verbinding</div>
+    <div class="hc-card-body" id="check-verbinding">
       <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Verbinding testen...</div></div>
     </div>
   </div>
 
   <!-- Tabellen -->
-  <div class="card">
-    <div class="card-hdr">🗄️ Tabellen & kolommen</div>
-    <div class="card-body" id="check-tabellen">
+  <div class="hc-card">
+    <div class="hc-card-hdr">🗄️ Tabellen & kolommen</div>
+    <div class="hc-card-body" id="check-tabellen">
       <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Tabellen controleren...</div></div>
     </div>
   </div>
 
   <!-- Data integriteit -->
-  <div class="card">
-    <div class="card-hdr">🧹 Data integriteit</div>
-    <div class="card-body" id="check-data">
+  <div class="hc-card">
+    <div class="hc-card-hdr">🧹 Data integriteit</div>
+    <div class="hc-card-body" id="check-data">
       <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Data controleren...</div></div>
     </div>
   </div>
 
   <!-- localStorage -->
-  <div class="card">
-    <div class="card-hdr">💾 Lokale opslag</div>
-    <div class="card-body" id="check-local">
+  <div class="hc-card">
+    <div class="hc-card-hdr">💾 Lokale opslag</div>
+    <div class="hc-card-body" id="check-local">
       <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Lokale data controleren...</div></div>
     </div>
   </div>
 
   <!-- Service Worker versie -->
-  <div class="card">
-    <div class="card-hdr">⚙️ App versie</div>
-    <div class="card-body" id="check-sw">
+  <div class="hc-card">
+    <div class="hc-card-hdr">⚙️ App versie</div>
+    <div class="hc-card-body" id="check-sw">
       <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Versie ophalen...</div></div>
     </div>
   </div>

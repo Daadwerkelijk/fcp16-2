@@ -122,6 +122,37 @@ async function saveAbsRedenenRemote(lijst) {
   return await sbWrite('session_notes', 'POST', { note_key:'abs_redenen', content:JSON.stringify(lijst) });
 }
 
+// ─── Datalaag: Trainingsaantekeningen & video-URL's ───
+async function saveTrainingNoteRemote(nk, val) {
+  await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingNoteKey(nk)), 'DELETE');
+  return await sbWrite('session_notes', 'POST', { note_key:trainingNoteKey(nk), content:val });
+}
+async function saveTrainingUrlRemote(key, val) {
+  await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingUrlKey(key)), 'DELETE');
+  return await sbWrite('session_notes', 'POST', { note_key:trainingUrlKey(key), content:val });
+}
+
+// ─── Datalaag: Aanwezigheid ───
+async function saveAanwezigheidRemote(nk, spelers, nkData) {
+  await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(nk), 'DELETE');
+  let succes = true;
+  for (const p of spelers) {
+    const entry = nkData[p.id] || {};
+    const isAfw = entry.afwezig === true;
+    const res = await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:nk, player_id:p.id, aanwezig:!isAfw, reden:entry.reden||'' });
+    if (res && res._error) succes = false;
+  }
+  return succes;
+}
+
+// createOefeningQuick gebruikt bewust sbWrite (met herhaalpogingen) — anders dan
+// createOefening() uit oefeningen.html (plain sbFetch): dit is een bewust, al langer
+// bestaand verschil in gedrag tussen de twee plekken waar een oefening ontstaat, dat
+// hier niet stilzwijgend wordt gelijkgetrokken.
+async function createOefeningQuick(oef) {
+  return await sbWrite('custom_oef', 'POST', toSbOef(oef));
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';

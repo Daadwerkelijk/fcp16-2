@@ -407,8 +407,7 @@ function saveUrl(key) {
   saveSessionNotes(sessionNotes);
   const el = document.getElementById('urlplay-' + key);
   if (el) el.innerHTML = val ? `<a href="${val}" target="_blank" rel="noopener" style="font-size:18px;text-decoration:none">▶️</a>` : '';
-  if (supabaseReady) sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingUrlKey(key)), 'DELETE')
-    .then(() => sbWrite('session_notes', 'POST', { note_key:trainingUrlKey(key), content:val }));
+  if (supabaseReady) saveTrainingUrlRemote(key, val);
 }
 
 async function saveNote(nk) {
@@ -416,8 +415,7 @@ async function saveNote(nk) {
   sessionNotes[nk] = val;
   saveSessionNotes(sessionNotes);
   if (supabaseReady) {
-    await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingNoteKey(nk)), 'DELETE');
-    const res = await sbWrite('session_notes', 'POST', { note_key:trainingNoteKey(nk), content:val });
+    const res = await saveTrainingNoteRemote(nk, val);
     if (res && res._error) return;
   }
   showToast('Aantekening opgeslagen');
@@ -428,15 +426,7 @@ async function saveAanwezigheid(nk) {
   if (!aanwezigheid[nk]) aanwezigheid[nk] = {};
   localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
   if (supabaseReady) {
-    const del = await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(nk), 'DELETE');
-    const nkData = aanwezigheid[nk] || {};
-    let succes = true;
-    for (const p of players) {
-      const entry = nkData[p.id] || {};
-      const isAfw = entry.afwezig === true;
-      const res = await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:nk, player_id:p.id, aanwezig:!isAfw, reden:entry.reden||'' });
-      if (res && res._error) succes = false;
-    }
+    const succes = await saveAanwezigheidRemote(nk, players, aanwezigheid[nk] || {});
     if (!succes) showToast('⚠️ Niet alle data opgeslagen in Supabase');
   }
   const nkData2 = aanwezigheid[nk] || {};
@@ -686,7 +676,7 @@ async function saveQuickOef() {
   const oef  = { id:genId(), title:naam, cat, tip:document.getElementById('qoef-tip').value, url:document.getElementById('qoef-url').value, stappen:[], pr:[], formaties, duur:'', spelers:'', desc:document.getElementById('qoef-tip').value };
   customOef.push(oef); saveCustomOef(customOef);
   if (supabaseReady) {
-    const res = await sbWrite('custom_oef', 'POST', { id:oef.id, title:oef.title, cat:oef.cat, tip:oef.tip, url:oef.url, stappen:oef.stappen, spelers:oef.spelers, duur:oef.duur, beschrijving:oef.tip, formaties:oef.formaties });
+    const res = await createOefeningQuick(oef);
     if (res && res._error) return;
   }
   showToast(naam + ' aangemaakt');
@@ -811,22 +801,19 @@ async function deleteSessie(wi, si) {
   syncCustomWeken(customWeken);
 
   if (supabaseReady) {
-    // Ruim alle oude sleutels van deze week op en zet de (verschoven) huidige sessies opnieuw weg
+    // Ruim alle oude sleutels van deze week op (spant een breder bereik dan de nieuwe lengte)
     for (let s = 0; s < oudAantal; s++) {
       const k = prefix + s;
       await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(k), 'DELETE');
       await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingNoteKey(k)), 'DELETE');
     }
+    // Zet de (verschoven) huidige sessies opnieuw weg, via dezelfde datalaag-functies
+    // als een normale opslag — dus ook dezelfde herhaalpogingen bij een hapering.
     for (let s = 0; s < nieuwAantal; s++) {
       const k = prefix + s;
-      const nkData = aanwezigheid[k] || {};
-      for (const p of players) {
-        const entry = nkData[p.id] || {};
-        const isAfw = entry.afwezig === true;
-        await sbFetch('aanwezigheid', 'POST', { id:genId(), training_key:k, player_id:p.id, aanwezig:!isAfw, reden:entry.reden||'' });
-      }
+      await saveAanwezigheidRemote(k, players, aanwezigheid[k] || {});
       const noteVal = sessionNotes[k];
-      if (noteVal) await sbFetch('session_notes', 'POST', { note_key:trainingNoteKey(k), content:noteVal });
+      if (noteVal) await saveTrainingNoteRemote(k, noteVal);
     }
   }
 

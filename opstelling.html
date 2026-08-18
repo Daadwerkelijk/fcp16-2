@@ -243,7 +243,7 @@ function openModal(pos) {
 
 function addPlayerBtn(list, p, pos, lineup) {
   const btn = document.createElement('button');
-  const assignedTo = Object.entries(lineup).find(([k, v]) => v === p.id && k !== pos.id);
+  const assignedTo = vindHuidigeToewijzing(p.id, lineup, getPositions().map(ps => ps.id), pos.id);
   const assignedLabel = assignedTo ? getPositions().find(ps => ps.id === assignedTo[0])?.label : '';
   btn.className = 'modal-btn' + (lineup[pos.id] === p.id ? ' current' : '');
   btn.innerHTML = `<span>${p.naam}</span><span style="font-size:11px;color:var(--text3)">${lineup[pos.id]===p.id?'✓ Huidig':assignedLabel?'⟵ '+assignedLabel:''}</span>`;

@@ -415,7 +415,7 @@ function openWedPositieModal(wid, pos, formatieKey) {
   const { matched, onbezet, bezet } = splitSpelersVoorPositie(pool, pos, wedLineups[wid], (formatie.pos || []).map(ps => ps.id));
   const maakBtn = p => {
     const btn = document.createElement('button');
-    const alGeplaatst = Object.entries(wedLineups[wid]).find(([k,v]) => v===p.id && k!==pos.id);
+    const alGeplaatst = vindHuidigeToewijzing(p.id, wedLineups[wid], (formatie.pos || []).map(ps => ps.id), pos.id);
     btn.className = 'modal-btn' + (wedLineups[wid][pos.id]===p.id?' current':'');
     btn.innerHTML = `<span>${p.naam}</span><span style="font-size:11px;color:var(--text3)">${wedLineups[wid][pos.id]===p.id?'✓ Huidig':alGeplaatst?'⟵ '+posLabelOf(alGeplaatst[0]):''}</span>`;
     btn.onclick = () => {

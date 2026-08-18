@@ -739,19 +739,22 @@ function sortedPlayers(players) {
 // 1. passend  — spelers wiens positievoorkeur bij deze plek past
 // 2. onbezet  — overige spelers die nog nergens in de huidige opstelling staan
 // 3. bezet    — overige spelers die elders al opgesteld staan
+// Zoekt de beste "elders al geplaatst"-regel voor een speler in lineup-data. Een speler kan
+// meerdere regels hebben (bv. restjes van eerder gebruikte, andere formaties die nooit zijn
+// opgeruimd) — geef voorrang aan een regel die bij de HUIDIGE formatie hoort, zodat zo'n
+// verouderd restje niet de juiste, actuele toewijzing verdringt.
+function vindHuidigeToewijzing(playerId, lineup, geldigePosIds, uitgeslotenPosId) {
+  const alleTreffers = Object.entries(lineup || {}).filter(([k, v]) => v === playerId && k !== uitgeslotenPosId);
+  return (geldigePosIds ? alleTreffers.find(([k]) => geldigePosIds.includes(k)) : null) || alleTreffers[0];
+}
+
 function splitSpelersVoorPositie(players, pos, lineup, geldigePosIds) {
   const posLabel = pos.label.replace('-', '').toLowerCase();
   const matched = [], onbezet = [], bezet = [];
   sortedPlayers(players).forEach(p => {
     const posities = (p.posities || []).map(x => x.toLowerCase().replace('-', ''));
     const isMatch = posities.includes(posLabel) || posities.includes(pos.label.toLowerCase());
-    // Een speler kan meerdere regels in de lineup-data hebben (bv. restjes van eerder
-    // gebruikte, andere formaties die nooit zijn opgeruimd). Geef voorrang aan een regel
-    // die bij de HUIDIGE formatie hoort, zodat zo'n verouderd restje niet per ongeluk de
-    // "elders al geplaatst"-tag laat verdwijnen voor een speler die wél degelijk correct
-    // in de huidige opstelling staat.
-    const alleTreffers = Object.entries(lineup || {}).filter(([k, v]) => v === p.id && k !== pos.id);
-    const elders = (geldigePosIds ? alleTreffers.find(([k]) => geldigePosIds.includes(k)) : null) || alleTreffers[0];
+    const elders = vindHuidigeToewijzing(p.id, lineup, geldigePosIds, pos.id);
     if (isMatch) matched.push(p);
     else if (elders) bezet.push(p);
     else onbezet.push(p);

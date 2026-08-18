@@ -106,6 +106,15 @@ async function deleteCategorieRemote(naam) {
   return await sbFetch('categories?naam=eq.' + encodeURIComponent(naam), 'DELETE');
 }
 
+// ─── Datalaag: Basisopstelling ───
+async function assignLineupPositie(posId, playerId) {
+  await sbFetch('lineup?pos_id=eq.' + posId, 'DELETE');
+  if (playerId) return await sbWrite('lineup', 'POST', { pos_id:posId, player_id:playerId });
+}
+async function clearLineupRemote() {
+  return await sbFetch('lineup', 'DELETE');
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';

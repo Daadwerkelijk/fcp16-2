@@ -74,6 +74,38 @@ async function updatePlayer(id, velden) {
   return await sbWrite('players?id=eq.' + id, 'PATCH', velden);
 }
 
+// ─── Datalaag: Oefeningen ───
+// toSbOef bepaalt welke velden naar Supabase gaan (verhuisd uit oefeningen.html, was daar
+// de enige gebruiker van).
+function toSbOef(o) {
+  return { id:o.id, cat:o.cat, title:o.title, duur:o.duur||'', spelers:o.spelers||'', beschrijving:o.desc||o.beschrijving||'', stappen:o.stappen||[], tip:o.tip||'', url:o.url||'', formaties:o.formaties||[] };
+}
+// create/updateOefening gebruiken bewust sbFetch (geen automatische herhaling): de
+// aanroeper toont zelf een eigen "wordt alleen lokaal bewaard"-melding, dat gedrag
+// blijft ongewijzigd t.o.v. de eerdere losse implementatie.
+async function createOefening(oef) {
+  return await sbFetch('custom_oef', 'POST', toSbOef(oef));
+}
+async function updateOefening(id, oef) {
+  return await sbFetch('custom_oef?id=eq.' + id, 'PATCH', toSbOef(oef));
+}
+async function deleteOefeningRemote(id) {
+  return await sbWrite('custom_oef?id=eq.' + id, 'DELETE');
+}
+
+// ─── Datalaag: Categorieën ───
+async function createCategorie(naam, sortOrder) {
+  return await sbFetch('categories', 'POST', { naam, sort_order: sortOrder });
+}
+async function renameCategorie(oudeNaam, nieuweNaam) {
+  const r1 = await sbWrite('categories?naam=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { naam: nieuweNaam });
+  const r2 = await sbWrite('custom_oef?cat=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { cat: nieuweNaam });
+  return { r1, r2 };
+}
+async function deleteCategorieRemote(naam) {
+  return await sbFetch('categories?naam=eq.' + encodeURIComponent(naam), 'DELETE');
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';

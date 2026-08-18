@@ -244,11 +244,6 @@ function addStapWith(val)   {
   document.getElementById('oef-f-stappen').appendChild(row);
 }
 
-// Zet lokaal oef-object om naar alleen de kolommen die in Supabase bestaan
-function toSbOef(o) {
-  return { id:o.id, cat:o.cat, title:o.title, duur:o.duur||'', spelers:o.spelers||'', beschrijving:o.desc||o.beschrijving||'', stappen:o.stappen||[], tip:o.tip||'', url:o.url||'', formaties:o.formaties||[] };
-}
-
 async function saveOef() {
   const title = document.getElementById('oef-f-title').value.trim(); if (!title) { showToast('Vul een naam in'); return; }
   const stappen = [...document.querySelectorAll('#oef-f-stappen .bmodal-stap-input')].map(i => i.value.trim()).filter(Boolean);
@@ -270,14 +265,14 @@ async function saveOef() {
     if (idx >= 0) {
       customOef[idx] = oef;
       if (supabaseReady) {
-        const res = await sbFetch('custom_oef?id=eq.' + editingOefId, 'PATCH', toSbOef(oef));
+        const res = await updateOefening(editingOefId, oef);
         if (res && res._error) showToast('⚠️ Supabase: opslaan mislukt (wordt alleen lokaal bewaard)');
       }
     }
   } else {
     customOef.push(oef);
     if (supabaseReady) {
-      const res = await sbFetch('custom_oef', 'POST', toSbOef(oef));
+      const res = await createOefening(oef);
       if (res && res._error) showToast('⚠️ Supabase: opslaan mislukt (wordt alleen lokaal bewaard)');
     }
   }
@@ -292,7 +287,7 @@ async function deleteOef(id) {
   customOef = customOef.filter(x => x.id !== id);
   saveCustomOef(customOef);
   if (supabaseReady) {
-    const res = await sbWrite('custom_oef?id=eq.' + id, 'DELETE');
+    const res = await deleteOefeningRemote(id);
     if (res && res._error) { renderCatFilters(); renderOef(); return; }
   }
   renderCatFilters(); renderOef();
@@ -339,9 +334,7 @@ async function saveCatEdit() {
   categories[editingCatIdx] = val;
   saveCategories(categories);
   if (supabaseReady) {
-    const r1 = await sbWrite('categories?naam=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { naam: val });
-    // Update ook categorie in custom_oef rijen
-    const r2 = await sbWrite('custom_oef?cat=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { cat: val });
+    const { r1, r2 } = await renameCategorie(oudeNaam, val);
     if ((r1 && r1._error) || (r2 && r2._error)) { closeCatEdit(); renderCatList(); renderCatFilters(); return; }
   }
   closeCatEdit();
@@ -358,7 +351,7 @@ async function addCat() {
   document.getElementById('new-cat-input').value = '';
   renderCatList(); showToast(val + ' toegevoegd');
   if (supabaseReady) {
-    const res = await sbFetch('categories', 'POST', { naam:val, sort_order:categories.length });
+    const res = await createCategorie(val, categories.length);
     if (res && res._error) showToast('⚠️ Supabase: categorie niet opgeslagen (' + (res.message||res.status) + ')');
   }
 }
@@ -368,7 +361,7 @@ async function deleteCat(i) {
   const naam = categories[i];
   categories.splice(i, 1); saveCategories(categories);
   renderCatList(); showToast(naam + ' verwijderd');
-  if (supabaseReady) sbFetch('categories?naam=eq.' + encodeURIComponent(naam), 'DELETE')
+  if (supabaseReady) deleteCategorieRemote(naam)
     .then(r => { if (r && r._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message||r.status)); });
 }
 
@@ -379,9 +372,7 @@ async function onSupabaseReady() {
     categories = data.categories;
   } else {
     // Supabase categories tabel is leeg — seed de huidige (lokale) categorieën eenmalig
-    const seedAll = categories.map((naam, i) =>
-      sbFetch('categories', 'POST', { naam, sort_order:i + 1 })
-    );
+    const seedAll = categories.map((naam, i) => createCategorie(naam, i + 1));
     await Promise.all(seedAll);
   }
   renderCatFilters(); renderOef();

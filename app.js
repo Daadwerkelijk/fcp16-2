@@ -115,6 +115,13 @@ async function clearLineupRemote() {
   return await sbFetch('lineup', 'DELETE');
 }
 
+// ─── Datalaag: Afwezigheidsredenen ───
+// Was identiek gedupliceerd in team.html en instellingen.html — nu één plek.
+async function saveAbsRedenenRemote(lijst) {
+  await sbFetch('session_notes?note_key=eq.abs_redenen', 'DELETE');
+  return await sbWrite('session_notes', 'POST', { note_key:'abs_redenen', content:JSON.stringify(lijst) });
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';

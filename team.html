@@ -260,11 +260,7 @@ let customWeken  = state.customWeken;
 let absRedenen   = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]');
 function saveAbsRedenen(r) {
   localStorage.setItem('fcp_abs_redenen', JSON.stringify(r));
-  if (supabaseReady) {
-    sbFetch('session_notes?note_key=eq.abs_redenen', 'DELETE').then(() =>
-      sbWrite('session_notes', 'POST', { note_key:'abs_redenen', content:JSON.stringify(r) })
-    );
-  }
+  if (supabaseReady) saveAbsRedenenRemote(r);
 }
 
 // ─── AANWEZIGHEID OVERZICHT ───

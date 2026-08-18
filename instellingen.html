@@ -126,10 +126,7 @@ let categories = state.categories;
 let absRedenen = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]');
 function saveAbsRedenen(r) {
   localStorage.setItem('fcp_abs_redenen', JSON.stringify(r));
-  if (supabaseReady) {
-    sbFetch('session_notes?note_key=eq.abs_redenen','DELETE').then(()=>
-      sbWrite('session_notes','POST',{note_key:'abs_redenen',content:JSON.stringify(r)}));
-  }
+  if (supabaseReady) saveAbsRedenenRemote(r);
 }
 
 // ─── TEAM CONFIG ───
@@ -284,7 +281,7 @@ async function addCat() {
   categories.push(val); saveCategories(categories);
   document.getElementById('new-cat').value = '';
   if (supabaseReady) {
-    const res = await sbFetch('categories','POST',{naam:val, sort_order:categories.length});
+    const res = await createCategorie(val, categories.length);
     if (res && res._error) showToast('⚠️ Supabase: niet opgeslagen in cloud');
   }
   renderCats(); showToast(val + ' toegevoegd');
@@ -292,7 +289,7 @@ async function addCat() {
 async function deleteCat(i) {
   if (!confirm('Verwijder categorie "' + categories[i] + '"?')) return;
   const naam = categories[i]; categories.splice(i, 1); saveCategories(categories);
-  if (supabaseReady) sbFetch('categories?naam=eq.' + encodeURIComponent(naam), 'DELETE')
+  if (supabaseReady) deleteCategorieRemote(naam)
     .then(r => { if (r && r._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message||r.status)); });
   renderCats(); showToast(naam + ' verwijderd');
 }

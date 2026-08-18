@@ -218,7 +218,7 @@ function openModal(pos) {
     list.appendChild(d);
   } else {
     // Sorteer: passende positie eerst, dan nog-niet-opgestelde spelers, dan de rest
-    const { matched, onbezet, bezet } = splitSpelersVoorPositie(players, pos, lineup);
+    const { matched, onbezet, bezet } = splitSpelersVoorPositie(players, pos, lineup, getPositions().map(ps => ps.id));
 
     const addGroup = (arr, label) => {
       if (!arr.length) return;

@@ -243,6 +243,7 @@ function loadState() {
     aanwezigheid: JSON.parse(localStorage.getItem('fcp_aanw')         || '{}'),
     customWeken:  JSON.parse(localStorage.getItem('fcp_custom_weken') || '[]'),
     formatie:     localStorage.getItem('fcp_formatie') || '4222',
+    absRedenen:   JSON.parse(localStorage.getItem('fcp_abs_redenen')  || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]'),
   };
 }
 
@@ -675,9 +676,14 @@ const SKILL_LEVELS = ['Ontwikkel punt','Voldoende','Goed','Zeer goed'];
 // ─── POSITIE BADGES ───
 function getRolBadges(posities) {
   if (!posities || !posities.length) return '';
+  // Moet elke optie uit ALL_POS_OPTS (app.js) dekken. 'Keeper' was hier eerder 'GK',
+  // waardoor elke speler met de (echte, selecteerbare) tag 'Keeper' nooit een badge kreeg.
   const ROLE_MAP = {
-    'GK':'keeper','LB':'back','CB-L':'cb','CB-R':'cb','RB':'back',
-    'VM-L':'dm','VM-R':'dm','AM-L':'am','AM-R':'am','ST-L':'st','ST-R':'st','CF':'st'
+    'Keeper':'keeper',
+    'LB':'back','RB':'back','CB-L':'cb','CB-R':'cb',
+    'VM-L':'dm','VM-R':'dm','DM-L':'dm','DM-R':'dm',
+    'AM-L':'am','AM-R':'am','LAM':'am','CAM':'am','RAM':'am','LM':'am','RM':'am','CM-L':'am','CM-R':'am',
+    'ST-L':'st','ST-R':'st','CF':'st'
   };
   const rollen = new Set();
   posities.forEach(p => {
@@ -733,13 +739,19 @@ function sortedPlayers(players) {
 // 1. passend  — spelers wiens positievoorkeur bij deze plek past
 // 2. onbezet  — overige spelers die nog nergens in de huidige opstelling staan
 // 3. bezet    — overige spelers die elders al opgesteld staan
-function splitSpelersVoorPositie(players, pos, lineup) {
+function splitSpelersVoorPositie(players, pos, lineup, geldigePosIds) {
   const posLabel = pos.label.replace('-', '').toLowerCase();
   const matched = [], onbezet = [], bezet = [];
   sortedPlayers(players).forEach(p => {
     const posities = (p.posities || []).map(x => x.toLowerCase().replace('-', ''));
     const isMatch = posities.includes(posLabel) || posities.includes(pos.label.toLowerCase());
-    const elders = Object.entries(lineup || {}).find(([k, v]) => v === p.id && k !== pos.id);
+    // Een speler kan meerdere regels in de lineup-data hebben (bv. restjes van eerder
+    // gebruikte, andere formaties die nooit zijn opgeruimd). Geef voorrang aan een regel
+    // die bij de HUIDIGE formatie hoort, zodat zo'n verouderd restje niet per ongeluk de
+    // "elders al geplaatst"-tag laat verdwijnen voor een speler die wél degelijk correct
+    // in de huidige opstelling staat.
+    const alleTreffers = Object.entries(lineup || {}).filter(([k, v]) => v === p.id && k !== pos.id);
+    const elders = (geldigePosIds ? alleTreffers.find(([k]) => geldigePosIds.includes(k)) : null) || alleTreffers[0];
     if (isMatch) matched.push(p);
     else if (elders) bezet.push(p);
     else onbezet.push(p);

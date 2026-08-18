@@ -7,34 +7,35 @@
 <title>Health Check — Voetbaltrainer-app</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:#F2F1FF;color:#12113A;font-size:14px;padding-bottom:32px}
-.topbar{background:#2B1FA0;padding:calc(44px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;justify-content:space-between}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size:14px;padding-bottom:32px}
+.topbar{background:var(--topbar);padding:calc(44px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;justify-content:space-between}
 .topbar-title{color:#fff;font-size:20px;font-weight:700}
-.topbar-back{background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:7px 13px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none}
+.topbar-back{background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:7px 13px;color:#fff;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none}
 .content{padding:16px}
-.card{background:#fff;border:1px solid #E4E3F5;border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.card-hdr{padding:13px 14px;font-size:13px;font-weight:700;color:#8B8AB0;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #E4E3F5;display:flex;align-items:center;justify-content:space-between}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;margin-bottom:12px;box-shadow:var(--card-shadow)}
+.card-hdr{padding:13px 14px;font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .card-body{padding:12px 14px}
-.check-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E4E3F5;font-size:13px}
+.check-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
 .check-item:last-child{border-bottom:none}
 .check-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:700}
-.ok{background:#E8F5EE;color:#1B7A4B}
-.warn{background:#FFF3E0;color:#E65100}
-.err{background:#FFEBEE;color:#C62828}
-.loading{background:#EEF2FF;color:#2B1FA0}
-.check-label{flex:1;color:#12113A}
-.check-detail{font-size:11px;color:#8B8AB0;font-family:'DM Mono',monospace}
-.btn{width:100%;padding:13px;background:#2B1FA0;border:none;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
+.ok{background:var(--groen-l);color:var(--groen)}
+.warn{background:var(--goud-l);color:var(--goud)}
+.err{background:var(--rood-l);color:var(--rood)}
+.loading{background:var(--blauw-l);color:var(--topbar)}
+.check-label{flex:1;color:var(--text)}
+.check-detail{font-size:11px;color:var(--text3);font-family:var(--font-mono)}
+.btn{width:100%;padding:13px;background:var(--topbar);border:none;border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
 .btn:active{opacity:.85}
-.btn-s{background:#fff;border:1px solid #E4E3F5;color:#4A4870;margin-top:8px}
-.summary{padding:14px;border-radius:12px;margin-bottom:12px;font-size:14px;font-weight:600;text-align:center}
-.summary.ok{background:#E8F5EE;color:#1B7A4B}
-.summary.warn{background:#FFF3E0;color:#E65100}
-.summary.err{background:#FFEBEE;color:#C62828}
-.summary.loading{background:#EEF2FF;color:#2B1FA0}
-.mono{font-family:'DM Mono',monospace;font-size:12px;background:#F2F1FF;padding:8px 12px;border-radius:8px;margin-top:8px;word-break:break-all;color:#4A4870;line-height:1.6}
+.btn-s{background:var(--white);border:1px solid var(--border);color:var(--text2);margin-top:8px}
+.summary{padding:14px;border-radius:var(--rsm);margin-bottom:12px;font-size:14px;font-weight:600;text-align:center}
+.summary.ok{background:var(--groen-l);color:var(--groen)}
+.summary.warn{background:var(--goud-l);color:var(--goud)}
+.summary.err{background:var(--rood-l);color:var(--rood)}
+.summary.loading{background:var(--blauw-l);color:var(--topbar)}
+.mono{font-family:var(--font-mono);font-size:12px;background:var(--bg);padding:8px 12px;border-radius:8px;margin-top:8px;word-break:break-all;color:var(--text2);line-height:1.6}
 </style>
 </head>
 <body>
@@ -94,6 +95,29 @@ body{font-family:'DM Sans',sans-serif;background:#F2F1FF;color:#12113A;font-size
 </div>
 
 <script>
+// Pas het gekozen kleurthema toe (zelfde palet als de rest van de app), zonder de
+// hoofdnavigatie-logica van app.js hier te laden — deze pagina heeft geen zij-navigatie nodig.
+(function() {
+  const THEMAS = {
+    licht:      { topbar:'#2B1FA0', accent:'#2B1FA0', bg:'#F2F1FF', white:'#ffffff', text:'#12113A', text2:'#4A4870', text3:'#8B8AB0', border:'#E4E3F5' },
+    licht_groen:{ topbar:'#1B5E20', accent:'#1B7A4B', bg:'#F1F8F4', white:'#ffffff', text:'#0D2B14', text2:'#2E6645', text3:'#6B9E7A', border:'#D4EBD9' },
+    licht_blauw:{ topbar:'#0D47A1', accent:'#1565C0', bg:'#F0F4FF', white:'#ffffff', text:'#0D1B4A', text2:'#2B4EA0', text3:'#6B82CC', border:'#C7D4FC' },
+    fcp:        { topbar:'#1a1a1a', accent:'#F5C000', bg:'#111111', white:'#1e1e1e', text:'#F5F5F5', text2:'#CCCCCC', text3:'#888888', border:'#333333' },
+    donker:     { topbar:'#080c14', accent:'#c8a840', bg:'#080c14', white:'#0e1524', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', border:'#1e2e48' },
+  };
+  const key = localStorage.getItem('fcp_thema') || 'licht';
+  const t = THEMAS[key] || THEMAS.licht;
+  const r = document.documentElement.style;
+  r.setProperty('--topbar', t.topbar);
+  r.setProperty('--accent', t.accent);
+  r.setProperty('--bg', t.bg);
+  r.setProperty('--white', t.white);
+  r.setProperty('--text', t.text);
+  r.setProperty('--text2', t.text2);
+  r.setProperty('--text3', t.text3);
+  r.setProperty('--border', t.border);
+})();
+
 const sbUrl = localStorage.getItem('sb_url');
 const sbKey = localStorage.getItem('sb_key');
 let totaalOk = 0, totaalWarn = 0, totaalErr = 0;

@@ -92,6 +92,7 @@
     <div class="bmodal-actions">
       <button class="bmodal-cancel-btn" onclick="closeEditWed()">Annuleer</button>
       <button class="bmodal-save" onclick="saveEditWed()">💾 Opslaan</button>
+      <button class="del-btn" style="flex:0 0 auto;padding:13px 14px" onclick="deleteWedstrijdVanuitEdit()" title="Wedstrijd verwijderen">🗑️</button>
     </div>
   </div>
 </div>
@@ -411,7 +412,7 @@ function openWedPositieModal(wid, pos, formatieKey) {
   if (!pool.length) { lijst.innerHTML += '<div style="font-size:12px;color:var(--text3);padding:8px 0">Markeer eerst aanwezige spelers op het Aanwezig tabblad.</div>'; }
   const formatie = FORMATIES[formatieKey] || FORMATIES[wedstrijden.find(x=>x.id===wid)?.formatie] || {};
   const posLabelOf = id => (formatie.pos || []).find(ps => ps.id === id)?.label || id;
-  const { matched, onbezet, bezet } = splitSpelersVoorPositie(pool, pos, wedLineups[wid]);
+  const { matched, onbezet, bezet } = splitSpelersVoorPositie(pool, pos, wedLineups[wid], (formatie.pos || []).map(ps => ps.id));
   const maakBtn = p => {
     const btn = document.createElement('button');
     const alGeplaatst = Object.entries(wedLineups[wid]).find(([k,v]) => v===p.id && k!==pos.id);
@@ -750,15 +751,24 @@ async function saveWedstrijd(id) {
 
 async function deleteWedstrijd(id) {
   const w = wedstrijden.find(x => x.id === id);
-  if (!confirm('Verwijder ' + (w ? w.tegenstander : 'wedstrijd') + '?')) return;
+  if (!confirm('Verwijder ' + (w ? w.tegenstander : 'wedstrijd') + '?')) return false;
   wedstrijden = wedstrijden.filter(x => x.id !== id);
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
     const res = await deleteWedstrijdRemote(id);
-    if (res && res._error) { renderWedstrijden(); return; }
+    if (res && res._error) { renderWedstrijden(); return false; }
   }
   renderWedstrijden();
   showToast('Wedstrijd verwijderd');
+  return true;
+}
+
+// Wrapper voor de verwijderknop in de "Wedstrijd bewerken"-modal: sluit de modal alleen
+// als het verwijderen ook echt is doorgegaan (niet bij annuleren van de bevestiging of
+// een mislukte Supabase-actie), zodat er geen verwarrend "verdwijnt de modal zomaar"-gedrag ontstaat.
+async function deleteWedstrijdVanuitEdit() {
+  const gelukt = await deleteWedstrijd(editWedId);
+  if (gelukt) closeEditWed();
 }
 
 function setMotm(wedId, playerId) {
@@ -1029,7 +1039,6 @@ function renderWedstrijden() {
             <button class="save-btn" style="background:var(--accent2);border-color:var(--accent);color:var(--bg)" onclick="openLive('${w.id}')">▶ Live</button>
             <button class="save-btn" onclick="saveWedstrijd('${w.id}')">💾 Opslaan</button>
             ${!w.gespeeld ? `<button class="save-btn" style="background:transparent;border-color:var(--accent);color:var(--accent)" onclick="markeerGespeeld('${w.id}')">✓ Gespeeld</button>` : '<span style="font-size:11px;color:var(--accent)">✓ Gespeeld</span>'}
-            <button class="del-btn" onclick="deleteWedstrijd('${w.id}')">Verwijder</button>
           </div>
         </div>
 
@@ -1089,6 +1098,7 @@ function renderRanking() {
 async function onSupabaseReady() {
   const data = await loadFromSupabase();
   if (data.players) players = data.players;
+  if (data.absRedenen) absRedenen = data.absRedenen;
   // Haal wedstrijden direct op met correcte mapping
   const wedRes = await sbFetch('wedstrijden?order=iso_date.asc', 'GET');
   if (wedRes && !wedRes._error) {

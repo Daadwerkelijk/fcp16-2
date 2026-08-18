@@ -316,7 +316,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .config-save-btn{width:100%;padding:12px;background:var(--topbar);border:none;border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:14px;font-weight:600;cursor:pointer}
 
 /* ─── MODALS ─── */
-.modal-overlay,.bmodal-overlay{position:fixed;inset:0;background:rgba(18,17,58,.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay,.bmodal-overlay{position:fixed;inset:0;background:color-mix(in srgb, var(--topbar) 60%, transparent);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end;justify-content:center}
 .modal-overlay.open,.bmodal-overlay.open{display:flex}
 .modal,.bmodal{background:var(--white);border-top:3px solid var(--topbar);border-radius:20px 20px 0 0;padding:22px 16px 36px;width:100%;max-height:92dvh;overflow-y:auto;box-shadow:0 -8px 40px rgba(43,31,160,.15)}
 .modal-title,.bmodal-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:16px;letter-spacing:-.2px}
@@ -344,7 +344,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .bmodal-cancel-btn:active{background:var(--bg)}
 
 /* ─── PRINCIPE MODAL ─── */
-.pr-modal-overlay{position:fixed;inset:0;background:rgba(18,17,58,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;display:none;align-items:flex-end;justify-content:center;padding:0}
+.pr-modal-overlay{position:fixed;inset:0;background:color-mix(in srgb, var(--topbar) 35%, transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;display:none;align-items:flex-end;justify-content:center;padding:0}
 .pr-modal-overlay.open{display:flex}
 .pr-modal{background:var(--white);color:var(--text);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-height:88dvh;overflow-y:auto;box-shadow:0 -4px 24px rgba(0,0,0,.08)}
 .pr-modal-code{font-size:40px;font-weight:800;line-height:1;margin-bottom:2px;color:var(--text)}

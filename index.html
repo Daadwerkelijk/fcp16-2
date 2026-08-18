@@ -170,15 +170,16 @@ function renderStartCards() {
         const s = w.sessies[si];
         const dagTxt = (s.dag||'').toLowerCase();
         const dagEntry = Object.entries(DAGMAP).find(([d]) => dagTxt.includes(d));
-        // Weekdag herkend in de naam ("maandag") -> exacte datum. Anders (bv. "Training 1")
-        // -> val terug op de startdatum van de week, zodat de kaart alsnog verschijnt.
-        const offset = dagEntry ? dagEntry[1] : 0;
+        // Weekdag herkend in de naam ("maandag") -> exacte datum. Anders (bv. "Training 1",
+        // "Training 2") -> een schatting: trainingen staan doorgaans ~2 dagen uit elkaar
+        // (bv. maandag/woensdag), dus de 1e sessie van de week krijgt dag 0, de 2e dag 2, enz.
+        // Zonder dit kregen alle ongedateerde sessies dezelfde (week-start-)datum, waardoor
+        // een al verstreken 1e training de eerstvolgende training kon blijven overschaduwen.
+        const offset = dagEntry ? dagEntry[1] : si * 2;
         const sessieD = new Date(w.isoDate);
         sessieD.setDate(sessieD.getDate() + offset);
         const sessieDag = sessieD.getFullYear()*10000 + (sessieD.getMonth()+1)*100 + sessieD.getDate();
-        const weekEindDag = (() => { const d = new Date(w.isoDate); d.setDate(d.getDate()+6); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); })();
-        // Zonder herkende weekdag: laat de hele week meetellen zolang deze niet voorbij is
-        if ((dagEntry && sessieDag >= todayDag) || (!dagEntry && weekEindDag >= todayDag)) {
+        if (sessieDag >= todayDag) {
           gevondenWeek = w; gevondenWi = i;
           gevondenSessie = s; gevondenSi = si;
           gevondenDatumIso = sessieD.getFullYear() + '-' + String(sessieD.getMonth()+1).padStart(2,'0') + '-' + String(sessieD.getDate()).padStart(2,'0');

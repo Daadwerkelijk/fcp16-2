@@ -153,6 +153,25 @@ async function createOefeningQuick(oef) {
   return await sbWrite('custom_oef', 'POST', toSbOef(oef));
 }
 
+// ─── Datalaag: Wedstrijden ───
+async function createWedstrijd(w) {
+  return await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate||'', starttijd:w.starttijd||'', thuis_uit:w.thuis_uit, wed_type:w.wed_type, wed_fase:w.wed_fase, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
+}
+// updateWedstrijd gebruikt sbWrite (met herhaalpogingen) — het gedrag van de meeste
+// opslagacties op deze pagina (score, opstelling, wedstrijdgegevens, gespeeld-status).
+async function updateWedstrijd(id, velden) {
+  return await sbWrite('wedstrijden?id=eq.' + id, 'PATCH', velden);
+}
+// updateWedstrijdQuiet gebruikt bewust plain sbFetch (geen herhaalpogingen): de
+// aanroepers tonen zelf een eigen foutmelding of doen dit stil op de achtergrond,
+// dat gedrag blijft ongewijzigd t.o.v. de eerdere losse implementaties.
+async function updateWedstrijdQuiet(id, velden) {
+  return await sbFetch('wedstrijden?id=eq.' + id, 'PATCH', velden);
+}
+async function deleteWedstrijdRemote(id) {
+  return await sbWrite('wedstrijden?id=eq.' + id, 'DELETE');
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';

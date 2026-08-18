@@ -281,7 +281,7 @@ async function saveWedAanwezig(wid) {
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
-    const res = await sbFetch('wedstrijden?id=eq.' + wid, 'PATCH', {
+    const res = await updateWedstrijdQuiet(wid, {
       afwezig: JSON.stringify(w.afwezig || [])
     });
     if (res && res._error) {
@@ -402,7 +402,7 @@ function openWedPositieModal(wid, pos, formatieKey) {
     if (w2) {
       w2.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid]));
       saveWedstrijden(wedstrijden);
-      if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup)})
+      if (supabaseReady) updateWedstrijdQuiet(wid, {wed_lineup:JSON.stringify(w2.wed_lineup)})
         .then(r => { if (r && r._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message||r.status)); });
     }
     buildWedField(wid); buildWedBench(wid); closeWedPosModal();
@@ -428,7 +428,7 @@ function openWedPositieModal(wid, pos, formatieKey) {
         w2.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid]));
         w2.formatie = document.getElementById('wform-sel-' + wid)?.value || w2.formatie || '4222';
         saveWedstrijden(wedstrijden);
-        if (supabaseReady) sbFetch('wedstrijden?id=eq.'+wid,'PATCH',{wed_lineup:JSON.stringify(w2.wed_lineup),formatie:w2.formatie})
+        if (supabaseReady) updateWedstrijdQuiet(wid, {wed_lineup:JSON.stringify(w2.wed_lineup),formatie:w2.formatie})
           .then(r => { if (r && r._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message||r.status)); });
       }
       buildWedField(wid); buildWedBench(wid); closeWedPosModal(); showToast(p.naam+' → '+pos.label);
@@ -463,7 +463,7 @@ async function saveWedOpstelling(wid) {
   w.wed_lineup = JSON.parse(JSON.stringify(wedLineups[wid] || {}));
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
-    const res = await sbWrite('wedstrijden?id=eq.' + wid, 'PATCH', {
+    const res = await updateWedstrijd(wid, {
       formatie:   w.formatie,
       wed_lineup: JSON.stringify(w.wed_lineup),
       aanwezig:   JSON.stringify(w.aanwezig||[]),
@@ -538,7 +538,7 @@ async function closeLive() {
       w.opmerkingen=tekst;
     }
     saveWedstrijden(wedstrijden);
-    if(supabaseReady) await sbWrite('wedstrijden?id=eq.'+liveWedId,'PATCH',{score_eigen:w.score_eigen,score_tegen:w.score_tegen,opmerkingen:w.opmerkingen});
+    if(supabaseReady) await updateWedstrijd(liveWedId, {score_eigen:w.score_eigen,score_tegen:w.score_tegen,opmerkingen:w.opmerkingen});
   }
   document.getElementById('live-overlay').style.display='none';
   renderWedstrijden(); showToast('Wedstrijd opgeslagen');
@@ -705,7 +705,7 @@ async function addWedstrijd() {
   const w = { id:genId(), tegenstander:teg, datum, isoDate:rawDatum, starttijd:rawTijd, thuis_uit:thuisUit, wed_type:newWedType, wed_fase:newWedFase, score_eigen:0, score_tegen:0, opmerkingen:'', ratings:{}, motm:null, gespeeld:false };
   if (supabaseReady) {
     // Alleen de basiskolommen sturen bij aanmaken
-    const res = await sbFetch('wedstrijden', 'POST', { id:w.id, tegenstander:w.tegenstander, datum:w.datum, iso_date:w.isoDate||'', starttijd:w.starttijd||'', thuis_uit:w.thuis_uit, wed_type:w.wed_type, wed_fase:w.wed_fase, score_eigen:0, score_tegen:0, opmerkingen:'', gespeeld:false });
+    const res = await createWedstrijd(w);
     if (!res || res._error) { showToast('Opslaan mislukt — ' + (res?.message||'check Supabase')); return; }
   }
   wedstrijden.push(w);
@@ -735,7 +735,7 @@ async function saveWedstrijd(id) {
   });
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
-    const res = await sbWrite('wedstrijden?id=eq.' + id, 'PATCH', {
+    const res = await updateWedstrijd(id, {
       score_eigen: w.score_eigen,
       score_tegen: w.score_tegen,
       opmerkingen: w.opmerkingen,
@@ -754,7 +754,7 @@ async function deleteWedstrijd(id) {
   wedstrijden = wedstrijden.filter(x => x.id !== id);
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
-    const res = await sbWrite('wedstrijden?id=eq.' + id, 'DELETE');
+    const res = await deleteWedstrijdRemote(id);
     if (res && res._error) { renderWedstrijden(); return; }
   }
   renderWedstrijden();
@@ -765,7 +765,7 @@ function setMotm(wedId, playerId) {
   const w = wedstrijden.find(x => x.id === wedId); if (!w) return;
   w.motm = w.motm === playerId ? null : playerId;
   saveWedstrijden(wedstrijden);
-  if (supabaseReady) sbFetch('wedstrijden?id=eq.' + wedId, 'PATCH', { motm: w.motm || null })
+  if (supabaseReady) updateWedstrijdQuiet(wedId, { motm: w.motm || null })
     .then(r => { if (r && r._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (r.message||r.status)); });
   renderWedstrijden();
   renderRanking();
@@ -849,7 +849,7 @@ async function saveEditWed() {
   w.wed_fase = editWedFase;
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
-    const res = await sbWrite('wedstrijden?id=eq.' + editWedId, 'PATCH', {
+    const res = await updateWedstrijd(editWedId, {
       tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate||'', starttijd: w.starttijd||'', thuis_uit: w.thuis_uit, wed_type: w.wed_type, wed_fase: w.wed_fase
     });
     if (res && res._error) return;
@@ -875,7 +875,7 @@ async function markeerGespeeld(id) {
   w.gespeeld = true;
   saveWedstrijden(wedstrijden);
   if (supabaseReady) {
-    const res = await sbWrite('wedstrijden?id=eq.' + id, 'PATCH', { gespeeld: true });
+    const res = await updateWedstrijd(id, { gespeeld: true });
     if (res && res._error) { w.gespeeld = false; saveWedstrijden(wedstrijden); renderWedstrijden(); return; }
   }
   renderWedstrijden();

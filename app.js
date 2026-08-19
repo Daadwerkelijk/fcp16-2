@@ -204,6 +204,22 @@ async function deleteLiveWedstrijd(id) {
   return await sbFetch('live_wedstrijden?id=eq.' + id, 'DELETE');
 }
 
+// ─── Datalaag: Live pushacties ───
+// Zet de status/klok van een lopende wedstrijd op de publieke pagina. helftStartNu (ISO-string
+// of null) en minuutOffset horen bij elkaar: bij start 1e helft helftStartNu=nu, offset=0; bij
+// start 2e helft helftStartNu=nu (opnieuw), offset=45; bij rust/einde helftStartNu=null (klok pauzeert).
+async function setLiveStatus(id, status, helftStartNu, minuutOffset) {
+  return await sbFetch('live_wedstrijden?id=eq.' + id, 'PATCH', {
+    status, helft_start: helftStartNu, minuut_offset: minuutOffset,
+  });
+}
+async function pushLiveUpdate(wedstrijdId, type, tekst, scoreEigen, scoreTegen, minuut) {
+  return await sbFetch('live_updates', 'POST', {
+    id: genId(), wedstrijd_id: wedstrijdId, type, tekst: tekst || '',
+    score_eigen: scoreEigen, score_tegen: scoreTegen, wedstrijd_minuut: minuut,
+  });
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';

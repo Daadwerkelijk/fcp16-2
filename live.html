@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Live — FCP 16-2</title>
+<link rel="icon" href="icon192.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+body{max-width:480px;margin:0 auto;padding-bottom:40px}
+.pub-hero{background:var(--topbar);padding:calc(18px + env(safe-area-inset-top)) 16px 18px;color:#fff}
+.pub-hero-top{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+.pub-badge{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
+.pub-title{font-size:19px;font-weight:700}
+.pub-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
+.pub-back{font-size:12px;color:rgba(255,255,255,.65);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:14px}
+.pub-list{padding:14px 14px 0}
+.pub-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-decoration:none;cursor:pointer}
+.pub-card-left{min-width:0}
+.pub-opp{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pub-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.pub-right{text-align:right;flex-shrink:0}
+.pub-score{font-size:20px;font-weight:800;color:var(--text);font-family:var(--font-mono);line-height:1}
+.status-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px;margin-top:5px}
+.status-live{background:var(--rood-l);color:var(--rood)}
+.status-live .dot{width:6px;height:6px;border-radius:50%;background:var(--rood);animation:pulse 1.4s ease-in-out infinite}
+.status-rust{background:var(--goud-l);color:var(--goud)}
+.status-ft{background:var(--groen-l);color:var(--groen)}
+.status-upcoming{color:var(--text3);font-weight:600}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+.section-lbl{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:16px 2px 8px}
+.empty{padding:40px 16px;text-align:center;color:var(--text3);font-size:13px}
+
+.pub-teams{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pub-team{flex:1;font-size:14px;font-weight:600;line-height:1.3}
+.pub-team.uit{text-align:right}
+.pub-score-big{font-size:38px;font-weight:800;font-family:var(--font-mono);flex-shrink:0;padding:0 6px}
+.pub-status-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#ff6b6b;animation:pulse 1.4s ease-in-out infinite}
+.pub-status-txt{font-size:12px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.9)}
+.pub-section{padding:16px}
+.tl{position:relative;padding-left:22px}
+.tl::before{content:'';position:absolute;left:5px;top:4px;bottom:4px;width:1.5px;background:var(--border)}
+.tl-item{position:relative;padding-bottom:16px}
+.tl-item:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:-22px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--white);border:2px solid var(--topbar)}
+.tl-dot.goal{background:var(--groen);border-color:var(--groen)}
+.tl-time{font-size:11px;font-weight:700;color:var(--topbar);font-family:var(--font-mono)}
+.tl-text{font-size:13px;color:var(--text2);margin-top:1px;line-height:1.4}
+.mini-field{background:linear-gradient(180deg,#1e7a3c,#186631);border-radius:var(--r);padding:16px 10px;position:relative;height:290px;margin-bottom:4px}
+.mini-field::before{content:'';position:absolute;inset:10px;border:1.5px solid rgba(255,255,255,.35);border-radius:4px}
+.mp{position:absolute;width:32px;height:32px;margin-left:-16px;margin-top:-16px;border-radius:50%;background:var(--topbar);border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800}
+.mp.keeper{background:var(--groen)}
+.mp-label{position:absolute;top:34px;left:50%;transform:translateX(-50%);font-size:9px;color:#fff;white-space:nowrap;text-align:center;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const SB_URL = 'https://yjlvjteiaszvqtpyhwwn.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqbHZqdGVpYXN6dnF0cHlod3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMDY4NDMsImV4cCI6MjA5NTg4Mjg0M30.71xXmtGD9qP5-4p2BkRwtVm95SOn5AaVq21bxVr6Jrc';
+
+async function sbGet(path) {
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
+    if (!r.ok) return [];
+    return await r.json();
+  } catch(e) { return []; }
+}
+
+const FORMATIES = {
+  '4222': [{id:'GK',label:'GK',x:50,y:88},{id:'LB',label:'LB',x:14,y:72},{id:'CB_L',label:'CB-L',x:36,y:75},{id:'CB_R',label:'CB-R',x:64,y:75},{id:'RB',label:'RB',x:86,y:72},{id:'VM_L',label:'VM-L',x:36,y:53},{id:'VM_R',label:'VM-R',x:64,y:53},{id:'AM_L',label:'AM-L',x:24,y:36},{id:'AM_R',label:'AM-R',x:76,y:36},{id:'ST_L',label:'ST-L',x:14,y:16},{id:'ST_R',label:'ST-R',x:86,y:16}],
+  '14231': [{id:'GK',label:'GK',x:50,y:88},{id:'LB',label:'LB',x:14,y:72},{id:'CB_L',label:'CB-L',x:36,y:75},{id:'CB_R',label:'CB-R',x:64,y:75},{id:'RB',label:'RB',x:86,y:72},{id:'DM_L',label:'DM-L',x:38,y:57},{id:'DM_R',label:'DM-R',x:62,y:57},{id:'LAM',label:'LAM',x:18,y:38},{id:'CAM',label:'CAM',x:50,y:38},{id:'RAM',label:'RAM',x:82,y:38},{id:'CF',label:'CF',x:50,y:16}],
+  '433a': [{id:'GK',label:'GK',x:50,y:88},{id:'LB',label:'LB',x:14,y:72},{id:'CB_L',label:'CB-L',x:36,y:75},{id:'CB_R',label:'CB-R',x:64,y:75},{id:'RB',label:'RB',x:86,y:72},{id:'CM_L',label:'CM-L',x:22,y:52},{id:'CM_C',label:'CM-C',x:50,y:60},{id:'CM_R',label:'CM-R',x:78,y:52},{id:'LW',label:'LW',x:14,y:28},{id:'ST',label:'ST',x:50,y:16},{id:'RW',label:'RW',x:86,y:28}],
+  '352': [{id:'GK',label:'GK',x:50,y:88},{id:'CB_L',label:'CB-L',x:26,y:75},{id:'CB_C',label:'CB-C',x:50,y:78},{id:'CB_R',label:'CB-R',x:74,y:75},{id:'LWB',label:'LWB',x:10,y:55},{id:'CM_L',label:'CM-L',x:32,y:55},{id:'CM_C',label:'CM-C',x:50,y:60},{id:'CM_R',label:'CM-R',x:68,y:55},{id:'RWB',label:'RWB',x:90,y:55},{id:'ST_L',label:'ST-L',x:36,y:22},{id:'ST_R',label:'ST-R',x:64,y:22}],
+  '13421': [{id:'GK',label:'GK',x:50,y:88},{id:'CB_L',label:'CB-L',x:26,y:75},{id:'CB_C',label:'CB-C',x:50,y:78},{id:'CB_R',label:'CB-R',x:74,y:75},{id:'LM',label:'LM',x:10,y:57},{id:'CM_L',label:'CM-L',x:36,y:60},{id:'CM_R',label:'CM-R',x:64,y:60},{id:'RM',label:'RM',x:90,y:57},{id:'AM_L',label:'AM-L',x:36,y:38},{id:'AM_R',label:'AM-R',x:64,y:38},{id:'CF',label:'CF',x:50,y:16}],
+  '442v': [{id:'GK',label:'GK',x:50,y:88},{id:'LB',label:'LB',x:14,y:72},{id:'CB_L',label:'CB-L',x:36,y:75},{id:'CB_R',label:'CB-R',x:64,y:75},{id:'RB',label:'RB',x:86,y:72},{id:'LM',label:'LM',x:14,y:52},{id:'CM_L',label:'CM-L',x:38,y:55},{id:'CM_R',label:'CM-R',x:62,y:55},{id:'RM',label:'RM',x:86,y:52},{id:'ST_L',label:'ST-L',x:36,y:20},{id:'ST_R',label:'ST-R',x:64,y:20}],
+  '442r': [{id:'GK',label:'GK',x:50,y:88},{id:'LB',label:'LB',x:14,y:72},{id:'CB_L',label:'CB-L',x:36,y:75},{id:'CB_R',label:'CB-R',x:64,y:75},{id:'RB',label:'RB',x:86,y:72},{id:'LM',label:'LM',x:14,y:52},{id:'CM_A',label:'CM-A',x:50,y:40},{id:'CM_V',label:'CM-V',x:50,y:60},{id:'RM',label:'RM',x:86,y:52},{id:'ST_L',label:'ST-L',x:36,y:20},{id:'ST_R',label:'ST-R',x:64,y:20}],
+  '532': [{id:'GK',label:'GK',x:50,y:88},{id:'LWB',label:'LWB',x:8,y:68},{id:'CB_L',label:'CB-L',x:28,y:75},{id:'CB_C',label:'CB-C',x:50,y:78},{id:'CB_R',label:'CB-R',x:72,y:75},{id:'RWB',label:'RWB',x:92,y:68},{id:'CM_L',label:'CM-L',x:28,y:52},{id:'CM_C',label:'CM-C',x:50,y:55},{id:'CM_R',label:'CM-R',x:72,y:52},{id:'ST_L',label:'ST-L',x:36,y:22},{id:'ST_R',label:'ST-R',x:64,y:22}],
+  '433b': [{id:'GK',label:'GK',x:50,y:88},{id:'LB',label:'LB',x:14,y:72},{id:'CB_L',label:'CB-L',x:36,y:75},{id:'CB_R',label:'CB-R',x:64,y:75},{id:'RB',label:'RB',x:86,y:72},{id:'CM_L',label:'CM-L',x:36,y:55},{id:'CM_C',label:'CM-C',x:50,y:45},{id:'CM_R',label:'CM-R',x:64,y:55},{id:'LW',label:'LW',x:14,y:28},{id:'ST',label:'ST',x:50,y:16},{id:'RW',label:'RW',x:86,y:28}],
+};
+
+const FORMATIE_LABELS = {
+  '4222':'4-2-2-2', '14231':'4-2-3-1', '433a':'4-3-3 (punt achter)', '352':'3-5-2 (punt voor)',
+  '13421':'3-4-2-1', '442v':'4-4-2 vlak', '442r':'4-4-2 ruit', '532':'5-3-2', '433b':'4-3-3 (punt voor)',
+};
+
+function initialen(naam) {
+  return (naam||'?').trim().slice(0,2).toUpperCase();
+}
+
+function statusChip(w, groot) {
+  if (w.status === 'live_1e' || w.status === 'live_2e') {
+    const min = live_minuut(w);
+    return `<span class="status-chip status-live"><span class="dot"></span>${min}'</span>`;
+  }
+  if (w.status === 'rust') return `<span class="status-chip status-rust">RUST</span>`;
+  if (w.status === 'ft')   return `<span class="status-chip status-ft">FT</span>`;
+  return `<span class="status-chip status-upcoming">${w.datum}</span>`;
+}
+
+function live_minuut(w) {
+  if (!w.helft_start) return w.minuut_offset || 0;
+  const verstreken = Math.floor((Date.now() - new Date(w.helft_start).getTime()) / 60000);
+  return (w.minuut_offset||0) + Math.max(0, verstreken);
+}
+
+function statusTekstDetail(w) {
+  if (w.status === 'live_1e') return live_minuut(w) + "' · 1E HELFT";
+  if (w.status === 'live_2e') return live_minuut(w) + "' · 2E HELFT";
+  if (w.status === 'rust')    return 'RUST';
+  if (w.status === 'ft')      return 'FT · AFGELOPEN';
+  return w.datum + (w.starttijd ? ' · ' + w.starttijd : '');
+}
+
+function teamNamen(w) {
+  const wij = 'FCP 16-2';
+  return w.thuis_uit === 'uit' ? [w.tegenstander, wij] : [wij, w.tegenstander];
+}
+
+const TYPE_LABEL = {
+  start_1e: 'Wedstrijd gestart',
+  rust: 'Rust',
+  start_2e: '2e helft gestart',
+  einde: 'Einde wedstrijd',
+};
+
+function renderTijdlijnItem(u) {
+  const isGoal = u.type === 'update' && u.tekst && u.tekst.toLowerCase().includes('goal');
+  const tekst = u.type === 'update' ? (u.tekst || 'Update') : (TYPE_LABEL[u.type] || u.tekst || u.type);
+  const toonStand = u.type === 'update' && u.score_eigen !== null && u.score_eigen !== undefined;
+  const standTxt = toonStand ? ` (${u.score_eigen}-${u.score_tegen})` : '';
+  return `<div class="tl-item">
+    <div class="tl-dot${isGoal?' goal':''}"></div>
+    <div class="tl-time">${u.wedstrijd_minuut !== null && u.wedstrijd_minuut !== undefined ? u.wedstrijd_minuut + "'" : ''}</div>
+    <div class="tl-text">${tekst}${standTxt}</div>
+  </div>`;
+}
+
+function renderMiniField(w) {
+  const posities = FORMATIES[w.formatie];
+  if (!posities || !w.opstelling || !w.opstelling.length) return '';
+  const namenPerPos = {};
+  w.opstelling.forEach(o => { namenPerPos[o.pos] = o.naam; });
+  const spelers = posities.map(p => {
+    const naam = namenPerPos[p.label] || namenPerPos[p.id];
+    if (!naam) return '';
+    const isKeeper = p.label === 'GK';
+    return `<div class="mp${isKeeper?' keeper':''}" style="left:${p.x}%;top:${p.y}%">${initialen(naam)}<div class="mp-label">${naam}</div></div>`;
+  }).join('');
+  return `<div class="pub-section" style="padding-top:0">
+    <div class="section-lbl">Basisopstelling${w.formatie ? ' · ' + (FORMATIE_LABELS[w.formatie] || w.formatie) : ''}</div>
+    <div class="mini-field">${spelers}</div>
+  </div>`;
+}
+
+async function renderOverzicht() {
+  const app = document.getElementById('app');
+  const wedstrijden = await sbGet('live_wedstrijden?select=*&order=iso_date.asc');
+  const live = wedstrijden.filter(w => w.status === 'live_1e' || w.status === 'live_2e' || w.status === 'rust');
+  const gespeeld = wedstrijden.filter(w => w.status === 'ft').sort((a,b) => b.iso_date.localeCompare(a.iso_date));
+  const gepland = wedstrijden.filter(w => w.status === 'gepland');
+
+  const kaart = w => {
+    const [thuis, uit] = teamNamen(w);
+    const heeftStand = w.status !== 'gepland';
+    return `<a class="pub-card" href="?wedstrijd=${w.id}" ${w.status.startsWith('live')?'style="border-color:var(--rood);border-width:1.5px"':''}>
+      <div class="pub-card-left">
+        <div class="pub-opp">${thuis} – ${uit}</div>
+        <div class="pub-meta">${w.datum}${w.status==='gepland' && w.starttijd ? ' · ' + w.starttijd : ''}</div>
+      </div>
+      <div class="pub-right">
+        ${heeftStand ? `<div class="pub-score">${w.score_eigen}–${w.score_tegen}</div>` : ''}
+        ${statusChip(w)}
+      </div>
+    </a>`;
+  };
+
+  let html = `
+    <div class="pub-hero">
+      <div class="pub-hero-top">
+        <div class="pub-badge">FCP</div>
+        <div>
+          <div class="pub-title">FCP 16-2</div>
+          <div class="pub-sub">Live wedstrijdvolgen · seizoen 2026/2027</div>
+        </div>
+      </div>
+    </div>
+    <div class="pub-list">`;
+
+  if (!wedstrijden.length) {
+    html += `<div class="empty">Nog geen wedstrijden om te volgen.</div>`;
+  } else {
+    if (live.length)     html += `<div class="section-lbl">Nu bezig</div>` + live.map(kaart).join('');
+    if (gespeeld.length) html += `<div class="section-lbl">Eerder gespeeld</div>` + gespeeld.map(kaart).join('');
+    if (gepland.length)  html += `<div class="section-lbl">Nog te spelen</div>` + gepland.map(kaart).join('');
+  }
+  html += `</div>`;
+  app.innerHTML = html;
+}
+
+async function renderDetail(id) {
+  const app = document.getElementById('app');
+  const [w] = await sbGet('live_wedstrijden?select=*&id=eq.' + encodeURIComponent(id));
+  if (!w) { app.innerHTML = `<div class="empty">Wedstrijd niet gevonden.<br><a href="live.html">← Terug naar overzicht</a></div>`; return; }
+  const updates = await sbGet('live_updates?select=*&wedstrijd_id=eq.' + encodeURIComponent(id) + '&order=created_at.desc');
+  const [thuis, uit] = teamNamen(w);
+  const isLive = w.status === 'live_1e' || w.status === 'live_2e';
+
+  app.innerHTML = `
+    <div class="pub-hero">
+      <a class="pub-back" href="live.html">← Alle wedstrijden</a>
+      <div class="pub-teams">
+        <div class="pub-team">${thuis}</div>
+        <div class="pub-score-big">${w.score_eigen}–${w.score_tegen}</div>
+        <div class="pub-team uit">${uit}</div>
+      </div>
+      <div class="pub-status-row">
+        ${isLive ? '<span class="live-dot"></span>' : ''}
+        <span class="pub-status-txt">${statusTekstDetail(w)}</span>
+      </div>
+    </div>
+    <div class="pub-section">
+      <div class="section-lbl">Verloop</div>
+      ${updates.length ? `<div class="tl">${updates.map(renderTijdlijnItem).join('')}</div>` : `<div style="font-size:13px;color:var(--text3)">Nog geen updates.</div>`}
+    </div>
+    ${renderMiniField(w)}
+  `;
+}
+
+async function render() {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('wedstrijd');
+  if (id) await renderDetail(id);
+  else await renderOverzicht();
+}
+
+render();
+setInterval(render, 8000); // eenvoudige polling, elke 8 seconden verse data
+</script>
+</body>
+</html>

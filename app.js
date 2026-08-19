@@ -172,6 +172,38 @@ async function deleteWedstrijdRemote(id) {
   return await sbWrite('wedstrijden?id=eq.' + id, 'DELETE');
 }
 
+// ─── Datalaag: Live-scorebord synchronisatie ───
+// Zet de publiek zichtbare basisgegevens van een wedstrijd over naar de losse, geïsoleerde
+// live-tabellen — geen speler-ID's, geen beoordelingen/opmerkingen, alleen wat toch al
+// bewust openbaar wordt (score, tegenstander, datum, namen uit de opstelling).
+// Een lopende live-tracking (status/klok, gezet via de push-knoppen) wordt hier bewust
+// nooit overschreven — deze functie raakt alleen de "rustende" gepland/ft-toestand.
+async function syncLiveWedstrijd(w, players) {
+  const opstelling = [];
+  if (w.wed_lineup && players) {
+    Object.entries(w.wed_lineup).forEach(([posId, playerId]) => {
+      if (!playerId) return;
+      const speler = players.find(p => p.id === playerId);
+      if (speler) opstelling.push({ pos: posId.replace(/_/g, '-'), naam: speler.naam });
+    });
+  }
+  const bestaand = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset&id=eq.' + w.id);
+  const rij = (bestaand && bestaand[0]) || {};
+  const liveStatussen = ['live_1e', 'rust', 'live_2e'];
+  const status = liveStatussen.includes(rij.status) ? rij.status : (w.gespeeld ? 'ft' : 'gepland');
+  await sbFetch('live_wedstrijden?id=eq.' + w.id, 'DELETE');
+  return await sbFetch('live_wedstrijden', 'POST', {
+    id: w.id, tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate || '',
+    starttijd: w.starttijd || '', thuis_uit: w.thuis_uit, status,
+    score_eigen: w.score_eigen || 0, score_tegen: w.score_tegen || 0,
+    formatie: w.formatie || '', opstelling,
+    helft_start: rij.helft_start || null, minuut_offset: rij.minuut_offset || 0,
+  });
+}
+async function deleteLiveWedstrijd(id) {
+  return await sbFetch('live_wedstrijden?id=eq.' + id, 'DELETE');
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';

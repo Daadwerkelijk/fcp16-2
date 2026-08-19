@@ -19,7 +19,7 @@ body{max-width:480px;margin:0 auto;padding-bottom:40px}
 .pub-list{padding:14px 14px 0}
 .pub-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-decoration:none;cursor:pointer}
 .pub-card-left{min-width:0}
-.pub-opp{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pub-opp{font-size:15px;font-weight:700;color:var(--text);line-height:1.3}
 .pub-meta{font-size:11px;color:var(--text3);margin-top:2px}
 .pub-right{text-align:right;flex-shrink:0}
 .pub-score{font-size:20px;font-weight:800;color:var(--text);font-family:var(--font-mono);line-height:1}
@@ -99,7 +99,7 @@ function statusChip(w, groot) {
   }
   if (w.status === 'rust') return `<span class="status-chip status-rust">RUST</span>`;
   if (w.status === 'ft')   return `<span class="status-chip status-ft">FT</span>`;
-  return `<span class="status-chip status-upcoming">${w.datum}</span>`;
+  return '';
 }
 
 function live_minuut(w) {
@@ -157,23 +157,33 @@ function renderMiniField(w) {
   </div>`;
 }
 
+// Zelfde indeling-logica als de coach-pagina (wedstrijden.html: wedCategorie()), zodat
+// ouders exact dezelfde volgorde/groepen zien als in de app zelf.
+function wedCategorie(w) {
+  if (w.status === 'ft') return 'gespeeld';
+  const nu = new Date(); nu.setHours(0,0,0,0);
+  const d = w.iso_date ? new Date(w.iso_date) : null;
+  if (!d) return 'toekomst';
+  const diff = d - nu;
+  if (diff < 0) return 'volgend'; // datum voorbij maar niet bevestigd afgerond
+  if (diff < 7 * 24 * 60 * 60 * 1000) return 'volgend';
+  return 'toekomst';
+}
+
 async function renderOverzicht() {
   const app = document.getElementById('app');
   const wedstrijden = await sbGet('live_wedstrijden?select=*&order=iso_date.asc');
-  const live = wedstrijden.filter(w => w.status === 'live_1e' || w.status === 'live_2e' || w.status === 'rust');
-  const gespeeld = wedstrijden.filter(w => w.status === 'ft').sort((a,b) => b.iso_date.localeCompare(a.iso_date));
-  const gepland = wedstrijden.filter(w => w.status === 'gepland');
 
   const kaart = w => {
     const [thuis, uit] = teamNamen(w);
-    const heeftStand = w.status !== 'gepland';
-    return `<a class="pub-card" href="?wedstrijd=${w.id}" ${w.status.startsWith('live')?'style="border-color:var(--rood);border-width:1.5px"':''}>
+    const isLive = w.status === 'live_1e' || w.status === 'live_2e' || w.status === 'rust';
+    return `<a class="pub-card" href="?wedstrijd=${w.id}" ${isLive?'style="border-color:var(--rood);border-width:1.5px"':''}>
       <div class="pub-card-left">
         <div class="pub-opp">${thuis} – ${uit}</div>
-        <div class="pub-meta">${w.datum}${w.status==='gepland' && w.starttijd ? ' · ' + w.starttijd : ''}</div>
+        <div class="pub-meta">${w.datum}${w.starttijd ? ' · ' + w.starttijd : ''}</div>
       </div>
       <div class="pub-right">
-        ${heeftStand ? `<div class="pub-score">${w.score_eigen}–${w.score_tegen}</div>` : ''}
+        <div class="pub-score">${w.score_eigen}–${w.score_tegen}</div>
         ${statusChip(w)}
       </div>
     </a>`;
@@ -194,9 +204,14 @@ async function renderOverzicht() {
   if (!wedstrijden.length) {
     html += `<div class="empty">Nog geen wedstrijden om te volgen.</div>`;
   } else {
-    if (live.length)     html += `<div class="section-lbl">Nu bezig</div>` + live.map(kaart).join('');
-    if (gespeeld.length) html += `<div class="section-lbl">Eerder gespeeld</div>` + gespeeld.map(kaart).join('');
-    if (gepland.length)  html += `<div class="section-lbl">Nog te spelen</div>` + gepland.map(kaart).join('');
+    const volgend  = wedstrijden.filter(w => wedCategorie(w) === 'volgend');
+    const toekomst = wedstrijden.filter(w => wedCategorie(w) === 'toekomst');
+    const gespeeld = wedstrijden.filter(w => wedCategorie(w) === 'gespeeld')
+      .sort((a,b) => (b.iso_date+b.starttijd).localeCompare(a.iso_date+a.starttijd)); // nieuwste eerst
+
+    if (volgend.length)  html += `<div class="section-lbl">Eerstvolgende</div>` + volgend.map(kaart).join('');
+    if (toekomst.length) html += `<div class="section-lbl">Toekomstige wedstrijden</div>` + toekomst.map(kaart).join('');
+    if (gespeeld.length) html += `<div class="section-lbl">Gespeeld</div>` + gespeeld.map(kaart).join('');
   }
   html += `</div>`;
   app.innerHTML = html;

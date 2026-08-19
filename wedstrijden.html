@@ -471,6 +471,7 @@ async function saveWedOpstelling(wid) {
     });
     if (res && res._error) return;
   }
+  if (supabaseReady) syncLiveWedstrijd(w, players);
   showToast('Opstelling opgeslagen · ' + Object.values(w.wed_lineup).filter(Boolean).length + '/11');
 }
 
@@ -711,6 +712,7 @@ async function addWedstrijd() {
   }
   wedstrijden.push(w);
   saveWedstrijden(wedstrijden);
+  if (supabaseReady) syncLiveWedstrijd(w, players);
   renderWedstrijden();
   document.getElementById('wed-teg').value = '';
   document.getElementById('wed-datum').value = '';
@@ -745,6 +747,7 @@ async function saveWedstrijd(id) {
     });
     if (res && res._error) { renderRanking(); return; }
   }
+  if (supabaseReady) syncLiveWedstrijd(w, players);
   renderRanking();
   showToast('Wedstrijd opgeslagen');
 }
@@ -757,6 +760,7 @@ async function deleteWedstrijd(id) {
   if (supabaseReady) {
     const res = await deleteWedstrijdRemote(id);
     if (res && res._error) { renderWedstrijden(); return false; }
+    deleteLiveWedstrijd(id);
   }
   renderWedstrijden();
   showToast('Wedstrijd verwijderd');
@@ -864,6 +868,7 @@ async function saveEditWed() {
     });
     if (res && res._error) return;
   }
+  if (supabaseReady) syncLiveWedstrijd(w, players);
   closeEditWed();
   renderWedstrijden();
   showToast('Wedstrijd bijgewerkt');
@@ -888,6 +893,7 @@ async function markeerGespeeld(id) {
     const res = await updateWedstrijd(id, { gespeeld: true });
     if (res && res._error) { w.gespeeld = false; saveWedstrijden(wedstrijden); renderWedstrijden(); return; }
   }
+  if (supabaseReady) syncLiveWedstrijd(w, players);
   renderWedstrijden();
   showToast('Wedstrijd gemarkeerd als gespeeld');
 }

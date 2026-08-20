@@ -189,7 +189,7 @@ async function syncLiveWedstrijd(w, players) {
   }
   const bestaandArr = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset&id=eq.' + w.id);
   const bestaand = (bestaandArr && bestaandArr[0]) || null;
-  const liveStatussen = ['live_1e', 'rust', 'live_2e'];
+  const liveStatussen = ['live_1e', 'rust', 'live_2e', 'ft'];
   const status = (bestaand && liveStatussen.includes(bestaand.status)) ? bestaand.status : (w.gespeeld ? 'ft' : 'gepland');
   const payload = {
     tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate || '',

@@ -635,9 +635,18 @@ function pushEinde(){
   liveFase='afgelopen'; liveHelftStartTs=null;
   renderLiveFaseUI();
   showToast('Wedstrijd afgelopen — gepusht naar live-pagina');
+  const eigen=parseInt(document.getElementById('live-score-eigen').textContent)||0;
+  const tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
+  // Markeer de wedstrijd ook echt als gespeeld in de hoofdtabel — anders blijft de
+  // coach-pagina zelf ("Wedstrijden") 'm ten onrechte als nog te spelen tonen, en kan een
+  // latere synchronisatie de live-status stilzwijgend terugzetten naar "gepland".
+  const w = wedstrijden.find(x => x.id === liveWedId);
+  if (w) {
+    w.gespeeld = true; w.score_eigen = eigen; w.score_tegen = tegen;
+    saveWedstrijden(wedstrijden);
+    if (supabaseReady) updateWedstrijd(liveWedId, { gespeeld: true, score_eigen: eigen, score_tegen: tegen });
+  }
   if (supabaseReady && liveWedId) {
-    const eigen=parseInt(document.getElementById('live-score-eigen').textContent)||0;
-    const tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
     setLiveStatus(liveWedId, 'ft', null, liveMinsPerHelft*2, eigen, tegen);
     pushLiveUpdate(liveWedId, 'einde', '', eigen, tegen, liveMinsPerHelft*2);
   }

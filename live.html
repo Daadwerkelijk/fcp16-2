@@ -95,7 +95,8 @@ function initialen(naam) {
 function statusChip(w, groot) {
   if (w.status === 'live_1e' || w.status === 'live_2e') {
     const min = live_minuut(w);
-    return `<span class="status-chip status-live"><span class="dot"></span>${min}'</span>`;
+    const helftTxt = w.status === 'live_1e' ? '1e' : '2e';
+    return `<span class="status-chip status-live"><span class="dot"></span>${min}' · ${helftTxt}</span>`;
   }
   if (w.status === 'rust') return `<span class="status-chip status-rust">RUST</span>`;
   if (w.status === 'ft')   return `<span class="status-chip status-ft">FT</span>`;

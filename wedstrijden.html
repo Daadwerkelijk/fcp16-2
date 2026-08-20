@@ -607,7 +607,7 @@ async function pushStartHelft(helft){
     const tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
     const nu=new Date(liveHelftStartTs).toISOString();
     const offset = helft===1 ? 0 : liveMinsPerHelft;
-    setLiveStatus(liveWedId, helft===1?'live_1e':'live_2e', nu, offset);
+    setLiveStatus(liveWedId, helft===1?'live_1e':'live_2e', nu, offset, eigen, tegen);
     pushLiveUpdate(liveWedId, helft===1?'start_1e':'start_2e', '', eigen, tegen, offset);
   }
 }
@@ -626,7 +626,7 @@ function pushRust(){
   if (supabaseReady && liveWedId) {
     const eigen=parseInt(document.getElementById('live-score-eigen').textContent)||0;
     const tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
-    setLiveStatus(liveWedId, 'rust', null, liveMinsPerHelft);
+    setLiveStatus(liveWedId, 'rust', null, liveMinsPerHelft, eigen, tegen);
     pushLiveUpdate(liveWedId, 'rust', '', eigen, tegen, liveMinsPerHelft);
   }
 }
@@ -638,7 +638,7 @@ function pushEinde(){
   if (supabaseReady && liveWedId) {
     const eigen=parseInt(document.getElementById('live-score-eigen').textContent)||0;
     const tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
-    setLiveStatus(liveWedId, 'ft', null, liveMinsPerHelft*2);
+    setLiveStatus(liveWedId, 'ft', null, liveMinsPerHelft*2, eigen, tegen);
     pushLiveUpdate(liveWedId, 'einde', '', eigen, tegen, liveMinsPerHelft*2);
   }
 }
@@ -706,6 +706,13 @@ function scoreWijzig(kant,delta){
   const nieuw=Math.max(0,(parseInt(el.textContent)||0)+delta);
   el.textContent=nieuw;
   if(delta>0) voegNotitieInMet('⚽ '+(kant==='eigen'?'FCP scoort':'Tegenstander scoort'),getKlokLabel());
+  // Direct doorzetten naar de live-pagina, zodat het hoofdscherm daar altijd de actuele
+  // stand toont — niet pas bij de eerstvolgende push van een notitie of statuswissel.
+  if (supabaseReady && liveWedId) {
+    const eigen = parseInt(document.getElementById('live-score-eigen').textContent)||0;
+    const tegen = parseInt(document.getElementById('live-score-tegen').textContent)||0;
+    pushLiveScore(liveWedId, eigen, tegen);
+  }
 }
 
 function voegNotitieIn(){ const v=document.getElementById('live-notitie-input').value.trim(); if(!v) return; voegNotitieInMet(v,getKlokLabel()); document.getElementById('live-notitie-input').value=''; }

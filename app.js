@@ -187,31 +187,43 @@ async function syncLiveWedstrijd(w, players) {
       if (speler) opstelling.push({ pos: posId.replace(/_/g, '-'), naam: speler.naam });
     });
   }
-  const bestaand = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset&id=eq.' + w.id);
-  const rij = (bestaand && bestaand[0]) || {};
+  const bestaandArr = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset&id=eq.' + w.id);
+  const bestaand = (bestaandArr && bestaandArr[0]) || null;
   const liveStatussen = ['live_1e', 'rust', 'live_2e'];
-  const status = liveStatussen.includes(rij.status) ? rij.status : (w.gespeeld ? 'ft' : 'gepland');
-  await sbFetch('live_wedstrijden?id=eq.' + w.id, 'DELETE');
-  return await sbFetch('live_wedstrijden', 'POST', {
-    id: w.id, tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate || '',
+  const status = (bestaand && liveStatussen.includes(bestaand.status)) ? bestaand.status : (w.gespeeld ? 'ft' : 'gepland');
+  const payload = {
+    tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate || '',
     starttijd: w.starttijd || '', thuis_uit: w.thuis_uit, status,
     score_eigen: w.score_eigen || 0, score_tegen: w.score_tegen || 0,
     formatie: w.formatie || '', opstelling,
-    helft_start: rij.helft_start || null, minuut_offset: rij.minuut_offset || 0,
-  });
+    helft_start: bestaand ? bestaand.helft_start : null,
+    minuut_offset: bestaand ? bestaand.minuut_offset : 0,
+  };
+  // BELANGRIJK: nooit DELETE+POST gebruiken om te verversen — live_updates verwijst naar
+  // deze rij met ON DELETE CASCADE, dus een DELETE (ook al gevolgd door een nieuwe insert)
+  // veegt de hele tijdlijn van deze wedstrijd weg. Daarom hier altijd PATCH als de rij al
+  // bestaat, en alleen POST (aanmaken) als hij er nog nooit was.
+  if (bestaand) {
+    return await sbFetch('live_wedstrijden?id=eq.' + w.id, 'PATCH', payload);
+  }
+  return await sbFetch('live_wedstrijden', 'POST', { id: w.id, ...payload });
 }
 async function deleteLiveWedstrijd(id) {
   return await sbFetch('live_wedstrijden?id=eq.' + id, 'DELETE');
+}
+async function pushLiveScore(id, eigen, tegen) {
+  return await sbFetch('live_wedstrijden?id=eq.' + id, 'PATCH', { score_eigen: eigen, score_tegen: tegen });
 }
 
 // ─── Datalaag: Live pushacties ───
 // Zet de status/klok van een lopende wedstrijd op de publieke pagina. helftStartNu (ISO-string
 // of null) en minuutOffset horen bij elkaar: bij start 1e helft helftStartNu=nu, offset=0; bij
 // start 2e helft helftStartNu=nu (opnieuw), offset=45; bij rust/einde helftStartNu=null (klok pauzeert).
-async function setLiveStatus(id, status, helftStartNu, minuutOffset) {
-  return await sbFetch('live_wedstrijden?id=eq.' + id, 'PATCH', {
-    status, helft_start: helftStartNu, minuut_offset: minuutOffset,
-  });
+async function setLiveStatus(id, status, helftStartNu, minuutOffset, scoreEigen, scoreTegen) {
+  const payload = { status, helft_start: helftStartNu, minuut_offset: minuutOffset };
+  if (scoreEigen !== undefined) payload.score_eigen = scoreEigen;
+  if (scoreTegen !== undefined) payload.score_tegen = scoreTegen;
+  return await sbFetch('live_wedstrijden?id=eq.' + id, 'PATCH', payload);
 }
 async function pushLiveUpdate(wedstrijdId, type, tekst, scoreEigen, scoreTegen, minuut) {
   const id = genId();

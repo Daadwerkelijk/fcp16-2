@@ -155,8 +155,8 @@
         <div id="live-helft-label" style="font-size:11px;color:var(--text3);margin-top:2px;font-weight:600">1e helft · 40 min</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-        <button id="live-start-btn" onclick="toggleKlok()" style="padding:10px 18px;background:var(--accent2);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--bg);font-family:var(--font-ui);font-size:14px;font-weight:700;cursor:pointer;min-width:90px">▶ Start</button>
-        <button id="live-fase-btn" onclick="wisselHelft()" style="padding:6px 14px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-ui);font-size:12px;cursor:pointer">⏸ Rust / 2e helft</button>
+        <button id="live-start-btn" onclick="klikHoofdknop()" style="padding:10px 18px;background:var(--accent2);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--bg);font-family:var(--font-ui);font-size:14px;font-weight:700;cursor:pointer;min-width:90px">▶ Start</button>
+        <button id="live-fase-btn" onclick="klikFaseknop()" style="padding:6px 14px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-ui);font-size:12px;cursor:pointer">⏸ Rust</button>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:center;gap:16px">
@@ -489,40 +489,57 @@ function deelWedOpstelling(wid) {
 }
 
 // ─── LIVE MODUS ───
-let liveWedId=null,liveKlokSec=0,liveKlokLoopt=false,liveKlokTimer=null;
+let liveWedId=null,liveKlokSec=0,liveKlokLoopt=false,liveKlokTimer=null,liveHelftStartTs=null;
 let liveHelft=1,liveMinsPerHelft=40,liveNotities=[],speechRecog=null,speechActief=false;
-let livePush1eGedaan=false,livePush2eGedaan=false,liveIsAfgelopen=false;
+// Expliciete toestandsmachine: voor_start → lopend_1e ⇄ pauze_1e → rust → lopend_2e ⇄ pauze_2e → afgelopen
+// Voorkomt ongeldige overgangen (zoals 2x rust, of een afgelopen wedstrijd herstarten) doordat
+// elke knop alleen doet wat in de huidige fase geldig is — zie renderLiveFaseUI().
+let liveFase='voor_start';
 
-function openLive(id) {
+async function openLive(id) {
   const w=wedstrijden.find(x=>x.id===id); if(!w) return;
-  liveWedId=id; liveKlokSec=0; liveKlokLoopt=false; liveHelft=1; liveNotities=w.live_notities?[...w.live_notities]:[];
-  livePush1eGedaan=false; livePush2eGedaan=false; liveIsAfgelopen=false;
-  if (supabaseReady) syncLiveWedstrijd(w, players); // garandeert dat er een rij bestaat om straks naar te pushen
-  const min=parseInt(prompt('Speeltijd per helft (minuten):','40'));
-  if(min&&min>0) liveMinsPerHelft=min;
+  liveWedId=id; liveNotities=w.live_notities?[...w.live_notities]:[];
   document.getElementById('live-tegenstander').textContent='FCP vs '+w.tegenstander;
   document.getElementById('live-teg-label').textContent=w.tegenstander;
   document.getElementById('live-score-eigen').textContent=w.score_eigen||0;
   document.getElementById('live-score-tegen').textContent=w.score_tegen||0;
-  document.getElementById('live-helft-label').textContent='1e helft · '+liveMinsPerHelft+' min';
-  const btn=document.getElementById('live-start-btn');
-  btn.textContent='▶ Start'; btn.style.background='var(--accent2)'; btn.style.color='var(--bg)';
-  document.getElementById('live-klok').textContent='00:00';
   document.getElementById('live-notitie-input').value='';
   document.getElementById('live-speech-status').textContent='';
-  renderLiveNotities();
   document.getElementById('live-overlay').style.display='flex';
   if('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
 
-  // Herstel lopende klok als die nog loopt (na wegnavigeren en terugkomen)
-  const startTs = localStorage.getItem('live_klok_start');
-  const wasActief = localStorage.getItem('live_klok_actief');
-  if(startTs && wasActief) {
-    liveKlokSec = Math.floor((Date.now() - parseInt(startTs)) / 1000);
-    updateKlokDisplay();
-    startKlok(); // hervat automatisch
-    showToast('Klok hervat');
+  // Haal de ECHTE, actuele status op i.p.v. altijd blind te resetten — anders raakt een
+  // al lopende wedstrijd in de war zodra je dit scherm sluit en later heropent (dat was
+  // de oorzaak van het probleem: de klok/fase sprong terug naar "1e helft, net gestart").
+  const remote = supabaseReady ? await haalLiveStatus(id) : null;
+
+  if (remote && remote.status === 'ft') {
+    liveFase='afgelopen'; liveHelft=2; liveKlokSec=liveMinsPerHelft*60; liveHelftStartTs=null;
+  } else if (remote && remote.status === 'live_1e' && remote.helft_start) {
+    liveHelft=1; liveFase='lopend_1e'; liveHelftStartTs=new Date(remote.helft_start).getTime();
+  } else if (remote && remote.status === 'live_2e' && remote.helft_start) {
+    liveHelft=2; liveFase='lopend_2e'; liveHelftStartTs=new Date(remote.helft_start).getTime();
+    if (remote.minuut_offset) liveMinsPerHelft = remote.minuut_offset;
+  } else if (remote && remote.status === 'rust') {
+    liveHelft=2; liveFase='rust'; liveKlokSec=0; liveHelftStartTs=null;
+    if (remote.minuut_offset) liveMinsPerHelft = remote.minuut_offset;
+  } else {
+    // Nog niet begonnen — nu pas vragen wat de speeltijd per helft is
+    const min=parseInt(prompt('Speeltijd per helft (minuten):','40'));
+    if(min&&min>0) liveMinsPerHelft=min;
+    liveHelft=1; liveFase='voor_start'; liveKlokSec=0; liveHelftStartTs=null;
   }
+
+  if (supabaseReady) syncLiveWedstrijd(w, players); // garandeert dat er een rij bestaat om naar te pushen
+
+  if (liveFase==='lopend_1e' || liveFase==='lopend_2e') {
+    liveKlokSec = Math.max(0, Math.floor((Date.now()-liveHelftStartTs)/1000));
+    hervatLokaleKlokWeergave();
+  } else {
+    updateKlokDisplay();
+  }
+  renderLiveFaseUI();
+  renderLiveNotities();
 }
 
 // Waarschuw bij wegnavigeren als live actief is
@@ -533,9 +550,7 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 async function closeLive() {
-  stopKlok(); stopSpeech();
-  localStorage.removeItem('live_klok_start');
-  localStorage.removeItem('live_klok_actief');
+  stopLokaleKlokWeergave(); stopSpeech();
   const w=wedstrijden.find(x=>x.id===liveWedId); if(w){
     w.score_eigen=parseInt(document.getElementById('live-score-eigen').textContent)||0;
     w.score_tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
@@ -550,86 +565,134 @@ async function closeLive() {
     if(supabaseReady) syncLiveWedstrijd(w, players);
   }
   document.getElementById('live-overlay').style.display='none';
-  renderWedstrijden(); showToast('Wedstrijd opgeslagen');
+  renderWedstrijden();
+  showToast(liveFase==='afgelopen' ? 'Wedstrijd opgeslagen' : 'Gesloten — wedstrijd loopt door op de live-pagina');
 }
 
-function toggleKlok(){ if(liveKlokLoopt) stopKlok(); else startKlok(); }
-function startKlok(){
+// De lokale klok-weergave is puur decoratief voor de coach: hij berekent de verstreken tijd
+// altijd opnieuw vanaf het vaste, op de server opgeslagen starttijdstip (liveHelftStartTs).
+// Dat betekent: sluiten/heropenen van dit scherm, of zelfs de hele browser herstarten,
+// verstoort de ECHTE wedstrijdklok nooit — die staat vast op de server, ongeacht wat de
+// coach lokaal doet. "Pauze" bevriest alleen het GETAL op dit scherm, niet de publieke klok
+// (die blijft gewoon doortellen, zoals verwacht: de wedstrijd zelf pauzeert niet echt).
+function hervatLokaleKlokWeergave(){
   liveKlokLoopt=true;
-  // Sla starttijdstip op zodat we na terugkeer de klok kunnen reconstrueren
-  const startTs = Date.now() - (liveKlokSec * 1000);
-  localStorage.setItem('live_klok_start', startTs);
-  localStorage.setItem('live_klok_actief', '1');
-  const btn=document.getElementById('live-start-btn');
-  btn.textContent='⏸ Pauze'; btn.style.background='var(--bg3)'; btn.style.color='var(--text2)';
+  clearInterval(liveKlokTimer);
   liveKlokTimer=setInterval(()=>{
-    // Bereken tijd op basis van realtime verschil ipv tellen
-    const verstreken = Math.floor((Date.now() - startTs) / 1000);
-    liveKlokSec = verstreken;
+    liveKlokSec=Math.max(0, Math.floor((Date.now()-liveHelftStartTs)/1000));
     updateKlokDisplay();
-    if(liveKlokSec>=liveMinsPerHelft*60) stopKlok();
   },500);
-  // Push: alleen bij de ALLEREERSTE start van elke helft (niet bij hervatten na pauze)
+  updateKlokDisplay();
+}
+function stopLokaleKlokWeergave(){
+  liveKlokLoopt=false; clearInterval(liveKlokTimer);
+}
+
+// ─── Toestandsmachine: hoofdknop (Start/Pauze/Verder) ───
+function klikHoofdknop(){
+  if (liveFase==='voor_start') { pushStartHelft(1); }
+  else if (liveFase==='pauze_1e') { liveFase='lopend_1e'; hervatLokaleKlokWeergave(); renderLiveFaseUI(); }
+  else if (liveFase==='lopend_1e') { liveFase='pauze_1e'; stopLokaleKlokWeergave(); renderLiveFaseUI(); }
+  else if (liveFase==='rust') { pushStartHelft(2); }
+  else if (liveFase==='pauze_2e') { liveFase='lopend_2e'; hervatLokaleKlokWeergave(); renderLiveFaseUI(); }
+  else if (liveFase==='lopend_2e') { liveFase='pauze_2e'; stopLokaleKlokWeergave(); renderLiveFaseUI(); }
+}
+async function pushStartHelft(helft){
+  liveHelft=helft; liveKlokSec=0; liveHelftStartTs=Date.now();
+  liveFase = helft===1 ? 'lopend_1e' : 'lopend_2e';
+  if (helft===2) { liveNotities.push({tijd:'— rust —',tekst:'',isRust:true}); }
+  renderLiveFaseUI(); renderLiveNotities(); hervatLokaleKlokWeergave();
   if (supabaseReady && liveWedId) {
-    const eigen = parseInt(document.getElementById('live-score-eigen').textContent)||0;
-    const tegen = parseInt(document.getElementById('live-score-tegen').textContent)||0;
-    if (liveHelft === 1 && !livePush1eGedaan) {
-      livePush1eGedaan = true;
-      const nu = new Date().toISOString();
-      setLiveStatus(liveWedId, 'live_1e', nu, 0);
-      pushLiveUpdate(liveWedId, 'start_1e', '', eigen, tegen, 0);
-    } else if (liveHelft === 2 && !livePush2eGedaan) {
-      livePush2eGedaan = true;
-      const nu = new Date().toISOString();
-      setLiveStatus(liveWedId, 'live_2e', nu, liveMinsPerHelft);
-      pushLiveUpdate(liveWedId, 'start_2e', '', eigen, tegen, liveMinsPerHelft);
-    }
+    const eigen=parseInt(document.getElementById('live-score-eigen').textContent)||0;
+    const tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
+    const nu=new Date(liveHelftStartTs).toISOString();
+    const offset = helft===1 ? 0 : liveMinsPerHelft;
+    setLiveStatus(liveWedId, helft===1?'live_1e':'live_2e', nu, offset);
+    pushLiveUpdate(liveWedId, helft===1?'start_1e':'start_2e', '', eigen, tegen, offset);
   }
 }
-function stopKlok(){
-  liveKlokLoopt=false; clearInterval(liveKlokTimer);
-  localStorage.removeItem('live_klok_start');
-  localStorage.removeItem('live_klok_actief');
-  const btn=document.getElementById('live-start-btn'); if(!btn) return;
-  btn.textContent='▶ Verder'; btn.style.background='var(--accent2)'; btn.style.color='var(--bg)';
+
+// ─── Toestandsmachine: faseknop (Rust/Einde wedstrijd) ───
+function klikFaseknop(){
+  if (liveFase==='lopend_1e' || liveFase==='pauze_1e') { pushRust(); }
+  else if (liveFase==='lopend_2e' || liveFase==='pauze_2e') { pushEinde(); }
 }
-function wisselHelft(){
-  stopKlok();
-  if(liveHelft===1){
-    liveHelft=2; liveKlokSec=0;
-    document.getElementById('live-klok').textContent='00:00';
-    document.getElementById('live-helft-label').textContent='2e helft · '+liveMinsPerHelft+' min';
-    const btn=document.getElementById('live-start-btn'); btn.textContent='▶ Start'; btn.style.background='var(--accent2)'; btn.style.color='var(--bg)';
-    liveNotities.push({tijd:'— rust —',tekst:'',isRust:true}); renderLiveNotities();
-    showToast('2e helft — klok gereset');
-    document.getElementById('live-fase-btn').textContent = '🏁 Einde wedstrijd';
-    if (supabaseReady && liveWedId) {
-      const eigen = parseInt(document.getElementById('live-score-eigen').textContent)||0;
-      const tegen = parseInt(document.getElementById('live-score-tegen').textContent)||0;
-      setLiveStatus(liveWedId, 'rust', null, liveMinsPerHelft);
-      pushLiveUpdate(liveWedId, 'rust', '', eigen, tegen, liveMinsPerHelft);
-    }
-  } else if (!liveIsAfgelopen) {
-    liveIsAfgelopen = true;
-    showToast('Wedstrijd afgelopen — gepusht naar live-pagina');
-    document.getElementById('live-helft-label').textContent='Afgelopen';
-    const startBtn=document.getElementById('live-start-btn'); startBtn.disabled=true; startBtn.style.opacity='.4';
-    const faseBtn=document.getElementById('live-fase-btn'); faseBtn.disabled=true; faseBtn.style.opacity='.4';
-    if (supabaseReady && liveWedId) {
-      const eigen = parseInt(document.getElementById('live-score-eigen').textContent)||0;
-      const tegen = parseInt(document.getElementById('live-score-tegen').textContent)||0;
-      setLiveStatus(liveWedId, 'ft', null, liveMinsPerHelft*2);
-      pushLiveUpdate(liveWedId, 'einde', '', eigen, tegen, liveMinsPerHelft*2);
-    }
+function pushRust(){
+  stopLokaleKlokWeergave();
+  liveFase='rust'; liveKlokSec=0; liveHelftStartTs=null;
+  liveNotities.push({tijd:'— rust —',tekst:'',isRust:true});
+  renderLiveFaseUI(); renderLiveNotities();
+  showToast('Rust — gepusht naar live-pagina');
+  if (supabaseReady && liveWedId) {
+    const eigen=parseInt(document.getElementById('live-score-eigen').textContent)||0;
+    const tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
+    setLiveStatus(liveWedId, 'rust', null, liveMinsPerHelft);
+    pushLiveUpdate(liveWedId, 'rust', '', eigen, tegen, liveMinsPerHelft);
+  }
+}
+function pushEinde(){
+  stopLokaleKlokWeergave();
+  liveFase='afgelopen'; liveHelftStartTs=null;
+  renderLiveFaseUI();
+  showToast('Wedstrijd afgelopen — gepusht naar live-pagina');
+  if (supabaseReady && liveWedId) {
+    const eigen=parseInt(document.getElementById('live-score-eigen').textContent)||0;
+    const tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
+    setLiveStatus(liveWedId, 'ft', null, liveMinsPerHelft*2);
+    pushLiveUpdate(liveWedId, 'einde', '', eigen, tegen, liveMinsPerHelft*2);
+  }
+}
+
+// Zet de twee knoppen precies op wat in de huidige fase geldig is — zo kan een ongeldige
+// overgang (bv. twee keer rust, of een afgelopen wedstrijd herstarten) structureel niet:
+// de knop die dat zou doen bestaat dan simpelweg niet.
+function renderLiveFaseUI(){
+  const hoofd=document.getElementById('live-start-btn'), fase=document.getElementById('live-fase-btn');
+  const helftLabel=document.getElementById('live-helft-label');
+  hoofd.disabled=false; fase.disabled=false; hoofd.style.opacity='1'; fase.style.opacity='1'; fase.style.display='inline-block';
+  if (liveFase==='voor_start') {
+    hoofd.textContent='▶ Start'; hoofd.style.background='var(--accent2)'; hoofd.style.color='var(--bg)';
+    fase.style.display='none';
+    helftLabel.textContent='1e helft · '+liveMinsPerHelft+' min';
+  } else if (liveFase==='lopend_1e') {
+    hoofd.textContent='⏸ Pauze'; hoofd.style.background='var(--bg3)'; hoofd.style.color='var(--text2)';
+    fase.textContent='⏸ Rust';
+    helftLabel.textContent='1e helft · '+liveMinsPerHelft+' min';
+  } else if (liveFase==='pauze_1e') {
+    hoofd.textContent='▶ Verder'; hoofd.style.background='var(--accent2)'; hoofd.style.color='var(--bg)';
+    fase.textContent='⏸ Rust';
+    helftLabel.textContent='1e helft · gepauzeerd';
+  } else if (liveFase==='rust') {
+    hoofd.textContent='▶ Start 2e helft'; hoofd.style.background='var(--accent2)'; hoofd.style.color='var(--bg)';
+    fase.style.display='none';
+    helftLabel.textContent='Rust';
+  } else if (liveFase==='lopend_2e') {
+    hoofd.textContent='⏸ Pauze'; hoofd.style.background='var(--bg3)'; hoofd.style.color='var(--text2)';
+    fase.textContent='🏁 Einde wedstrijd';
+    helftLabel.textContent='2e helft · '+liveMinsPerHelft+' min';
+  } else if (liveFase==='pauze_2e') {
+    hoofd.textContent='▶ Verder'; hoofd.style.background='var(--accent2)'; hoofd.style.color='var(--bg)';
+    fase.textContent='🏁 Einde wedstrijd';
+    helftLabel.textContent='2e helft · gepauzeerd';
+  } else if (liveFase==='afgelopen') {
+    hoofd.textContent='Afgelopen'; hoofd.disabled=true; hoofd.style.opacity='.4';
+    fase.style.display='none';
+    helftLabel.textContent='Afgelopen — kan niet opnieuw gestart worden';
   }
 }
 
 function pushHuidigeStand(){
   if (!supabaseReady || !liveWedId) { showToast('Geen verbinding met Supabase'); return; }
+  const btn = event ? event.target.closest('button') : null;
+  if (btn) { if (btn.dataset.bezig) return; btn.dataset.bezig='1'; btn.disabled=true; const origTekst=btn.textContent; btn.textContent='✓ Gedeeld!'; setTimeout(()=>{ btn.disabled=false; btn.textContent=origTekst; delete btn.dataset.bezig; },2000); }
   const eigen = parseInt(document.getElementById('live-score-eigen').textContent)||0;
   const tegen = parseInt(document.getElementById('live-score-tegen').textContent)||0;
-  pushLiveUpdate(liveWedId, 'update', 'Tussenstand', eigen, tegen, getKlokMinuut());
-  showToast('Stand gedeeld: ' + eigen + '–' + tegen);
+  const minuut = getKlokMinuut();
+  pushLiveUpdate(liveWedId, 'update', 'Tussenstand', eigen, tegen, minuut).then(id => {
+    if (!id) { showToast('⚠️ Delen mislukt'); return; }
+    liveNotities.push({tijd:minuut+"'", tekst:'📢 Tussenstand: '+eigen+'–'+tegen, gedeeld:true, liveUpdateId:id});
+    renderLiveNotities();
+  });
 }
 function updateKlokDisplay(){
   const m=Math.floor(liveKlokSec/60),s=liveKlokSec%60;
@@ -650,17 +713,33 @@ function voegNotitieInMet(tekst,tijd){
   liveNotities.push({tijd,tekst}); renderLiveNotities();
   setTimeout(()=>{ const c=document.getElementById('live-notities-cont'); c.scrollTop=c.scrollHeight; },50);
 }
-function verwijderNotitie(i){ liveNotities.splice(i,1); renderLiveNotities(); }
-function pushNotitie(i){
+function verwijderNotitie(i){
+  const n = liveNotities[i];
+  if (n && n.gedeeld && n.liveUpdateId) {
+    if (!confirm('Deze notitie stond al op de live-pagina. Ook daar verwijderen?')) return;
+    intrekkenLiveUpdate(n.liveUpdateId);
+  }
+  liveNotities.splice(i,1); renderLiveNotities();
+}
+async function pushNotitie(i){
   const n = liveNotities[i]; if (!n || n.isRust) return;
   if (!supabaseReady || !liveWedId) { showToast('Geen verbinding met Supabase'); return; }
   const eigen = parseInt(document.getElementById('live-score-eigen').textContent)||0;
   const tegen = parseInt(document.getElementById('live-score-tegen').textContent)||0;
   const minuut = parseInt(n.tijd) || 0;
-  pushLiveUpdate(liveWedId, 'update', n.tekst, eigen, tegen, minuut);
-  n.gedeeld = true;
+  const id = await pushLiveUpdate(liveWedId, 'update', n.tekst, eigen, tegen, minuut);
+  if (!id) { showToast('⚠️ Delen mislukt'); return; }
+  n.gedeeld = true; n.liveUpdateId = id;
   renderLiveNotities();
   showToast('Gedeeld naar live-pagina');
+}
+async function trekPushIn(i){
+  const n = liveNotities[i]; if (!n || !n.gedeeld || !n.liveUpdateId) return;
+  if (!confirm('Deze update intrekken van de live-pagina? Dit is direct zichtbaar voor iedereen die meekijkt.')) return;
+  await intrekkenLiveUpdate(n.liveUpdateId);
+  n.gedeeld = false; n.liveUpdateId = null;
+  renderLiveNotities();
+  showToast('Ingetrokken van live-pagina');
 }
 function renderLiveNotities(){
   const cont=document.getElementById('live-notities-lijst'); if(!cont) return;
@@ -671,7 +750,7 @@ function renderLiveNotities(){
       <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--accent);flex-shrink:0;min-width:36px">${n.tijd}</span>
       <span style="flex:1;font-size:14px;color:var(--text);line-height:1.5">${n.tekst}</span>
       ${n.gedeeld
-        ? `<span title="Gedeeld naar live-pagina" style="color:var(--groen);font-size:13px;flex-shrink:0;line-height:1">📢✓</span>`
+        ? `<button onclick="trekPushIn(${i})" title="Intrekken van live-pagina" style="background:none;border:none;color:var(--groen);cursor:pointer;font-size:13px;padding:0;flex-shrink:0;line-height:1">📢✓</button>`
         : `<button onclick="pushNotitie(${i})" title="Delen naar live-pagina" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;flex-shrink:0;line-height:1">📢</button>`}
       <button onclick="verwijderNotitie(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0;flex-shrink:0;line-height:1">✕</button>
     </div>`

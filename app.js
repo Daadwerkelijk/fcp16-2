@@ -214,10 +214,19 @@ async function setLiveStatus(id, status, helftStartNu, minuutOffset) {
   });
 }
 async function pushLiveUpdate(wedstrijdId, type, tekst, scoreEigen, scoreTegen, minuut) {
-  return await sbFetch('live_updates', 'POST', {
-    id: genId(), wedstrijd_id: wedstrijdId, type, tekst: tekst || '',
+  const id = genId();
+  const res = await sbFetch('live_updates', 'POST', {
+    id, wedstrijd_id: wedstrijdId, type, tekst: tekst || '',
     score_eigen: scoreEigen, score_tegen: scoreTegen, wedstrijd_minuut: minuut,
   });
+  return (res && res._error) ? null : id;
+}
+async function intrekkenLiveUpdate(id) {
+  return await sbFetch('live_updates?id=eq.' + id, 'DELETE');
+}
+async function haalLiveStatus(id) {
+  const res = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset&id=eq.' + id);
+  return (res && res[0]) || null;
 }
 
 async function initSupabase(statusElId) {

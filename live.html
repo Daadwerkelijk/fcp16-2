@@ -71,6 +71,14 @@ async function sbGet(path) {
   } catch(e) { return []; }
 }
 
+// Onderscheid trainer vs. ouder: alleen een apparaat waarop de trainersapp zelf ooit is
+// ingesteld (Instellingen → Supabase-koppeling) heeft deze twee waarden lokaal opgeslagen.
+// Een ouder die enkel het gedeelde linkje opent, heeft dit nooit — dus geen zinloze
+// "naar de app"-knop tonen aan iemand die er toch niets mee kan.
+function heeftTrainerToegang() {
+  return !!(localStorage.getItem('sb_url') && localStorage.getItem('sb_key'));
+}
+
 const FORMATIES = {
   '4222': [{id:'GK',label:'GK',x:50,y:88},{id:'LB',label:'LB',x:14,y:72},{id:'CB_L',label:'CB-L',x:36,y:75},{id:'CB_R',label:'CB-R',x:64,y:75},{id:'RB',label:'RB',x:86,y:72},{id:'VM_L',label:'VM-L',x:36,y:53},{id:'VM_R',label:'VM-R',x:64,y:53},{id:'AM_L',label:'AM-L',x:24,y:36},{id:'AM_R',label:'AM-R',x:76,y:36},{id:'ST_L',label:'ST-L',x:14,y:16},{id:'ST_R',label:'ST-R',x:86,y:16}],
   '14231': [{id:'GK',label:'GK',x:50,y:88},{id:'LB',label:'LB',x:14,y:72},{id:'CB_L',label:'CB-L',x:36,y:75},{id:'CB_R',label:'CB-R',x:64,y:75},{id:'RB',label:'RB',x:86,y:72},{id:'DM_L',label:'DM-L',x:38,y:57},{id:'DM_R',label:'DM-R',x:62,y:57},{id:'LAM',label:'LAM',x:18,y:38},{id:'CAM',label:'CAM',x:50,y:38},{id:'RAM',label:'RAM',x:82,y:38},{id:'CF',label:'CF',x:50,y:16}],
@@ -194,10 +202,11 @@ async function renderOverzicht() {
     <div class="pub-hero">
       <div class="pub-hero-top">
         <div class="pub-badge">FCP</div>
-        <div>
+        <div style="flex:1">
           <div class="pub-title">FCP 16-2</div>
           <div class="pub-sub">Live wedstrijdvolgen · seizoen 2026/2027</div>
         </div>
+        ${heeftTrainerToegang() ? '<a href="index.html" title="Naar de trainersapp" style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0">🏠</a>' : ''}
       </div>
     </div>
     <div class="pub-list">`;
@@ -228,8 +237,11 @@ async function renderDetail(id) {
 
   app.innerHTML = `
     <div class="pub-hero">
-      <a class="pub-back" href="live.html">← Alle wedstrijden</a>
-      <div class="pub-teams">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <a class="pub-back" href="live.html" style="margin-bottom:0">← Alle wedstrijden</a>
+        ${heeftTrainerToegang() ? '<a href="index.html" title="Naar de trainersapp" style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;flex-shrink:0">🏠</a>' : ''}
+      </div>
+      <div class="pub-teams" style="margin-top:14px">
         <div class="pub-team">${thuis}</div>
         <div class="pub-score-big">${w.score_eigen}–${w.score_tegen}</div>
         <div class="pub-team uit">${uit}</div>

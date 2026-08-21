@@ -241,6 +241,54 @@ async function haalLiveStatus(id) {
   return (res && res[0]) || null;
 }
 
+// ─── Spelerontwikkeling: gedeelde constanten ───
+// Eén canonieke plek voor de 15 vaardigheden + 4-punts-schaal, gebruikt door zowel het
+// spelerformulier als de trainersbeoordeling — voorkomt dat beide kanten uit de pas lopen.
+const FORM_SKILLS = {
+  techniek: ['Balcontrole','Dribbel','Passen van de bal','Schieten op doel'],
+  tactiek:  ['Positiespel','Inzicht','Teamplayer'],
+  fysiek:   ['Conditie','Explosieve kracht','Duel kracht'],
+  mentaal:  ['Gedrag','Motivatie','Aandacht','Discipline','Omgaan met tegenslag'],
+};
+const SKILL_OPTIES = ['Ontwikkel punt','Voldoende','Goed','Zeer goed'];
+// Percentage-positie op de vergelijkingslijn per niveau (2/34/66/98, zelfde 4 stops overal)
+const SKILL_NIVEAU_PCT = {'Ontwikkel punt':2, 'Voldoende':34, 'Goed':66, 'Zeer goed':98};
+
+// ─── Datalaag: Spelerontwikkeling ───
+async function haalLaatsteSpelerBeoordeling(spelerId) {
+  const res = await sbFetch('speler_beoordelingen?select=*&speler_id=eq.' + spelerId + '&order=created_at.desc&limit=1');
+  return (res && res[0]) || null;
+}
+async function haalSpelerBeoordelingenGeschiedenis(spelerId) {
+  const res = await sbFetch('speler_beoordelingen?select=*&speler_id=eq.' + spelerId + '&order=created_at.asc');
+  return res && !res._error ? res : [];
+}
+async function haalLaatsteTrainerBeoordeling(spelerId) {
+  const res = await sbFetch('trainer_beoordelingen?select=*&speler_id=eq.' + spelerId + '&order=created_at.desc&limit=1');
+  return (res && res[0]) || null;
+}
+async function haalTrainerBeoordelingenGeschiedenis(spelerId) {
+  const res = await sbFetch('trainer_beoordelingen?select=*&speler_id=eq.' + spelerId + '&order=created_at.asc');
+  return res && !res._error ? res : [];
+}
+async function nieuweTrainerBeoordeling(spelerId, skills, gedeeldMetSpeler) {
+  return await sbFetch('trainer_beoordelingen', 'POST', {
+    id: genId(), speler_id: spelerId, skills, gedeeld_met_speler: !!gedeeldMetSpeler,
+  });
+}
+async function intrekkenTrainerBeoordeling(id) {
+  return await sbFetch('trainer_beoordelingen?id=eq.' + id, 'DELETE');
+}
+// Alle beoordelingen van alle spelers in één keer (voor het teambrede Dashboard)
+async function haalAlleTrainerBeoordelingen() {
+  const res = await sbFetch('trainer_beoordelingen?select=*&order=created_at.asc');
+  return res && !res._error ? res : [];
+}
+async function haalAlleSpelerBeoordelingen() {
+  const res = await sbFetch('speler_beoordelingen?select=*&order=created_at.asc');
+  return res && !res._error ? res : [];
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';
@@ -734,13 +782,8 @@ const CAT_DOT  = { opwarmen:'#f0a040', conditie:'#a8e040', techniek:'#40a8f0', p
 const CAT_BG   = { opwarmen:{bg:'#241400',c:'#f0a040'}, conditie:{bg:'#101800',c:'#a8e040'}, techniek:{bg:'#001828',c:'#40a8f0'}, positiespel:{bg:'#0a1e10',c:'#70e890'}, counterpressing:{bg:'#240010',c:'#f04070'}, partijvorm:{bg:'#160e28',c:'#a080f8'} };
 
 // ─── SKILLS ───
-const SKILL_CATS = [
-  { cat:'Techniek', skills:['Balcontrole','Dribbel','Passen van de bal','Schieten op doel'] },
-  { cat:'Tactiek',  skills:['Positiespel','Inzicht','Teamplayer'] },
-  { cat:'Fysiek',   skills:['Conditie','Explosieve kracht','Duel kracht'] },
-  { cat:'Mentaal',  skills:['Gedrag','Motivatie','Aandacht','Discipline','Omgaan met tegenslag'] },
-];
-const SKILL_LEVELS = ['Ontwikkel punt','Voldoende','Goed','Zeer goed'];
+// SKILL_CATS/SKILL_LEVELS zijn vervangen door de gedeelde FORM_SKILLS/SKILL_OPTIES
+// (zie hierboven) — was een derde, losse kopie van dezelfde 15 vaardigheden.
 
 // ─── POSITIE BADGES ───
 function getRolBadges(posities) {

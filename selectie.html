@@ -64,6 +64,36 @@
   </div>
 </div>
 
+<!-- Trainersbeoordeling invullen -->
+<div class="bmodal-overlay" id="bmodalTrainerBeoordeling" onclick="if(event.target===this)closeTrainerBeoordeling()">
+  <div class="bmodal">
+    <div class="bmodal-title">Trainersbeoordeling</div>
+    <div id="tb-speler-naam" style="font-size:13px;color:var(--text3);margin-bottom:14px"></div>
+    <div class="tb-deel-toggle">
+      <div class="tb-deel-txt"><b>Delen met speler</b><br>Speler ziet deze beoordeling en het verschil met zijn eigen inschatting</div>
+      <input type="checkbox" id="tb-delen" style="width:20px;height:20px;flex-shrink:0;accent-color:var(--goud)">
+    </div>
+    <div id="tb-skills-container"></div>
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" onclick="closeTrainerBeoordeling()">Annuleer</button>
+      <button class="bmodal-save" onclick="opslaanTrainerBeoordeling()">💾 Beoordeling opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Geschiedenis -->
+<div class="bmodal-overlay" id="bmodalGeschiedenis" onclick="if(event.target===this)closeGeschiedenis()">
+  <div class="bmodal">
+    <div class="bmodal-title">Geschiedenis</div>
+    <div id="hist-speler-naam" style="font-size:13px;color:var(--text3);margin-bottom:14px"></div>
+    <select class="hist-select" id="hist-skill-select" onchange="renderGeschiedenisTijdlijn()"></select>
+    <div id="hist-tl-container"></div>
+    <div class="bmodal-actions">
+      <button class="bmodal-cancel-btn" style="flex:1" onclick="closeGeschiedenis()">Sluiten</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 <script>
 let players = loadState().players;
@@ -128,13 +158,11 @@ function togglePosTag(pid, pos, el) {
 function deelSpelerFormulier(pid, naam) { deelFormulier(pid, naam); }
 
 async function wisFormulier(pid) {
-  if (!confirm('Formulier van deze speler wissen?')) return;
+  if (!confirm('Alle spelerbeoordelingen (de volledige geschiedenis) van deze speler wissen? Dit kan niet ongedaan gemaakt worden.')) return;
   if (supabaseReady) {
-    await sbFetch('session_notes?note_key=eq.formulier:' + pid, 'DELETE');
+    await sbFetch('speler_beoordelingen?speler_id=eq.' + pid, 'DELETE');
   }
-  // Verwijder ook uit cache
-  delete formulierCache[pid];
-  // Herrender de formuliersectie
+  delete beoordelingCache[pid];
   const el = document.getElementById('formulier-' + pid);
   if (el) el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:4px 0">Nog niet ingevuld</div>';
   showToast('Formulier gewist');
@@ -159,29 +187,65 @@ function deelFormulier(pid, naam) {
 
 // Formulierresultaat tonen per speler
 const formulierCache = {};
-async function laadFormulierData(pid) {
-  if (formulierCache[pid] !== undefined) return formulierCache[pid];
-  if (!supabaseReady) return null;
-  const res = await sbFetch('session_notes?note_key=eq.formulier:' + pid + '&select=content');
-  if (res && !res._error && res.length) {
-    try { formulierCache[pid] = JSON.parse(res[0].content); return formulierCache[pid]; }
-    catch(e) {}
+let beoordelingCache = {}; // pid -> {spelerHist, trainerHist}
+
+async function laadBeoordelingen(pid) {
+  if (beoordelingCache[pid]) return beoordelingCache[pid];
+  if (!supabaseReady) return { spelerHist: [], trainerHist: [] };
+  const [spelerHist, trainerHist] = await Promise.all([
+    haalSpelerBeoordelingenGeschiedenis(pid),
+    haalTrainerBeoordelingenGeschiedenis(pid),
+  ]);
+  beoordelingCache[pid] = { spelerHist, trainerHist };
+  return beoordelingCache[pid];
+}
+
+function bouwTrackRij(bron, kleurClass, niveauNu, niveauVorige) {
+  if (!niveauNu) return '';
+  const pctNu = SKILL_NIVEAU_PCT[niveauNu];
+  const kleurVar = kleurClass === 'c-speler' ? 'blauw' : 'goud';
+  let dots = '';
+  if (niveauVorige && niveauVorige !== niveauNu && SKILL_NIVEAU_PCT[niveauVorige] !== undefined) {
+    dots += `<div class="cmp-track-dot ghost ${kleurClass}" style="left:${SKILL_NIVEAU_PCT[niveauVorige]}%"></div>`;
   }
-  formulierCache[pid] = null;
-  return null;
+  dots += `<div class="cmp-track-dot" style="left:${pctNu}%;background:var(--${kleurVar})"></div>`;
+  return `<div class="cmp-row">
+    <span class="cmp-src ${kleurClass}">${bron}</span>
+    <div class="cmp-track"><div class="cmp-track-line"></div>
+      <div class="cmp-track-tick" style="left:2%"></div><div class="cmp-track-tick" style="left:34%"></div><div class="cmp-track-tick" style="left:66%"></div><div class="cmp-track-tick" style="left:98%"></div>
+      ${dots}
+    </div>
+    <span class="cmp-lvl ${kleurClass}">${niveauNu}</span>
+  </div>`;
 }
 
 async function renderFormulierData(pid) {
   const el = document.getElementById('formulier-' + pid);
   if (!el) return;
-  const data = await laadFormulierData(pid);
-  if (!data) {
-    el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:4px 0">Nog niet ingevuld</div>';
+  el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0">Laden…</div>';
+
+  const { spelerHist, trainerHist } = await laadBeoordelingen(pid);
+  const spelerRij = spelerHist[spelerHist.length - 1] || null;
+  const spelerVorigeRij = spelerHist[spelerHist.length - 2] || null;
+  const trainerRij = trainerHist[trainerHist.length - 1] || null;
+  const trainerVorigeRij = trainerHist[trainerHist.length - 2] || null;
+
+  if (!spelerRij && !trainerRij) {
+    el.innerHTML = `<div style="font-size:11px;color:var(--text3);padding:4px 0 10px">Nog niet ingevuld</div>
+      <button class="save-btn" style="width:100%" onclick="openTrainerBeoordeling('${pid}')">+ Trainersbeoordeling</button>`;
     return;
   }
-  const datum = data.ingestuurd_op ? new Date(data.ingestuurd_op).toLocaleDateString('nl-NL') : '';
-  let html = `<div style="font-size:10px;color:var(--accent);margin-bottom:8px">✓ Ingevuld${datum ? ' op ' + datum : ''}</div>`;
-  // Persoonlijke info
+
+  const data = spelerRij ? spelerRij.data : {};
+  const spelerSkills = data.skills || {};
+  const trainerSkills = trainerRij ? trainerRij.skills : {};
+  const spelerVorigeSkills = spelerVorigeRij ? (spelerVorigeRij.data.skills || {}) : {};
+  const trainerVorigeSkills = trainerVorigeRij ? trainerVorigeRij.skills : {};
+
+  let html = `<div style="font-size:10px;color:var(--text3);margin-bottom:10px">
+    ${spelerRij ? 'Speler: ' + new Date(spelerRij.created_at).toLocaleDateString('nl-NL') : 'Speler: nog niet ingevuld'}${trainerRij ? ' · Trainer: ' + new Date(trainerRij.created_at).toLocaleDateString('nl-NL') : ''}
+  </div>`;
+
   const infos = [
     data.geboortedatum && ['Geboortedatum', data.geboortedatum],
     data.positie       && ['Positie',        data.positie],
@@ -190,37 +254,182 @@ async function renderFormulierData(pid) {
     data.aanvoerder    && ['Aanvoerder',      data.aanvoerder === 'ja' ? 'Ja — ' + (data.aanvoerder_waarom||'') : 'Nee, kiest ' + (data.aanvoerder_wie||'')],
   ].filter(Boolean);
   if (infos.length) {
-    html += '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px">';
+    html += '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">';
     infos.forEach(([k,v]) => html += `<div style="font-size:11px"><span style="color:var(--text3)">${k}: </span><span style="color:var(--text2)">${v}</span></div>`);
     html += '</div>';
   }
-  // Skills per categorie
-  const FORM_SKILLS = {
-    Techniek: ['Balcontrole','Dribbel','Passen van de bal','Schieten op doel'],
-    Tactiek:  ['Positiespel','Inzicht','Teamplayer'],
-    Fysiek:   ['Conditie','Explosieve kracht','Duel kracht'],
-    Mentaal:  ['Gedrag','Motivatie','Aandacht','Discipline','Omgaan met tegenslag'],
-  };
-  const kleur = {'Ontwikkel punt':'#C62828','Voldoende':'#E65100','Goed':'#558B2F','Zeer goed':'#1B5E20'};
-  if (data.skills && Object.keys(data.skills).length) {
-    Object.entries(FORM_SKILLS).forEach(([cat, skills]) => {
-      const catSkills = skills.filter(s => data.skills[s]);
-      if (!catSkills.length) return;
-      html += `<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin:6px 0 3px">${cat}</div>`;
-      html += '<div style="display:flex;flex-direction:column;gap:3px">';
-      catSkills.forEach(s => {
-        const v = data.skills[s];
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
-          <span style="color:var(--text2)">${s}</span>
-          <span style="padding:1px 7px;border-radius:10px;background:${kleur[v]||'var(--bg3)'};color:#fff;font-size:10px">${v}</span>
-        </div>`;
-      });
-      html += '</div>';
+
+  html += `<div class="cmp-legend">
+    <span><span class="cmp-legend-dot" style="background:var(--blauw)"></span>Speler</span>
+    <span><span class="cmp-legend-dot" style="background:var(--goud)"></span>Trainer</span>
+    <span>○ = vorige · ⚠️ = wijkt 1+ niveau af</span>
+  </div>`;
+
+  Object.entries(FORM_SKILLS).forEach(([cat, skills]) => {
+    const relevant = skills.filter(s => spelerSkills[s] || trainerSkills[s]);
+    if (!relevant.length) return;
+    html += `<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 4px">${cat}</div>`;
+    relevant.forEach(s => {
+      const sW = spelerSkills[s], tW = trainerSkills[s];
+      const wijktAf = sW && tW && SKILL_NIVEAU_PCT[sW] !== SKILL_NIVEAU_PCT[tW];
+      html += `<div class="cmp-block">
+        <div class="cmp-skill-naam">${s}${wijktAf ? '<span class="cmp-diff-chip">⚠️ wijkt af</span>' : ''}</div>
+        ${bouwTrackRij('Speler', 'c-speler', sW, spelerVorigeSkills[s])}
+        ${bouwTrackRij('Trainer', 'c-trainer', tW, trainerVorigeSkills[s])}
+      </div>`;
     });
-  }
-  if (data.wens) html += `<div style="margin-top:8px;font-size:11px"><div style="color:var(--text3);margin-bottom:3px">Wens dit seizoen</div><div style="color:var(--text2);line-height:1.5">${data.wens}</div></div>`;
+  });
+
+  if (data.wens) html += `<div style="margin-top:10px;font-size:11px"><div style="color:var(--text3);margin-bottom:3px">Wens dit seizoen</div><div style="color:var(--text2);line-height:1.5">${data.wens}</div></div>`;
   if (data.bijzonderheden) html += `<div style="margin-top:6px;font-size:11px"><div style="color:var(--text3);margin-bottom:3px">Bijzonderheden</div><div style="color:var(--text2)">${data.bijzonderheden}</div></div>`;
+
+  html += `<div style="display:flex;gap:8px;margin-top:14px">
+    <button class="save-btn" style="flex:1" onclick="openTrainerBeoordeling('${pid}')">+ Trainersbeoordeling</button>
+    <button class="del-btn" onclick="openGeschiedenis('${pid}')">📈 Geschiedenis</button>
+  </div>`;
+
   el.innerHTML = html;
+}
+
+// ─── Trainersbeoordeling invullen ───
+let tbHuidigePid = null, tbSelectie = {};
+
+async function openTrainerBeoordeling(pid) {
+  tbHuidigePid = pid;
+  tbSelectie = {};
+  const p = players.find(x => x.id === pid);
+  document.getElementById('tb-speler-naam').textContent = (p ? p.naam : '') + ' — nieuw beoordelmoment · ' + new Date().toLocaleDateString('nl-NL');
+  document.getElementById('tb-delen').checked = false;
+
+  const { spelerHist, trainerHist } = await laadBeoordelingen(pid);
+  const spelerSkills = spelerHist.length ? (spelerHist[spelerHist.length-1].data.skills || {}) : {};
+  const trainerVorigeSkills = trainerHist.length ? trainerHist[trainerHist.length-1].skills : {};
+
+  let html = '';
+  Object.entries(FORM_SKILLS).forEach(([cat, skills]) => {
+    html += `<div class="tb-cat-lbl">${cat}</div>`;
+    skills.forEach(s => {
+      const context = [];
+      if (spelerSkills[s]) context.push('Speler koos: ' + spelerSkills[s]);
+      if (trainerVorigeSkills[s]) context.push('vorige: ' + trainerVorigeSkills[s]);
+      const opties = SKILL_OPTIES.map(o =>
+        `<button type="button" class="tb-opt" data-skill="${s.replace(/"/g,'&quot;')}" data-waarde="${o}" onclick="kiesTrainerSkill(this)">${o==='Ontwikkel punt'?'Ontw.':o==='Voldoende'?'Vold.':o==='Zeer goed'?'Z.g.':'Goed'}</button>`
+      ).join('');
+      html += `<div class="tb-skrij">
+        <div class="tb-sknaam">${s}${context.length ? ' <span style="color:var(--text3);font-weight:400">— ' + context.join(' · ') + '</span>' : ''}</div>
+        <div class="tb-opties">${opties}</div>
+      </div>`;
+    });
+  });
+  document.getElementById('tb-skills-container').innerHTML = html;
+  document.getElementById('bmodalTrainerBeoordeling').classList.add('open');
+}
+
+function kiesTrainerSkill(btn) {
+  const skill = btn.dataset.skill, waarde = btn.dataset.waarde;
+  tbSelectie[skill] = waarde;
+  btn.parentElement.querySelectorAll('.tb-opt').forEach(b => b.classList.toggle('actief', b === btn));
+}
+
+function closeTrainerBeoordeling() {
+  document.getElementById('bmodalTrainerBeoordeling').classList.remove('open');
+}
+
+async function opslaanTrainerBeoordeling() {
+  if (!Object.keys(tbSelectie).length) { showToast('Kies minstens één vaardigheid'); return; }
+  if (!supabaseReady) { showToast('Geen verbinding met Supabase'); return; }
+  const gedeeld = document.getElementById('tb-delen').checked;
+  const res = await nieuweTrainerBeoordeling(tbHuidigePid, tbSelectie, gedeeld);
+  if (res && res._error) { showToast('⚠️ Opslaan mislukt'); return; }
+  delete beoordelingCache[tbHuidigePid]; // cache legen zodat de kaart de nieuwe data ophaalt
+  closeTrainerBeoordeling();
+  showToast('Trainersbeoordeling opgeslagen');
+  const kaart = document.getElementById('pcard-' + tbHuidigePid);
+  if (kaart && kaart.classList.contains('open')) renderFormulierData(tbHuidigePid);
+}
+
+// ─── Geschiedenis ───
+let histHuidigePid = null;
+
+async function openGeschiedenis(pid) {
+  histHuidigePid = pid;
+  const p = players.find(x => x.id === pid);
+  document.getElementById('hist-speler-naam').textContent = p ? p.naam : '';
+
+  const { spelerHist, trainerHist } = await laadBeoordelingen(pid);
+  const alleSkills = new Set();
+  spelerHist.forEach(r => Object.keys(r.data.skills || {}).forEach(s => alleSkills.add(s)));
+  trainerHist.forEach(r => Object.keys(r.skills || {}).forEach(s => alleSkills.add(s)));
+
+  const select = document.getElementById('hist-skill-select');
+  if (!alleSkills.size) {
+    select.innerHTML = '<option>Nog geen vaardigheden beoordeeld</option>';
+    document.getElementById('hist-tl-container').innerHTML = '';
+  } else {
+    // Sorteer op vaste volgorde uit FORM_SKILLS, niet alfabetisch
+    const volgorde = Object.values(FORM_SKILLS).flat();
+    const gesorteerd = volgorde.filter(s => alleSkills.has(s));
+    select.innerHTML = gesorteerd.map(s => `<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('');
+    renderGeschiedenisTijdlijn();
+  }
+  document.getElementById('bmodalGeschiedenis').classList.add('open');
+}
+
+function closeGeschiedenis() {
+  document.getElementById('bmodalGeschiedenis').classList.remove('open');
+}
+
+async function renderGeschiedenisTijdlijn() {
+  const skill = document.getElementById('hist-skill-select').value;
+  const { spelerHist, trainerHist } = await laadBeoordelingen(histHuidigePid);
+
+  const momenten = [];
+  spelerHist.forEach(r => { const w = (r.data.skills||{})[skill]; if (w) momenten.push({ datum: r.created_at, bron: 'speler', waarde: w }); });
+  trainerHist.forEach(r => { const w = (r.skills||{})[skill]; if (w) momenten.push({ datum: r.created_at, bron: 'trainer', id: r.id, waarde: w }); });
+  momenten.sort((a,b) => new Date(b.datum) - new Date(a.datum)); // nieuwste eerst
+
+  const cont = document.getElementById('hist-tl-container');
+  if (!momenten.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Geen geschiedenis voor deze vaardigheid.</div>'; return; }
+
+  const kleur = { 'Ontwikkel punt':{bg:'#FBE9E7',fg:'#C62828'}, 'Voldoende':{bg:'#FFF3E0',fg:'#E65100'}, 'Goed':{bg:'#F1F8E9',fg:'#558B2F'}, 'Zeer goed':{bg:'#E8F5E9',fg:'#1B5E20'} };
+
+  cont.innerHTML = `<div class="hist-tl">${momenten.map((m, i) => {
+    // Vorige moment van DEZELFDE bron (chronologisch eerder) om de verandering te tonen
+    const vorigeZelfdeBron = momenten.slice(i+1).find(x => x.bron === m.bron);
+    let deltaHtml = '';
+    if (vorigeZelfdeBron) {
+      const verschil = SKILL_NIVEAU_PCT[m.waarde] - SKILL_NIVEAU_PCT[vorigeZelfdeBron.waarde];
+      if (verschil !== 0) {
+        const richting = verschil > 0 ? 'up' : 'down';
+        const pijl = verschil > 0 ? '↑' : '↓';
+        const niveaus = Math.round(Math.abs(verschil) / 32);
+        deltaHtml = `<div class="hist-delta ${richting}">${pijl} ${niveaus} niveau${niveaus>1?'s':''} t.o.v. vorige ${m.bron === 'speler' ? 'eigen inschatting' : 'trainersbeoordeling'}</div>`;
+      }
+    }
+    const c = kleur[m.waarde] || {bg:'var(--bg3)',fg:'var(--text3)'};
+    const kleurVar = m.bron === 'speler' ? 'var(--blauw)' : 'var(--goud)';
+    const intrekBtn = (m.bron === 'trainer' && m.id) ? `<button class="hist-intrek" onclick="intrekGeschiedenisItem('${m.id}')">Intrekken</button>` : '';
+    return `<div class="hist-item">
+      <div class="hist-dot" style="color:${kleurVar};background:${kleurVar}"></div>
+      <div class="hist-datum">${new Date(m.datum).toLocaleDateString('nl-NL', {day:'numeric',month:'long',year:'numeric'})}</div>
+      <div class="hist-row">
+        <span class="hist-wie" style="color:${kleurVar}">${m.bron === 'speler' ? '⚽ Speler' : '🧑‍🏫 Trainer'}</span>
+        <span class="hist-lvl" style="background:${c.bg};color:${c.fg}">${m.waarde}</span>
+      </div>
+      ${deltaHtml}
+      ${intrekBtn}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function intrekGeschiedenisItem(id) {
+  if (!confirm('Deze trainersbeoordeling definitief verwijderen?')) return;
+  await intrekkenTrainerBeoordeling(id);
+  delete beoordelingCache[histHuidigePid];
+  await openGeschiedenis(histHuidigePid);
+  const kaart = document.getElementById('pcard-' + histHuidigePid);
+  if (kaart && kaart.classList.contains('open')) renderFormulierData(histHuidigePid);
+  showToast('Beoordeling ingetrokken');
 }
 
 

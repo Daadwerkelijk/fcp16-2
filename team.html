@@ -423,37 +423,73 @@ function deleteReden(i) {
   showToast(naam + ' verwijderd');
 }
 
-// ─── SKILLS (bestaande functionaliteit) ───
-// ─── SKILLS UIT FORMULIEREN ───
-let spelerSkills = {}; // pid -> skills object
+// ─── SKILLS: speler- en trainersbeoordelingen (nieuw) ───
+let alleSpelerBeoordelingen = [];
+let alleTrainerBeoordelingen = [];
 
 async function laadAlleFormulieren() {
   if (!supabaseReady) return;
-  const res = await sbFetch('session_notes?note_key=like.formulier:*&select=note_key,content');
-  if (!res || res._error) return;
-  res.forEach(r => {
-    const pid = r.note_key.replace('formulier:', '');
-    try {
-      const data = JSON.parse(r.content);
-      if (data.skills) spelerSkills[pid] = data.skills;
-    } catch(e) {}
+  [alleSpelerBeoordelingen, alleTrainerBeoordelingen] = await Promise.all([
+    haalAlleSpelerBeoordelingen(),
+    haalAlleTrainerBeoordelingen(),
+  ]);
+}
+
+function skillNiveauLabel(cat) { return cat.charAt(0).toUpperCase() + cat.slice(1); }
+
+// Per speler: laatste + voorlaatste rij (asc gesorteerd, dus einde van de array = nieuwste)
+function laatsteRijen(rijen, spelerId) {
+  const van = rijen.filter(r => r.speler_id === spelerId).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+  return { huidig: van[van.length-1] || null, vorige: van[van.length-2] || null };
+}
+
+function berekenTeamVerschillen() {
+  const perSkill = {};
+  players.forEach(p => {
+    const { huidig: sRij } = laatsteRijen(alleSpelerBeoordelingen, p.id);
+    const { huidig: tRij } = laatsteRijen(alleTrainerBeoordelingen, p.id);
+    const sSkills = sRij ? (sRij.data.skills || {}) : {};
+    const tSkills = tRij ? (tRij.skills || {}) : {};
+    Object.entries(sSkills).forEach(([skill, sW]) => {
+      const tW = tSkills[skill];
+      if (!tW || SKILL_NIVEAU_PCT[sW] === undefined || SKILL_NIVEAU_PCT[tW] === undefined) return;
+      const verschilNiveaus = (SKILL_NIVEAU_PCT[sW] - SKILL_NIVEAU_PCT[tW]) / 32;
+      (perSkill[skill] = perSkill[skill] || []).push(verschilNiveaus);
+    });
   });
+  return Object.entries(perSkill)
+    .map(([skill, lijst]) => ({ skill, gem: lijst.reduce((a,b)=>a+b,0) / lijst.length, n: lijst.length }))
+    .sort((a,b) => Math.abs(b.gem) - Math.abs(a.gem));
+}
+
+function berekenTeamOntwikkeling() {
+  const perSkill = {};
+  players.forEach(p => {
+    const { huidig, vorige } = laatsteRijen(alleSpelerBeoordelingen, p.id);
+    if (!huidig || !vorige) return;
+    const nu = huidig.data.skills || {}, was = vorige.data.skills || {};
+    Object.entries(nu).forEach(([skill, w]) => {
+      const vW = was[skill];
+      if (!vW || SKILL_NIVEAU_PCT[w] === SKILL_NIVEAU_PCT[vW] || SKILL_NIVEAU_PCT[w] === undefined || SKILL_NIVEAU_PCT[vW] === undefined) return;
+      const richting = SKILL_NIVEAU_PCT[w] > SKILL_NIVEAU_PCT[vW] ? 'vooruit' : 'terug';
+      perSkill[skill] = perSkill[skill] || { vooruit:0, terug:0 };
+      perSkill[skill][richting]++;
+    });
+  });
+  return Object.entries(perSkill)
+    .map(([skill, t]) => ({ skill, ...t, netto: t.vooruit - t.terug }))
+    .sort((a,b) => Math.abs(b.netto) - Math.abs(a.netto));
 }
 
 function renderTeamProfiel() {
   const cont = document.getElementById('profiel-content');
-  // Combineer p.skills (oud) met spelerSkills uit formulieren (nieuw)
-  const withSkills = sortedPlayers(players).filter(p =>
-    (p.skills && Object.keys(p.skills).length > 0) || spelerSkills[p.id]
-  );
-  if (!withSkills.length) {
-    cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Nog geen formulieren ingevuld door spelers.</div>';
+  const heeftSpelerData = players.some(p => laatsteRijen(alleSpelerBeoordelingen, p.id).huidig);
+  const heeftTrainerData = players.some(p => laatsteRijen(alleTrainerBeoordelingen, p.id).huidig);
+  if (!heeftSpelerData && !heeftTrainerData) {
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Nog geen beoordelingen ingevuld.</div>';
     return;
   }
-  const getSkills = p => ({ ...(p.skills || {}), ...(spelerSkills[p.id] || {}) });
-  const total = withSkills.length;
 
-  // Kleur per niveau
   const NK = {
     'Ontwikkel punt': { bg:'#FFEBEE', fill:'#C62828', text:'#C62828', label:'Ontwikkelpunt' },
     'Voldoende':      { bg:'#FFF3E0', fill:'#E65100', text:'#E65100', label:'Voldoende' },
@@ -461,46 +497,98 @@ function renderTeamProfiel() {
     'Zeer goed':      { bg:'#E8F5E9', fill:'#1B5E20', text:'#1B5E20', label:'Zeer goed' },
   };
 
-  let html = `<div style="font-size:11px;color:var(--text3);margin-bottom:14px">${withSkills.length} spelers met formulier</div>`;
+  let html = `<div style="font-size:11px;color:var(--text3);margin-bottom:16px">
+    <span class="cmp-legend-dot" style="background:var(--blauw)"></span>Speler gem. &nbsp;
+    <span class="cmp-legend-dot" style="background:var(--goud)"></span>Trainer gem.
+  </div>`;
 
-  SKILL_CATS.forEach(sc => {
-    html += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--border)">${sc.cat}</div>`;
-    sc.skills.forEach(skill => {
-      const counts = SKILL_LEVELS.map(lv => {
-        const namen = withSkills.filter(p => getSkills(p)[skill] === lv).map(p => p.naam);
+  // ─── Grootste verschillen speler ↔ trainer ───
+  const verschillen = berekenTeamVerschillen().filter(v => Math.abs(v.gem) >= 0.4).slice(0, 5);
+  if (verschillen.length) {
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">📊 Grootste verschillen speler ↔ trainer</div>`;
+    verschillen.forEach(v => {
+      const richting = v.gem > 0 ? 'Spelers schatten zichzelf gemiddeld hoger in' : 'Trainer ziet meer potentie dan spelers zelf';
+      const pctSpeler = 50 + v.gem * -20, pctTrainer = 50 + v.gem * 20; // puur voor de indicatorpositie, niet exact schaal
+      html += `<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px">
+          <div style="font-size:13px;font-weight:700;color:var(--text)">${v.skill}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--goud)">Ø ${Math.abs(v.gem).toFixed(1)}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:5px">${richting}</div>
+        <div style="position:relative;height:14px">
+          <div style="position:absolute;top:50%;left:0;right:0;height:2px;background:var(--border);transform:translateY(-50%)"></div>
+          <div style="position:absolute;top:50%;width:10px;height:10px;border-radius:50%;background:var(--blauw);transform:translate(-50%,-50%);left:${Math.max(4,Math.min(96,pctSpeler))}%"></div>
+          <div style="position:absolute;top:50%;width:10px;height:10px;border-radius:50%;background:var(--goud);transform:translate(-50%,-50%);left:${Math.max(4,Math.min(96,pctTrainer))}%"></div>
+        </div>
+      </div>`;
+    });
+  }
+
+  // ─── Grootste ontwikkeling deze periode (obv eigen inschatting van spelers) ───
+  const ontwikkeling = berekenTeamOntwikkeling().filter(o => o.netto !== 0).slice(0, 4);
+  if (ontwikkeling.length) {
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:20px 0 10px">📈 Grootste ontwikkeling deze periode <span style="font-weight:400;text-transform:none">(obv eigen inschatting)</span></div>`;
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">';
+    ontwikkeling.forEach(o => {
+      const vooruit = o.netto > 0;
+      html += `<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);padding:10px;text-align:center">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">${o.skill}</div>
+        <div style="font-size:18px;font-weight:700;color:${vooruit?'var(--groen)':'var(--rood)'}">${vooruit?'↑':'↓'}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:2px">${vooruit?o.vooruit:o.terug} speler${(vooruit?o.vooruit:o.terug)===1?'':'s'} ${vooruit?'vooruit':'terug'}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // ─── Verdeling per vaardigheid — speler vs trainer ───
+  html += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:16px 0 10px;padding-top:12px;border-top:1px solid var(--border)">Verdeling per vaardigheid</div>`;
+
+  Object.entries(FORM_SKILLS).forEach(([catKey, skills]) => {
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 8px">${skillNiveauLabel(catKey)}</div>`;
+    skills.forEach(skill => {
+      const sTellingen = SKILL_OPTIES.map(lv => {
+        const namen = players.filter(p => (laatsteRijen(alleSpelerBeoordelingen, p.id).huidig?.data.skills || {})[skill] === lv).map(p => p.naam);
         return { lv, namen };
       }).filter(c => c.namen.length > 0);
+      const tTellingen = SKILL_OPTIES.map(lv => {
+        const namen = players.filter(p => (laatsteRijen(alleTrainerBeoordelingen, p.id).huidig?.skills || {})[skill] === lv).map(p => p.naam);
+        return { lv, namen };
+      }).filter(c => c.namen.length > 0);
+      if (!sTellingen.length && !tTellingen.length) return;
 
-      if (!counts.length) return;
-
-      // Bepaal dominante niveau (meeste stemmen)
-      const dominant = counts.reduce((a,b) => a.namen.length >= b.namen.length ? a : b);
-      const nk = NK[dominant.lv] || NK['Voldoende'];
-      const pct = Math.round((dominant.namen.length / total) * 100);
+      const sTotal = sTellingen.reduce((a,c)=>a+c.namen.length,0);
+      const tTotal = tTellingen.reduce((a,c)=>a+c.namen.length,0);
       const sid = 'sk-' + skill.replace(/\s+/g,'_');
 
-      html += `<div style="margin-bottom:12px;cursor:pointer" onclick="toggleDetail('${sid}')">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="font-size:12px;font-weight:500;color:var(--text);width:120px;flex-shrink:0">${skill}</div>
-          <div style="flex:1;height:8px;background:var(--border);border-radius:100px;overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:${nk.fill};border-radius:100px;transition:width .3s"></div>
+      const bouwBalk = (tellingen, totaal, bron) => {
+        if (!totaal) return `<div style="font-size:10px;color:var(--text3)">Nog geen ${bron}-data</div>`;
+        const dominant = tellingen.reduce((a,b) => a.namen.length >= b.namen.length ? a : b);
+        const nk = NK[dominant.lv] || NK['Voldoende'];
+        const pct = Math.round((dominant.namen.length / totaal) * 100);
+        return `<div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--text3);width:42px;flex-shrink:0">${bron}</span>
+          <div style="flex:1;height:7px;background:var(--border);border-radius:100px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${nk.fill};border-radius:100px"></div>
           </div>
-          <div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:${nk.bg};color:${nk.text};border:1px solid ${nk.fill};flex-shrink:0;min-width:80px;text-align:center">${nk.label}</div>
-        </div>
+          <span style="font-size:9px;font-weight:700;color:${nk.text};flex-shrink:0;min-width:56px">${nk.label}</span>
+        </div>`;
+      };
+
+      html += `<div style="margin-bottom:12px;cursor:pointer" onclick="toggleDetail('${sid}')">
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">${skill}</div>
+        ${bouwBalk(sTellingen, sTotal, 'Speler')}
+        <div style="height:3px"></div>
+        ${bouwBalk(tTellingen, tTotal, 'Trainer')}
         <div id="${sid}" style="display:none;margin-top:6px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rsm)">
-          ${SKILL_LEVELS.map(lv => {
-            const c = counts.find(x => x.lv === lv);
-            if (!c) return '';
-            const nki = NK[lv];
-            return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-              <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:100px;background:${nki.bg};color:${nki.text};border:1px solid ${nki.fill};flex-shrink:0">${nki.label}</span>
-              <span style="font-size:11px;color:var(--text2)">${c.namen.join(', ')}</span>
-            </div>`;
-          }).join('')}
+          <div style="font-size:9px;font-weight:700;color:var(--blauw);text-transform:uppercase;margin-bottom:3px">Speler</div>
+          ${sTellingen.map(c => `<div style="font-size:11px;color:var(--text2);margin-bottom:2px"><b style="color:${(NK[c.lv]||{}).text}">${c.lv}:</b> ${c.namen.join(', ')}</div>`).join('') || '<div style="font-size:11px;color:var(--text3)">Geen data</div>'}
+          <div style="font-size:9px;font-weight:700;color:var(--goud);text-transform:uppercase;margin:6px 0 3px">Trainer</div>
+          ${tTellingen.map(c => `<div style="font-size:11px;color:var(--text2);margin-bottom:2px"><b style="color:${(NK[c.lv]||{}).text}">${c.lv}:</b> ${c.namen.join(', ')}</div>`).join('') || '<div style="font-size:11px;color:var(--text3)">Geen data</div>'}
         </div>
       </div>`;
     });
   });
+
   cont.innerHTML = html;
 }
 

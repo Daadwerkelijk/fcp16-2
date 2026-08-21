@@ -162,13 +162,7 @@
 
 <script src="app.js"></script>
 <script>
-const FORM_SKILLS = {
-  techniek: ['Balcontrole','Dribbel','Passen van de bal','Schieten op doel'],
-  tactiek:  ['Positiespel','Inzicht','Teamplayer'],
-  fysiek:   ['Conditie','Explosieve kracht','Duel kracht'],
-  mentaal:  ['Gedrag','Motivatie','Aandacht','Discipline','Omgaan met tegenslag'],
-};
-const SKILL_OPTIES = ['Ontwikkel punt','Voldoende','Goed','Zeer goed'];
+// FORM_SKILLS en SKILL_OPTIES komen nu uit app.js (gedeeld met de trainersbeoordeling)
 
 let spelerId = null;
 let spelerNaam = '';
@@ -202,44 +196,61 @@ function saveVoortgang() {
   if (ind) { ind.textContent = '✓ Voortgang opgeslagen'; ind.style.opacity = '1'; setTimeout(() => ind.style.opacity = '0', 2000); }
 }
 
+function vulFormulierIn(d) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+  set('f-naam', d.naam);
+  set('f-geboortedatum', d.geboortedatum);
+  set('f-positie', d.positie);
+  set('f-mobiel', d.mobiel);
+  set('f-vakantie', d.vakantie);
+  set('f-vakantie-van', d.vakantie_van);
+  set('f-vakantie-tot', d.vakantie_tot);
+  set('f-aanvoerder', d.aanvoerder);
+  set('f-aanvoerder-waarom', d.aanvoerder_waarom);
+  set('f-aanvoerder-wie', d.aanvoerder_wie);
+  set('f-aanvoerder-waarom2', d.aanvoerder_waarom2);
+  set('f-wens', d.wens);
+  set('f-bijzonderheden', d.bijzonderheden);
+  // Skills herstellen
+  if (d.skills) {
+    Object.entries(d.skills).forEach(([skill, waarde]) => {
+      const sid = 'skill-' + ['techniek','tactiek','fysiek','mentaal'].find(cat =>
+        (FORM_SKILLS[cat]||[]).includes(skill)
+      ) + '-' + skill.replace(/\s+/g,'_');
+      const radio = document.querySelector(`input[name="${sid}"][value="${waarde}"]`);
+      if (radio) radio.checked = true;
+    });
+  }
+  document.getElementById('f-vakantie')?.dispatchEvent(new Event('change'));
+  toggleAanvoerder();
+}
+
 function herstelVoortgang() {
-  if (!spelerId) return;
+  if (!spelerId) return false;
   const raw = localStorage.getItem(autoSaveKey());
-  if (!raw) return;
+  if (!raw) return false;
   try {
     const d = JSON.parse(raw);
-    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-    set('f-naam', d.naam);
-    set('f-geboortedatum', d.geboortedatum);
-    set('f-positie', d.positie);
-    set('f-mobiel', d.mobiel);
-    set('f-vakantie', d.vakantie);
-    set('f-vakantie-van', d.vakantie_van);
-    set('f-vakantie-tot', d.vakantie_tot);
-    set('f-aanvoerder', d.aanvoerder);
-    set('f-aanvoerder-waarom', d.aanvoerder_waarom);
-    set('f-aanvoerder-wie', d.aanvoerder_wie);
-    set('f-aanvoerder-waarom2', d.aanvoerder_waarom2);
-    set('f-wens', d.wens);
-    set('f-bijzonderheden', d.bijzonderheden);
-    // Skills herstellen
-    if (d.skills) {
-      Object.entries(d.skills).forEach(([skill, waarde]) => {
-        const sid = 'skill-' + ['techniek','tactiek','fysiek','mentaal'].find(cat =>
-          (FORM_SKILLS[cat]||[]).includes(skill)
-        ) + '-' + skill.replace(/\s+/g,'_');
-        const radio = document.querySelector(`input[name="${sid}"][value="${waarde}"]`);
-        if (radio) radio.checked = true;
-      });
-    }
-    // Toon herstel-banner
+    vulFormulierIn(d);
     const datum = d.opgeslagen_op ? new Date(d.opgeslagen_op).toLocaleString('nl-NL') : '';
     const banner = document.getElementById('herstel-banner');
     if (banner) { banner.style.display = 'block'; banner.querySelector('span').textContent = 'Voortgang hersteld van ' + datum; }
-    // Triggers
-    document.getElementById('f-vakantie')?.dispatchEvent(new Event('change'));
-    toggleAanvoerder();
-  } catch(e) {}
+    return true;
+  } catch(e) { return false; }
+}
+
+// Vult het formulier voor bij met de laatst bekende inzending uit de geschiedenis (Supabase),
+// puur als handig startpunt — opslaan maakt altijd een NIEUWE rij aan, dit overschrijft niets.
+async function laadLaatsteInzending() {
+  if (!spelerId) return;
+  const ok = await initSupabase();
+  if (!ok) return;
+  const rows = await sbFetch('speler_beoordelingen?select=data&speler_id=eq.' + spelerId + '&order=created_at.desc&limit=1');
+  if (rows && rows[0] && rows[0].data) {
+    vulFormulierIn(rows[0].data);
+    const banner = document.getElementById('herstel-banner');
+    if (banner) { banner.style.display = 'block'; banner.querySelector('span').textContent = 'Ingevuld met je vorige inzending — pas aan waar nodig'; }
+  }
 }
 
 function startAutoSave() {
@@ -327,11 +338,12 @@ async function submitFormulier() {
 
   if (!data.naam) { showToast('Vul je naam in'); return; }
 
-  // Opslaan via session_notes met sleutel formulier:<spelerId>
+  // Opslaan als NIEUWE historische rij (nooit meer overschrijven van de vorige inzending)
   const ok = await initSupabase();
   if (ok) {
-    await sbFetch('session_notes?note_key=eq.formulier:' + spelerId, 'DELETE');
-    const res = await sbFetch('session_notes', 'POST', { note_key: 'formulier:' + spelerId, content: JSON.stringify(data) });
+    const res = await sbFetch('speler_beoordelingen', 'POST', {
+      id: genId(), speler_id: spelerId, data,
+    });
     if (res && res._error) {
       showToast('⚠️ Opslaan mislukt — probeer het nog eens');
       return;
@@ -361,7 +373,8 @@ if (token) {
     });
     document.getElementById('loading-msg').style.display = 'none';
     document.getElementById('form-wrap').style.display = 'block';
-    herstelVoortgang();
+    const heeftConcept = herstelVoortgang();
+    if (!heeftConcept) laadLaatsteInzending();
     startAutoSave();
   } catch(e) {
     document.getElementById('loading-msg').textContent = 'Ongeldige link. Vraag de trainer om een nieuwe link.';

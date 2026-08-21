@@ -1,9 +1,10 @@
-const CACHE = 'fcp162-v110';
+const CACHE = 'fcp162-v111';
 const ASSETS = [
   '/fcp16-2/',
   '/fcp16-2/index.html',
   '/fcp16-2/opstelling.html',
   '/fcp16-2/selectie.html',
+  '/fcp16-2/spelerformulier.html',
   '/fcp16-2/trainen.html',
   '/fcp16-2/wedstrijden.html',
   '/fcp16-2/oefeningen.html',

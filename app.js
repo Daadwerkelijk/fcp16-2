@@ -240,6 +240,13 @@ async function haalLiveStatus(id) {
   const res = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset&id=eq.' + id);
   return (res && res[0]) || null;
 }
+// Alle gedeelde push-momenten van een wedstrijd, chronologisch — dit is de bron van waarheid
+// voor de opmerkingen-tekst bij het sluiten van Live (zie closeLive() in wedstrijden.html),
+// omdat dit (in tegenstelling tot de lokale liveNotities) altijd een paginaherlaadbeurt overleeft.
+async function haalLiveUpdates(wedstrijdId) {
+  const res = await sbFetch('live_updates?select=*&wedstrijd_id=eq.' + wedstrijdId + '&order=created_at.asc');
+  return res && !res._error ? res : [];
+}
 
 // ─── Spelerontwikkeling: gedeelde constanten ───
 // Eén canonieke plek voor de 15 vaardigheden + 4-punts-schaal, gebruikt door zowel het

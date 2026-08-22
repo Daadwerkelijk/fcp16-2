@@ -554,8 +554,24 @@ async function closeLive() {
   const w=wedstrijden.find(x=>x.id===liveWedId); if(w){
     w.score_eigen=parseInt(document.getElementById('live-score-eigen').textContent)||0;
     w.score_tegen=parseInt(document.getElementById('live-score-tegen').textContent)||0;
-    w.live_notities=liveNotities;
-    if(liveNotities.filter(n=>!n.isRust).length){
+    w.live_notities=liveNotities; // alleen lokale weergave tijdens deze sessie, geen bron van waarheid
+    // Opmerkingen-tekst NIET opbouwen uit de lokale liveNotities: dat lijstje wordt nooit naar
+    // Supabase weggeschreven en is dus weg zodra wedstrijden na een paginaherlaad vers uit
+    // Supabase komt — daardoor kon closeLive() eerder al opgebouwde, rijke opmerkingen
+    // overschrijven met (bijna) niets. live_updates bevat wel alle gedeelde pushmomenten en
+    // overleeft een herlaad altijd (zie ook live.html, dat dezelfde tabel gebruikt voor "Verloop").
+    if (supabaseReady) {
+      const updates = await haalLiveUpdates(liveWedId);
+      const regels = updates.filter(u=>u.tekst).map(u=>u.wedstrijd_minuut+"' — "+u.tekst);
+      if (regels.length) {
+        const tekst=regels.join('\n');
+        const huidig=document.getElementById('ws-opm-'+liveWedId); if(huidig) huidig.value=tekst;
+        w.opmerkingen=tekst;
+      }
+    } else if (liveNotities.filter(n=>!n.isRust).length) {
+      // Geen Supabase-verbinding: er is dan sowieso niets uit een vorige sessie kwijtgeraakt
+      // (dat gebeurt alleen via een herlaad die opnieuw uit Supabase ophaalt), dus de lokale
+      // sessie-notities zijn hier nog steeds het beste beschikbare resultaat.
       const tekst=liveNotities.filter(n=>!n.isRust).map(n=>n.tijd+' — '+n.tekst).join('\n');
       const huidig=document.getElementById('ws-opm-'+liveWedId); if(huidig) huidig.value=tekst;
       w.opmerkingen=tekst;
@@ -739,11 +755,17 @@ function verwijderNotitie(i){
 }
 async function pushNotitie(i){
   const n = liveNotities[i]; if (!n || n.isRust) return;
+  // Guard tegen dubbele afvuring (dubbeltik / dubbel touch-event op mobiel): zonder dit kan
+  // dezelfde notitie twee keer als aparte rij in live_updates belanden, met tijdstempels
+  // een fractie van een milliseconde uit elkaar. Zelfde patroon als pushHuidigeStand() hierboven.
+  if (n.gedeeld || n.bezigMetDelen) return;
   if (!supabaseReady || !liveWedId) { showToast('Geen verbinding met Supabase'); return; }
+  n.bezigMetDelen = true;
   const eigen = parseInt(document.getElementById('live-score-eigen').textContent)||0;
   const tegen = parseInt(document.getElementById('live-score-tegen').textContent)||0;
   const minuut = parseInt(n.tijd) || 0;
   const id = await pushLiveUpdate(liveWedId, 'update', n.tekst, eigen, tegen, minuut);
+  n.bezigMetDelen = false;
   if (!id) { showToast('⚠️ Delen mislukt'); return; }
   n.gedeeld = true; n.liveUpdateId = id;
   renderLiveNotities();

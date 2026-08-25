@@ -395,6 +395,11 @@ function dashTab(tab) {
 // ─── SPEELMINUTEN ───
 // Puur feitelijk overzicht, geen kleurcodering ("goed/fout") — zie berekenSpeeltijd() in app.js
 // voor hoe de minuten worden opgebouwd uit wed_lineup + de wissels-tabel.
+// Wedstrijden van vóór de introductie van deze functie tellen bewust niet mee: voor die
+// wedstrijden zijn nooit wissels geregistreerd, dus "in de basisopstelling en geen wissel"
+// zou daar ten onrechte als "hele wedstrijd gespeeld" tellen. Vaste datum (geen "vandaag" —
+// anders schuift de grens elke dag mee en vallen ook al getrackte wedstrijden er later uit).
+const WISSEL_TRACKING_VANAF = '2026-08-26';
 function renderSpeelminuten() {
   const cont = document.getElementById('minuten-lijst'); if (!cont) return;
   const sorted = sortedPlayers(players);
@@ -403,7 +408,7 @@ function renderSpeelminuten() {
   sorted.forEach(p => {
     const perWedstrijd = [];
     let totaalMin = 0;
-    wedstrijden.forEach(w => {
+    wedstrijden.filter(w => (w.isoDate || '') >= WISSEL_TRACKING_VANAF).forEach(w => {
       const minuten = berekenSpeeltijd(w.id, p.id, w, wissels, eindeMomenten[w.id]);
       const eigenWissels = wissels.filter(ws => ws.wedstrijd_id === w.id && ws.speler_id === p.id);
       const inBasis = !!(w.wed_lineup && Object.values(w.wed_lineup).includes(p.id));

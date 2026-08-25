@@ -260,17 +260,18 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 
 /* ─── VELD ─── */
 .field-wrap{padding:12px 16px}
-.field-container{position:relative;background:var(--field-bg);border-radius:12px;overflow:hidden;border:2px solid var(--field-border)}
-.field-svg{width:100%;display:block}
+.field-container{position:relative;background:var(--field-bg);border-radius:12px;overflow:hidden;border:2px solid var(--field-border);width:100%;max-width:100%;aspect-ratio:400/380}
+.field-svg{width:100%;height:100%;display:block}
 .field-positions{position:absolute;top:0;left:0;width:100%;height:100%}
 .pos-slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;cursor:pointer}
 .pos-circle{width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;transition:all .2s}
-.pos-circle.filled{background:rgba(43,31,160,.85);border-color:#fff}
+.pos-circle.filled{background:var(--white);border-color:var(--accent)}
 .pos-circle.keeper{background:rgba(43,31,160,.3);border-color:rgba(255,255,255,.5)}
-.pos-circle.keeper.filled{background:rgba(27,122,75,.85);border-color:#fff}
-.pos-initials{font-size:10px;font-weight:700;color:#fff;text-align:center;letter-spacing:.03em}
-.pos-badge{font-size:8px;color:rgba(255,255,255,.75);margin-top:2px;text-align:center;white-space:nowrap;background:rgba(0,0,0,.5);padding:1px 5px;border-radius:6px;font-weight:600}
-.pos-name{font-size:9px;color:#fff;margin-top:1px;text-align:center;white-space:nowrap;max-width:56px;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.pos-circle.keeper.filled{background:var(--white);border-color:var(--groen)}
+.pos-initials{font-size:9px;font-weight:700;color:#fff;text-align:center;letter-spacing:.01em;line-height:1.15;padding:0 2px}
+.pos-circle.filled .pos-initials{color:var(--accent)}
+.pos-circle.keeper.filled .pos-initials{color:var(--groen)}
+.pos-name{font-size:9px;color:#fff;margin-top:2px;text-align:center;white-space:nowrap;max-width:56px;overflow:hidden;text-overflow:ellipsis;font-weight:500}
 .field-actions{display:flex;gap:8px;margin-top:10px}
 .field-btn{flex:1;padding:10px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;box-shadow:var(--card-shadow)}
 .field-btn:active{opacity:.7;transform:scale(.97)}
@@ -433,8 +434,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     align-items: stretch;
     gap: 8px;
     padding: 8px 10px;
-    height: calc(100dvh - 48px);
-    overflow: hidden;
   }
 
   /* Veld kolom: neemt alle resterende ruimte */
@@ -447,22 +446,29 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
     flex-direction: column;
   }
 
-  .opst-layout-wrap .field-wrap .field-container {
-    flex: 1;
-    min-height: 0;
-    position: relative;
-  }
-
-  .opst-layout-wrap .field-wrap .field-container .field-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-
   .opst-layout-wrap .field-wrap .field-actions {
     flex-shrink: 0;
     margin-top: 6px;
+  }
+
+  /* Volledig-scherm veldweergave (opstelling.html, live-wissel-sheet): het veld moet altijd
+     zonder scrollen passen. .opst-layout-wrap krijgt hier een expliciete hoogte (viewport minus
+     de ruimte die de header/select erboven al inneemt, ruim bemeten zodat een kleine afwijking
+     nooit tot overflow leidt), en het veld zelf schaalt via aspect-ratio mee met wat het kleinst
+     uitpakt van "volle breedte" of "volle resterende hoogte" — nooit breder/hoger dan er is.
+     De losse mini-kaart in een wedstrijdkaart (.opst-layout-wrap zonder deze class) blijft gewoon
+     met de paginascroll meegaan; die staat niet op een vast scherm en hoeft dus niet te passen. */
+  .field-page-layout.opst-layout-wrap {
+    height: calc(100dvh - 140px);
+    overflow: hidden;
+  }
+  .field-page-layout .field-wrap {
+    align-items: center;
+    justify-content: center;
+  }
+  .field-page-layout .field-wrap .field-container {
+    width: min(100%, calc((100dvh - 184px) * 400 / 380));
+    max-height: calc(100dvh - 184px);
   }
 
   /* Bench kolom: vaste breedte rechts */

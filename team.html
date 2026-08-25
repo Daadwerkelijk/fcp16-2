@@ -161,7 +161,7 @@ function renderRankingPanel() {
   </div>
 
   <!-- Menu blokken -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:10px 16px 14px">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;padding:10px 16px 14px">
     <button onclick="dashTab('afwezig')" id="dtab-afwezig"
       style="background:var(--white);border:2px solid var(--topbar);border-radius:var(--r);padding:14px;text-align:left;cursor:pointer;box-shadow:var(--card-shadow);transition:all .15s">
       <div style="font-size:22px;margin-bottom:6px">📋</div>
@@ -179,6 +179,12 @@ function renderRankingPanel() {
       <div style="font-size:22px;margin-bottom:6px">🏆</div>
       <div style="font-size:13px;font-weight:700;color:var(--text)">Ranking</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">MOTM &amp; cijfers</div>
+    </button>
+    <button onclick="dashTab('minuten')" id="dtab-minuten"
+      style="background:var(--white);border:2px solid var(--border);border-radius:var(--r);padding:14px;text-align:left;cursor:pointer;box-shadow:var(--card-shadow);transition:all .15s">
+      <div style="font-size:22px;margin-bottom:6px">⏱️</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text)">Speelminuten</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">Per speler</div>
     </button>
   </div>
 
@@ -236,6 +242,11 @@ function renderRankingPanel() {
     <div id="ranking-cijfers"></div>
   </div>
 
+  <!-- Speelminuten panel -->
+  <div id="dpanel-minuten" style="display:none;padding:0 16px 16px">
+    <div id="minuten-lijst"></div>
+  </div>
+
   <!-- Skills panel -->
   <div id="dpanel-skills" style="display:none;padding:0 16px 16px">
     <!-- Portrait: enkele kolom. Landscape: twee kolommen via CSS -->
@@ -257,6 +268,9 @@ const state = loadState();
 let players      = state.players;
 let aanwezigheid = state.aanwezigheid;
 let customWeken  = state.customWeken;
+let wedstrijden  = state.wedstrijden;
+let wissels      = [];
+let eindeMomenten = {};
 let absRedenen   = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]');
 function saveAbsRedenen(r) {
   localStorage.setItem('fcp_abs_redenen', JSON.stringify(r));
@@ -366,7 +380,7 @@ function renderAanwOverzicht() {
 }
 
 function dashTab(tab) {
-  const tabs = ['afwezig','skills','ranking'];
+  const tabs = ['afwezig','skills','ranking','minuten'];
   tabs.forEach(t => {
     const panel = document.getElementById('dpanel-' + t);
     const btn   = document.getElementById('dtab-' + t);
@@ -376,6 +390,67 @@ function dashTab(tab) {
     btn.style.borderColor = actief ? 'var(--topbar)' : 'var(--border)';
     btn.querySelector('div:nth-child(2)').style.color = actief ? 'var(--accent)' : 'var(--text)';
   });
+}
+
+// ─── SPEELMINUTEN ───
+// Puur feitelijk overzicht, geen kleurcodering ("goed/fout") — zie berekenSpeeltijd() in app.js
+// voor hoe de minuten worden opgebouwd uit wed_lineup + de wissels-tabel.
+function renderSpeelminuten() {
+  const cont = document.getElementById('minuten-lijst'); if (!cont) return;
+  const sorted = sortedPlayers(players);
+  let html = '<div style="display:flex;flex-direction:column;gap:8px">';
+  let anyData = false;
+  sorted.forEach(p => {
+    const perWedstrijd = [];
+    let totaalMin = 0;
+    wedstrijden.forEach(w => {
+      const minuten = berekenSpeeltijd(w.id, p.id, w, wissels, eindeMomenten[w.id]);
+      const eigenWissels = wissels.filter(ws => ws.wedstrijd_id === w.id && ws.speler_id === p.id);
+      const inBasis = !!(w.wed_lineup && Object.values(w.wed_lineup).includes(p.id));
+      if (minuten > 0) { perWedstrijd.push({ w, minuten, eigenWissels, inBasis }); totaalMin += minuten; }
+    });
+    if (!perWedstrijd.length) return;
+    anyData = true;
+
+    const detailRows = perWedstrijd.map(x => {
+      const momentenTxt = x.eigenWissels.slice()
+        .sort((a,b)=>(a.wedstrijd_minuut||0)-(b.wedstrijd_minuut||0))
+        .map(m => (m.moment === 'erin' ? 'Erin ' : 'Eruit ') + (m.wedstrijd_minuut||0) + "'" + (m.reden ? ' — ' + m.reden : ''))
+        .join(' · ');
+      const subTxt = momentenTxt || (x.inBasis ? 'Basisopstelling, geen wissels' : '');
+      return `<div style="padding:6px 0;border-bottom:1px solid var(--line2)">
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <span style="font-size:11px;color:var(--text2)">${x.w.datum || x.w.isoDate || ''} · vs ${x.w.tegenstander || '—'}</span>
+          <span style="font-size:11px;font-weight:700;color:var(--text2)">${x.minuten} min</span>
+        </div>
+        ${subTxt ? `<div style="font-size:10px;color:var(--text3);margin-top:1px">${subTxt}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    html += `<div style="background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm);overflow:hidden">
+      <div onclick="toggleSpelerDetail('minuten-detail-${p.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer">
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--text);font-weight:500">${p.naam}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${perWedstrijd.length} wedstrijd${perWedstrijd.length===1?'':'en'}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:18px;font-weight:700;color:var(--text2)">${totaalMin}</div>
+          <div style="font-size:10px;color:var(--text3)">minuten</div>
+        </div>
+      </div>
+      <div id="minuten-detail-${p.id}" style="display:none;padding:0 12px 10px;border-top:1px solid var(--line2)">
+        ${detailRows}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  if (!anyData) html = '<div style="font-size:12px;color:var(--text3);padding:12px 0">Nog geen speelminuten geregistreerd — wissels worden vastgelegd via 🔄 Wissel tijdens een live wedstrijd.</div>';
+  cont.innerHTML = html;
+}
+async function laadSpeelminuten() {
+  wissels = await haalAlleWissels();
+  eindeMomenten = await haalAlleEindeMomenten();
+  renderSpeelminuten();
 }
 
 function toggleSpelerDetail(id) {
@@ -620,15 +695,18 @@ async function onSupabaseReady() {
   if (data.aanwezigheid) { aanwezigheid = data.aanwezigheid; }
   if (data.customWeken)  { customWeken  = data.customWeken; }
   if (data.absRedenen)   { absRedenen   = data.absRedenen; }
+  if (data.wedstrijden)  { wedstrijden  = data.wedstrijden; }
   if (data.teamConfig)   { const sub = document.getElementById('dashboard-sub'); if (sub) sub.textContent = data.teamConfig.subtitel || ''; }
   await laadAlleFormulieren();
   renderAanwOverzicht();
   renderTeamProfiel();
+  await laadSpeelminuten();
 }
 
 const cfg = loadTeamInstellingen(); const sub = document.getElementById('dashboard-sub'); if (sub) sub.textContent = cfg.subtitel || '';
 renderAanwOverzicht();
 renderTeamProfiel();
+renderSpeelminuten();
 initScrollTop(); initManifest();
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });
 </script>

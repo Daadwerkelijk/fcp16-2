@@ -67,6 +67,34 @@
   </div>
 </div>
 
+<!-- Wissel bottom-sheet (tijdens Live) -->
+<div class="bmodal-overlay" id="wisselSheet" style="z-index:600" onclick="if(event.target===this)sluitWisselSheet()">
+  <div class="bmodal">
+    <div class="bmodal-title">🔄 Wissel</div>
+    <div id="wissel-stap1">
+      <div class="bmodal-label" style="margin-top:0">Tik eerst de speler die eruit gaat, dan de invaller van de bank</div>
+      <div style="display:flex;justify-content:center;margin-bottom:12px">
+        <div class="field-container" id="wisselVeldContainer" style="width:auto;max-width:100%;max-height:38dvh">
+          <svg class="field-svg" viewBox="0 0 400 380" xmlns="http://www.w3.org/2000/svg">
+            <rect width="400" height="380" fill="var(--field-bg)"/>
+            <rect x="8" y="8" width="384" height="364" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+            <line x1="8" y1="190" x2="392" y2="190" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+            <circle cx="200" cy="190" r="38" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          </svg>
+          <div class="field-positions" id="wisselVeldPos"></div>
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px">Bank</div>
+      <div id="wisselBank" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto"></div>
+    </div>
+    <div id="wissel-stap2" style="display:none">
+      <div class="bmodal-label" style="margin-top:0">Reden (optioneel)</div>
+      <div id="wisselRedenChips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px"></div>
+    </div>
+    <button class="bmodal-cancel-btn" style="width:100%;margin-top:14px" onclick="sluitWisselSheet()">Annuleer</button>
+  </div>
+</div>
+
 <!-- Edit wedstrijd modal -->
 <div class="bmodal-overlay" id="bmodalEditWed" onclick="if(event.target===this)closeEditWed()">
   <div class="bmodal">
@@ -157,6 +185,7 @@
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
         <button id="live-start-btn" onclick="klikHoofdknop()" style="padding:10px 18px;background:var(--accent2);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--bg);font-family:var(--font-ui);font-size:14px;font-weight:700;cursor:pointer;min-width:90px">▶ Start</button>
         <button id="live-fase-btn" onclick="klikFaseknop()" style="padding:6px 14px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-ui);font-size:12px;cursor:pointer">⏸ Rust</button>
+        <button onclick="openWisselSheet()" style="padding:6px 14px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-ui);font-size:12px;cursor:pointer">🔄 Wissel</button>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:center;gap:16px">
@@ -209,6 +238,7 @@
 let wedstrijden = loadState().wedstrijden;
 let players     = loadState().players;
 let absRedenen  = loadState().absRedenen || ['Ziek','Geblesseerd','Leren','Feest','Vakantie','Anders','Onbekend'];
+let wisselRedenen = loadState().wisselRedenen || ['Te laat','Moe','Tactisch','Minder goed','Blessure tijdens wedstrijd','Gedrag'];
 let thuisUit    = 'thuis';
 
 // ─── WEDSTRIJD TABS ───
@@ -357,30 +387,17 @@ function buildWedField(wid) {
     const isKeeper = pos.role === 'keeper';
     const slot = document.createElement('div');
     slot.className = 'pos-slot';
-    slot.style.cssText = `position:absolute;left:${pos.x}%;top:${pos.y}%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;cursor:pointer`;
+    slot.style.left = pos.x + '%'; slot.style.top = pos.y + '%';
     const circle = document.createElement('div');
-    // Expliciete stijlen zodat veldkleuren altijd kloppen ongeacht thema
-    if (p) {
-      circle.style.cssText = `width:42px;height:42px;border-radius:50%;border:2px solid #fff;background:${isKeeper?'rgba(27,122,75,.9)':'rgba(43,31,160,.85)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)`;
-    } else {
-      circle.style.cssText = `width:42px;height:42px;border-radius:50%;border:2px dashed rgba(255,255,255,.4);background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,.5)`;
-    }
-    if (p) {
-      const parts = p.naam.trim().split(' ');
-      circle.textContent = parts.length > 1
-        ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
-        : p.naam.slice(0,2).toUpperCase();
-    } else {
-      circle.textContent = '+';
-      circle.style.color = 'rgba(255,255,255,.35)';
-    }
-    const badge = document.createElement('div');
-    badge.style.cssText = 'font-size:8px;color:rgba(255,255,255,.85);margin-top:2px;background:rgba(0,0,0,.5);padding:1px 5px;border-radius:5px;font-weight:700;letter-spacing:.03em;white-space:nowrap';
-    badge.textContent = pos.label;
+    circle.className = 'pos-circle' + (isKeeper ? ' keeper' : '') + (p ? ' filled' : '');
+    const init = document.createElement('div');
+    init.className = 'pos-initials';
+    init.textContent = pos.label;
     const naam = document.createElement('div');
-    naam.style.cssText = 'font-size:9px;color:#fff;margin-top:1px;max-width:52px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.6)';
+    naam.className = 'pos-name';
     naam.textContent = p ? p.naam.split(' ')[0] : '';
-    slot.appendChild(circle); slot.appendChild(badge); slot.appendChild(naam);
+    circle.appendChild(init);
+    slot.appendChild(circle); slot.appendChild(naam);
     slot.onclick = () => openWedPositieModal(wid, pos, formatieKey);
     cont.appendChild(slot);
   });
@@ -784,7 +801,7 @@ function renderLiveNotities(){
   if(!liveNotities.length){ cont.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">Nog geen notities. Start de klok en spreek in of typ hieronder.</div>'; return; }
   cont.innerHTML=liveNotities.map((n,i)=>n.isRust
     ?`<div style="text-align:center;padding:6px 0;font-size:11px;color:var(--text3);border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);margin:4px 0;font-weight:700;letter-spacing:.1em">— RUST —</div>`
-    :`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 11px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)">
+    :`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 11px;background:var(--bg2);border:1px solid var(--line2);${n.isWissel?'border-left:3px solid var(--accent);':''}border-radius:var(--rsm)">
       <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--accent);flex-shrink:0;min-width:36px">${n.tijd}</span>
       <span style="flex:1;font-size:14px;color:var(--text);line-height:1.5">${n.tekst}</span>
       ${n.gedeeld
@@ -793,6 +810,138 @@ function renderLiveNotities(){
       <button onclick="verwijderNotitie(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0;flex-shrink:0;line-height:1">✕</button>
     </div>`
   ).join('');
+}
+
+// ─── WISSEL BOTTOM-SHEET ───
+// Wissels worden altijd als eruit-dan-erin paar aangemaakt (zie kiesWisselSpelerIn) — dat maakt
+// het mogelijk om, bij het heropenen van deze sheet later in dezelfde wedstrijd, de actuele
+// veldbezetting terug te rekenen uit w.wed_lineup + de wissels-tot-nu-toe zonder dat wed_lineup
+// (de basisopstelling, ook publiek zichtbaar via live.html) zelf ooit wordt aangepast.
+let wisselsDitLive = [];
+let wisselStap1Uit = null;
+let laatsteWisselEruitId = null;
+let laatsteWisselInfo = null;
+
+async function openWisselSheet(){
+  const w = wedstrijden.find(x => x.id === liveWedId); if (!w) { showToast('Geen actieve wedstrijd'); return; }
+  if (!supabaseReady) { showToast('Geen verbinding met Supabase'); return; }
+  wisselStap1Uit = null;
+  document.getElementById('wissel-stap1').style.display = 'block';
+  document.getElementById('wissel-stap2').style.display = 'none';
+  wisselsDitLive = await haalWisselsVoorWedstrijd(liveWedId);
+  renderWisselVeldEnBank();
+  document.getElementById('wisselSheet').classList.add('open');
+}
+function sluitWisselSheet(){
+  document.getElementById('wisselSheet').classList.remove('open');
+  wisselStap1Uit = null;
+}
+
+function berekenHuidigeBezetting(w){
+  const bezetting = { ...(w.wed_lineup || {}) };
+  const events = wisselsDitLive.slice().sort((a,b) => {
+    const dm = (a.wedstrijd_minuut||0) - (b.wedstrijd_minuut||0);
+    return dm !== 0 ? dm : String(a.created_at||'').localeCompare(String(b.created_at||''));
+  });
+  let vrijePositie = null;
+  events.forEach(ev => {
+    if (ev.moment === 'eruit') {
+      vrijePositie = Object.keys(bezetting).find(posId => bezetting[posId] === ev.speler_id) || null;
+      if (vrijePositie) bezetting[vrijePositie] = null;
+    } else if (ev.moment === 'erin' && vrijePositie) {
+      bezetting[vrijePositie] = ev.speler_id;
+      vrijePositie = null;
+    }
+  });
+  return bezetting;
+}
+
+function renderWisselVeldEnBank(){
+  const w = wedstrijden.find(x => x.id === liveWedId); if (!w) return;
+  const formatie = FORMATIES[w.formatie || '4222']; if (!formatie) return;
+  const bezetting = berekenHuidigeBezetting(w);
+  const cont = document.getElementById('wisselVeldPos'); cont.innerHTML = '';
+  formatie.pos.forEach(pos => {
+    const pid = bezetting[pos.id];
+    const p = pid ? players.find(x => x.id === pid) : null;
+    const slot = document.createElement('div');
+    slot.className = 'pos-slot';
+    slot.style.left = pos.x + '%'; slot.style.top = pos.y + '%';
+    const circle = document.createElement('div');
+    circle.className = 'pos-circle' + (pos.role === 'keeper' ? ' keeper' : '') + (p ? ' filled' : '');
+    if (wisselStap1Uit && wisselStap1Uit.posId === pos.id) circle.style.boxShadow = '0 0 0 3px var(--accent)';
+    const init = document.createElement('div'); init.className = 'pos-initials'; init.textContent = pos.label;
+    const naam = document.createElement('div'); naam.className = 'pos-name'; naam.textContent = p ? p.naam.split(' ')[0] : '';
+    circle.appendChild(init);
+    slot.appendChild(circle); slot.appendChild(naam);
+    if (p) slot.onclick = () => { wisselStap1Uit = { posId: pos.id, spelerId: p.id }; renderWisselVeldEnBank(); };
+    cont.appendChild(slot);
+  });
+  const opgesteld = new Set(Object.values(bezetting).filter(Boolean));
+  const afwezigPids = new Set((w.afwezig||[]).map(e=>e.pid));
+  const bank = sortedPlayers(players).filter(p => !opgesteld.has(p.id) && !afwezigPids.has(p.id));
+  const bankCont = document.getElementById('wisselBank'); bankCont.innerHTML = '';
+  if (!bank.length) {
+    bankCont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Geen wisselspelers beschikbaar.</div>';
+    return;
+  }
+  bank.forEach(p => {
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);cursor:pointer${wisselStap1Uit ? '' : ';opacity:.45;pointer-events:none'}`;
+    row.innerHTML = `<span style="flex:1;font-size:13px;font-weight:600;color:var(--text)">${p.naam}</span>`;
+    row.onclick = () => kiesWisselSpelerIn(p.id);
+    bankCont.appendChild(row);
+  });
+}
+
+async function kiesWisselSpelerIn(spelerIdIn){
+  if (!wisselStap1Uit) return;
+  const spelerUit = players.find(p => p.id === wisselStap1Uit.spelerId);
+  const spelerIn  = players.find(p => p.id === spelerIdIn);
+  const minuut = getKlokMinuut();
+  const eruitId = await registreerWissel(liveWedId, wisselStap1Uit.spelerId, 'eruit', minuut, '');
+  const erinId  = await registreerWissel(liveWedId, spelerIdIn, 'erin', minuut, '');
+  if (!eruitId || !erinId) showToast('⚠️ Wissel niet volledig opgeslagen — controleer de verbinding');
+  laatsteWisselEruitId = eruitId;
+  laatsteWisselInfo = {
+    erinNaam: spelerIn ? spelerIn.naam.split(' ')[0] : '?',
+    eruitNaam: spelerUit ? spelerUit.naam.split(' ')[0] : '?',
+    minuut,
+  };
+  wisselsDitLive = await haalWisselsVoorWedstrijd(liveWedId);
+  wisselStap1Uit = null;
+  toonWisselRedenStap();
+}
+
+function toonWisselRedenStap(){
+  document.getElementById('wissel-stap1').style.display = 'none';
+  document.getElementById('wissel-stap2').style.display = 'block';
+  const cont = document.getElementById('wisselRedenChips'); cont.innerHTML = '';
+  wisselRedenen.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'thu-uit-btn';
+    btn.textContent = r;
+    btn.onclick = () => kiesWisselReden(r);
+    cont.appendChild(btn);
+  });
+  const skip = document.createElement('button');
+  skip.className = 'thu-uit-btn';
+  skip.textContent = 'Overslaan';
+  skip.onclick = () => kiesWisselReden('');
+  cont.appendChild(skip);
+}
+
+async function kiesWisselReden(reden){
+  if (reden && laatsteWisselEruitId) await updateWisselReden(laatsteWisselEruitId, reden);
+  const info = laatsteWisselInfo;
+  if (info) {
+    const tekst = '🔄 Wissel: ' + info.erinNaam + ' erin, ' + info.eruitNaam + ' eruit' + (reden ? ' — ' + reden : '');
+    liveNotities.push({ tijd: info.minuut + "'", tekst, isWissel: true });
+    renderLiveNotities();
+  }
+  laatsteWisselEruitId = null; laatsteWisselInfo = null;
+  sluitWisselSheet();
+  showToast('Wissel verwerkt');
 }
 
 function toggleSpeech(){ if(speechActief) stopSpeech(); else startSpeech(); }
@@ -1177,7 +1326,7 @@ function renderWedstrijden() {
                   ${Object.entries(FORMATIES).map(([k,f])=>`<option value="${k}" ${(w.formatie||'4222')===k?'selected':''}>${f.label}</option>`).join('')}
                 </select>
               </div>
-              <div class="field-container" style="position:relative;background:var(--field-bg);border-radius:10px;overflow:hidden;border:2px solid var(--field-border)">
+              <div class="field-container" style="position:relative;background:var(--field-bg);border-radius:10px;overflow:hidden;border:2px solid var(--field-border);aspect-ratio:400/340">
                 <svg class="field-svg" viewBox="0 0 400 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
                   <rect width="400" height="340" fill="var(--field-bg)"/>
                   <rect x="8" y="8" width="384" height="324" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
@@ -1287,6 +1436,7 @@ async function onSupabaseReady() {
   const data = await loadFromSupabase();
   if (data.players) players = data.players;
   if (data.absRedenen) absRedenen = data.absRedenen;
+  if (data.wisselRedenen) wisselRedenen = data.wisselRedenen;
   // Haal wedstrijden direct op met correcte mapping
   const wedRes = await sbFetch('wedstrijden?order=iso_date.asc', 'GET');
   if (wedRes && !wedRes._error) {

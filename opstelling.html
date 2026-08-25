@@ -54,7 +54,7 @@
         style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23a8e040%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;background-size:12px">
       </select>
   </div>
-  <div class="opst-layout-wrap">
+  <div class="opst-layout-wrap field-page-layout">
     <div class="field-wrap">
       <div class="field-container" id="fieldContainer">
         <svg class="field-svg" viewBox="0 0 400 380" xmlns="http://www.w3.org/2000/svg">
@@ -145,10 +145,9 @@ function buildField() {
     slot.onclick = () => openModal(pos);
     const circle = document.createElement('div');
     circle.className = 'pos-circle' + (pos.role === 'keeper' ? ' keeper' : '');
-    const init  = document.createElement('div'); init.className  = 'pos-initials'; init.id  = 'init-' + pos.id;
-    const badge = document.createElement('div'); badge.className = 'pos-badge';    badge.textContent = pos.label;
+    const init  = document.createElement('div'); init.className  = 'pos-initials'; init.id  = 'init-' + pos.id; init.textContent = pos.label;
     const name  = document.createElement('div'); name.className  = 'pos-name';     name.id  = 'name-' + pos.id;
-    circle.appendChild(init); slot.appendChild(circle); slot.appendChild(badge); slot.appendChild(name);
+    circle.appendChild(init); slot.appendChild(circle); slot.appendChild(name);
     cont.appendChild(slot);
   });
   renderLineup();
@@ -166,12 +165,11 @@ function renderLineup() {
       if (p) {
         circle.classList.add('filled');
         const parts = p.naam.trim().split(' ');
-        initEl.textContent = parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : p.naam.slice(0,2).toUpperCase();
         nameEl.textContent = parts[0];
         return;
       }
     }
-    circle.classList.remove('filled'); initEl.textContent = '+'; nameEl.textContent = '';
+    circle.classList.remove('filled'); nameEl.textContent = '';
   });
   renderBench();
 }

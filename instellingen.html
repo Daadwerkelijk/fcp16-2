@@ -90,6 +90,16 @@
       </div>
     </section>
 
+    <!-- ─── WISSELREDENEN ─── -->
+    <section>
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">🔄 Wisselredenen</div>
+      <div id="wissel-redenen-lijst" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:7px">
+        <input class="bmodal-input" id="new-wissel-reden" placeholder="Nieuwe reden..." style="flex:1;margin-bottom:0">
+        <button class="bmodal-save" style="flex:0 0 auto;padding:9px 14px" onclick="addWisselReden()">+</button>
+      </div>
+    </section>
+
     <!-- ─── OEFENINGEN CATEGORIEËN ─── -->
     <section>
       <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">📚 Oefeningen categorieën</div>
@@ -127,6 +137,11 @@ let absRedenen = JSON.parse(localStorage.getItem('fcp_abs_redenen') || '["Ziek",
 function saveAbsRedenen(r) {
   localStorage.setItem('fcp_abs_redenen', JSON.stringify(r));
   if (supabaseReady) saveAbsRedenenRemote(r);
+}
+let wisselRedenen = JSON.parse(localStorage.getItem('fcp_wissel_redenen') || '["Te laat","Moe","Tactisch","Minder goed","Blessure tijdens wedstrijd","Gedrag"]');
+function saveWisselRedenen(r) {
+  localStorage.setItem('fcp_wissel_redenen', JSON.stringify(r));
+  if (supabaseReady) saveWisselRedenenRemote(r);
 }
 
 // ─── TEAM CONFIG ───
@@ -264,6 +279,30 @@ function deleteReden(i) {
   renderRedenen(); showToast('Verwijderd');
 }
 
+// ─── WISSELREDENEN ───
+function renderWisselRedenen() {
+  const cont = document.getElementById('wissel-redenen-lijst'); cont.innerHTML = '';
+  wisselRedenen.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm)';
+    row.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text)">${r}</span>
+      <button onclick="deleteWisselReden(${i})" style="padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:11px;cursor:pointer">✕</button>`;
+    cont.appendChild(row);
+  });
+}
+function addWisselReden() {
+  const val = document.getElementById('new-wissel-reden').value.trim();
+  if (!val || wisselRedenen.includes(val)) { showToast(val?'Bestaat al':'Vul een reden in'); return; }
+  wisselRedenen.push(val); saveWisselRedenen(wisselRedenen);
+  document.getElementById('new-wissel-reden').value = '';
+  renderWisselRedenen(); showToast(val + ' toegevoegd');
+}
+function deleteWisselReden(i) {
+  if (!confirm('Verwijder reden "' + wisselRedenen[i] + '"?')) return;
+  wisselRedenen.splice(i, 1); saveWisselRedenen(wisselRedenen);
+  renderWisselRedenen(); showToast('Verwijderd');
+}
+
 // ─── CATEGORIEËN ───
 function renderCats() {
   const cont = document.getElementById('cat-lijst'); cont.innerHTML = '';
@@ -327,7 +366,9 @@ async function onSupabaseReady() {
   if (data.players)    players    = data.players;
   if (data.categories) categories = data.categories;
   if (data.absRedenen) absRedenen = data.absRedenen;
+  if (data.wisselRedenen) wisselRedenen = data.wisselRedenen;
   renderRedenen();
+  renderWisselRedenen();
   renderCats();
 }
 
@@ -351,6 +392,7 @@ renderThemaDropdown();
 loadSbFields();
 renderFormaties();
 renderRedenen();
+renderWisselRedenen();
 renderCats();
 initManifest();
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });

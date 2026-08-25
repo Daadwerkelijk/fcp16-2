@@ -122,6 +122,14 @@ async function saveAbsRedenenRemote(lijst) {
   return await sbWrite('session_notes', 'POST', { note_key:'abs_redenen', content:JSON.stringify(lijst) });
 }
 
+// ─── Datalaag: Wisselredenen ───
+// Zelfde patroon als afwezigheidsredenen hierboven — session_notes heeft geen inkomende FK,
+// dus DELETE+POST is hier veilig (geen cascade-risico).
+async function saveWisselRedenenRemote(lijst) {
+  await sbFetch('session_notes?note_key=eq.wissel_redenen', 'DELETE');
+  return await sbWrite('session_notes', 'POST', { note_key:'wissel_redenen', content:JSON.stringify(lijst) });
+}
+
 // ─── Datalaag: Trainingsaantekeningen & video-URL's ───
 async function saveTrainingNoteRemote(nk, val) {
   await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingNoteKey(nk)), 'DELETE');
@@ -248,6 +256,65 @@ async function haalLiveUpdates(wedstrijdId) {
   return res && !res._error ? res : [];
 }
 
+// ─── Datalaag: Wissels (interne registratie, niet publiek) ───
+// wissels bevat speler_id's, dus FK naar wedstrijden (de private tabel), niet naar
+// live_wedstrijden (bewust naam-only/publiek — zie syncLiveWedstrijd hierboven).
+async function registreerWissel(wedstrijdId, spelerId, moment, minuut, reden) {
+  const id = genId();
+  const res = await sbWrite('wissels', 'POST', {
+    id, wedstrijd_id: wedstrijdId, speler_id: spelerId, moment,
+    wedstrijd_minuut: minuut, reden: reden || '',
+  });
+  return (res && res._error) ? null : id;
+}
+async function updateWisselReden(id, reden) {
+  return await sbWrite('wissels?id=eq.' + id, 'PATCH', { reden: reden || '' });
+}
+async function haalWisselsVoorWedstrijd(wedstrijdId) {
+  const res = await sbFetch('wissels?select=*&wedstrijd_id=eq.' + wedstrijdId + '&order=wedstrijd_minuut.asc,created_at.asc');
+  return res && !res._error ? res : [];
+}
+async function haalAlleWissels() {
+  const res = await sbFetch('wissels?select=*&order=wedstrijd_minuut.asc,created_at.asc');
+  return res && !res._error ? res : [];
+}
+// Eind-minuut per wedstrijd (uit live_updates, type 'einde') — nodig om de speeltijd van een
+// speler die de wedstrijd op het veld heeft uitgespeeld correct af te sluiten (zie berekenSpeeltijd).
+async function haalAlleEindeMomenten() {
+  const res = await sbFetch('live_updates?select=wedstrijd_id,wedstrijd_minuut&type=eq.einde');
+  const map = {};
+  if (res && !res._error) res.forEach(r => { map[r.wedstrijd_id] = r.wedstrijd_minuut; });
+  return map;
+}
+
+// Bepaalt hoeveel minuten een speler heeft gespeeld in één wedstrijd: start vanaf het eerste
+// 'erin'-moment (of vanaf minuut 0 als de speler in de basisopstelling stond), tot het
+// eerstvolgende 'eruit'-moment, opgeteld over alle periodes op het veld. Gebruikt dezelfde
+// helft-lengte als de live-klok (incl. 2e-helft-offset) om de minuut van elk moment correct te
+// duiden — die minuten liggen al vast per wissel-rij (wedstrijd_minuut), dus hier alleen optellen.
+// Een open periode zonder afsluitend moment telt NIET mee (zie eindMinuut hieronder) — beter een
+// gemiste minuut dan een gegokte.
+function berekenSpeeltijd(wedstrijdId, spelerId, wedstrijd, wisselsVoorWedstrijd, eindMinuut) {
+  const eigenWissels = wisselsVoorWedstrijd
+    .filter(w => w.wedstrijd_id === wedstrijdId && w.speler_id === spelerId)
+    .sort((a, b) => (a.wedstrijd_minuut||0) - (b.wedstrijd_minuut||0));
+  const inBasisopstelling = wedstrijd && wedstrijd.wed_lineup &&
+    Object.values(wedstrijd.wed_lineup).includes(spelerId);
+  let minuten = 0;
+  let veldSinds = inBasisopstelling ? 0 : null;
+  eigenWissels.forEach(w => {
+    if (w.moment === 'erin') { veldSinds = w.wedstrijd_minuut || 0; }
+    else if (w.moment === 'eruit') {
+      if (veldSinds != null) { minuten += Math.max(0, (w.wedstrijd_minuut || 0) - veldSinds); }
+      veldSinds = null;
+    }
+  });
+  if (veldSinds != null && eindMinuut != null) {
+    minuten += Math.max(0, eindMinuut - veldSinds);
+  }
+  return minuten;
+}
+
 // ─── Spelerontwikkeling: gedeelde constanten ───
 // Eén canonieke plek voor de 15 vaardigheden + 4-punts-schaal, gebruikt door zowel het
 // spelerformulier als de trainersbeoordeling — voorkomt dat beide kanten uit de pas lopen.
@@ -368,6 +435,7 @@ function loadState() {
     customWeken:  JSON.parse(localStorage.getItem('fcp_custom_weken') || '[]'),
     formatie:     localStorage.getItem('fcp_formatie') || '4222',
     absRedenen:   JSON.parse(localStorage.getItem('fcp_abs_redenen')  || '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]'),
+    wisselRedenen: JSON.parse(localStorage.getItem('fcp_wissel_redenen') || '["Te laat","Moe","Tactisch","Minder goed","Blessure tijdens wedstrijd","Gedrag"]'),
   };
 }
 
@@ -431,6 +499,12 @@ async function loadFromSupabase() {
       try {
         const redenen = JSON.parse(notes['abs_redenen']);
         if (Array.isArray(redenen)) { result.absRedenen = redenen; localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen)); }
+      } catch(e) {}
+    }
+    if (notes['wissel_redenen']) {
+      try {
+        const redenen = JSON.parse(notes['wissel_redenen']);
+        if (Array.isArray(redenen)) { result.wisselRedenen = redenen; localStorage.setItem('fcp_wissel_redenen', JSON.stringify(redenen)); }
       } catch(e) {}
     }
     if (notes['team_config']) {

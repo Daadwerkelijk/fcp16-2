@@ -23,6 +23,8 @@
   --blauw:#2B5CE6;   --blauw-l:#EEF2FF; --blauw-m:#C7D4FC;
   --goud:#B8860B;    --goud-l:#FFF8E1;  --goud-m:#FFE082;
   --rood:#D32F2F;    --rood-l:#FFEBEE;  --rood-m:#FFCDD2;
+  --paars:#3C3489;   --paars-l:#EEEDFE; --paars-m:#CECBF6;
+  --oranje:#712B13;  --oranje-l:#FAECE7;--oranje-m:#F5C4B3;
 
   --red:#D32F2F;
 
@@ -264,14 +266,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .field-svg{width:100%;height:100%;display:block}
 .field-positions{position:absolute;top:0;left:0;width:100%;height:100%}
 .pos-slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;cursor:pointer}
-.pos-circle{width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;transition:all .2s}
-.pos-circle.filled{background:var(--white);border-color:var(--accent)}
-.pos-circle.keeper{background:rgba(43,31,160,.3);border-color:rgba(255,255,255,.5)}
-.pos-circle.keeper.filled{background:var(--white);border-color:var(--groen)}
-.pos-initials{font-size:9px;font-weight:700;color:#fff;text-align:center;letter-spacing:.01em;line-height:1.15;padding:0 2px}
-.pos-circle.filled .pos-initials{color:var(--accent)}
-.pos-circle.keeper.filled .pos-initials{color:var(--groen)}
-.pos-name{font-size:9px;color:#fff;margin-top:2px;text-align:center;white-space:nowrap;max-width:56px;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.pos-pill{display:inline-flex;align-items:stretch;background:var(--white);border-radius:var(--badge-radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.35);max-width:92px;transition:box-shadow .2s}
+.pos-pill-rol{flex-shrink:0;display:flex;align-items:center;font-size:8px;font-weight:800;letter-spacing:.01em;padding:3px 6px;white-space:nowrap}
+.pos-pill-naam{font-size:9px;font-weight:600;color:var(--text);padding:3px 7px 3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pos-pill-naam:empty{display:none}
+.pos-pill-rol.rol-keeper{background:var(--blauw-l);color:var(--blauw)}
+.pos-pill-rol.rol-verdediger{background:var(--groen-l);color:var(--groen)}
+.pos-pill-rol.rol-midden{background:var(--paars-l);color:var(--paars)}
+.pos-pill-rol.rol-aanval{background:var(--oranje-l);color:var(--oranje)}
 .field-actions{display:flex;gap:8px;margin-top:10px}
 .field-btn{flex:1;padding:10px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;box-shadow:var(--card-shadow)}
 .field-btn:active{opacity:.7;transform:scale(.97)}

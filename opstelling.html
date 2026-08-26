@@ -143,11 +143,11 @@ function buildField() {
     slot.className = 'pos-slot'; slot.id = 'slot-' + pos.id;
     slot.style.left = pos.x + '%'; slot.style.top = pos.y + '%';
     slot.onclick = () => openModal(pos);
-    const circle = document.createElement('div');
-    circle.className = 'pos-circle' + (pos.role === 'keeper' ? ' keeper' : '');
-    const init  = document.createElement('div'); init.className  = 'pos-initials'; init.id  = 'init-' + pos.id; init.textContent = pos.label;
-    const name  = document.createElement('div'); name.className  = 'pos-name';     name.id  = 'name-' + pos.id;
-    circle.appendChild(init); slot.appendChild(circle); slot.appendChild(name);
+    const pill  = document.createElement('div'); pill.className = 'pos-pill'; pill.id = 'pill-' + pos.id;
+    const rol   = document.createElement('span'); rol.className = 'pos-pill-rol ' + fieldRoleClass(pos.label); rol.textContent = pos.label;
+    const name  = document.createElement('span'); name.className = 'pos-pill-naam'; name.id = 'name-' + pos.id;
+    pill.appendChild(rol); pill.appendChild(name);
+    slot.appendChild(pill);
     cont.appendChild(slot);
   });
   renderLineup();
@@ -156,20 +156,17 @@ function buildField() {
 function renderLineup() {
   getPositions().forEach(pos => {
     const pid     = lineup[pos.id];
-    const circle  = document.querySelector('#slot-' + pos.id + ' .pos-circle');
-    const initEl  = document.getElementById('init-' + pos.id);
     const nameEl  = document.getElementById('name-' + pos.id);
-    if (!circle || !initEl || !nameEl) return;
+    if (!nameEl) return;
     if (pid != null) {
       const p = players.find(pl => pl.id === pid);
       if (p) {
-        circle.classList.add('filled');
         const parts = p.naam.trim().split(' ');
         nameEl.textContent = parts[0];
         return;
       }
     }
-    circle.classList.remove('filled'); nameEl.textContent = '';
+    nameEl.textContent = '';
   });
   renderBench();
 }

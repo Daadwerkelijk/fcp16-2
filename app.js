@@ -805,6 +805,12 @@ function applyThema(key) {
     r.setProperty('--groen',    '#6ee0a0');
     r.setProperty('--goud',     '#f0d080');
     r.setProperty('--rood',     '#ff8080');
+    r.setProperty('--paars-l',  'rgba(60,52,137,.2)');
+    r.setProperty('--paars-m',  'rgba(60,52,137,.4)');
+    r.setProperty('--oranje-l', 'rgba(113,43,19,.2)');
+    r.setProperty('--oranje-m', 'rgba(113,43,19,.4)');
+    r.setProperty('--paars',    '#b8a8ff');
+    r.setProperty('--oranje',   '#f0a878');
     r.setProperty('--card-shadow', 'none');
   } else {
     r.setProperty('--blauw-l',  '#EEF2FF');
@@ -815,10 +821,16 @@ function applyThema(key) {
     r.setProperty('--goud-m',   '#FFE082');
     r.setProperty('--rood-l',   '#FFEBEE');
     r.setProperty('--rood-m',   '#FFCDD2');
+    r.setProperty('--paars-l',  '#EEEDFE');
+    r.setProperty('--paars-m',  '#CECBF6');
+    r.setProperty('--oranje-l', '#FAECE7');
+    r.setProperty('--oranje-m', '#F5C4B3');
     r.setProperty('--blauw',    '#2B5CE6');
     r.setProperty('--groen',    '#1B7A4B');
     r.setProperty('--goud',     '#B8860B');
     r.setProperty('--rood',     '#C62828');
+    r.setProperty('--paars',    '#3C3489');
+    r.setProperty('--oranje',   '#712B13');
     r.setProperty('--card-shadow', '0 1px 3px rgba(43,31,160,.06),0 1px 2px rgba(0,0,0,.04)');
   }
 
@@ -895,6 +907,15 @@ function getRolBadges(posities) {
   return ['K','V','M','A'].filter(r => rollen.has(r))
     .map(r => `<span style="${stijl[r]};font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px">${r}</span>`)
     .join('');
+}
+// Rolkleur (K/V/M/A, zie getRolBadges hierboven) op basis van een veldpositie-label
+// (bv. 'CB-L', 'VM-R', 'ST-L'). Gebruikt voor het pil-label onder elke speler op het veld
+// in opstelling.html en wedstrijden.html (en, als losse kopie, in live.html dat app.js niet laadt).
+function fieldRoleClass(label) {
+  if (label === 'GK') return 'rol-keeper';
+  if (/^(LB|RB|CB|LWB|RWB)/.test(label)) return 'rol-verdediger';
+  if (/^(ST|CF|LW|RW)/.test(label)) return 'rol-aanval';
+  return 'rol-midden';
 }
 const SKILL_COLORS = {
   'Ontwikkel punt': { bg:'#FFEBEE', c:'#C62828' },

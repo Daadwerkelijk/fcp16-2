@@ -9,13 +9,26 @@ gedeelde/realtime data tussen de trainers.
 - `index.html` — start / kernprincipes
 - `opstelling.html` — veldopstelling per formatie
 - `selectie.html` — spelersbeheer + skills inladen (Excel)
-- `schema.html` — trainingsschema, oefeningen, aanwezigheid
+- `trainen.html` — trainingsschema, oefeningen per sessie, aanwezigheid
 - `wedstrijden.html` — resultaten, cijfers, MOTM, ranking
 - `team.html` — teamoverzicht speler-skills
 - `oefeningen.html` — oefeningenbibliotheek
+- `live.html` — publieke live-scorebord/wedstrijdweergave; laadt bewust
+  geen `app.js`, heeft een eigen (minimale) Supabase-config
+- `instellingen.html` — app-instellingen (o.a. thema)
+- `spelerformulier.html` — invulformulier voor spelersbeoordeling
+- `handleiding.html` — gebruikershandleiding
+- `check.html` — health check / diagnosepagina (Supabase-verbinding e.d.)
+- `landscape-test.html` — devtool om landscape-layout te testen, geen
+  onderdeel van de trainersflow
 - `app.js` — gedeelde logica
 - `style.css` — opmaak
 - `manifest.json`, `sw.js` — PWA-installatie en offline gebruik
+
+**Let op:** `schema.html` staat nog in de repo maar lijkt dode code —
+geen enkele pagina linkt er meer naartoe (alle nav-balken linken naar
+`trainen.html`, dat een nieuwere nav gebruikt). Voordat dit bestand
+verwijderd wordt: even bevestigen dat het echt niet meer gebruikt wordt.
 
 ## Deploy
 
@@ -53,6 +66,11 @@ en is verouderd op dit punt.
 - Geef een beknopte samenvatting: wat is er veranderd, welke bestanden,
   en — als het relevant is — wat ik zelf in de app zou moeten controleren
   om te bevestigen dat het werkt.
+- Stel na een grotere wijziging (nieuwe feature, architectuurwijziging,
+  Supabase-wijziging, deploy) voor om `tests/rooktest.md` te doorlopen:
+  een vaste checklist van kernflows (wedstrijd opslaan, live pushen,
+  speler toevoegen, opstelling maken, training plannen) om handmatig af
+  te vinken in de echte app.
 - Bij twijfel of onduidelijkheid: stel een gerichte vraag in plaats van
   te gokken. Kies bij kleine, voor de hand liggende keuzes gewoon een
   redelijke aanname en meld die kort, in plaats van er telkens naar te
@@ -62,3 +80,20 @@ en is verouderd op dit punt.
 - Sla nooit namen, geboortedata, telefoonnummers of andere persoonlijke
   spelersgegevens op buiten de app zelf (dus ook niet in documentatie,
   logs, of commit-berichten).
+
+## Sessiebeheer
+
+### Context en compact
+- Stel na het afronden van een duidelijk afgebakende taak (een bugfix,
+  een feature, een sessie zoals de opzet van deze werkwijze-afspraken)
+  proactief voor om /compact te draaien, in plaats van te wachten tot
+  de context vanzelf vol raakt. Vraag er niet steeds naar tussendoor,
+  alleen op een natuurlijk eindpunt.
+- Geef bij dat voorstel altijd een korte, concrete /compact-instructie
+  mee die aansluit bij wat er nog moet gebeuren, bijvoorbeeld:
+  "/compact Focus on de openstaande taken en welke bestanden gewijzigd zijn".
+- Als de gebruiker aangeeft dat het volgende onderwerp niets meer met
+  het huidige te maken heeft, stel dan /clear voor in plaats van /compact.
+- Belangrijke, blijvende afspraken (werkwijze, testconventies,
+  architectuurkeuzes) horen thuis in CLAUDE.md zelf, niet alleen ergens
+  in het gesprek — dat overleeft een /compact wél volledig.

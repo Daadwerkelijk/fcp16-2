@@ -918,10 +918,10 @@ function fieldRoleClass(label) {
   return 'rol-midden';
 }
 const SKILL_COLORS = {
-  'Ontwikkel punt': { bg:'#FFEBEE', c:'#C62828' },
-  'Voldoende':      { bg:'#FFF3E0', c:'#E65100' },
-  'Goed':           { bg:'#F1F8E9', c:'#558B2F' },
-  'Zeer goed':      { bg:'#E8F5E9', c:'#1B5E20' },
+  'Ontwikkel punt': { bg:'#FFEBEE', fg:'#C62828', label:'Ontwikkelpunt' },
+  'Voldoende':      { bg:'#FFF3E0', fg:'#E65100', label:'Voldoende' },
+  'Goed':           { bg:'#F1F8E9', fg:'#558B2F', label:'Goed' },
+  'Zeer goed':      { bg:'#E8F5E9', fg:'#1B5E20', label:'Zeer goed' },
 };
 
 // ─── UTILITIES ───
@@ -1022,33 +1022,6 @@ function initManifest() { /* manifest.json is statisch, geen actie nodig */ }
 
 const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oefeningen via + Nieuw
 
-// ─── LANDSCAPE RESPONSIVE ───
-function isLandscape() {
-  // Touch-apparaat check: telefoon/tablet heeft coarse pointer, laptop niet
-  const isTouch = window.matchMedia('(pointer: coarse)').matches;
-  return isTouch && window.innerWidth > window.innerHeight;
-}
-
-function applyLandscape() {
-  const ls = isLandscape();
-  document.body.classList.toggle('is-landscape', ls);
-
-  // Nav: voeg klasse toe zodat CSS hem links zet
-  const nav = document.querySelector('.nav');
-  if (nav) nav.classList.toggle('nav-landscape', ls);
-
-  // Alle content containers: ruimte voor linker nav
-  document.querySelectorAll('.form-wrap, .home-hero, .page-header').forEach(el => {
-    el.style.marginLeft = '';  // CSS regelt dit via body.is-landscape
-  });
-}
-
-// Draai bij laden en bij oriëntatie wijziging
-window.addEventListener('DOMContentLoaded', applyLandscape);
-window.addEventListener('resize', applyLandscape);
-window.addEventListener('orientationchange', function(){ setTimeout(applyLandscape, 150); });
-if (screen.orientation) screen.orientation.addEventListener('change', function(){ setTimeout(applyLandscape, 150); });
-
 // ─── DESKTOP SIDEBAR PANEL ───
 function initDesktopPanel() {
   const existing = document.getElementById('desktop-panel');
@@ -1095,7 +1068,7 @@ function initDesktopPanel() {
   document.body.appendChild(panel);
 }
 
-// Landscape trigger
+// ─── LANDSCAPE RESPONSIVE ───
 function isLandscape() {
   // Touch-apparaat check: telefoon/tablet heeft coarse pointer, laptop niet
   const isTouch = window.matchMedia('(pointer: coarse)').matches;

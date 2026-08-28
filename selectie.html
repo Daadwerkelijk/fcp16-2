@@ -391,8 +391,6 @@ async function renderGeschiedenisTijdlijn() {
   const cont = document.getElementById('hist-tl-container');
   if (!momenten.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--text3)">Geen geschiedenis voor deze vaardigheid.</div>'; return; }
 
-  const kleur = { 'Ontwikkel punt':{bg:'#FBE9E7',fg:'#C62828'}, 'Voldoende':{bg:'#FFF3E0',fg:'#E65100'}, 'Goed':{bg:'#F1F8E9',fg:'#558B2F'}, 'Zeer goed':{bg:'#E8F5E9',fg:'#1B5E20'} };
-
   cont.innerHTML = `<div class="hist-tl">${momenten.map((m, i) => {
     // Vorige moment van DEZELFDE bron (chronologisch eerder) om de verandering te tonen
     const vorigeZelfdeBron = momenten.slice(i+1).find(x => x.bron === m.bron);
@@ -406,7 +404,7 @@ async function renderGeschiedenisTijdlijn() {
         deltaHtml = `<div class="hist-delta ${richting}">${pijl} ${niveaus} niveau${niveaus>1?'s':''} t.o.v. vorige ${m.bron === 'speler' ? 'eigen inschatting' : 'trainersbeoordeling'}</div>`;
       }
     }
-    const c = kleur[m.waarde] || {bg:'var(--bg3)',fg:'var(--text3)'};
+    const c = SKILL_COLORS[m.waarde] || {bg:'var(--bg3)',fg:'var(--text3)'};
     const kleurVar = m.bron === 'speler' ? 'var(--blauw)' : 'var(--goud)';
     const intrekBtn = (m.bron === 'trainer' && m.id) ? `<button class="hist-intrek" onclick="intrekGeschiedenisItem('${m.id}')">Intrekken</button>` : '';
     return `<div class="hist-item">

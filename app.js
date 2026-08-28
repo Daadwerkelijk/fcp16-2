@@ -856,11 +856,6 @@ function saveTeamInstellingen(config) {
 // ─── SCHEMA DATA ───
 const SCHEMA_DATES  = {1:'2026-08-03',2:'2026-08-10',3:'2026-08-17',4:'2026-08-24',5:'2026-08-31',6:'2026-09-07',7:'2026-09-14',8:'2026-09-21',9:'2026-09-28',10:'2026-10-05',11:'2026-10-12',12:'2026-10-19'};
 const SCHEMA_WEEKNR = {1:32,2:33,3:34,4:35,5:36,6:37,7:38,8:39,9:40,10:41,11:42,12:43};
-const FASES = {
-  m1:{ label:'Augustus 2026',   sub:'Wk 32–35 · Voorbereiding · systeem · conditie', tagbg:'#241400', tagc:'#f0a040' },
-  m2:{ label:'September 2026',  sub:'Wk 36–39 · Seizoen gestart · automatismen',      tagbg:'#0a1e10', tagc:'#70e890' },
-  m3:{ label:'Oktober 2026',    sub:'Wk 40–43 · Verfijnen · spelers als leiders',     tagbg:'#001828', tagc:'#40a8f0' },
-};
 const PR_TAGS = { P1:{bg:'#0a1e10',c:'#70e890'}, P2:{bg:'#160e28',c:'#a080f8'}, P3:{bg:'#241400',c:'#f0a040'}, P4:{bg:'#240010',c:'#f04070'}, P5:{bg:'#001828',c:'#40a8f0'}, P6:{bg:'#101800',c:'#a8e040'} };
 const CAT_STYLES = {
   OPW:{bg:'#241400',c:'#f0a040',label:'opwarmen'},
@@ -871,7 +866,6 @@ const CAT_STYLES = {
   PAR:{bg:'#160e28',c:'#a080f8',label:'partijvorm'},
   EVA:{bg:'#181818',c:'#888',   label:'evaluatie'},
 };
-const CAT_DOT  = { opwarmen:'#f0a040', conditie:'#a8e040', techniek:'#40a8f0', positiespel:'#70e890', counterpressing:'#f04070', partijvorm:'#a080f8' };
 const CAT_BG   = { opwarmen:{bg:'#241400',c:'#f0a040'}, conditie:{bg:'#101800',c:'#a8e040'}, techniek:{bg:'#001828',c:'#40a8f0'}, positiespel:{bg:'#0a1e10',c:'#70e890'}, counterpressing:{bg:'#240010',c:'#f04070'}, partijvorm:{bg:'#160e28',c:'#a080f8'} };
 
 // ─── SKILLS ───
@@ -879,6 +873,30 @@ const CAT_BG   = { opwarmen:{bg:'#241400',c:'#f0a040'}, conditie:{bg:'#101800',c
 // (zie hierboven) — was een derde, losse kopie van dezelfde 15 vaardigheden.
 
 // ─── POSITIE BADGES ───
+// K/V/M/A en de vaardigheidsniveaus (SKILL_COLORS hieronder) zijn vaste
+// categoriekleuren (niet var(--accent) e.d.) zodat ze onderling herkenbaar
+// blijven ongeacht thema. In de donkere thema's (donker, fcp) zijn de
+// lichte pastelkleuren daaronder echter te fel op een donkere achtergrond
+// — vandaar een aparte, donkere variant per categorie, gekozen op basis
+// van het actieve thema (zelfde donker-chip-stijl als PR_TAGS/CAT_STYLES).
+function isDarkThema() {
+  const t = loadThema();
+  return t === 'donker' || t === 'fcp';
+}
+const ROL_STIJL = {
+  licht: {
+    'K': 'background:#E6F1FB;color:#0C447C;border:1px solid #B5D4F4',
+    'V': 'background:#EAF3DE;color:#27500A;border:1px solid #C0DD97',
+    'M': 'background:#EEEDFE;color:#3C3489;border:1px solid #CECBF6',
+    'A': 'background:#FAECE7;color:#712B13;border:1px solid #F5C4B3',
+  },
+  donker: {
+    'K': 'background:#12283f;color:#7EC8F5;border:1px solid #1F3F5C',
+    'V': 'background:#16290d;color:#9EDC7A;border:1px solid #294A1C',
+    'M': 'background:#221c40;color:#B8A8F5;border:1px solid #392F66',
+    'A': 'background:#3a1c10;color:#F5A17E;border:1px solid #5C3220',
+  },
+};
 function getRolBadges(posities) {
   if (!posities || !posities.length) return '';
   // Moet elke optie uit ALL_POS_OPTS (app.js) dekken. 'Keeper' was hier eerder 'GK',
@@ -898,12 +916,7 @@ function getRolBadges(posities) {
     else if (r === 'dm' || r === 'am') rollen.add('M');
     else if (r === 'st') rollen.add('A');
   });
-  const stijl = {
-    'K': 'background:#E6F1FB;color:#0C447C;border:1px solid #B5D4F4',
-    'V': 'background:#EAF3DE;color:#27500A;border:1px solid #C0DD97',
-    'M': 'background:#EEEDFE;color:#3C3489;border:1px solid #CECBF6',
-    'A': 'background:#FAECE7;color:#712B13;border:1px solid #F5C4B3',
-  };
+  const stijl = ROL_STIJL[isDarkThema() ? 'donker' : 'licht'];
   return ['K','V','M','A'].filter(r => rollen.has(r))
     .map(r => `<span style="${stijl[r]};font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px">${r}</span>`)
     .join('');
@@ -918,11 +931,24 @@ function fieldRoleClass(label) {
   return 'rol-midden';
 }
 const SKILL_COLORS = {
-  'Ontwikkel punt': { bg:'#FFEBEE', fg:'#C62828', label:'Ontwikkelpunt' },
-  'Voldoende':      { bg:'#FFF3E0', fg:'#E65100', label:'Voldoende' },
-  'Goed':           { bg:'#F1F8E9', fg:'#558B2F', label:'Goed' },
-  'Zeer goed':      { bg:'#E8F5E9', fg:'#1B5E20', label:'Zeer goed' },
+  licht: {
+    'Ontwikkel punt': { bg:'#FFEBEE', fg:'#C62828', label:'Ontwikkelpunt' },
+    'Voldoende':      { bg:'#FFF3E0', fg:'#E65100', label:'Voldoende' },
+    'Goed':           { bg:'#F1F8E9', fg:'#558B2F', label:'Goed' },
+    'Zeer goed':      { bg:'#E8F5E9', fg:'#1B5E20', label:'Zeer goed' },
+  },
+  donker: {
+    'Ontwikkel punt': { bg:'#3a1414', fg:'#F57373', label:'Ontwikkelpunt' },
+    'Voldoende':      { bg:'#3a2408', fg:'#FFB04D', label:'Voldoende' },
+    'Goed':           { bg:'#1c2e10', fg:'#A3D977', label:'Goed' },
+    'Zeer goed':      { bg:'#0f2b12', fg:'#6FCF7A', label:'Zeer goed' },
+  },
 };
+// Vaardigheidsniveau-kleur voor het huidige thema (zie isDarkThema hierboven).
+function getSkillColor(level) {
+  const set = SKILL_COLORS[isDarkThema() ? 'donker' : 'licht'];
+  return set[level];
+}
 
 // ─── UTILITIES ───
 function genId() { return 'i' + Date.now() + Math.random().toString(36).slice(2, 6); }

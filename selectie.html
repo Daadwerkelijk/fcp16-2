@@ -404,7 +404,7 @@ async function renderGeschiedenisTijdlijn() {
         deltaHtml = `<div class="hist-delta ${richting}">${pijl} ${niveaus} niveau${niveaus>1?'s':''} t.o.v. vorige ${m.bron === 'speler' ? 'eigen inschatting' : 'trainersbeoordeling'}</div>`;
       }
     }
-    const c = SKILL_COLORS[m.waarde] || {bg:'var(--bg3)',fg:'var(--text3)'};
+    const c = getSkillColor(m.waarde) || {bg:'var(--bg3)',fg:'var(--text3)'};
     const kleurVar = m.bron === 'speler' ? 'var(--blauw)' : 'var(--goud)';
     const intrekBtn = (m.bron === 'trainer' && m.id) ? `<button class="hist-intrek" onclick="intrekGeschiedenisItem('${m.id}')">Intrekken</button>` : '';
     return `<div class="hist-item">

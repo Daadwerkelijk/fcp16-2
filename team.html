@@ -636,7 +636,7 @@ function renderTeamProfiel() {
       const bouwBalk = (tellingen, totaal, bron) => {
         if (!totaal) return `<div style="font-size:10px;color:var(--text3)">Nog geen ${bron}-data</div>`;
         const dominant = tellingen.reduce((a,b) => a.namen.length >= b.namen.length ? a : b);
-        const nk = SKILL_COLORS[dominant.lv] || SKILL_COLORS['Voldoende'];
+        const nk = getSkillColor(dominant.lv) || getSkillColor('Voldoende');
         const pct = Math.round((dominant.namen.length / totaal) * 100);
         return `<div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:9px;color:var(--text3);width:42px;flex-shrink:0">${bron}</span>
@@ -654,9 +654,9 @@ function renderTeamProfiel() {
         ${bouwBalk(tTellingen, tTotal, 'Trainer')}
         <div id="${sid}" style="display:none;margin-top:6px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rsm)">
           <div style="font-size:9px;font-weight:700;color:var(--blauw);text-transform:uppercase;margin-bottom:3px">Speler</div>
-          ${sTellingen.map(c => `<div style="font-size:11px;color:var(--text2);margin-bottom:2px"><b style="color:${(SKILL_COLORS[c.lv]||{}).fg}">${c.lv}:</b> ${c.namen.join(', ')}</div>`).join('') || '<div style="font-size:11px;color:var(--text3)">Geen data</div>'}
+          ${sTellingen.map(c => `<div style="font-size:11px;color:var(--text2);margin-bottom:2px"><b style="color:${(getSkillColor(c.lv)||{}).fg}">${c.lv}:</b> ${c.namen.join(', ')}</div>`).join('') || '<div style="font-size:11px;color:var(--text3)">Geen data</div>'}
           <div style="font-size:9px;font-weight:700;color:var(--goud);text-transform:uppercase;margin:6px 0 3px">Trainer</div>
-          ${tTellingen.map(c => `<div style="font-size:11px;color:var(--text2);margin-bottom:2px"><b style="color:${(SKILL_COLORS[c.lv]||{}).fg}">${c.lv}:</b> ${c.namen.join(', ')}</div>`).join('') || '<div style="font-size:11px;color:var(--text3)">Geen data</div>'}
+          ${tTellingen.map(c => `<div style="font-size:11px;color:var(--text2);margin-bottom:2px"><b style="color:${(getSkillColor(c.lv)||{}).fg}">${c.lv}:</b> ${c.namen.join(', ')}</div>`).join('') || '<div style="font-size:11px;color:var(--text3)">Geen data</div>'}
         </div>
       </div>`;
     });

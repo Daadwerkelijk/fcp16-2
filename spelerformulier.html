@@ -7,11 +7,11 @@
 <title>Spelersformulier — FCP 16-2</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .form-section { background:var(--bg2); border:1px solid var(--line2); border-radius:var(--rsm); padding:14px; margin-bottom:12px; }
-  .form-section-title { font-family:var(--font-display); font-size:14px; font-weight:600; color:var(--text); margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid var(--line2); }
-  .form-row { margin-bottom:10px; }
+  .pf-section { background:var(--bg2); border:1px solid var(--line2); border-radius:var(--rsm); padding:14px; margin-bottom:12px; }
+  .pf-section-title { font-family:var(--font-display); font-size:14px; font-weight:600; color:var(--text); margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid var(--line2); }
+  .pf-row { margin-bottom:10px; }
   .form-label { font-size:11px; color:var(--text3); margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em; }
-  .form-input { width:100%; padding:9px 10px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--rsm); color:var(--text); font-family:var(--font-mono); font-size:13px; box-sizing:border-box; }
+  .pf-input { width:100%; padding:9px 10px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--rsm); color:var(--text); font-family:var(--font-mono); font-size:13px; box-sizing:border-box; }
   .form-select { width:100%; padding:9px 10px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--rsm); color:var(--text); font-family:var(--font-mono); font-size:13px; }
   .form-textarea { width:100%; padding:9px 10px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--rsm); color:var(--text); font-family:var(--font-mono); font-size:13px; min-height:80px; resize:vertical; box-sizing:border-box; }
   .skill-tabel { width:100%; border-collapse:collapse; }
@@ -41,17 +41,17 @@
   <div style="padding:0 16px 32px">
 
     <!-- Persoonlijke gegevens -->
-    <div class="form-section">
-      <div class="form-section-title">Persoonlijke gegevens</div>
-      <div class="form-row">
+    <div class="pf-section">
+      <div class="pf-section-title">Persoonlijke gegevens</div>
+      <div class="pf-row">
         <div class="form-label">Naam</div>
-        <input class="form-input" id="f-naam" placeholder="Volledige naam">
+        <input class="pf-input" id="f-naam" placeholder="Volledige naam">
       </div>
-      <div class="form-row">
+      <div class="pf-row">
         <div class="form-label">Geboortedatum</div>
-        <input class="form-input" id="f-geboortedatum" type="date">
+        <input class="pf-input" id="f-geboortedatum" type="date">
       </div>
-      <div class="form-row">
+      <div class="pf-row">
         <div class="form-label">Voorkeurspositie</div>
         <select class="form-select" id="f-positie">
           <option value="">Kies positie...</option>
@@ -61,11 +61,11 @@
           <option>Aanvaller</option>
         </select>
       </div>
-      <div class="form-row">
+      <div class="pf-row">
         <div class="form-label">Mobielnummer</div>
-        <input class="form-input" id="f-mobiel" type="tel" placeholder="06-...">
+        <input class="pf-input" id="f-mobiel" type="tel" placeholder="06-...">
       </div>
-      <div class="form-row">
+      <div class="pf-row">
         <div class="form-label">Ga je op vakantie?</div>
         <select class="form-select" id="f-vakantie">
           <option value="">Kies...</option>
@@ -74,21 +74,21 @@
         </select>
       </div>
       <div id="vakantie-details" style="display:none">
-        <div class="form-row">
+        <div class="pf-row">
           <div class="form-label">Van</div>
-          <input class="form-input" id="f-vakantie-van" type="date">
+          <input class="pf-input" id="f-vakantie-van" type="date">
         </div>
-        <div class="form-row">
+        <div class="pf-row">
           <div class="form-label">Tot</div>
-          <input class="form-input" id="f-vakantie-tot" type="date">
+          <input class="pf-input" id="f-vakantie-tot" type="date">
         </div>
       </div>
     </div>
 
     <!-- Leiderschap -->
-    <div class="form-section">
-      <div class="form-section-title">Leiderschap</div>
-      <div class="form-row">
+    <div class="pf-section">
+      <div class="pf-section-title">Leiderschap</div>
+      <div class="pf-row">
         <div class="form-label">Wil je aanvoerder zijn?</div>
         <select class="form-select" id="f-aanvoerder" onchange="toggleAanvoerder()">
           <option value="">Kies...</option>
@@ -96,56 +96,56 @@
           <option value="nee">Nee</option>
         </select>
       </div>
-      <div id="aanvoerder-ja" style="display:none" class="form-row">
+      <div id="aanvoerder-ja" style="display:none" class="pf-row">
         <div class="form-label">Zo ja, waarom?</div>
         <textarea class="form-textarea" id="f-aanvoerder-waarom" placeholder="Leg uit..."></textarea>
       </div>
-      <div id="aanvoerder-nee" style="display:none" class="form-row">
+      <div id="aanvoerder-nee" style="display:none" class="pf-row">
         <div class="form-label">Zo nee, wie dan?</div>
-        <input class="form-input" id="f-aanvoerder-wie" placeholder="Naam van ploeggenoot">
+        <input class="pf-input" id="f-aanvoerder-wie" placeholder="Naam van ploeggenoot">
       </div>
-      <div class="form-row">
+      <div class="pf-row">
         <div class="form-label">Waarom deze speler?</div>
         <textarea class="form-textarea" id="f-aanvoerder-waarom2" placeholder="Leg uit..."></textarea>
       </div>
     </div>
 
     <!-- Skills: Techniek -->
-    <div class="form-section">
-      <div class="form-section-title">Techniek</div>
+    <div class="pf-section">
+      <div class="pf-section-title">Techniek</div>
       <div id="skill-techniek"></div>
     </div>
 
     <!-- Skills: Tactiek -->
-    <div class="form-section">
-      <div class="form-section-title">Tactiek</div>
+    <div class="pf-section">
+      <div class="pf-section-title">Tactiek</div>
       <div id="skill-tactiek"></div>
     </div>
 
     <!-- Skills: Fysiek -->
-    <div class="form-section">
-      <div class="form-section-title">Fysiek</div>
+    <div class="pf-section">
+      <div class="pf-section-title">Fysiek</div>
       <div id="skill-fysiek"></div>
     </div>
 
     <!-- Skills: Mentaal -->
-    <div class="form-section">
-      <div class="form-section-title">Mentaal</div>
+    <div class="pf-section">
+      <div class="pf-section-title">Mentaal</div>
       <div id="skill-mentaal"></div>
     </div>
 
     <!-- Wens -->
-    <div class="form-section">
-      <div class="form-section-title">Wens dit seizoen</div>
-      <div class="form-row">
+    <div class="pf-section">
+      <div class="pf-section-title">Wens dit seizoen</div>
+      <div class="pf-row">
         <div class="form-label">Waar wil je dit seizoen aan werken?</div>
         <textarea class="form-textarea" id="f-wens" placeholder="Beschrijf je persoonlijke doel..." style="min-height:100px"></textarea>
       </div>
     </div>
 
     <!-- Bijzonderheden -->
-    <div class="form-section">
-      <div class="form-section-title">Bijzonderheden</div>
+    <div class="pf-section">
+      <div class="pf-section-title">Bijzonderheden</div>
       <textarea class="form-textarea" id="f-bijzonderheden" placeholder="Medische info, blessures, afspraken..." style="min-height:80px"></textarea>
     </div>
 

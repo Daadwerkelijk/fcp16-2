@@ -14,9 +14,17 @@ gedeelde/realtime data tussen de trainers.
 - `team.html` — teamoverzicht speler-skills
 - `oefeningen.html` — oefeningenbibliotheek
 - `live.html` — publieke live-scorebord/wedstrijdweergave; laadt bewust
-  geen `app.js`, heeft een eigen (minimale) Supabase-config
+  geen `app.js`, heeft een eigen (minimale) Supabase-config en een eigen
+  kopie van `fieldRoleClass`. **Bevestigd bewust zo** (2026-08-28): dit is
+  de publieke pagina en moet onafhankelijk van `app.js` blijven werken —
+  het dubbele onderhoud (key/`fieldRoleClass` op 2 plekken) is een
+  geaccepteerd nadeel, niet iets om te "fixen".
 - `instellingen.html` — app-instellingen (o.a. thema)
-- `spelerformulier.html` — invulformulier voor spelersbeoordeling
+- `spelerformulier.html` — invulformulier voor spelersbeoordeling (15
+  vaardigheden × 4 niveaus). **Bevestigd** (2026-08-28): dit wordt in de
+  praktijk echt een paar keer per seizoen per speler bijgehouden — geen
+  administratie die blijft liggen, dus prima om hier later op voort te
+  bouwen (bijv. trendgrafieken).
 - `handleiding.html` — gebruikershandleiding
 - `check.html` — health check / diagnosepagina (Supabase-verbinding e.d.)
 - `landscape-test.html` — devtool om landscape-layout te testen, geen

@@ -1069,7 +1069,7 @@ function initDesktopPanel() {
     ['opstelling.html','Opstelling'],
     ['selectie.html','Selectie'],
     ['wedstrijden.html','Wedstrijden'],
-    ['trainen.html','Trainen'],
+    ['trainen.html','Trainingen'],
     ['oefeningen.html','Oefeningen'],
     ['team.html','Dashboard'],
     ['instellingen.html','Instellingen'],

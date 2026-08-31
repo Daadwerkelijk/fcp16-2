@@ -18,8 +18,8 @@ Datum: ____________  Wijziging getest: ____________
       verschijnt correct in `team.html` en in de opstelling.
 - [ ] **Opstelling maken** — een formatie kiezen en spelers plaatsen in
       `opstelling.html`; blijft bewaard na herladen.
-- [ ] **Training/oefening plannen** — een oefening inplannen en
-      aanwezigheid registreren in `schema.html`.
+- [ ] **Training/oefening plannen** — een trainingsweek/-sessie inplannen
+      en aanwezigheid registreren in `trainen.html`.
 
 ## Aandachtspunten
 

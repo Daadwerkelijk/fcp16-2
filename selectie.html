@@ -104,6 +104,7 @@ function toggleNieuweSpeler() {
 }
 
 async function addPlayer() {
+  const naam = document.getElementById('input-naam').value.trim();
   if (!naam) { showToast('Vul een naam in'); return; }
   const p = { id:genId(), naam, omschrijving:'', posities:[], opmerkingen:'', ontwikkeling:'', skills:null };
   if (supabaseReady) {

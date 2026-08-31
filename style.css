@@ -367,6 +367,15 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .divider{border:none;border-top:1px solid var(--border);margin:12px 0}
 .section-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;font-weight:700}
+
+/* ─── AGENDA (Start-pagina) ─── */
+.agenda-item{border-left:3px solid transparent}
+.agenda-datum{flex-shrink:0;width:38px;text-align:center}
+.agenda-maand{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em}
+.agenda-daynum{font-size:18px;font-weight:800;color:var(--text);line-height:1.15;font-family:var(--font-display)}
+.agenda-weekdag{font-size:10px;color:var(--text3)}
+.agenda-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;margin-top:3px}
+
 .principle-section{padding:0 16px 14px}
 .principle-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .pr-card{border-radius:var(--rsm);padding:10px 12px;font-size:12px;font-weight:600;line-height:1.4;cursor:pointer;transition:opacity .15s;border:1px solid transparent}

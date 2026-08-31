@@ -1454,6 +1454,16 @@ async function onSupabaseReady() {
 renderWedstrijden();
 initScrollTop();
 initManifest();
+// Hash navigatie: open specifieke wedstrijd als URL hash aanwezig (bijv. #wed-abc123)
+setTimeout(() => {
+  const hash = location.hash.replace('#','');
+  if (!hash || !hash.startsWith('wed-')) return;
+  const card = document.getElementById('wcard-' + hash.slice(4));
+  if (card) {
+    if (!card.classList.contains('open')) card.classList.add('open');
+    setTimeout(() => card.scrollIntoView({ behavior:'smooth', block:'start' }), 100);
+  }
+}, 300);
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });
 </script>
 </body>

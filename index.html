@@ -102,6 +102,27 @@
     </div>
   </div>
 
+  <!-- Agenda -->
+  <div style="padding:0 16px 12px;background:var(--bg)">
+    <div class="card open" id="agenda-card">
+      <div class="card-hdr" onclick="document.getElementById('agenda-card').classList.toggle('open')">
+        <div class="card-info">
+          <div class="card-title">Agenda</div>
+          <div class="card-sub" id="agenda-card-sub"></div>
+        </div>
+        <div class="card-chev">▾</div>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:8px;margin:12px 0;overflow-x:auto;padding-bottom:2px">
+          <button class="filter-btn active" data-agenda-filter="alle">Alles</button>
+          <button class="filter-btn" data-agenda-filter="wedstrijd">Wedstrijden</button>
+          <button class="filter-btn" data-agenda-filter="training">Trainingen</button>
+        </div>
+        <div id="agenda-list"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="principle-section" style="background:var(--bg);padding-top:16px">
     <div class="section-label">Kernprincipes</div>
     <div class="principle-grid" id="principle-grid"></div>
@@ -154,6 +175,24 @@ const state = loadState();
 let principes = state.principes || DEFAULT_PRINCIPES;
 let activePrId = null;
 
+// Weekdag herkend in de sessienaam ("maandag") -> exacte datum. Anders (bv. "Training 1",
+// "Training 2") -> een schatting: trainingen staan doorgaans ~2 dagen uit elkaar
+// (bv. maandag/woensdag), dus de 1e sessie van de week krijgt dag 0, de 2e dag 2, enz.
+// Zonder dit kregen alle ongedateerde sessies dezelfde (week-start-)datum, waardoor
+// een al verstreken 1e training de eerstvolgende training kon blijven overschaduwen.
+function sessieDatum(weekIsoDate, sessie, si) {
+  const DAGMAP = {maandag:0,dinsdag:1,woensdag:2,donderdag:3,vrijdag:4,zaterdag:5,zondag:6};
+  const dagTxt = (sessie.dag||'').toLowerCase();
+  const dagEntry = Object.entries(DAGMAP).find(([d]) => dagTxt.includes(d));
+  const offset = dagEntry ? dagEntry[1] : si * 2;
+  const d = new Date(weekIsoDate);
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+function isoVan(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
 function renderStartCards() {
   const weken = JSON.parse(localStorage.getItem('fcp_custom_weken') || '[]');
   const trainCard = document.getElementById('start-training-card');
@@ -165,24 +204,14 @@ function renderStartCards() {
     const gesorteerd = weken.map((w,i)=>({w,i})).filter(x=>x.w.isoDate).sort((a,b)=>a.w.isoDate.localeCompare(b.w.isoDate));
     for (const {w, i} of gesorteerd) {
       if (!w.isoDate || !w.sessies || !w.sessies.length) continue;
-      const DAGMAP = {maandag:0,dinsdag:1,woensdag:2,donderdag:3,vrijdag:4,zaterdag:5,zondag:6};
       for (let si = 0; si < w.sessies.length; si++) {
         const s = w.sessies[si];
-        const dagTxt = (s.dag||'').toLowerCase();
-        const dagEntry = Object.entries(DAGMAP).find(([d]) => dagTxt.includes(d));
-        // Weekdag herkend in de naam ("maandag") -> exacte datum. Anders (bv. "Training 1",
-        // "Training 2") -> een schatting: trainingen staan doorgaans ~2 dagen uit elkaar
-        // (bv. maandag/woensdag), dus de 1e sessie van de week krijgt dag 0, de 2e dag 2, enz.
-        // Zonder dit kregen alle ongedateerde sessies dezelfde (week-start-)datum, waardoor
-        // een al verstreken 1e training de eerstvolgende training kon blijven overschaduwen.
-        const offset = dagEntry ? dagEntry[1] : si * 2;
-        const sessieD = new Date(w.isoDate);
-        sessieD.setDate(sessieD.getDate() + offset);
+        const sessieD = sessieDatum(w.isoDate, s, si);
         const sessieDag = sessieD.getFullYear()*10000 + (sessieD.getMonth()+1)*100 + sessieD.getDate();
         if (sessieDag >= todayDag) {
           gevondenWeek = w; gevondenWi = i;
           gevondenSessie = s; gevondenSi = si;
-          gevondenDatumIso = sessieD.getFullYear() + '-' + String(sessieD.getMonth()+1).padStart(2,'0') + '-' + String(sessieD.getDate()).padStart(2,'0');
+          gevondenDatumIso = isoVan(sessieD);
           break;
         }
       }
@@ -256,6 +285,100 @@ function renderStartCards() {
   }
 }
 
+const AGENDA_MAANDNAMEN = ['jan.','feb.','mrt.','apr.','mei','jun.','jul.','aug.','sep.','okt.','nov.','dec.'];
+const AGENDA_WEEKDAGNAMEN = ['Zo','Ma','Di','Wo','Do','Vr','Za'];
+const AGENDA_ICOON_WEDSTRIJD = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v7a4 4 0 0 1-8 0z"/><path d="M8 7H5a2 2 0 0 0 2 3.8"/><path d="M16 7h3a2 2 0 0 1-2 3.8"/><line x1="12" y1="15" x2="12" y2="19"/><line x1="9" y1="19" x2="15" y2="19"/></svg>';
+const AGENDA_ICOON_TRAINING = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2 1.5"/><path d="M10 2h4"/><path d="M12 2v2.5"/><path d="M19 5l1.5 1.5"/></svg>';
+let agendaFilter = 'alle';
+
+function getAgendaItems() {
+  const todayIso = isoVan(new Date());
+  const items = [];
+
+  const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
+  wedstrijden.filter(w => !w.gespeeld && w.isoDate && w.isoDate >= todayIso).forEach(w => {
+    const wedTypeLabel = w.wed_type === 'beker' ? 'Beker' : w.wed_type === 'oefenwedstrijd' ? 'Oefenwedstrijd' : 'Competitie';
+    items.push({
+      type: 'wedstrijd',
+      isoDate: w.isoDate,
+      tijd: w.starttijd || '',
+      titel: 'Wedstrijd vs ' + (w.tegenstander || '?'),
+      pillLabel: wedTypeLabel,
+      sub: (w.thuis_uit === 'uit' ? 'Uit' : 'Thuis') + (w.starttijd ? ' - Aanvang: ' + w.starttijd : ''),
+      href: 'wedstrijden.html#wed-' + w.id
+    });
+  });
+
+  const weken = JSON.parse(localStorage.getItem('fcp_custom_weken') || '[]');
+  weken.forEach((w, wi) => {
+    if (!w.isoDate || !w.sessies) return;
+    w.sessies.forEach((s, si) => {
+      const d = sessieDatum(w.isoDate, s, si);
+      const iso = isoVan(d);
+      if (iso < todayIso) return;
+      items.push({
+        type: 'training',
+        isoDate: iso,
+        tijd: '',
+        titel: s.dag || 'Training',
+        pillLabel: 'Training',
+        sub: '',
+        href: 'trainen.html#cw' + wi + '_' + si
+      });
+    });
+  });
+
+  items.sort((a, b) => a.isoDate.localeCompare(b.isoDate) || a.tijd.localeCompare(b.tijd));
+  return items;
+}
+
+function renderAgenda() {
+  const items = getAgendaItems();
+  const subEl = document.getElementById('agenda-card-sub');
+  if (subEl) subEl.textContent = items.length ? items.length + ' aankomend' : 'Niets gepland';
+
+  const list = document.getElementById('agenda-list');
+  if (!list) return;
+  const gefilterd = items.filter(a => agendaFilter === 'alle' || a.type === agendaFilter);
+  if (!gefilterd.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px 0">Niets gepland</div>';
+    return;
+  }
+  list.innerHTML = gefilterd.map(a => {
+    const isWed = a.type === 'wedstrijd';
+    const stripe = isWed ? 'var(--rood)' : 'var(--blauw)';
+    const iconBg = isWed ? 'var(--rood-l)' : 'var(--blauw-l)';
+    const pillBg = isWed ? 'var(--rood-l)' : 'var(--blauw-l)';
+    const icoon = isWed ? AGENDA_ICOON_WEDSTRIJD : AGENDA_ICOON_TRAINING;
+    const d = new Date(a.isoDate);
+    const maand = AGENDA_MAANDNAMEN[d.getMonth()];
+    const weekdag = AGENDA_WEEKDAGNAMEN[d.getDay()];
+    return '<a class="item agenda-item" href="' + a.href + '" style="border-left-color:' + stripe + ';text-decoration:none">'
+      + '<div class="agenda-datum">'
+      + '<div class="agenda-maand">' + maand + '</div>'
+      + '<div class="agenda-daynum">' + d.getDate() + '</div>'
+      + '<div class="agenda-weekdag">' + weekdag + '</div>'
+      + '</div>'
+      + '<div class="item-icon" style="background:' + iconBg + ';color:' + stripe + '">' + icoon + '</div>'
+      + '<div class="item-info">'
+      + '<div class="item-name">' + a.titel + '</div>'
+      + '<div class="agenda-pill" style="background:' + pillBg + ';color:' + stripe + '">' + a.pillLabel + '</div>'
+      + (a.sub ? '<div class="item-sub">' + a.sub + '</div>' : '')
+      + '</div>'
+      + '<div class="chev">›</div>'
+      + '</a>';
+  }).join('');
+}
+
+document.querySelectorAll('[data-agenda-filter]').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.querySelectorAll('[data-agenda-filter]').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    agendaFilter = btn.dataset.agendaFilter;
+    renderAgenda();
+  });
+});
 
 function updateStats() {
   const wed = JSON.parse(localStorage.getItem('fcp_wed')||'[]');
@@ -354,6 +477,7 @@ async function onSupabaseReady() {
   renderPrincipes();
   updateStats();
   renderStartCards();
+  renderAgenda();
 }
 
 // Init
@@ -362,6 +486,7 @@ principes = JSON.parse(localStorage.getItem('fcp_principes') || JSON.stringify(D
 renderPrincipes();
 updateStats();
 renderStartCards();
+renderAgenda();
 initScrollTop();
 initManifest();
 initSupabase().then(ok => { if (ok) onSupabaseReady(); });

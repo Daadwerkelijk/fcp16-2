@@ -355,6 +355,18 @@ function buildWedBench(wid) {
   }).join('');
 }
 
+// Formatie-opties voor de dropdown van één wedstrijd: gefilterd op de huidige
+// spelvorm-instelling, maar altijd aangevuld met de al opgeslagen formatie van
+// déze wedstrijd (ook als de spelvorm-instelling inmiddels is gewijzigd) —
+// anders verdwijnt een bewuste, eerder gemaakte keuze stilletjes uit de lijst.
+function formatieOptiesVoorWedstrijd(w) {
+  const opties = formatiesVoorSpelvorm(FORMATIES, loadSpelvorm());
+  if (w.formatie && FORMATIES[w.formatie] && !opties[w.formatie]) {
+    opties[w.formatie] = FORMATIES[w.formatie];
+  }
+  return opties;
+}
+
 function buildWedField(wid) {
   const w = wedstrijden.find(x => x.id === wid); if (!w) return;
   const formatieKey = document.getElementById('wform-sel-' + wid)?.value || w.formatie || '4222';
@@ -1317,7 +1329,7 @@ function renderWedstrijden() {
               <div style="margin-bottom:8px">
                 <select id="wform-sel-${w.id}" onchange="buildWedField('${w.id}')"
                   style="width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none">
-                  ${Object.entries(FORMATIES).map(([k,f])=>`<option value="${k}" ${(w.formatie||'4222')===k?'selected':''}>${f.label}</option>`).join('')}
+                  ${Object.entries(formatieOptiesVoorWedstrijd(w)).map(([k,f])=>`<option value="${k}" ${(w.formatie||'4222')===k?'selected':''}>${f.label}</option>`).join('')}
                 </select>
               </div>
               <div class="field-container" style="position:relative;background:var(--field-bg);border-radius:10px;overflow:hidden;border:2px solid var(--field-border);aspect-ratio:400/340">

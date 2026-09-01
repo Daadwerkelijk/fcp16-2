@@ -513,6 +513,10 @@ async function loadFromSupabase() {
         if (cfg && cfg.naam) { result.teamConfig = cfg; localStorage.setItem('fcp_team_config', JSON.stringify(cfg)); }
       } catch(e) {}
     }
+    if (notes['spelvorm']) {
+      const sv = parseInt(notes['spelvorm'], 10);
+      if (sv) { result.spelvorm = sv; localStorage.setItem('fcp_spelvorm', String(sv)); }
+    }
   }
   if (oe && !oe._error) {
     const oef = oe.map(o => ({
@@ -598,7 +602,7 @@ const DEFAULT_PRINCIPES = [
 // ─── FORMATIES LIBRARY ───
 // Standaard formaties - uitbreidbaar via instellingen
 const FORMATIES_BUILTIN = {
-  '4222': { label:'4-2-2-2', pos:[
+  '4222': { label:'4-2-2-2', spelvorm:11, pos:[
     {id:'GK',   label:'GK',   role:'keeper', x:50, y:88},
     {id:'LB',   label:'LB',   role:'back',   x:14, y:72},
     {id:'CB_L', label:'CB-L', role:'cb',     x:36, y:75},
@@ -611,7 +615,7 @@ const FORMATIES_BUILTIN = {
     {id:'ST_L', label:'ST-L', role:'st',     x:14, y:16},
     {id:'ST_R', label:'ST-R', role:'st',     x:86, y:16},
   ]},
-  '14231': { label:'4-2-3-1', pos:[
+  '14231': { label:'4-2-3-1', spelvorm:11, pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
     {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
@@ -624,7 +628,7 @@ const FORMATIES_BUILTIN = {
     {id:'RAM', label:'RAM', role:'am',     x:82, y:38},
     {id:'CF',  label:'CF',  role:'st',     x:50, y:16},
   ]},
-  '433a': { label:'4-3-3 (punt achter)', pos:[
+  '433a': { label:'4-3-3 (punt achter)', spelvorm:11, pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
     {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
@@ -637,7 +641,7 @@ const FORMATIES_BUILTIN = {
     {id:'ST',  label:'ST',  role:'st',     x:50, y:16},
     {id:'RW',  label:'RW',  role:'am',     x:86, y:28},
   ]},
-  '352': { label:'3-5-2 (punt voor)', pos:[
+  '352': { label:'3-5-2 (punt voor)', spelvorm:11, pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'CB_L',label:'CB-L',role:'cb',     x:26, y:75},
     {id:'CB_C',label:'CB-C',role:'cb',     x:50, y:78},
@@ -650,7 +654,7 @@ const FORMATIES_BUILTIN = {
     {id:'ST_L',label:'ST-L',role:'st',     x:36, y:22},
     {id:'ST_R',label:'ST-R',role:'st',     x:64, y:22},
   ]},
-  '13421': { label:'3-4-2-1', pos:[
+  '13421': { label:'3-4-2-1', spelvorm:11, pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'CB_L',label:'CB-L',role:'cb',     x:26, y:75},
     {id:'CB_C',label:'CB-C',role:'cb',     x:50, y:78},
@@ -663,7 +667,7 @@ const FORMATIES_BUILTIN = {
     {id:'AM_R',label:'AM-R',role:'am',     x:64, y:38},
     {id:'CF',  label:'CF',  role:'st',     x:50, y:16},
   ]},
-  '442v': { label:'4-4-2 vlak', pos:[
+  '442v': { label:'4-4-2 vlak', spelvorm:11, pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
     {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
@@ -676,7 +680,7 @@ const FORMATIES_BUILTIN = {
     {id:'ST_L',label:'ST-L',role:'st',     x:36, y:20},
     {id:'ST_R',label:'ST-R',role:'st',     x:64, y:20},
   ]},
-  '442r': { label:'4-4-2 ruit', pos:[
+  '442r': { label:'4-4-2 ruit', spelvorm:11, pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
     {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
@@ -689,7 +693,7 @@ const FORMATIES_BUILTIN = {
     {id:'ST_L',label:'ST-L',role:'st',     x:36, y:20},
     {id:'ST_R',label:'ST-R',role:'st',     x:64, y:20},
   ]},
-  '532': { label:'5-3-2', pos:[
+  '532': { label:'5-3-2', spelvorm:11, pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LWB', label:'LWB', role:'back',   x:8,  y:68},
     {id:'CB_L',label:'CB-L',role:'cb',     x:28, y:75},
@@ -702,7 +706,7 @@ const FORMATIES_BUILTIN = {
     {id:'ST_L',label:'ST-L',role:'st',     x:36, y:22},
     {id:'ST_R',label:'ST-R',role:'st',     x:64, y:22},
   ]},
-  '433b': { label:'4-3-3 (punt voor)', pos:[
+  '433b': { label:'4-3-3 (punt voor)', spelvorm:11, pos:[
     {id:'GK',  label:'GK',  role:'keeper', x:50, y:88},
     {id:'LB',  label:'LB',  role:'back',   x:14, y:72},
     {id:'CB_L',label:'CB-L',role:'cb',     x:36, y:75},
@@ -715,12 +719,151 @@ const FORMATIES_BUILTIN = {
     {id:'ST',  label:'ST',  role:'st',     x:50, y:16},
     {id:'RW',  label:'RW',  role:'am',     x:86, y:28},
   ]},
+
+  // ─── Kleinere spelvormen (4/6/7/8/9-tegen-9) ───
+  // x/y-percentages in dezelfde coördinatenstijl als de 11-tegen-11-systemen
+  // hierboven (x=50 midden, y=88 bij eigen doel, y=16 bij doel tegenstander).
+  'sv4_22': { label:'2-2', spelvorm:4, pos:[
+    {id:'ACHT_L',label:'ACHT-L',role:'back', x:30, y:65},
+    {id:'ACHT_R',label:'ACHT-R',role:'back', x:70, y:65},
+    {id:'VOOR_L',label:'VOOR-L',role:'st',   x:30, y:30},
+    {id:'VOOR_R',label:'VOOR-R',role:'st',   x:70, y:30},
+  ]},
+
+  'sv6_212': { label:'2-1-2', spelvorm:6, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L',label:'DEF-L', role:'back',   x:30, y:68},
+    {id:'DEF_R',label:'DEF-R', role:'back',   x:70, y:68},
+    {id:'MID',  label:'MID',   role:'dm',     x:50, y:48},
+    {id:'AANV_L',label:'AANV-L',role:'st',    x:32, y:22},
+    {id:'AANV_R',label:'AANV-R',role:'st',    x:68, y:22},
+  ]},
+  'sv6_131': { label:'1-3-1', spelvorm:6, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF',  label:'DEF',   role:'cb',     x:50, y:68},
+    {id:'MID_L',label:'MID-L', role:'dm',     x:25, y:45},
+    {id:'MID_C',label:'MID-C', role:'dm',     x:50, y:48},
+    {id:'MID_R',label:'MID-R', role:'dm',     x:75, y:45},
+    {id:'AANV', label:'AANV',  role:'st',     x:50, y:20},
+  ]},
+  'sv6_221': { label:'2-2-1', spelvorm:6, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L',label:'DEF-L', role:'back',   x:30, y:68},
+    {id:'DEF_R',label:'DEF-R', role:'back',   x:70, y:68},
+    {id:'MID_L',label:'MID-L', role:'dm',     x:30, y:42},
+    {id:'MID_R',label:'MID-R', role:'dm',     x:70, y:42},
+    {id:'AANV', label:'AANV',  role:'st',     x:50, y:18},
+  ]},
+
+  'sv7_321': { label:'3-2-1', spelvorm:7, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L',label:'DEF-L', role:'back',   x:25, y:68},
+    {id:'DEF_C',label:'DEF-C', role:'cb',     x:50, y:72},
+    {id:'DEF_R',label:'DEF-R', role:'back',   x:75, y:68},
+    {id:'MID_L',label:'MID-L', role:'dm',     x:32, y:44},
+    {id:'MID_R',label:'MID-R', role:'dm',     x:68, y:44},
+    {id:'AANV', label:'AANV',  role:'st',     x:50, y:18},
+  ]},
+  'sv7_231': { label:'2-3-1', spelvorm:7, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L',label:'DEF-L', role:'back',   x:32, y:68},
+    {id:'DEF_R',label:'DEF-R', role:'back',   x:68, y:68},
+    {id:'MID_L',label:'MID-L', role:'dm',     x:20, y:46},
+    {id:'MID_C',label:'MID-C', role:'dm',     x:50, y:48},
+    {id:'MID_R',label:'MID-R', role:'dm',     x:80, y:46},
+    {id:'AANV', label:'AANV',  role:'st',     x:50, y:18},
+  ]},
+  'sv7_222': { label:'2-2-2', spelvorm:7, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L',label:'DEF-L', role:'back',   x:32, y:68},
+    {id:'DEF_R',label:'DEF-R', role:'back',   x:68, y:68},
+    {id:'MID_L',label:'MID-L', role:'dm',     x:30, y:44},
+    {id:'MID_R',label:'MID-R', role:'dm',     x:70, y:44},
+    {id:'AANV_L',label:'AANV-L',role:'st',    x:35, y:18},
+    {id:'AANV_R',label:'AANV-R',role:'st',    x:65, y:18},
+  ]},
+
+  'sv8_331': { label:'3-3-1', spelvorm:8, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L',label:'DEF-L', role:'back',   x:22, y:70},
+    {id:'DEF_C',label:'DEF-C', role:'cb',     x:50, y:74},
+    {id:'DEF_R',label:'DEF-R', role:'back',   x:78, y:70},
+    {id:'MID_L',label:'MID-L', role:'dm',     x:22, y:46},
+    {id:'MID_C',label:'MID-C', role:'dm',     x:50, y:48},
+    {id:'MID_R',label:'MID-R', role:'dm',     x:78, y:46},
+    {id:'AANV', label:'AANV',  role:'st',     x:50, y:18},
+  ]},
+  'sv8_232': { label:'2-3-2', spelvorm:8, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L',label:'DEF-L', role:'back',   x:30, y:70},
+    {id:'DEF_R',label:'DEF-R', role:'back',   x:70, y:70},
+    {id:'MID_L',label:'MID-L', role:'dm',     x:20, y:46},
+    {id:'MID_C',label:'MID-C', role:'dm',     x:50, y:48},
+    {id:'MID_R',label:'MID-R', role:'dm',     x:80, y:46},
+    {id:'AANV_L',label:'AANV-L',role:'st',    x:35, y:18},
+    {id:'AANV_R',label:'AANV-R',role:'st',    x:65, y:18},
+  ]},
+  'sv8_322': { label:'3-2-2', spelvorm:8, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L',label:'DEF-L', role:'back',   x:22, y:70},
+    {id:'DEF_C',label:'DEF-C', role:'cb',     x:50, y:74},
+    {id:'DEF_R',label:'DEF-R', role:'back',   x:78, y:70},
+    {id:'MID_L',label:'MID-L', role:'dm',     x:32, y:44},
+    {id:'MID_R',label:'MID-R', role:'dm',     x:68, y:44},
+    {id:'AANV_L',label:'AANV-L',role:'st',    x:35, y:18},
+    {id:'AANV_R',label:'AANV-R',role:'st',    x:65, y:18},
+  ]},
+
+  'sv9_332': { label:'3-3-2', spelvorm:9, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L',label:'DEF-L', role:'back',   x:22, y:72},
+    {id:'DEF_C',label:'DEF-C', role:'cb',     x:50, y:76},
+    {id:'DEF_R',label:'DEF-R', role:'back',   x:78, y:72},
+    {id:'MID_L',label:'MID-L', role:'dm',     x:22, y:48},
+    {id:'MID_C',label:'MID-C', role:'dm',     x:50, y:50},
+    {id:'MID_R',label:'MID-R', role:'dm',     x:78, y:48},
+    {id:'AANV_L',label:'AANV-L',role:'st',    x:35, y:18},
+    {id:'AANV_R',label:'AANV-R',role:'st',    x:65, y:18},
+  ]},
+  'sv9_341': { label:'3-4-1', spelvorm:9, pos:[
+    {id:'GK',    label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L', label:'DEF-L', role:'back',   x:22, y:72},
+    {id:'DEF_C', label:'DEF-C', role:'cb',     x:50, y:76},
+    {id:'DEF_R', label:'DEF-R', role:'back',   x:78, y:72},
+    {id:'MID_L', label:'MID-L', role:'dm',     x:15, y:46},
+    {id:'MID_CL',label:'MID-CL',role:'dm',     x:40, y:48},
+    {id:'MID_CR',label:'MID-CR',role:'dm',     x:60, y:48},
+    {id:'MID_R', label:'MID-R', role:'dm',     x:85, y:46},
+    {id:'AANV',  label:'AANV',  role:'st',     x:50, y:18},
+  ]},
+  'sv9_233': { label:'2-3-3', spelvorm:9, pos:[
+    {id:'GK',   label:'GK',    role:'keeper', x:50, y:88},
+    {id:'DEF_L',label:'DEF-L', role:'back',   x:32, y:70},
+    {id:'DEF_R',label:'DEF-R', role:'back',   x:68, y:70},
+    {id:'MID_L',label:'MID-L', role:'dm',     x:22, y:46},
+    {id:'MID_C',label:'MID-C', role:'dm',     x:50, y:48},
+    {id:'MID_R',label:'MID-R', role:'dm',     x:78, y:46},
+    {id:'AANV_L',label:'AANV-L',role:'st',    x:25, y:18},
+    {id:'AANV_C',label:'AANV-C',role:'st',    x:50, y:15},
+    {id:'AANV_R',label:'AANV-R',role:'st',    x:75, y:18},
+  ]},
 };
 
 // Laad gebruikersformaties uit localStorage
 function loadFormaties() {
   const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
   return { ...FORMATIES_BUILTIN, ...custom };
+}
+// Filtert een formaties-object op spelvorm. Formaties zonder spelvorm-veld
+// (bv. oudere eigen formaties) worden als 11-tegen-11 behandeld, zodat
+// bestaande gebruikers niets merken totdat ze zelf een spelvorm kiezen.
+function formatiesVoorSpelvorm(alle, spelvorm) {
+  const sv = spelvorm || 11;
+  const gefilterd = {};
+  Object.entries(alle).forEach(([key, f]) => {
+    if ((f.spelvorm || 11) === sv) gefilterd[key] = f;
+  });
+  return gefilterd;
 }
 function saveCustomFormatie(key, formatie) {
   const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
@@ -853,6 +996,25 @@ function saveTeamInstellingen(config) {
   }
 }
 
+// ─── SPELVORM ───
+// Directe keuze door de trainer (geen afleiding uit leeftijdscategorie —
+// de spelregel verschilt per team/divisie, met name bij O13/O14).
+const SPELVORM_OPTIES = { 4:'4 tegen 4', 6:'6 tegen 6', 7:'7 tegen 7', 8:'8 tegen 8', 9:'9 tegen 9', 11:'11 tegen 11' };
+function loadSpelvorm() {
+  return parseInt(localStorage.getItem('fcp_spelvorm'), 10) || 11;
+}
+function saveSpelvorm(spelvorm) {
+  const sv = parseInt(spelvorm, 10) || 11;
+  localStorage.setItem('fcp_spelvorm', String(sv));
+  // Sync naar Supabase via session_notes, zelfde patroon als team_config
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    sbFetch('session_notes?note_key=eq.spelvorm', 'DELETE').then(() =>
+      sbFetch('session_notes', 'POST', { note_key:'spelvorm', content:String(sv) })
+    );
+  }
+  return sv;
+}
+
 // ─── SCHEMA DATA ───
 const SCHEMA_DATES  = {1:'2026-08-03',2:'2026-08-10',3:'2026-08-17',4:'2026-08-24',5:'2026-08-31',6:'2026-09-07',7:'2026-09-14',8:'2026-09-21',9:'2026-09-28',10:'2026-10-05',11:'2026-10-12',12:'2026-10-19'};
 const SCHEMA_WEEKNR = {1:32,2:33,3:34,4:35,5:36,6:37,7:38,8:39,9:40,10:41,11:42,12:43};
@@ -926,8 +1088,8 @@ function getRolBadges(posities) {
 // in opstelling.html en wedstrijden.html (en, als losse kopie, in live.html dat app.js niet laadt).
 function fieldRoleClass(label) {
   if (label === 'GK') return 'rol-keeper';
-  if (/^(LB|RB|CB|LWB|RWB)/.test(label)) return 'rol-verdediger';
-  if (/^(ST|CF|LW|RW)/.test(label)) return 'rol-aanval';
+  if (/^(LB|RB|CB|LWB|RWB|DEF|ACHT)/.test(label)) return 'rol-verdediger';
+  if (/^(ST|CF|LW|RW|AANV|VOOR)/.test(label)) return 'rol-aanval';
   return 'rol-midden';
 }
 const SKILL_COLORS = {

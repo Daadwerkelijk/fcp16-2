@@ -625,12 +625,20 @@ function moveWeekBlok(ti, bi, dir) {
   renderWeekBlokken(ti);
 }
 
+// Alleen systemen van de huidige spelvorm in de "pick-formatie"-filter, zowel
+// bij het kiezen als het aanmaken van een oefening vanuit de picker.
+function vulPickFormatieSelect() {
+  const fmSel = document.getElementById('pick-formatie'); fmSel.innerHTML = '<option value="alle">Alle systemen</option>';
+  Object.entries(formatiesVoorSpelvorm(loadFormaties(), loadSpelvorm())).forEach(([key, f]) => {
+    const opt = document.createElement('option'); opt.value = key; opt.textContent = f.label; fmSel.appendChild(opt);
+  });
+}
+
 function openPickOef(ti) {
   activePickTi = ti;
   const sel = document.getElementById('pick-cat'); sel.innerHTML = '';
   categories.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
-  const fmSel = document.getElementById('pick-formatie'); fmSel.innerHTML = '<option value="alle">Alle systemen</option>';
-  Object.entries(loadFormaties()).forEach(([key, f]) => { const opt = document.createElement('option'); opt.value = key; opt.textContent = f.label; fmSel.appendChild(opt); });
+  vulPickFormatieSelect();
   pickOefCallback = oef => {
     weekBlokken[activePickTi].push({ cat:oef.cat, oefNaam:oef.title, tip:oef.tip||'', url:oef.url||'' });
     renderWeekBlokken(activePickTi);
@@ -828,8 +836,7 @@ async function deleteSessie(wi, si) {
 function addOefToSessie(nk) {
   const sel = document.getElementById('pick-cat'); sel.innerHTML = '';
   categories.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
-  const fmSel = document.getElementById('pick-formatie'); fmSel.innerHTML = '<option value="alle">Alle systemen</option>';
-  Object.entries(loadFormaties()).forEach(([key, f]) => { const opt = document.createElement('option'); opt.value = key; opt.textContent = f.label; fmSel.appendChild(opt); });
+  vulPickFormatieSelect();
   pickOefCallback = oef => {
     const blokken = getBlokken(nk); if (!blokken) return;
     blokken.push({ t:'', cat:normaliseerCat(oef.cat), n:oef.title, tip:oef.tip||'', url:oef.url||'' });

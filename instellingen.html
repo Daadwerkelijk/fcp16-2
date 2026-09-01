@@ -73,6 +73,15 @@
       <button id="cfg-sb-reset" style="width:100%;margin-top:6px;padding:9px;background:transparent;border:1px solid var(--red);border-radius:var(--rsm);color:var(--red);font-family:var(--font-mono);font-size:12px;cursor:pointer;display:none" onclick="resetSupabaseConfig()">✕ Verbinding verwijderen</button>
     </section>
 
+    <!-- ─── SPELVORM ─── -->
+    <section>
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">⚽ Spelvorm</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Bepaalt welke formaties beschikbaar zijn bij Opstelling en bij een wedstrijd. Nog niets gekozen? Dan blijft alles zoals nu (11 tegen 11).</div>
+      <select id="spelvorm-select" onchange="kiesSpelvorm(this.value)"
+        style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23a8e040%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;background-size:12px">
+      </select>
+    </section>
+
     <!-- ─── FORMATIES ─── -->
     <section>
       <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">🟢 Formaties library</div>
@@ -184,6 +193,24 @@ function kiesThema(key) {
     document.getElementById('thema-select').style.backgroundImage =
       `url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22${encodedColor}%22 stroke-width=%221.5%22 fill=%22none%22/></svg>')`;
   }
+}
+
+// ─── SPELVORM ───
+function renderSpelvormDropdown() {
+  const huidig = loadSpelvorm();
+  const sel = document.getElementById('spelvorm-select');
+  sel.innerHTML = '';
+  Object.entries(SPELVORM_OPTIES).forEach(([key, label]) => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = label;
+    opt.selected = parseInt(key, 10) === huidig;
+    sel.appendChild(opt);
+  });
+}
+function kiesSpelvorm(key) {
+  saveSpelvorm(key);
+  showToast(SPELVORM_OPTIES[key] + ' actief');
 }
 
 // ─── SUPABASE ───
@@ -370,6 +397,7 @@ async function onSupabaseReady() {
   renderRedenen();
   renderWisselRedenen();
   renderCats();
+  if (data.spelvorm) renderSpelvormDropdown();
 }
 
 async function wisCache() {
@@ -389,6 +417,7 @@ async function wisCache() {
 // Init
 loadCfgFields();
 renderThemaDropdown();
+renderSpelvormDropdown();
 loadSbFields();
 renderFormaties();
 renderRedenen();

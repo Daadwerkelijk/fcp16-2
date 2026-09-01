@@ -113,7 +113,7 @@ let activeFormatie = state.formatie;
 let currentPosId = null;
 
 function renderFormatieDropdown() {
-  FORMATIES = loadFormaties();
+  FORMATIES = formatiesVoorSpelvorm(loadFormaties(), loadSpelvorm());
   const sel = document.getElementById('formatie-select');
   sel.innerHTML = '';
   Object.entries(FORMATIES).forEach(([key, f]) => {
@@ -284,19 +284,25 @@ function shareWhatsApp() {
 
 function saveLineupAction() {
   saveLineup(lineup);
-  const f = getPositions().filter(p => lineup[p.id] != null).length;
-  showToast('Opgeslagen · ' + f + '/11 posities');
+  const posities = getPositions();
+  const f = posities.filter(p => lineup[p.id] != null).length;
+  showToast('Opgeslagen · ' + f + '/' + posities.length + ' posities');
 }
 
 async function onSupabaseReady() {
   const data = await loadFromSupabase();
   if (data.players) players = data.players;
   if (data.lineup)  lineup  = data.lineup;
+  if (data.spelvorm) {
+    FORMATIES = formatiesVoorSpelvorm(loadFormaties(), loadSpelvorm());
+    if (!FORMATIES[activeFormatie]) activeFormatie = Object.keys(FORMATIES)[0];
+    renderFormatieDropdown();
+  }
   buildField(); // opnieuw opbouwen zodat spelersnamen correct staan
 }
 
 // Init
-FORMATIES = loadFormaties();
+FORMATIES = formatiesVoorSpelvorm(loadFormaties(), loadSpelvorm());
 if (!FORMATIES[activeFormatie]) activeFormatie = Object.keys(FORMATIES)[0];
 renderFormatieDropdown();
 buildField();

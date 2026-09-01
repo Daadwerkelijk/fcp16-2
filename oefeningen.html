@@ -212,7 +212,12 @@ function openOefModal(id, defaultCat) {
 
 function renderOefFormatieChips(selected) {
   const cont = document.getElementById('oef-f-formaties'); cont.innerHTML = '';
-  const fm = loadFormaties();
+  const alle = loadFormaties();
+  // Alleen systemen van de huidige spelvorm, maar altijd aangevuld met formaties
+  // die deze oefening al had — anders verdwijnt een bestaande tag stilletjes
+  // zodra je de oefening opnieuw opslaat (checkbox simpelweg niet meer zichtbaar).
+  const fm = formatiesVoorSpelvorm(alle, loadSpelvorm());
+  selected.forEach(key => { if (alle[key] && !fm[key]) fm[key] = alle[key]; });
   Object.entries(fm).forEach(([key, f]) => {
     const btn = document.createElement('button');
     btn.type = 'button';

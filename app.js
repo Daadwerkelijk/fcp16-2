@@ -469,7 +469,7 @@ async function syncCustomWeken(weken) {
 
 // ─── SUPABASE LOAD ALL ───
 async function loadFromSupabase() {
-  const [pl, lu, sn, oe, ca, wd, pr, aanw, cw] = await Promise.all([
+  const [pl, lu, sn, oe, ca, wd, pr, aanw, cw, cf] = await Promise.all([
     sbFetch('players?select=*&order=created_at'),
     sbFetch('lineup?select=*'),
     sbFetch('session_notes?select=*'),
@@ -479,6 +479,7 @@ async function loadFromSupabase() {
     sbFetch('principes?select=*&order=sort_order'),
     sbFetch('aanwezigheid?select=*'),
     sbFetch('custom_weken?id=eq.singleton&select=*'),
+    sbFetch('custom_formaties?select=*&order=created_at'),
   ]);
   const result = {};
   if (pl && !pl._error) { result.players = pl; savePlayers(pl); }
@@ -567,6 +568,15 @@ async function loadFromSupabase() {
   if (cw && !cw._error && cw.length) {
     const weken = typeof cw[0].data === 'string' ? JSON.parse(cw[0].data) : cw[0].data;
     result.customWeken = weken; saveCustomWeken(weken);
+  }
+  if (cf && !cf._error) {
+    const eigenFormaties = cf.map(f => ({
+      ...f,
+      posities: typeof f.posities === 'string' ? JSON.parse(f.posities || '[]') : (f.posities || []),
+    }));
+    result.customFormaties = eigenFormaties;
+    saveCustomFormatiesLijst(eigenFormaties);
+    FORMATIES = loadFormaties();
   }
   return result;
 }
@@ -849,10 +859,45 @@ const FORMATIES_BUILTIN = {
   ]},
 };
 
+// ─── Datalaag: Zelfgemaakte (sleepbare) formaties ───
+// Zelfde patroon als custom_oef: lokale array-cache (fcp_custom_formaties) +
+// Supabase-tabel custom_formaties, samengevoegd getoond met de vaste FORMATIES_BUILTIN.
+function loadCustomFormaties() {
+  return JSON.parse(localStorage.getItem('fcp_custom_formaties') || '[]');
+}
+function saveCustomFormatiesLijst(lijst) {
+  localStorage.setItem('fcp_custom_formaties', JSON.stringify(lijst));
+}
+function toSbFormatie(f) {
+  return { id:f.id, titel:f.titel, spelvorm:f.spelvorm, posities:f.posities || [] };
+}
+async function createFormatie(f) {
+  return await sbFetch('custom_formaties', 'POST', toSbFormatie(f));
+}
+async function updateFormatie(id, f) {
+  return await sbFetch('custom_formaties?id=eq.' + id, 'PATCH', toSbFormatie(f));
+}
+async function deleteFormatieRemote(id) {
+  return await sbWrite('custom_formaties?id=eq.' + id, 'DELETE');
+}
+// Rol per positie wordt bij het slepen bewaard als grove indeling
+// (verdediger/midden/aanval/keeper — zie formatie-editor.html) en hier vertaald
+// naar dezelfde role-waarden als de vaste systemen, zodat POS_LABELS (hieronder)
+// zonder aanpassing ook voor eigen systemen werkt. .label wordt niet apart
+// opgeslagen (staat niet in de tabel) maar afgeleid uit .id, precies zoals de
+// editor dat id al koos (bv. "DEF_L" -> "DEF-L").
+const ROL_NAAR_ROLE = { verdediger:'back', midden:'dm', aanval:'st', keeper:'keeper' };
+function normaliseerCustomFormatie(f) {
+  const pos = (f.posities || []).map(p => ({
+    id: p.id, label: p.id.replace(/_/g, '-'), role: ROL_NAAR_ROLE[p.rol] || 'dm', x: p.x, y: p.y,
+  }));
+  return { label: f.titel, spelvorm: f.spelvorm, pos, eigen: true };
+}
 // Laad gebruikersformaties uit localStorage
 function loadFormaties() {
-  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
-  return { ...FORMATIES_BUILTIN, ...custom };
+  const eigen = {};
+  loadCustomFormaties().forEach(f => { eigen[f.id] = normaliseerCustomFormatie(f); });
+  return { ...FORMATIES_BUILTIN, ...eigen };
 }
 // Filtert een formaties-object op spelvorm. Formaties zonder spelvorm-veld
 // (bv. oudere eigen formaties) worden als 11-tegen-11 behandeld, zodat
@@ -864,16 +909,6 @@ function formatiesVoorSpelvorm(alle, spelvorm) {
     if ((f.spelvorm || 11) === sv) gefilterd[key] = f;
   });
   return gefilterd;
-}
-function saveCustomFormatie(key, formatie) {
-  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
-  custom[key] = formatie;
-  localStorage.setItem('fcp_custom_formaties', JSON.stringify(custom));
-}
-function deleteCustomFormatie(key) {
-  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
-  delete custom[key];
-  localStorage.setItem('fcp_custom_formaties', JSON.stringify(custom));
 }
 
 // Backwards compat - FORMATIES verwijst nu naar de geladen set

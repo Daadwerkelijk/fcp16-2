@@ -84,8 +84,11 @@
 
     <!-- ─── FORMATIES ─── -->
     <section>
-      <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">🟢 Formaties library</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">De ingebouwde formaties zijn altijd beschikbaar. Hieronder zie je alle formaties en kun je eigen varianten toevoegen.</div>
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2);display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span>🟢 Formaties library</span>
+        <button class="add-btn" onclick="nieuwSysteemMaken()">+ Nieuw systeem</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">De ingebouwde formaties zijn altijd beschikbaar en niet te wijzigen. Eigen, sleepbare systemen kun je hier bewerken of verwijderen.</div>
       <div id="formaties-lijst" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
     </section>
 
@@ -256,30 +259,39 @@ function resetSupabaseConfig() {
 }
 
 // ─── FORMATIES ───
+function nieuwSysteemMaken() {
+  const van = localStorage.getItem('fcp_formatie') || '';
+  location.href = 'formatie-editor.html?van=' + encodeURIComponent(van);
+}
 function renderFormaties() {
   const alle = loadFormaties();
-  const custom = JSON.parse(localStorage.getItem('fcp_custom_formaties') || '{}');
   const cont = document.getElementById('formaties-lijst');
   cont.innerHTML = '';
   Object.entries(alle).forEach(([key, f]) => {
-    const isCustom = !!custom[key];
+    const isCustom = !!f.eigen;
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)';
     row.innerHTML = `
       <div style="flex:1">
-        <div style="font-size:12px;color:var(--text)">${f.label}</div>
-        <div style="font-size:10px;color:var(--text3)">${f.pos.length} posities${isCustom?' · Eigen formatie':' · Ingebouwd'}</div>
+        <div style="font-size:12px;color:var(--text)">${f.label}${isCustom ? ' <span style="font-size:9px;font-weight:700;color:var(--accent);background:var(--bg3);border-radius:100px;padding:1px 7px;margin-left:2px">aangepast</span>' : ''}</div>
+        <div style="font-size:10px;color:var(--text3)">${f.pos.length} posities · spelvorm ${f.spelvorm || 11}${isCustom?'':' · ingebouwd'}</div>
       </div>
-      ${isCustom ? `<button onclick="verwijderFormatie('${key}')" style="padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:11px;cursor:pointer">✕</button>` : ''}`;
+      ${isCustom ? `<button onclick="location.href='formatie-editor.html?bewerk=${key}'" style="padding:3px 8px;background:transparent;border:1px solid var(--line2);border-radius:4px;color:var(--text2);font-size:11px;cursor:pointer">✏️</button>
+      <button onclick="verwijderFormatie('${key}')" style="padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:11px;cursor:pointer">✕</button>` : ''}`;
     cont.appendChild(row);
   });
 }
-function verwijderFormatie(key) {
-  if (!confirm('Formatie verwijderen?')) return;
-  deleteCustomFormatie(key);
+async function verwijderFormatie(id) {
+  if (!confirm('Eigen systeem verwijderen? Dit kan niet ongedaan gemaakt worden.')) return;
+  const lijst = loadCustomFormaties().filter(f => f.id !== id);
+  saveCustomFormatiesLijst(lijst);
+  if (supabaseReady) {
+    const res = await deleteFormatieRemote(id);
+    if (res && res._error) { FORMATIES = loadFormaties(); renderFormaties(); return; }
+  }
   FORMATIES = loadFormaties();
   renderFormaties();
-  showToast('Formatie verwijderd');
+  showToast('Systeem verwijderd');
 }
 
 // ─── AFWEZIGHEIDSREDENEN ───
@@ -398,6 +410,7 @@ async function onSupabaseReady() {
   renderWisselRedenen();
   renderCats();
   if (data.spelvorm) renderSpelvormDropdown();
+  if (data.customFormaties) renderFormaties();
 }
 
 async function wisCache() {

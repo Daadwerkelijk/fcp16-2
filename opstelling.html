@@ -50,9 +50,14 @@
     </div>
   </div>
   <div style="padding:10px 16px 4px;background:var(--bg)">
-    <select id="formatie-select" onchange="setFormatie(this.value)"
-        style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23a8e040%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;background-size:12px">
-      </select>
+    <div style="display:flex;gap:7px">
+      <select id="formatie-select" onchange="setFormatie(this.value)"
+          style="flex:1;min-width:0;padding:9px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23a8e040%22 stroke-width=%221.5%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;background-size:12px">
+        </select>
+      <button id="formatie-bewerk-btn" onclick="bewerkActieveFormatie()" style="display:none;flex-shrink:0;padding:0 12px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-size:15px;cursor:pointer">✏️</button>
+      <button id="formatie-verwijder-btn" onclick="verwijderActieveFormatie()" style="display:none;flex-shrink:0;padding:0 12px;background:var(--bg3);border:1px solid var(--red);border-radius:var(--rsm);color:var(--red);font-size:15px;cursor:pointer">🗑</button>
+    </div>
+    <a href="#" onclick="location.href='formatie-editor.html?van='+encodeURIComponent(activeFormatie);return false" style="display:inline-block;margin-top:7px;font-size:12px;color:var(--accent);font-weight:600;text-decoration:none">+ Eigen systeem maken</a>
   </div>
   <div class="opst-layout-wrap field-page-layout">
     <div class="field-wrap">
@@ -119,10 +124,41 @@ function renderFormatieDropdown() {
   Object.entries(FORMATIES).forEach(([key, f]) => {
     const opt = document.createElement('option');
     opt.value = key;
-    opt.textContent = f.label;
+    opt.textContent = f.label + (f.eigen ? ' (aangepast)' : '');
     opt.selected = key === activeFormatie;
     sel.appendChild(opt);
   });
+  toonEigenSysteemKnoppen();
+}
+
+// Bewerk/verwijder-knoppen zijn alleen zichtbaar bij een zelfgemaakt systeem —
+// vaste, ingebouwde systemen (uit FORMATIES_BUILTIN) blijven altijd onwijzigbaar.
+function toonEigenSysteemKnoppen() {
+  const isEigen = !!FORMATIES[activeFormatie]?.eigen;
+  document.getElementById('formatie-bewerk-btn').style.display = isEigen ? 'block' : 'none';
+  document.getElementById('formatie-verwijder-btn').style.display = isEigen ? 'block' : 'none';
+}
+
+function bewerkActieveFormatie() {
+  location.href = 'formatie-editor.html?bewerk=' + encodeURIComponent(activeFormatie);
+}
+
+async function verwijderActieveFormatie() {
+  const f = FORMATIES[activeFormatie];
+  if (!f || !f.eigen) return;
+  if (!confirm('"' + f.label + '" verwijderen? Dit kan niet ongedaan gemaakt worden.')) return;
+  const lijst = loadCustomFormaties().filter(x => x.id !== activeFormatie);
+  saveCustomFormatiesLijst(lijst);
+  if (supabaseReady) {
+    const res = await deleteFormatieRemote(activeFormatie);
+    if (res && res._error) { renderFormatieDropdown(); return; }
+  }
+  FORMATIES = loadFormaties();
+  const overgebleven = formatiesVoorSpelvorm(FORMATIES, loadSpelvorm());
+  activeFormatie = Object.keys(overgebleven)[0];
+  renderFormatieDropdown();
+  buildField();
+  showToast('Systeem verwijderd');
 }
 
 function setFormatie(f) {
@@ -130,6 +166,7 @@ function setFormatie(f) {
   localStorage.setItem('fcp_formatie', f);
   const sel = document.getElementById('formatie-select');
   if (sel) sel.value = f;
+  toonEigenSysteemKnoppen();
   buildField();
 }
 
@@ -293,7 +330,7 @@ async function onSupabaseReady() {
   const data = await loadFromSupabase();
   if (data.players) players = data.players;
   if (data.lineup)  lineup  = data.lineup;
-  if (data.spelvorm) {
+  if (data.spelvorm || data.customFormaties) {
     FORMATIES = formatiesVoorSpelvorm(loadFormaties(), loadSpelvorm());
     if (!FORMATIES[activeFormatie]) activeFormatie = Object.keys(FORMATIES)[0];
     renderFormatieDropdown();

@@ -1329,7 +1329,7 @@ function renderWedstrijden() {
               <div style="margin-bottom:8px">
                 <select id="wform-sel-${w.id}" onchange="buildWedField('${w.id}')"
                   style="width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-ui);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none">
-                  ${Object.entries(formatieOptiesVoorWedstrijd(w)).map(([k,f])=>`<option value="${k}" ${(w.formatie||'4222')===k?'selected':''}>${f.label}</option>`).join('')}
+                  ${Object.entries(formatieOptiesVoorWedstrijd(w)).map(([k,f])=>`<option value="${k}" ${(w.formatie||'4222')===k?'selected':''}>${f.label}${f.eigen?' (aangepast)':''}</option>`).join('')}
                 </select>
               </div>
               <div class="field-container" style="position:relative;background:var(--field-bg);border-radius:10px;overflow:hidden;border:2px solid var(--field-border);aspect-ratio:400/340">

@@ -247,10 +247,25 @@ async function renderOverzicht() {
   app.innerHTML = html;
 }
 
+// Vaste systemen staan hierboven hardcoded; een zelfgemaakt (sleepbaar) systeem
+// staat in de custom_formaties-tabel en wordt hier lazy opgehaald zodra een
+// wedstrijd er een blijkt te gebruiken — één keer per formatie-key, daarna
+// zit 'm al in FORMATIES/FORMATIE_LABELS voor de rest van de sessie (incl. de
+// 8-seconden-polling hieronder).
+async function laadCustomFormatieIndienNodig(w) {
+  if (!w.formatie || FORMATIES[w.formatie]) return;
+  const [f] = await sbGet('custom_formaties?select=*&id=eq.' + encodeURIComponent(w.formatie));
+  if (!f) return;
+  const posities = typeof f.posities === 'string' ? JSON.parse(f.posities || '[]') : (f.posities || []);
+  FORMATIES[w.formatie] = posities.map(p => ({ id: p.id, label: p.id.replace(/_/g, '-'), x: p.x, y: p.y }));
+  FORMATIE_LABELS[w.formatie] = f.titel;
+}
+
 async function renderDetail(id) {
   const app = document.getElementById('app');
   const [w] = await sbGet('live_wedstrijden?select=*&id=eq.' + encodeURIComponent(id));
   if (!w) { app.innerHTML = `<div class="empty">Wedstrijd niet gevonden.<br><a href="live.html">← Terug naar overzicht</a></div>`; return; }
+  await laadCustomFormatieIndienNodig(w);
   const updates = await sbGet('live_updates?select=*&wedstrijd_id=eq.' + encodeURIComponent(id) + '&order=created_at.desc');
   const [thuis, uit] = teamNamen(w);
   const isLive = w.status === 'live_1e' || w.status === 'live_2e';

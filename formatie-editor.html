@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2B1FA0">
+<title>Eigen systeem — FCP 16-2</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>
+(function(){
+  const T={
+    'licht':{'--topbar':'#2B1FA0','--topbar-dark':'#1a1262','--accent':'#2B1FA0','--bg':'#F2F1FF','--white':'#ffffff','--bg2':'#ffffff','--bg3':'#F2F1FF','--bg4':'#F2F1FF','--text':'#12113A','--text2':'#4A4870','--text3':'#8B8AB0','--border':'#E4E3F5','--border2':'#D0CFED','--line':'#E4E3F5','--line2':'#D0CFED','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},
+    'licht_groen':{'--topbar':'#1B5E20','--topbar-dark':'#0D3B12','--accent':'#1B7A4B','--bg':'#F1F8F4','--white':'#ffffff','--bg2':'#ffffff','--bg3':'#F1F8F4','--bg4':'#F1F8F4','--text':'#0D2B14','--text2':'#2E6645','--text3':'#6B9E7A','--border':'#D4EBD9','--border2':'#B8DABD','--line':'#D4EBD9','--line2':'#B8DABD','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},
+    'licht_blauw':{'--topbar':'#0D47A1','--topbar-dark':'#082f6e','--accent':'#1565C0','--bg':'#F0F4FF','--white':'#ffffff','--bg2':'#ffffff','--bg3':'#F0F4FF','--bg4':'#F0F4FF','--text':'#0D1B4A','--text2':'#2B4EA0','--text3':'#6B82CC','--border':'#C7D4FC','--border2':'#A8BCFA','--line':'#C7D4FC','--line2':'#A8BCFA','--red':'#D32F2F','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'0 1px 3px rgba(0,0,0,.06)'},
+    'fcp':{'--topbar':'#1a1a1a','--topbar-dark':'#000000','--accent':'#F5C000','--bg':'#111111','--white':'#1e1e1e','--bg2':'#1e1e1e','--bg3':'#111111','--bg4':'#111111','--text':'#F5F5F5','--text2':'#CCCCCC','--text3':'#888888','--border':'#333333','--border2':'#444444','--line':'#333333','--line2':'#444444','--red':'#ff4444','--field-bg':'#1B5E20','--field-border':'#2E7D32','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'none'},
+    'donker':{'--topbar':'#080c14','--topbar-dark':'#030508','--accent':'#c8a840','--bg':'#080c14','--white':'#0e1524','--bg2':'#0e1524','--bg3':'#121b2e','--bg4':'#1a2540','--text':'#e8eef8','--text2':'#9aaccc','--text3':'#5a7090','--border':'#1e2e48','--border2':'#2a3e5c','--line':'#141e30','--line2':'#1e2e48','--red':'#f05050','--field-bg':'#0a1828','--field-border':'#1a3050','--font-ui':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-display':"'DM Sans',sans-serif",'--r':'14px','--rsm':'10px','--badge-radius':'100px','--card-shadow':'none'}
+  };
+  const k=localStorage.getItem('fcp_thema')||'licht';
+  const m=T[k]||T.licht;
+  const r=document.documentElement.style;
+  Object.entries(m).forEach(([p,v])=>r.setProperty(p,v));
+})();
+</script>
+<style>
+.pos-slot.dragging{cursor:grabbing;z-index:50}
+.pos-slot.dragging .pos-pill{box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.pos-slot{touch-action:none}
+.titel-live{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--text);text-align:center;margin:14px 0 4px}
+.titel-sub{font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<div class="page-wrap" style="padding-bottom:40px">
+  <div class="page-header" style="position:sticky;top:0;z-index:10">
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="opstelling.html" style="padding:6px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-size:13px;text-decoration:none">← Terug</a>
+      <div class="page-title" id="page-titel">Eigen systeem maken</div>
+    </div>
+  </div>
+
+  <div style="padding:14px 16px 0">
+    <div class="bmodal-label">Start vanuit</div>
+    <select id="start-select" onchange="startVanuit(this.value)"
+      style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--rsm);color:var(--text);font-family:var(--font-mono);font-size:13px;font-weight:500;outline:none;-webkit-appearance:none;appearance:none;margin-bottom:12px"></select>
+  </div>
+
+  <div class="opst-layout-wrap field-page-layout">
+    <div class="field-wrap">
+      <div class="field-container" id="fieldContainer">
+        <svg class="field-svg" viewBox="0 0 400 380" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="380" fill="var(--field-bg)"/>
+          <rect x="8" y="8" width="384" height="364" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+          <line x1="8" y1="190" x2="392" y2="190" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+          <circle cx="200" cy="190" r="38" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <circle cx="200" cy="190" r="2.5" fill="rgba(255,255,255,0.6)"/>
+          <rect x="116" y="8" width="168" height="68" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+          <path d="M 156 76 A 44 44 0 0 0 244 76" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
+          <rect x="116" y="304" width="168" height="68" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+          <path d="M 156 304 A 44 44 0 0 1 244 304" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
+        </svg>
+        <div class="field-positions" id="fieldPositions"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:14px 16px 0;text-align:center">
+    <div class="titel-live" id="titel-live">—</div>
+    <div class="titel-sub" id="titel-sub">voorgestelde naam — beweegt mee tijdens het slepen</div>
+    <div class="bmodal-label" style="text-align:left">Naam systeem</div>
+    <input class="bmodal-input" id="titel-input" oninput="titelHandmatig=true">
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="bmodal-cancel-btn" style="flex:1" onclick="annuleer()">Annuleren</button>
+      <button class="bmodal-save" style="flex:1" onclick="opslaan()" id="opslaan-btn">💾 Opslaan als nieuw systeem</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const BEWERK_ID = params.get('bewerk') || null;
+const VAN_PARAM = params.get('van') || '';
+const HUIDIGE_SPELVORM = loadSpelvorm();
+
+let posities = [];
+let titelHandmatig = false;
+let dragging = null;
+let bewerkBron = null; // ruwe, opgeslagen data van het systeem dat bewerkt wordt (met .rol per positie)
+
+if (BEWERK_ID) {
+  bewerkBron = loadCustomFormaties().find(f => f.id === BEWERK_ID) || null;
+  document.getElementById('page-titel').textContent = 'Eigen systeem bewerken';
+  document.getElementById('opslaan-btn').textContent = '💾 Wijzigingen opslaan';
+}
+
+function alleSystemenVoorSpelvorm() {
+  return formatiesVoorSpelvorm(loadFormaties(), HUIDIGE_SPELVORM);
+}
+
+function vulStartSelect() {
+  const sel = document.getElementById('start-select');
+  sel.innerHTML = '';
+  const alle = alleSystemenVoorSpelvorm();
+  const standaard = BEWERK_ID || VAN_PARAM || localStorage.getItem('fcp_formatie') || Object.keys(alle)[0];
+  Object.entries(alle).forEach(([key, f]) => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = f.label + (f.eigen ? ' (aangepast)' : '');
+    opt.selected = key === standaard;
+    sel.appendChild(opt);
+  });
+  // Bewerkt systeem staat mogelijk niet (meer) in de gefilterde lijst als het per
+  // ongeluk een afwijkend spelvorm-veld heeft — voeg 'm dan alsnog toe zodat de
+  // dropdown nooit leeg/verkeerd oogt.
+  if (BEWERK_ID && !alle[BEWERK_ID] && bewerkBron) {
+    const opt = document.createElement('option');
+    opt.value = BEWERK_ID;
+    opt.textContent = bewerkBron.titel + ' (aangepast)';
+    opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+function startVanuit(key) {
+  if (key === BEWERK_ID && bewerkBron) {
+    // Eigen opgeslagen data heeft al de juiste vorm ({id,x,y,rol}) — direct gebruiken.
+    posities = bewerkBron.posities.map(p => ({ ...p, _key: p.id }));
+  } else {
+    const bron = alleSystemenVoorSpelvorm()[key] || alleSystemenVoorSpelvorm()[Object.keys(alleSystemenVoorSpelvorm())[0]];
+    posities = bron.pos.map(p => ({ id: p.id, x: p.x, y: p.y, _key: p.id }));
+  }
+  renderField();
+  if (key === BEWERK_ID && bewerkBron) {
+    // Bewerken van je eigen, al genoemde systeem: toon gewoon de bestaande naam,
+    // niet meteen een verse suggestie — pas als je zelf iets verschuift, is een
+    // nieuwe suggestie relevant.
+    titelHandmatig = true;
+    document.getElementById('titel-input').value = bewerkBron.titel;
+    document.getElementById('titel-live').textContent = bewerkBron.titel;
+    document.getElementById('titel-sub').textContent = 'huidige naam — sleep een positie voor een nieuwe suggestie';
+  } else {
+    titelHandmatig = false;
+    updateTitel();
+  }
+}
+
+function linieVan(y) {
+  if (y > 60) return 'achter';
+  if (y >= 35) return 'midden';
+  return 'voor';
+}
+function rolVan(pos) {
+  if (pos.id === 'GK') return 'keeper';
+  const l = linieVan(pos.y);
+  if (l === 'achter') return 'verdediger';
+  if (l === 'voor') return 'aanval';
+  return 'midden';
+}
+function rolClassVan(pos) {
+  const r = rolVan(pos);
+  return r === 'keeper' ? 'rol-keeper' : r === 'verdediger' ? 'rol-verdediger' : r === 'aanval' ? 'rol-aanval' : 'rol-midden';
+}
+
+// Label van elke positie wordt herberekend op basis van de HUIDIGE linie + plek
+// op die linie (DEF-L/MID-C/AANV-R-stijl) — een gesleepte positie heet dus altijd
+// naar waar hij nu staat, niet naar zijn startpunt.
+function zijSuffix(index, totaal) {
+  if (totaal <= 1) return '';
+  if (totaal === 2) return index === 0 ? 'L' : 'R';
+  if (totaal === 3) return ['L','C','R'][index];
+  if (totaal === 4) return ['L','CL','CR','R'][index];
+  return String(index + 1);
+}
+function berekenAlleLabels() {
+  const prefix = { achter:'DEF', midden:'MID', voor:'AANV' };
+  const linies = { achter:[], midden:[], voor:[] };
+  posities.forEach(p => {
+    if (p.id === 'GK') { p.label = 'GK'; return; }
+    linies[linieVan(p.y)].push(p);
+  });
+  Object.entries(linies).forEach(([linie, lijst]) => {
+    lijst.sort((a, b) => a.x - b.x);
+    lijst.forEach((p, i) => { p.label = prefix[linie] + (zijSuffix(i, lijst.length) ? '-' + zijSuffix(i, lijst.length) : ''); });
+  });
+}
+function verversLabelsEnRollen() {
+  berekenAlleLabels();
+  posities.forEach(p => {
+    const slot = document.getElementById('slot-' + p._key);
+    if (!slot) return;
+    const rolEl = slot.querySelector('.pos-pill-rol');
+    rolEl.className = 'pos-pill-rol ' + rolClassVan(p);
+    rolEl.textContent = p.label;
+  });
+}
+
+function berekenTitel() {
+  const telling = { achter:0, midden:0, voor:0 };
+  posities.forEach(p => { if (p.id !== 'GK') telling[linieVan(p.y)]++; });
+  return [telling.achter, telling.midden, telling.voor].filter(n => n > 0).join('-') || '—';
+}
+
+function bestaandeNamen() {
+  const namen = new Set();
+  Object.entries(alleSystemenVoorSpelvorm()).forEach(([key, f]) => {
+    if (key === BEWERK_ID) return; // eigen naam telt niet als botsing met zichzelf
+    namen.add(f.label);
+  });
+  return namen;
+}
+
+function suggestieNaam(basis) {
+  const namen = bestaandeNamen();
+  if (!namen.has(basis)) return basis;
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (const letter of letters) {
+    const kandidaat = basis + ' - ' + letter;
+    if (!namen.has(kandidaat)) return kandidaat;
+  }
+  return basis + ' - ' + Date.now();
+}
+
+function updateTitel() {
+  const basis = berekenTitel();
+  const suggestie = suggestieNaam(basis);
+  document.getElementById('titel-live').textContent = suggestie;
+  document.getElementById('titel-sub').textContent = suggestie !== basis
+    ? '"' + basis + '" bestaat al bij deze spelvorm — automatisch aangepast'
+    : 'voorgestelde naam — beweegt mee tijdens het slepen';
+  if (!titelHandmatig) document.getElementById('titel-input').value = suggestie;
+}
+
+function renderField() {
+  berekenAlleLabels();
+  const cont = document.getElementById('fieldPositions');
+  cont.innerHTML = '';
+  posities.forEach(pos => {
+    const slot = document.createElement('div');
+    slot.className = 'pos-slot';
+    slot.id = 'slot-' + pos._key;
+    slot.style.left = pos.x + '%';
+    slot.style.top = pos.y + '%';
+    const pill = document.createElement('div'); pill.className = 'pos-pill';
+    const rol = document.createElement('span'); rol.className = 'pos-pill-rol ' + rolClassVan(pos); rol.textContent = pos.label;
+    pill.appendChild(rol);
+    slot.appendChild(pill);
+    slot.addEventListener('pointerdown', ev => startDrag(ev, pos._key, slot));
+    cont.appendChild(slot);
+  });
+}
+
+function startDrag(ev, posKey, slot) {
+  ev.preventDefault();
+  // Pointer capture is een "nice to have" (garandeert events als je snel van het
+  // kleine bolletje af sleept) maar mag nooit een showstopper zijn. De listeners
+  // staan bewust op document, niet op het slot zelf, zodat slepen ook zonder
+  // geslaagde capture blijft werken.
+  try { slot.setPointerCapture(ev.pointerId); } catch (e) {}
+  dragging = { posKey, slot, pointerId: ev.pointerId };
+  slot.classList.add('dragging');
+  document.addEventListener('pointermove', onDragMove);
+  document.addEventListener('pointerup', onDragEnd);
+  document.addEventListener('pointercancel', onDragEnd);
+}
+
+function onDragMove(ev) {
+  if (!dragging || ev.pointerId !== dragging.pointerId) return;
+  const rect = document.getElementById('fieldContainer').getBoundingClientRect();
+  let x = ((ev.clientX - rect.left) / rect.width) * 100;
+  let y = ((ev.clientY - rect.top) / rect.height) * 100;
+  x = Math.max(4, Math.min(96, x));
+  y = Math.max(6, Math.min(92, y));
+  const pos = posities.find(p => p._key === dragging.posKey);
+  pos.x = x; pos.y = y;
+  dragging.slot.style.left = x + '%';
+  dragging.slot.style.top = y + '%';
+  verversLabelsEnRollen();
+  updateTitel();
+}
+
+function onDragEnd(ev) {
+  if (!dragging || ev.pointerId !== dragging.pointerId) return;
+  dragging.slot.classList.remove('dragging');
+  document.removeEventListener('pointermove', onDragMove);
+  document.removeEventListener('pointerup', onDragEnd);
+  document.removeEventListener('pointercancel', onDragEnd);
+  dragging = null;
+}
+
+function annuleer() {
+  history.length > 1 ? history.back() : (location.href = 'opstelling.html');
+}
+
+async function opslaan() {
+  const naam = document.getElementById('titel-input').value.trim() || berekenTitel();
+  const payload = {
+    id: BEWERK_ID || genId(),
+    titel: naam,
+    spelvorm: HUIDIGE_SPELVORM,
+    posities: posities.map(p => ({ id: p.label.replace(/-/g, '_'), x: Math.round(p.x), y: Math.round(p.y), rol: rolVan(p) })),
+  };
+
+  const lijst = loadCustomFormaties();
+  if (BEWERK_ID) {
+    const idx = lijst.findIndex(f => f.id === BEWERK_ID);
+    if (idx >= 0) lijst[idx] = payload; else lijst.push(payload);
+  } else {
+    lijst.push(payload);
+  }
+  saveCustomFormatiesLijst(lijst);
+
+  if (supabaseReady) {
+    const res = BEWERK_ID ? await updateFormatie(BEWERK_ID, payload) : await createFormatie(payload);
+    if (res && res._error) showToast('⚠️ Supabase: opslaan mislukt (wordt alleen lokaal bewaard)');
+  }
+  FORMATIES = loadFormaties();
+  showToast(naam + ' opgeslagen');
+  setTimeout(() => { location.href = 'opstelling.html'; }, 700);
+}
+
+// Init
+vulStartSelect();
+startVanuit(document.getElementById('start-select').value);
+initSupabase(); // supabaseReady moet gezet zijn tegen de tijd dat opslaan() wordt aangeroepen
+</script>
+</body>
+</html>

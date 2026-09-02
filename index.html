@@ -294,6 +294,12 @@ let agendaFilter = 'alle';
 function getAgendaItems() {
   const todayIso = isoVan(new Date());
   const items = [];
+  const spelers = JSON.parse(localStorage.getItem('fcp_players') || '[]');
+  const aanwAlles = JSON.parse(localStorage.getItem('fcp_aanw') || '{}');
+  // "aanwezig/totaal" o.b.v. de echte afwezigheid die per wedstrijd/training is
+  // ingevuld — geen los telveld, dus altijd in sync met wat er op de wedstrijd-
+  // of trainingspagina zelf staat.
+  const aanwezigTxt = afwezigAantal => spelers.length ? (spelers.length - afwezigAantal) + '/' + spelers.length : '';
 
   const wedstrijden = JSON.parse(localStorage.getItem('fcp_wed') || '[]');
   wedstrijden.filter(w => !w.gespeeld && w.isoDate && w.isoDate >= todayIso).forEach(w => {
@@ -305,6 +311,7 @@ function getAgendaItems() {
       titel: 'Wedstrijd vs ' + (w.tegenstander || '?'),
       pillLabel: wedTypeLabel,
       sub: (w.thuis_uit === 'uit' ? 'Uit' : 'Thuis') + (w.starttijd ? ' - Aanvang: ' + w.starttijd : ''),
+      aanwezig: aanwezigTxt((w.afwezig || []).length),
       href: 'wedstrijden.html#wed-' + w.id
     });
   });
@@ -316,6 +323,8 @@ function getAgendaItems() {
       const d = sessieDatum(w.isoDate, s, si);
       const iso = isoVan(d);
       if (iso < todayIso) return;
+      const nk = 'cw' + wi + '_' + si;
+      const afwNum = Object.values(aanwAlles[nk] || {}).filter(v => v && v.afwezig).length;
       items.push({
         type: 'training',
         isoDate: iso,
@@ -323,7 +332,8 @@ function getAgendaItems() {
         titel: s.dag || 'Training',
         pillLabel: 'Training',
         sub: '',
-        href: 'trainen.html#cw' + wi + '_' + si
+        aanwezig: aanwezigTxt(afwNum),
+        href: 'trainen.html#' + nk
       });
     });
   });
@@ -365,6 +375,7 @@ function renderAgenda() {
       + '<div class="agenda-pill" style="background:' + pillBg + ';color:' + stripe + '">' + a.pillLabel + '</div>'
       + (a.sub ? '<div class="item-sub">' + a.sub + '</div>' : '')
       + '</div>'
+      + (a.aanwezig ? '<div class="item-right">' + a.aanwezig + '</div>' : '')
       + '<div class="chev">›</div>'
       + '</a>';
   }).join('');

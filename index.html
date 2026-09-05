@@ -6,9 +6,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FCP 16-2">
+<meta name="apple-mobile-web-app-title" content="SportCoach">
 <meta name="theme-color" content="#2B1FA0">
-<title>FCP 16-2</title>
+<title>SportCoach</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon192.png" type="image/png">
 <link rel="icon" href="icon192.png" type="image/png">
@@ -51,8 +51,8 @@
     <div style="padding:0 16px 14px">
       <div style="display:flex;align-items:flex-end;justify-content:space-between">
         <div>
-          <h1 class="home-title" id="home-titel" style="color:#fff">FCP <em>16-2</em></h1>
-          <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px" id="home-subtitel">Seizoen 2026/2027</div>
+          <h1 class="home-title" id="home-titel" style="color:#fff"></h1>
+          <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px" id="home-subtitel"></div>
         </div>
         <a href="instellingen.html" class="topbar-btn" style="text-decoration:none;align-self:flex-end">⚙️</a>
       </div>
@@ -257,8 +257,9 @@ function renderStartCards() {
       const sp = JSON.parse(localStorage.getItem('fcp_players')||'[]');
       const afw = (w.afwezig||[]).length;
       const aanwTeller = sp.length > 0 ? ((sp.length - afw) + '/' + sp.length) : '–';
-      const thuisTeam = w.thuis_uit === 'thuis' ? 'FCP JO16-2' : (w.tegenstander||'?');
-      const uitTeam = w.thuis_uit === 'thuis' ? (w.tegenstander||'?') : 'FCP JO16-2';
+      const eigenTeamNaam = loadTeamInstellingen().naam || '?';
+      const thuisTeam = w.thuis_uit === 'thuis' ? eigenTeamNaam : (w.tegenstander||'?');
+      const uitTeam = w.thuis_uit === 'thuis' ? (w.tegenstander||'?') : eigenTeamNaam;
       const datumTekst = (w.datum||'–') + (w.starttijd ? ' · ' + w.starttijd : '') + ' · ' + (w.thuis_uit||'–');
       const bolSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M12 2.5c0 0-3 3.5-3 9.5s3 9.5 3 9.5"/><path d="M12 2.5c0 0 3 3.5 3 9.5s-3 9.5-3 9.5"/><line x1="2.5" y1="9" x2="21.5" y2="9"/><line x1="2.5" y1="15" x2="21.5" y2="15"/></svg>';
       const teamDiv = function(naam) {

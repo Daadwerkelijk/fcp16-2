@@ -4,59 +4,46 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Live — FCP 16-2</title>
+<title>Live — SportCoach</title>
 <link rel="icon" href="icon192.png" type="image/png">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ui-v2.css">
 <style>
-body{max-width:480px;margin:0 auto;padding-bottom:40px}
-.pub-hero{background:var(--topbar);padding:calc(18px + env(safe-area-inset-top)) 16px 18px;color:#fff}
-.pub-hero-top{display:flex;align-items:center;gap:10px;margin-bottom:2px}
-.pub-badge{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
-.pub-title{font-size:19px;font-weight:700}
-.pub-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
-.pub-back{font-size:12px;color:rgba(255,255,255,.65);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:14px}
-.pub-list{padding:14px 14px 0}
-.pub-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-decoration:none;cursor:pointer}
-.pub-card-left{min-width:0}
-.pub-opp{font-size:15px;font-weight:700;color:var(--text);line-height:1.3}
-.pub-meta{font-size:11px;color:var(--text3);margin-top:2px}
-.pub-right{text-align:right;flex-shrink:0}
-.pub-score{font-size:20px;font-weight:800;color:var(--text);font-family:var(--font-mono);line-height:1}
-.status-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px;margin-top:5px}
-.status-live{background:var(--rood-l);color:var(--rood)}
-.status-live .dot{width:6px;height:6px;border-radius:50%;background:var(--rood);animation:pulse 1.4s ease-in-out infinite}
-.status-rust{background:var(--goud-l);color:var(--goud)}
-.status-ft{background:var(--groen-l);color:var(--groen)}
-.status-upcoming{color:var(--text3);font-weight:600}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
-.section-lbl{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:16px 2px 8px}
-.empty{padding:40px 16px;text-align:center;color:var(--text3);font-size:13px}
-
+body{max-width:480px;margin:0 auto;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+.pub-appbar{padding-top:calc(14px + env(safe-area-inset-top))}
+.pub-list{padding:0 16px}
+.pub-card-left{min-width:0;flex:1}
+.pub-right{text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.pub-score{font-size:19px;font-weight:700}
 .pub-teams{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.pub-team{flex:1;font-size:14px;font-weight:600;line-height:1.3}
+.pub-team{flex:1;font-size:15px;font-weight:600;line-height:1.3}
 .pub-team.uit{text-align:right}
-.pub-score-big{font-size:38px;font-weight:800;font-family:var(--font-mono);flex-shrink:0;padding:0 6px}
-.pub-status-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px}
-.live-dot{width:7px;height:7px;border-radius:50%;background:#ff6b6b;animation:pulse 1.4s ease-in-out infinite}
-.pub-status-txt{font-size:12px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.9)}
-.pub-section{padding:16px}
-.tl{position:relative;padding-left:22px}
-.tl::before{content:'';position:absolute;left:5px;top:4px;bottom:4px;width:1.5px;background:var(--border)}
-.tl-item{position:relative;padding-bottom:16px}
-.tl-item:last-child{padding-bottom:0}
-.tl-dot{position:absolute;left:-22px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--white);border:2px solid var(--topbar)}
-.tl-dot.goal{background:var(--groen);border-color:var(--groen)}
-.tl-time{font-size:11px;font-weight:700;color:var(--topbar);font-family:var(--font-mono)}
-.tl-text{font-size:13px;color:var(--text2);margin-top:1px;line-height:1.4}
-.mini-field{background:linear-gradient(180deg,#1e7a3c,#186631);border-radius:var(--r);padding:16px 10px;position:relative;aspect-ratio:400/380;max-height:min(70dvh,480px);margin:0 auto 4px}
-.mini-field::before{content:'';position:absolute;inset:10px;border:1.5px solid rgba(255,255,255,.35);border-radius:4px}
+.pub-score-big{font-size:38px;font-weight:700;flex-shrink:0;padding:0 6px}
+.pub-status-row{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:10px}
+.pub-status-txt{font-size:12.5px;font-weight:700;letter-spacing:.02em;color:var(--ink3)}
+.empty{padding:40px 16px;text-align:center;color:var(--ink3);font-size:13px}
+.pub-back-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 </style>
 </head>
-<body>
+<body class="v2">
 <div id="app"></div>
 
 <script>
+// ─── Thema — zelfde licht/donker/systeem-logica als prototype-v2.html, hier
+// een eigen kleine kopie: dit bestand deelt bewust geen code met de rest van
+// de V2-bundel (zie fieldRoleClass hieronder), en fcp_thema_v2 leeft toch
+// alleen lokaal op het toestel van wie 'm zette — een ouder op een ander
+// toestel heeft die key nooit, dus valt vanzelf terug op systeemvoorkeur. ───
+const THEMA_MEDIA = window.matchMedia('(prefers-color-scheme: dark)');
+function pasThemaToe() {
+  const modus = localStorage.getItem('fcp_thema_v2') || 'systeem';
+  const effectief = modus === 'systeem' ? (THEMA_MEDIA.matches ? 'donker' : 'licht') : modus;
+  document.documentElement.setAttribute('data-thema', effectief);
+}
+THEMA_MEDIA.addEventListener('change', pasThemaToe);
+pasThemaToe();
+
 const SB_URL = 'https://yjlvjteiaszvqtpyhwwn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqbHZqdGVpYXN6dnF0cHlod3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMDY4NDMsImV4cCI6MjA5NTg4Mjg0M30.71xXmtGD9qP5-4p2BkRwtVm95SOn5AaVq21bxVr6Jrc';
 
@@ -111,14 +98,14 @@ const FORMATIE_LABELS = {
   'sv9_332':'3-3-2', 'sv9_341':'3-4-1', 'sv9_233':'2-3-3',
 };
 
-function statusChip(w, groot) {
+function statusChip(w) {
   if (w.status === 'live_1e' || w.status === 'live_2e') {
     const min = live_minuut(w);
     const helftTxt = w.status === 'live_1e' ? '1e' : '2e';
-    return `<span class="status-chip status-live"><span class="dot"></span>${min}' · ${helftTxt}</span>`;
+    return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700"><span class="livedot"></span>${min}' · ${helftTxt}</span>`;
   }
-  if (w.status === 'rust') return `<span class="status-chip status-rust">RUST</span>`;
-  if (w.status === 'ft')   return `<span class="status-chip status-ft">FT</span>`;
+  if (w.status === 'rust') return `<span class="tag tag--line">RUST</span>`;
+  if (w.status === 'ft')   return `<span class="tag tag--line">FT</span>`;
   return '';
 }
 
@@ -129,10 +116,10 @@ function live_minuut(w) {
 }
 
 function statusTekstDetail(w) {
-  if (w.status === 'live_1e') return live_minuut(w) + "' · 1E HELFT";
-  if (w.status === 'live_2e') return live_minuut(w) + "' · 2E HELFT";
-  if (w.status === 'rust')    return 'RUST';
-  if (w.status === 'ft')      return 'FT · AFGELOPEN';
+  if (w.status === 'live_1e') return live_minuut(w) + "' · 1e helft";
+  if (w.status === 'live_2e') return live_minuut(w) + "' · 2e helft";
+  if (w.status === 'rust')    return 'Rust';
+  if (w.status === 'ft')      return 'Afgelopen';
   return w.datum + (w.starttijd ? ' · ' + w.starttijd : '');
 }
 
@@ -149,18 +136,18 @@ const TYPE_LABEL = {
 };
 
 function renderTijdlijnItem(u) {
-  const isGoal = u.type === 'update' && u.tekst && u.tekst.toLowerCase().includes('goal');
   const tekst = u.type === 'update' ? (u.tekst || 'Update') : (TYPE_LABEL[u.type] || u.tekst || u.type);
   const toonStand = u.type === 'update' && u.score_eigen !== null && u.score_eigen !== undefined;
   const standTxt = toonStand ? ` (${u.score_eigen}-${u.score_tegen})` : '';
-  return `<div class="tl-item">
-    <div class="tl-dot${isGoal?' goal':''}"></div>
-    <div class="tl-time">${u.wedstrijd_minuut !== null && u.wedstrijd_minuut !== undefined ? u.wedstrijd_minuut + "'" : ''}</div>
-    <div class="tl-text">${tekst}${standTxt}</div>
+  const minTxt = u.wedstrijd_minuut !== null && u.wedstrijd_minuut !== undefined ? u.wedstrijd_minuut + "'" : '';
+  return `<div class="note" style="margin-bottom:8px">
+    <div class="note-t">${minTxt}</div>
+    <div class="note-tx">${tekst}${standTxt}</div>
   </div>`;
 }
 
-// Zelfde rolkleur-indeling als fieldRoleClass() in app.js (die dit bestand niet laadt).
+// Zelfde rolkleur-indeling als fieldRoleClassV2() in prototype-v2.html (die dit
+// bestand niet laadt — zie de kop van dit bestand voor waarom).
 function fieldRoleClass(label) {
   if (label === 'GK') return 'rol-keeper';
   if (/^(LB|RB|CB|LWB|RWB|DEF|ACHT)/.test(label)) return 'rol-verdediger';
@@ -173,16 +160,16 @@ function renderMiniField(w) {
   if (!posities || !w.opstelling || !w.opstelling.length) return '';
   const namenPerPos = {};
   w.opstelling.forEach(o => { namenPerPos[o.pos] = o.naam; });
-  const spelers = posities.map(p => {
+  const slots = posities.map(p => {
     const naam = namenPerPos[p.label] || namenPerPos[p.id];
     if (!naam) return '';
-    return `<div class="pos-slot" style="left:${p.x}%;top:${p.y}%">
-      <div class="pos-pill"><span class="pos-pill-rol ${fieldRoleClass(p.label)}">${p.label}</span><span class="pos-pill-naam">${naam.split(' ')[0]}</span></div>
+    return `<div class="fslot" style="left:${p.x}%;top:${p.y}%">
+      <div class="ppill"><span class="ppill-rol ${fieldRoleClass(p.label)}">${p.label}</span><span class="ppill-nm">${naam.split(' ')[0]}</span></div>
     </div>`;
   }).join('');
-  return `<div class="pub-section" style="padding-top:0">
-    <div class="section-lbl">Basisopstelling${w.formatie ? ' · ' + (FORMATIE_LABELS[w.formatie] || w.formatie) : ''}</div>
-    <div class="mini-field">${spelers}</div>
+  return `<div class="card" style="margin-top:10px">
+    <div class="sec">Basisopstelling${w.formatie ? ' · ' + (FORMATIE_LABELS[w.formatie] || w.formatie) : ''}</div>
+    <div class="pitch" style="height:320px">${slots}</div>
   </div>`;
 }
 
@@ -199,35 +186,34 @@ function wedCategorie(w) {
   return 'toekomst';
 }
 
+function trainerLinkIcon(groot) {
+  if (!heeftTrainerToegang()) return '';
+  const maat = groot ? '34px' : '28px';
+  return `<a href="index.html" title="Naar de trainersapp" class="btn btn--secondary btn--icon" style="width:${maat};height:${maat};flex-shrink:0">🏠</a>`;
+}
+
 async function renderOverzicht() {
   const app = document.getElementById('app');
   const wedstrijden = await sbGet('live_wedstrijden?select=*&order=iso_date.asc');
 
   const kaart = w => {
     const [thuis, uit] = teamNamen(w);
-    const isLive = w.status === 'live_1e' || w.status === 'live_2e' || w.status === 'rust';
-    return `<a class="pub-card" href="?wedstrijd=${w.id}" ${isLive?'style="border-color:var(--rood);border-width:1.5px"':''}>
+    return `<a class="row" href="?wedstrijd=${w.id}" style="text-decoration:none;border-radius:var(--r-card);box-shadow:var(--sh1);margin-bottom:8px">
       <div class="pub-card-left">
-        <div class="pub-opp">${thuis} – ${uit}</div>
-        <div class="pub-meta">${w.datum}${w.starttijd ? ' · ' + w.starttijd : ''}</div>
+        <div class="row-title">${thuis} – ${uit}</div>
+        <div class="row-sub">${w.datum}${w.starttijd ? ' · ' + w.starttijd : ''}</div>
       </div>
       <div class="pub-right">
-        <div class="pub-score">${w.score_eigen}–${w.score_tegen}</div>
+        <div class="pub-score num">${w.score_eigen}–${w.score_tegen}</div>
         ${statusChip(w)}
       </div>
     </a>`;
   };
 
   let html = `
-    <div class="pub-hero">
-      <div class="pub-hero-top">
-        <div class="pub-badge">FCP</div>
-        <div style="flex:1">
-          <div class="pub-title">FCP 16-2</div>
-          <div class="pub-sub">Live wedstrijdvolgen · seizoen 2026/2027</div>
-        </div>
-        ${heeftTrainerToegang() ? '<a href="index.html" title="Naar de trainersapp" style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0">🏠</a>' : ''}
-      </div>
+    <div class="appbar pub-appbar">
+      <div><div class="appbar-h1">FCP 16-2</div><div class="appbar-sub">Live wedstrijdvolgen · seizoen 2026/2027</div></div>
+      ${trainerLinkIcon(true)}
     </div>
     <div class="pub-list">`;
 
@@ -239,9 +225,9 @@ async function renderOverzicht() {
     const gespeeld = wedstrijden.filter(w => wedCategorie(w) === 'gespeeld')
       .sort((a,b) => (b.iso_date+b.starttijd).localeCompare(a.iso_date+a.starttijd)); // nieuwste eerst
 
-    if (volgend.length)  html += `<div class="section-lbl">Eerstvolgende</div>` + volgend.map(kaart).join('');
-    if (toekomst.length) html += `<div class="section-lbl">Toekomstige wedstrijden</div>` + toekomst.map(kaart).join('');
-    if (gespeeld.length) html += `<div class="section-lbl">Gespeeld</div>` + gespeeld.map(kaart).join('');
+    if (volgend.length)  html += `<div class="sec" style="margin-top:4px">Eerstvolgende</div>` + volgend.map(kaart).join('');
+    if (toekomst.length) html += `<div class="sec" style="margin-top:14px">Toekomstige wedstrijden</div>` + toekomst.map(kaart).join('');
+    if (gespeeld.length) html += `<div class="sec" style="margin-top:14px">Gespeeld</div>` + gespeeld.map(kaart).join('');
   }
   html += `</div>`;
   app.innerHTML = html;
@@ -271,26 +257,30 @@ async function renderDetail(id) {
   const isLive = w.status === 'live_1e' || w.status === 'live_2e';
 
   app.innerHTML = `
-    <div class="pub-hero">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <a class="pub-back" href="live.html" style="margin-bottom:0">← Alle wedstrijden</a>
-        ${heeftTrainerToegang() ? '<a href="index.html" title="Naar de trainersapp" style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;flex-shrink:0">🏠</a>' : ''}
-      </div>
-      <div class="pub-teams" style="margin-top:14px">
-        <div class="pub-team">${thuis}</div>
-        <div class="pub-score-big">${w.score_eigen}–${w.score_tegen}</div>
-        <div class="pub-team uit">${uit}</div>
-      </div>
-      <div class="pub-status-row">
-        ${isLive ? '<span class="live-dot"></span>' : ''}
-        <span class="pub-status-txt">${statusTekstDetail(w)}</span>
+    <div class="appbar pub-appbar" style="display:block">
+      <div class="pub-back-row">
+        <a class="btn btn--ghost btn--sm" href="live.html">← Alle wedstrijden</a>
+        ${trainerLinkIcon(false)}
       </div>
     </div>
-    <div class="pub-section">
-      <div class="section-lbl">Verloop</div>
-      ${updates.length ? `<div class="tl">${updates.map(renderTijdlijnItem).join('')}</div>` : `<div style="font-size:13px;color:var(--text3)">Nog geen updates.</div>`}
+    <div class="pub-list">
+      <div class="card">
+        <div class="pub-teams">
+          <div class="pub-team">${thuis}</div>
+          <div class="pub-score-big num">${w.score_eigen}–${w.score_tegen}</div>
+          <div class="pub-team uit">${uit}</div>
+        </div>
+        <div class="pub-status-row">
+          ${isLive ? '<span class="livedot"></span>' : ''}
+          <span class="pub-status-txt">${statusTekstDetail(w)}</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="sec">Verloop</div>
+        ${updates.length ? updates.map(renderTijdlijnItem).join('') : `<div style="font-size:13px;color:var(--ink3)">Nog geen updates.</div>`}
+      </div>
+      ${renderMiniField(w)}
     </div>
-    ${renderMiniField(w)}
   `;
 }
 

@@ -1,0 +1,210 @@
+/* FCP 16-2 — Interface V2 tokens + componenten
+   Twee thema's: licht (default) en donker via [data-thema="donker"].
+   Regel: --accent betekent UITSLUITEND actie. Uitslagen/betekenis gebruiken --win/--neutral/--loss. */
+
+:root{
+  --bg:#F7F5F2; --surface:#FFFFFF; --surface2:#F1EEE9; --surface3:#E9E4DC;
+  --ink:#1C1917; --ink2:#57534E; --ink3:#8B857E;
+  --line:#E6E1DA;
+  --accent:#E8481F; --accent-ink:#FFFFFF; --accent-soft:#FDEDE8; --accent-press:#C93A14;
+  --win:#157F4C; --win-soft:#E6F2EB; --neutral:#8B857E; --neutral-soft:#EFECE7; --loss:#8E2F26; --loss-soft:#F8EAE8;
+  --focus:#E8481F;
+  --r-card:16px; --r-ctl:12px; --r-pill:999px;
+  --sh1:0 1px 2px rgba(28,25,23,.05),0 1px 3px rgba(28,25,23,.04);
+  --sh2:0 2px 4px rgba(28,25,23,.05),0 8px 20px rgba(28,25,23,.07);
+  --sh-up:0 -2px 4px rgba(28,25,23,.04),0 -12px 32px rgba(28,25,23,.10);
+  --font:'Schibsted Grotesk',system-ui,sans-serif;
+  --tab:'Schibsted Grotesk',system-ui,sans-serif;
+  --tap:44px;
+  background:var(--bg);color:var(--ink);
+}
+[data-thema="donker"]{
+  --bg:#131211; --surface:#1C1A18; --surface2:#262320; --surface3:#332F2A;
+  --ink:#F5F2EE; --ink2:#C9C2BA; --ink3:#9A938B;
+  --line:#3A352F;
+  --accent:#FF6A33; --accent-ink:#1C1917; --accent-soft:#2A1A12; --accent-press:#E85519;
+  --win:#4ECB8B; --win-soft:#172A20; --neutral:#9A938B; --neutral-soft:#262320; --loss:#F08579; --loss-soft:#2C1A18;
+  --focus:#FF6A33;
+  --sh1:none; --sh2:0 8px 24px rgba(0,0,0,.5); --sh-up:0 -12px 32px rgba(0,0,0,.5);
+  background:var(--bg);color:var(--ink);
+}
+/* Donker vraagt drie correcties die niet uit de tokens volgen */
+[data-thema="donker"] .tab{color:var(--ink2)}
+[data-thema="donker"] .seg-opt[aria-selected="true"]{background:var(--surface3)}
+[data-thema="donker"] .card--accent{background:var(--surface2);color:var(--ink)}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+.v2{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45;font-feature-settings:"ss01" 1}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+/* ═══ KNOPPEN — één component, 4 varianten, 3 maten ═══
+   Alles wat een ACTIE uitvoert is .btn. Alles wat een KEUZE aangeeft is .chip of .seg-opt.
+   Nooit twee primaire knoppen in één blok. Destructief nooit naast primair. */
+.btn{
+  --btn-h:var(--tap); --btn-px:18px; --btn-fs:15px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:var(--btn-h);padding:0 var(--btn-px);
+  border:1.5px solid transparent;border-radius:var(--r-ctl);
+  font-family:var(--font);font-size:var(--btn-fs);font-weight:600;letter-spacing:-.01em;
+  cursor:pointer;text-decoration:none;white-space:nowrap;
+  transition:background .14s,border-color .14s,color .14s,transform .1s;
+}
+.btn:active{transform:scale(.97)}
+.btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.btn svg{width:18px;height:18px;flex-shrink:0}
+
+.btn--primary{background:var(--accent);color:var(--accent-ink)}
+.btn--primary:hover{background:var(--accent-press)}
+.btn--secondary{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn--secondary:hover{background:var(--surface2)}
+.btn--ghost{background:transparent;color:var(--ink2)}
+.btn--ghost:hover{background:var(--surface2);color:var(--ink)}
+.btn--danger{background:transparent;color:var(--loss);border-color:var(--loss-soft)}
+.btn--danger:hover{background:var(--loss-soft)}
+
+.btn--sm{--btn-h:36px;--btn-px:13px;--btn-fs:13.5px}
+.btn--sm svg{width:15px;height:15px}
+.btn--lg{--btn-h:52px;--btn-px:22px;--btn-fs:16px}
+.btn--block{display:flex;width:100%}
+.btn--icon{--btn-px:0;width:var(--btn-h);padding:0}
+.btn--icon.btn--sm{width:36px}
+
+/* Vaste actiebalk: secundair links, primair rechts — in ELK formulier en ELKE sheet gelijk */
+.actionbar{display:flex;gap:10px;margin-top:20px}
+.actionbar .btn{flex:1}
+.actionbar--split{justify-content:space-between}
+.danger-zone{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex}
+.danger-zone .btn{flex:1}
+
+/* Zwevende primaire actie — altijd rechtsonder, altijd dezelfde plek */
+.fab{position:absolute;right:16px;bottom:calc(72px + 16px);width:56px;height:56px;border-radius:var(--r-pill);background:var(--accent);color:var(--accent-ink);border:none;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh2);cursor:pointer;z-index:20}
+.fab svg{width:24px;height:24px}
+.fab:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+
+/* ═══ KEUZE-CONTROLS — bewust géén knoppen ═══ */
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border-radius:var(--r-pill);border:1.5px solid var(--line);background:var(--surface);color:var(--ink2);font:600 13.5px/1 var(--font);cursor:pointer;transition:all .14s}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.chip:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.seg{display:flex;background:var(--surface2);border-radius:var(--r-ctl);padding:3px;gap:3px}
+.seg-opt{flex:1;min-height:38px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:9px;font:600 13.5px/1 var(--font);color:var(--ink3);cursor:pointer;transition:all .14s;padding:0 8px}
+.seg-opt[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--sh1)}
+.seg-opt:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+
+/* ═══ OPPERVLAKKEN ═══ */
+.card{background:var(--surface);border-radius:var(--r-card);padding:16px;box-shadow:var(--sh1)}
+.card--flat{background:var(--surface2);box-shadow:none}
+.card--accent{background:var(--ink);color:var(--bg)}
+.sec{font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin:0 0 10px}
+.eyebrow{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em}
+.divide{height:1px;background:var(--line);border:none;margin:14px 0}
+
+/* Betekenis-labels: nooit oranje, want oranje = actie */
+.tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700;letter-spacing:.01em}
+.tag--win{background:var(--win-soft);color:var(--win)}
+.tag--neutral{background:var(--neutral-soft);color:var(--ink2)}
+.tag--loss{background:var(--loss-soft);color:var(--loss)}
+.tag--line{background:transparent;border:1.5px solid var(--line);color:var(--ink2)}
+
+/* Lijstrij — één rijpatroon voor elk object in de app */
+.row{display:flex;align-items:center;gap:13px;min-height:64px;padding:11px 16px;background:var(--surface);cursor:pointer;text-decoration:none;color:inherit;transition:background .14s}
+.row:hover{background:var(--surface2)}
+.row+.row{box-shadow:inset 0 1px 0 var(--line)}
+.row-lead{width:44px;flex-shrink:0;text-align:center}
+.row-body{flex:1;min-width:0}
+.row-title{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.row-sub{font-size:13px;color:var(--ink3);margin-top:1px}
+.row-chev{color:var(--ink3);flex-shrink:0}
+.rows{background:var(--surface);border-radius:var(--r-card);overflow:hidden;box-shadow:var(--sh1)}
+
+/* Datumblok in agenda */
+.datebox{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.datebox-d{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.datebox-m{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+/* ═══ CHROME ═══ */
+.appbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 12px;background:var(--bg)}
+.appbar-h1{font-size:26px;font-weight:700;letter-spacing:-.03em}
+.appbar-sub{font-size:13px;color:var(--ink3);margin-top:-1px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;height:72px;display:flex;background:var(--surface);box-shadow:inset 0 1px 0 var(--line);z-index:15}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:none;color:var(--ink3);font:600 11px/1 var(--tab);cursor:pointer;text-decoration:none}
+.tab svg{width:23px;height:23px}
+.tab[aria-current="page"]{color:var(--accent)}
+.sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:8px 16px 24px;box-shadow:var(--sh-up)}
+.sheet-grip{width:38px;height:4px;border-radius:2px;background:var(--surface3);margin:4px auto 14px}
+.sheet-title{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:2px}
+.sheet-sub{font-size:13px;color:var(--ink3);margin-bottom:16px}
+
+/* Velden */
+.field{margin-bottom:12px}
+.label{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:5px;display:block}
+.input{width:100%;min-height:var(--tap);padding:11px 13px;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-ctl);font:500 15px/1.3 var(--font);color:var(--ink)}
+.input:focus{outline:none;border-color:var(--accent)}
+.input::placeholder{color:var(--ink3)}
+.score-in{width:76px;text-align:center;font-size:30px;font-weight:700;padding:8px;font-variant-numeric:tabular-nums}
+.switch{position:relative;width:46px;height:28px;border-radius:var(--r-pill);background:var(--accent);border:none;flex-shrink:0;cursor:pointer}
+.switch .knob{position:absolute;top:3px;left:21px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.switch[aria-checked="false"]{background:var(--surface3)}
+.switch[aria-checked="false"] .knob{left:3px}
+
+/* Vergelijkingstrack speler vs trainer — bron bepaalt kleur, nooit niveau */
+.trk{position:relative;height:16px}
+.trk-line{position:absolute;top:50%;left:5px;right:5px;height:2px;background:var(--surface3);transform:translateY(-50%)}
+.trk-tick{position:absolute;top:50%;width:3px;height:3px;border-radius:50%;background:var(--surface3);transform:translate(-50%,-50%)}
+.trk-dot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%)}
+.trk-dot--ghost{width:10px;height:10px;background:var(--surface);border:2px solid currentColor}
+.src-speler{color:var(--ink)}
+.src-trainer{color:var(--win)}
+
+/* Balken */
+.bar{height:8px;border-radius:var(--r-pill);background:var(--surface2);overflow:hidden;display:flex}
+.bar-fill{height:100%}
+.formstrip{display:flex;gap:4px}
+.formstrip span{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+
+/* ═══ VELD + POS-PILLS ═══
+   Positie + naam, nooit rugnummer. Rolkleur is betekenis, dus nooit --accent. */
+:root{--rol-gk:#8A6300;--rol-gk-s:#FFF4DC;--rol-def:#2F5F8E;--rol-def-s:#E7EFF7;--rol-mid:#157F4C;--rol-mid-s:#E6F2EB;--rol-att:#8E2F26;--rol-att-s:#F8EAE8;--pitch:#2C5F43;--pitch2:#25523A;--pitch-line:rgba(255,255,255,.28)}
+[data-thema="donker"]{--rol-gk:#E0B458;--rol-gk-s:#2E2412;--rol-def:#8FB4D9;--rol-def-s:#16222E;--rol-mid:#4ECB8B;--rol-mid-s:#172A20;--rol-att:#F08579;--rol-att-s:#2C1A18;--pitch:#1E4531;--pitch2:#183A28;--pitch-line:rgba(255,255,255,.26)}
+.pitch{position:relative;background:linear-gradient(180deg,var(--pitch),var(--pitch2));border-radius:var(--r-card);overflow:hidden}
+.pitch::before{content:'';position:absolute;inset:9px;border:1.5px solid var(--pitch-line);border-radius:5px}
+.fline{position:absolute;border:0 solid var(--pitch-line)}
+.fslot{position:absolute;transform:translate(-50%,-50%);z-index:2}
+.ppill{display:flex;align-items:center;gap:0;background:var(--surface);border-radius:var(--r-pill);box-shadow:0 1px 3px rgba(0,0,0,.3);overflow:hidden;min-height:26px;white-space:nowrap}
+.ppill-rol{font:700 9.5px/1 var(--font);letter-spacing:.02em;padding:0 5px;align-self:stretch;display:flex;align-items:center}
+.ppill-rol.rol-keeper{background:var(--rol-gk-s);color:var(--rol-gk)}
+.ppill-rol.rol-verdediger{background:var(--rol-def-s);color:var(--rol-def)}
+.ppill-rol.rol-midden{background:var(--rol-mid-s);color:var(--rol-mid)}
+.ppill-rol.rol-aanval{background:var(--rol-att-s);color:var(--rol-att)}
+.ppill-nm{font:600 11.5px/1 var(--font);color:var(--ink);padding:0 8px 0 6px}
+.ppill--leeg{background:transparent;border:1.5px dashed var(--pitch-line);box-shadow:none}
+.ppill--leeg .ppill-nm{color:rgba(255,255,255,.7)}
+.ppill--sel{box-shadow:0 0 0 3px var(--accent),0 1px 3px rgba(0,0,0,.3)}
+
+/* Bank */
+.bench{display:flex;flex-direction:column;gap:6px}
+.bench-row{display:flex;align-items:center;gap:9px;min-height:44px;padding:0 12px;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-ctl);cursor:pointer}
+.bench-row--dim{opacity:.45;pointer-events:none}
+.bench-nm{flex:1;font-size:13.5px;font-weight:600}
+.bench-pos{font-size:11px;font-weight:700;color:var(--ink3)}
+
+/* Stappen — herhaalbare rij */
+.stap-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.stap-n{width:22px;height:22px;flex-shrink:0;border-radius:50%;background:var(--surface2);color:var(--ink3);font:700 11px/1 var(--font);display:flex;align-items:center;justify-content:center}
+
+/* Notitie — live tijdlijn trainerskant */
+.note{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-ctl)}
+.note--wissel{border-left:3px solid var(--rol-def)}
+.note--gedeeld{background:var(--accent-soft);border-color:var(--accent-soft)}
+.note-t{font-variant-numeric:tabular-nums;font-size:11.5px;font-weight:700;color:var(--ink3);flex-shrink:0;width:32px;padding-top:1px}
+.note-tx{flex:1;font-size:13.5px;line-height:1.4}
+.note-act{background:none;border:none;padding:0;cursor:pointer;color:var(--ink3);flex-shrink:0;display:flex}
+.note-act svg{width:16px;height:16px}
+.note-act--on{color:var(--accent)}
+.note-rust{text-align:center;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;padding:3px 0}
+
+/* Live status */
+.livedot{width:7px;height:7px;border-radius:50%;background:var(--loss);animation:lp 1.4s ease-in-out infinite}
+@keyframes lp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper-b{width:38px;height:38px;flex-shrink:0;border-radius:var(--r-ctl);border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:700 19px/1 var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center}

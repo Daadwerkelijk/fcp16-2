@@ -1,7 +1,7 @@
 {
-  "name": "Voetbaltrainer-app",
-  "short_name": "Voetbaltrainer",
-  "description": "Trainingsapp voor FCP JO16-2 seizoen 2026/2027",
+  "name": "SportCoach",
+  "short_name": "SportCoach",
+  "description": "Trainersapp voor FCP JO16-2 — seizoen 2026/2027",
   "start_url": "/fcp16-2/",
   "scope": "/fcp16-2/",
   "display": "standalone",

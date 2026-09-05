@@ -7,13 +7,28 @@ let SB_URL = localStorage.getItem('sb_url') || '';
 let SB_KEY  = localStorage.getItem('sb_key')  || '';
 let supabaseReady = false;
 
+// ─── AUTH (trainer-login) ───
+// Sinds de RLS-herziening (2026-09-04) vereisen alle privétabellen een
+// ingelogde sessie (rol authenticated) — de kale anon-sleutel geeft daar
+// geen toegang meer toe. AUTH_ACCESS_TOKEN wint dus van SB_KEY in de
+// Authorization-header zodra er een (nog geldige) sessie is; de apikey-
+// header blijft altijd de anon-sleutel, dat vereist Supabase's REST-API
+// sowieso naast de Authorization-header. Zie initAuthGate() verderop.
+let AUTH_ACCESS_TOKEN = localStorage.getItem('sb_access_token') || '';
+let AUTH_REFRESH_TOKEN = localStorage.getItem('sb_refresh_token') || '';
+let AUTH_EXPIRES_AT = parseInt(localStorage.getItem('sb_expires_at'), 10) || 0;
+function huidigeAuthToken() {
+  const nu = Math.floor(Date.now() / 1000);
+  return (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 0) ? AUTH_ACCESS_TOKEN : SB_KEY;
+}
+
 async function sbFetch(path, method = 'GET', body = null) {
   if (!SB_URL || !SB_KEY) return null;
   const opts = {
     method,
     headers: {
       'apikey': SB_KEY,
-      'Authorization': 'Bearer ' + SB_KEY,
+      'Authorization': 'Bearer ' + huidigeAuthToken(),
       'Content-Type': 'application/json',
       'Prefer': method === 'POST' ? 'return=representation' : ''
     }
@@ -1019,7 +1034,7 @@ applyThema(loadThema());
 
 // ─── TEAM INSTELLINGEN ───
 function loadTeamInstellingen() {
-  return JSON.parse(localStorage.getItem('fcp_team_config') || '{"naam":"FCP 16-2","subtitel":"Seizoen 2026/2027","trainer":"Stefan & Onno"}');
+  return JSON.parse(localStorage.getItem('fcp_team_config') || '{"naam":"","subtitel":"","trainer":""}');
 }
 function saveTeamInstellingen(config) {
   localStorage.setItem('fcp_team_config', JSON.stringify(config));
@@ -1249,6 +1264,11 @@ const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oe
 function initDesktopPanel() {
   const existing = document.getElementById('desktop-panel');
   if (existing) existing.remove();
+  // Dit paneel is gestyled voor de klassieke pagina's (donkere sidebar-achtergrond
+  // uit style.css) — prototype-v2.html/live.html laden app.js ook, maar hebben geen
+  // sidebar-layout, waardoor dit paneel daar als een onleesbaar wit spookpaneel
+  // onderaan de pagina zou verschijnen. body.v2 is de marker van die andere shell.
+  if (document.body.classList.contains('v2')) return;
   if (window.innerWidth < 1100) return;
 
   const panel = document.createElement('div');
@@ -1272,9 +1292,18 @@ function initDesktopPanel() {
     ['instellingen.html','Instellingen'],
   ];
 
+  // Teamnaam/subtitel uit dezelfde instelling als de topbar (applyTeamConfig)
+  // lezen i.p.v. hardcoded — zodat een naamswijziging via Instellingen hier ook
+  // meteen meekomt, i.p.v. hier los van te raken.
+  const cfg = loadTeamInstellingen();
+  const cfgDelen = cfg.naam.split(' ');
+  const naamHtml = cfgDelen.length > 1
+    ? cfgDelen.slice(0, -1).join(' ') + ' <span style="opacity:.4">' + cfgDelen[cfgDelen.length - 1] + '</span>'
+    : cfg.naam;
+
   panel.innerHTML = `
-    <div style="font-size:26px;font-weight:800;color:#fff;margin-bottom:2px">FCP <span style="opacity:.4">16-2</span></div>
-    <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:28px">Seizoen 2026/2027</div>
+    <div style="font-size:26px;font-weight:800;color:#fff;margin-bottom:2px">${naamHtml}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:28px">${cfg.subtitel || ''}</div>
     <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Navigatie</div>
     ${links.map(([href, label]) => {
       const active = page === href || (href === 'index.html' && (page === '' || page === '/'));
@@ -1305,9 +1334,114 @@ function applyLandscape() {
   if (nav) nav.classList.toggle('nav-landscape', ls);
 }
 
+// ─── Auth-functies (login/refresh/uitloggen) — raw fetch naar Supabase's
+// eigen Auth-REST-API, zelfde stijl als sbFetch, geen supabase-js SDK nodig. ───
+function saveAuthSession(session) {
+  AUTH_ACCESS_TOKEN = session.access_token;
+  AUTH_REFRESH_TOKEN = session.refresh_token;
+  AUTH_EXPIRES_AT = Math.floor(Date.now() / 1000) + (session.expires_in || 3600);
+  localStorage.setItem('sb_access_token', AUTH_ACCESS_TOKEN);
+  localStorage.setItem('sb_refresh_token', AUTH_REFRESH_TOKEN);
+  localStorage.setItem('sb_expires_at', String(AUTH_EXPIRES_AT));
+}
+function clearAuthSession() {
+  AUTH_ACCESS_TOKEN = ''; AUTH_REFRESH_TOKEN = ''; AUTH_EXPIRES_AT = 0;
+  localStorage.removeItem('sb_access_token');
+  localStorage.removeItem('sb_refresh_token');
+  localStorage.removeItem('sb_expires_at');
+}
+async function signIn(email, wachtwoord) {
+  if (!SB_URL || !SB_KEY) return { _error: true, message: 'Geen Supabase-koppeling ingesteld.' };
+  try {
+    const r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: wachtwoord }),
+    });
+    const j = await r.json();
+    if (!r.ok) return { _error: true, message: j.error_description || j.msg || 'Inloggen mislukt' };
+    saveAuthSession(j);
+    return { ok: true };
+  } catch (e) { return { _error: true, message: e.message }; }
+}
+async function refreshAuthSession() {
+  if (!SB_URL || !SB_KEY || !AUTH_REFRESH_TOKEN) return false;
+  try {
+    const r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: AUTH_REFRESH_TOKEN }),
+    });
+    if (!r.ok) { clearAuthSession(); return false; }
+    const j = await r.json();
+    saveAuthSession(j);
+    return true;
+  } catch (e) { return false; }
+}
+function signOut() {
+  clearAuthSession();
+  location.reload();
+}
+
+// ─── Auth-gate — blokkeert de pagina met een inlogscherm totdat er een
+// geldige trainerssessie is. Draait vanuit dezelfde DOMContentLoaded-
+// listener als initDesktopPanel() (geen wijziging per pagina nodig). Niet
+// actief op body.v2 (prototype-v2.html — nog niet live) en sowieso niet op
+// live.html/spelerformulier.html (laden app.js niet resp. blijven bewust
+// zonder login, zie het fix-plan van 2026-09-04). ───
+async function initAuthGate() {
+  if (document.body.classList.contains('v2')) return;
+  if (!SB_URL || !SB_KEY) return; // geen koppeling ingesteld — config-banner vangt dit al af
+  const nu = Math.floor(Date.now() / 1000);
+  if (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 60) { renderAuthGate(false); return; }
+  if (AUTH_REFRESH_TOKEN && await refreshAuthSession()) { renderAuthGate(false); return; }
+  renderAuthGate(true);
+}
+function renderAuthGate(tonen) {
+  const bestaand = document.getElementById('auth-gate');
+  if (bestaand) bestaand.remove();
+  if (!tonen) return;
+  // Gebruikt de bestaande stijl-classes uit style.css (.bmodal-label/.bmodal-input/
+  // .btn.btn-primary) i.p.v. eigen kleuren te verzinnen — volgt zo automatisch het
+  // thema dat de trainer al gekozen had (licht/donker/fcp/licht_groen/licht_blauw),
+  // want applyThema() heeft de --custom-properties allang gezet vóór dit overlay
+  // verschijnt.
+  const overlay = document.createElement('div');
+  overlay.id = 'auth-gate';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;font-family:var(--font-ui)';
+  overlay.innerHTML = `
+    <div style="width:100%;max-width:320px">
+      <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px">Inloggen</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Alleen voor trainers — vul je inloggegevens in.</div>
+      <div class="bmodal-label" style="margin-top:0">E-mailadres</div>
+      <input class="bmodal-input" id="auth-email" type="email" autocomplete="username">
+      <div class="bmodal-label">Wachtwoord</div>
+      <input class="bmodal-input" id="auth-wachtwoord" type="password" autocomplete="current-password" style="margin-bottom:14px">
+      <button id="auth-submit" class="btn btn-primary">Inloggen</button>
+      <div id="auth-fout" style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const emailEl = document.getElementById('auth-email');
+  const wwEl = document.getElementById('auth-wachtwoord');
+  const foutEl = document.getElementById('auth-fout');
+  const submitEl = document.getElementById('auth-submit');
+  const doLogin = async () => {
+    submitEl.disabled = true; submitEl.textContent = 'Bezig...';
+    const res = await signIn(emailEl.value.trim(), wwEl.value);
+    if (res && res.ok) { location.reload(); return; }
+    foutEl.textContent = (res && res.message) || 'Inloggen mislukt';
+    submitEl.disabled = false; submitEl.textContent = 'Inloggen';
+  };
+  submitEl.onclick = doLogin;
+  wwEl.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  emailEl.focus();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initDesktopPanel();
   applyLandscape();
+  initAuthGate();
 });
 window.addEventListener('resize', () => {
   initDesktopPanel();

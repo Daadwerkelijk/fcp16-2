@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2B1FA0">
-<title>Instellingen — FCP 16-2</title>
+<title>Instellingen — SportCoach</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon192.png" type="image/png">
 <link rel="icon" href="icon192.png" type="image/png">
@@ -45,11 +45,11 @@
     <section>
       <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">⚡ Team & weergave</div>
       <div class="bmodal-label">Teamnaam</div>
-      <input class="bmodal-input" id="cfg-naam" placeholder="FCP 16-2">
+      <input class="bmodal-input" id="cfg-naam" placeholder="Teamnaam">
       <div class="bmodal-label">Ondertitel startpagina</div>
-      <input class="bmodal-input" id="cfg-subtitel" placeholder="Seizoen 2026/2027">
+      <input class="bmodal-input" id="cfg-subtitel" placeholder="Bijv. seizoen of leeftijdscategorie">
       <div class="bmodal-label">Trainer(s)</div>
-      <input class="bmodal-input" id="cfg-trainer" placeholder="Stefan & Onno">
+      <input class="bmodal-input" id="cfg-trainer" placeholder="Namen trainer(s)">
       <button class="bmodal-save" style="width:100%;margin-top:4px" onclick="saveTeamConfig()">💾 Opslaan</button>
     </section>
 
@@ -71,6 +71,7 @@
       <div id="cfg-sb-status" style="font-size:11px;color:var(--text3);margin:4px 0 8px">Niet gekoppeld</div>
       <button class="bmodal-save" style="width:100%;margin-top:4px" onclick="koppelSupabase()">🔗 Verbinding opslaan en testen</button>
       <button id="cfg-sb-reset" style="width:100%;margin-top:6px;padding:9px;background:transparent;border:1px solid var(--red);border-radius:var(--rsm);color:var(--red);font-family:var(--font-mono);font-size:12px;cursor:pointer;display:none" onclick="resetSupabaseConfig()">✕ Verbinding verwijderen</button>
+      <button style="width:100%;margin-top:6px;padding:9px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-mono);font-size:12px;cursor:pointer" onclick="signOut()">🔒 Gebruiker uitloggen</button>
     </section>
 
     <!-- ─── SPELVORM ─── -->
@@ -165,7 +166,7 @@ function loadCfgFields() {
 }
 function saveTeamConfig() {
   const cfg = {
-    naam:     document.getElementById('cfg-naam').value.trim() || 'FCP 16-2',
+    naam:     document.getElementById('cfg-naam').value.trim(),
     subtitel: document.getElementById('cfg-subtitel').value.trim(),
     trainer:  document.getElementById('cfg-trainer').value.trim(),
   };
@@ -394,7 +395,7 @@ function renderSpelerLinks() {
 }
 function deelFormulier(url, naam) {
   if (navigator.share) {
-    navigator.share({ title:'Spelersformulier ' + naam, text:'Vul je formulier in voor FCP 16-2', url });
+    navigator.share({ title:'Spelersformulier ' + naam, text:'Vul je formulier in voor ' + (loadTeamInstellingen().naam || 'het team'), url });
   } else {
     navigator.clipboard?.writeText(url).then(() => showToast('Link gekopieerd'));
   }

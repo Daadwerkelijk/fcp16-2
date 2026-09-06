@@ -2673,20 +2673,23 @@ async function renderInzSkills() {
     });
     return { sk, sGem: sN ? sSom / sN : null, tGem: tN ? tSom / tN : null };
   });
+  const metData = rijen.filter(r => r.sGem != null || r.tGem != null);
   const metBeide = rijen.filter(r => r.sGem != null && r.tGem != null);
   const verschillen = [...metBeide].sort((a, b) => Math.abs(b.sGem - b.tGem) - Math.abs(a.sGem - a.tGem)).slice(0, 5);
 
   let html = '';
-  if (!metBeide.length) {
+  if (!metData.length) {
     html += '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Nog geen speler- en trainerbeoordelingen om te vergelijken.</div>';
   } else {
-    html += '<div class="card" style="margin-top:14px"><div class="sec">Grootste verschillen speler ↔ trainer</div>'
-      + verschillen.map(r => {
-          const richting = r.sGem > r.tGem ? 'Spelers schatten zichzelf hoger in' : r.sGem < r.tGem ? 'Trainer ziet meer potentie' : 'Gelijk';
-          return '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="font-weight:600">' + r.sk + '</span><span style="color:var(--ink3)">' + richting + '</span></div>'
-            + '<div class="trk" style="margin-top:4px"><div class="trk-line"></div><div class="trk-dot src-speler" style="left:' + r.sGem + '%;background:currentColor"></div><div class="trk-dot src-trainer" style="left:' + r.tGem + '%;background:currentColor"></div></div></div>';
-        }).join('')
-      + '</div>';
+    if (verschillen.length) {
+      html += '<div class="card" style="margin-top:14px"><div class="sec">Grootste verschillen speler ↔ trainer</div>'
+        + verschillen.map(r => {
+            const richting = r.sGem > r.tGem ? 'Spelers schatten zichzelf hoger in' : r.sGem < r.tGem ? 'Trainer ziet meer potentie' : 'Gelijk';
+            return '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="font-weight:600">' + r.sk + '</span><span style="color:var(--ink3)">' + richting + '</span></div>'
+              + '<div class="trk" style="margin-top:4px"><div class="trk-line"></div><div class="trk-dot src-speler" style="left:' + r.sGem + '%;background:currentColor"></div><div class="trk-dot src-trainer" style="left:' + r.tGem + '%;background:currentColor"></div></div></div>';
+          }).join('')
+        + '</div>';
+    }
     html += '<div class="card" style="margin-top:10px"><div class="sec">Verdeling per vaardigheid</div>'
       + '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:10px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>'
       + rijen.map(r => '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:112px;font-size:12.5px;flex-shrink:0">' + r.sk + '</div><div class="trk" style="flex:1"><div class="trk-line"></div>'

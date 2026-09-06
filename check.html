@@ -3,120 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#2B1FA0">
+<meta name="theme-color" content="#F7F5F2">
 <title>Health Check — SportCoach</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ui-v2.css">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size:14px;padding-bottom:32px}
-.topbar{background:var(--topbar);padding:calc(44px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;justify-content:space-between}
-.topbar-title{color:#fff;font-size:20px;font-weight:700}
-.topbar-back{background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:7px 13px;color:#fff;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none}
-.content{padding:16px}
-.hc-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;margin-bottom:12px;box-shadow:var(--card-shadow)}
-.hc-card-hdr{padding:13px 14px;font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.hc-card-body{padding:12px 14px}
-.check-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+body{max-width:480px;margin:0 auto;padding-bottom:32px;min-height:100dvh}
+.check-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
 .check-item:last-child{border-bottom:none}
 .check-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:700}
-.ok{background:var(--groen-l);color:var(--groen)}
-.warn{background:var(--goud-l);color:var(--goud)}
-.err{background:var(--rood-l);color:var(--rood)}
-.loading{background:var(--blauw-l);color:var(--topbar)}
-.check-label{flex:1;color:var(--text)}
-.check-detail{font-size:11px;color:var(--text3);font-family:var(--font-mono)}
-.chk-btn{width:100%;padding:13px;background:var(--topbar);border:none;border-radius:var(--rsm);color:#fff;font-family:var(--font-ui);font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
-.chk-btn:active{opacity:.85}
-.chk-btn-s{background:var(--white);border:1px solid var(--border);color:var(--text2);margin-top:8px}
-.summary{padding:14px;border-radius:var(--rsm);margin-bottom:12px;font-size:14px;font-weight:600;text-align:center}
-.summary.ok{background:var(--groen-l);color:var(--groen)}
-.summary.warn{background:var(--goud-l);color:var(--goud)}
-.summary.err{background:var(--rood-l);color:var(--rood)}
-.summary.loading{background:var(--blauw-l);color:var(--topbar)}
-.mono{font-family:var(--font-mono);font-size:12px;background:var(--bg);padding:8px 12px;border-radius:8px;margin-top:8px;word-break:break-all;color:var(--text2);line-height:1.6}
+.check-icon.ok{background:var(--win-soft);color:var(--win)}
+.check-icon.warn{background:var(--neutral-soft);color:var(--ink2)}
+.check-icon.err{background:var(--loss-soft);color:var(--loss)}
+.check-icon.loading{background:var(--neutral-soft);color:var(--ink3)}
+.check-label{flex:1;color:var(--ink)}
+.check-detail{font-size:11px;color:var(--ink3);font-family:monospace;margin-top:1px}
+.summary{padding:14px;border-radius:var(--r-card);margin-bottom:10px;font-size:14px;font-weight:600;text-align:center}
+.summary.ok{background:var(--win-soft);color:var(--win)}
+.summary.warn{background:var(--neutral-soft);color:var(--ink2)}
+.summary.err{background:var(--loss-soft);color:var(--loss)}
+.summary.loading{background:var(--neutral-soft);color:var(--ink3)}
 </style>
 </head>
-<body>
+<body class="v2">
 
-<div class="topbar">
-  <div class="topbar-title">🔍 Health Check</div>
-  <a href="instellingen.html" class="topbar-back">← Terug</a>
+<div class="appbar">
+  <a class="btn btn--ghost btn--icon" href="instellingen.html" aria-label="Terug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 19l-7-7 7-7"/></svg></a>
+  <div class="appbar-h1" style="font-size:18px">Health Check</div>
 </div>
 
-<div class="content">
+<div class="pad">
 
   <div id="summary" class="summary loading">⏳ Controle bezig...</div>
 
   <!-- Supabase verbinding -->
-  <div class="hc-card">
-    <div class="hc-card-hdr">🔗 Supabase verbinding</div>
-    <div class="hc-card-body" id="check-verbinding">
-      <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Verbinding testen...</div></div>
-    </div>
+  <div class="card" style="margin-top:10px">
+    <div class="sec">🔗 Supabase verbinding</div>
+    <div id="check-verbinding"><div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Verbinding testen...</div></div></div>
   </div>
 
   <!-- Tabellen -->
-  <div class="hc-card">
-    <div class="hc-card-hdr">🗄️ Tabellen & kolommen</div>
-    <div class="hc-card-body" id="check-tabellen">
-      <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Tabellen controleren...</div></div>
-    </div>
+  <div class="card" style="margin-top:10px">
+    <div class="sec">🗄️ Tabellen &amp; kolommen</div>
+    <div id="check-tabellen"><div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Tabellen controleren...</div></div></div>
   </div>
 
   <!-- Data integriteit -->
-  <div class="hc-card">
-    <div class="hc-card-hdr">🧹 Data integriteit</div>
-    <div class="hc-card-body" id="check-data">
-      <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Data controleren...</div></div>
-    </div>
+  <div class="card" style="margin-top:10px">
+    <div class="sec">🧹 Data integriteit</div>
+    <div id="check-data"><div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Data controleren...</div></div></div>
   </div>
 
   <!-- localStorage -->
-  <div class="hc-card">
-    <div class="hc-card-hdr">💾 Lokale opslag</div>
-    <div class="hc-card-body" id="check-local">
-      <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Lokale data controleren...</div></div>
-    </div>
+  <div class="card" style="margin-top:10px">
+    <div class="sec">💾 Lokale opslag</div>
+    <div id="check-local"><div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Lokale data controleren...</div></div></div>
   </div>
 
   <!-- Service Worker versie -->
-  <div class="hc-card">
-    <div class="hc-card-hdr">⚙️ App versie</div>
-    <div class="hc-card-body" id="check-sw">
-      <div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Versie ophalen...</div></div>
-    </div>
+  <div class="card" style="margin-top:10px">
+    <div class="sec">⚙️ App versie</div>
+    <div id="check-sw"><div class="check-item"><div class="check-icon loading">⏳</div><div class="check-label">Versie ophalen...</div></div></div>
   </div>
 
-  <button class="chk-btn" onclick="runChecks()">🔄 Opnieuw controleren</button>
-  <button class="chk-btn chk-btn-s" onclick="fixData()">🔧 Automatisch repareren</button>
+  <button class="btn btn--primary btn--block" style="margin-top:14px" onclick="runChecks()">🔄 Opnieuw controleren</button>
+  <button class="btn btn--secondary btn--block" style="margin-top:8px" onclick="fixData()">🔧 Automatisch repareren</button>
 
 </div>
 
 <script>
-// Pas het gekozen kleurthema toe (zelfde palet als de rest van de app), zonder de
-// hoofdnavigatie-logica van app.js hier te laden — deze pagina heeft geen zij-navigatie nodig.
-(function() {
-  const THEMAS = {
-    licht:      { topbar:'#2B1FA0', accent:'#2B1FA0', bg:'#F2F1FF', white:'#ffffff', text:'#12113A', text2:'#4A4870', text3:'#8B8AB0', border:'#E4E3F5' },
-    licht_groen:{ topbar:'#1B5E20', accent:'#1B7A4B', bg:'#F1F8F4', white:'#ffffff', text:'#0D2B14', text2:'#2E6645', text3:'#6B9E7A', border:'#D4EBD9' },
-    licht_blauw:{ topbar:'#0D47A1', accent:'#1565C0', bg:'#F0F4FF', white:'#ffffff', text:'#0D1B4A', text2:'#2B4EA0', text3:'#6B82CC', border:'#C7D4FC' },
-    fcp:        { topbar:'#1a1a1a', accent:'#F5C000', bg:'#111111', white:'#1e1e1e', text:'#F5F5F5', text2:'#CCCCCC', text3:'#888888', border:'#333333' },
-    donker:     { topbar:'#080c14', accent:'#c8a840', bg:'#080c14', white:'#0e1524', text:'#e8eef8', text2:'#9aaccc', text3:'#5a7090', border:'#1e2e48' },
-  };
-  const key = localStorage.getItem('fcp_thema') || 'licht';
-  const t = THEMAS[key] || THEMAS.licht;
-  const r = document.documentElement.style;
-  r.setProperty('--topbar', t.topbar);
-  r.setProperty('--accent', t.accent);
-  r.setProperty('--bg', t.bg);
-  r.setProperty('--white', t.white);
-  r.setProperty('--text', t.text);
-  r.setProperty('--text2', t.text2);
-  r.setProperty('--text3', t.text3);
-  r.setProperty('--border', t.border);
-})();
+// Zelfde licht/donker/systeem-thema-logica als live.html/prototype-v2.html — een
+// eigen kleine kopie, bewust: deze pagina deelt geen code met de rest van de
+// V2-bundel (net als live.html), en fcp_thema_v2 leeft toch alleen lokaal op
+// het toestel waar hij gezet is.
+const THEMA_MEDIA = window.matchMedia('(prefers-color-scheme: dark)');
+function pasThemaToe() {
+  const modus = localStorage.getItem('fcp_thema_v2') || 'systeem';
+  const effectief = modus === 'systeem' ? (THEMA_MEDIA.matches ? 'donker' : 'licht') : modus;
+  document.documentElement.setAttribute('data-thema', effectief);
+}
+THEMA_MEDIA.addEventListener('change', pasThemaToe);
+pasThemaToe();
 
 const sbUrl = localStorage.getItem('sb_url');
 const sbKey = localStorage.getItem('sb_key');
@@ -260,7 +228,7 @@ async function runChecks() {
 
   // ── 4. LOCALSTORAGE ──
   let localHtml = '';
-  const keys = ['sb_url','sb_key','fcp_players','fcp_wed','fcp_aanw','fcp_custom_weken','fcp_thema'];
+  const keys = ['sb_url','sb_key','fcp_players','fcp_wed','fcp_aanw','fcp_custom_weken','fcp_thema_v2'];
   const vereist = ['sb_url','sb_key'];
 
   keys.forEach(k => {
@@ -329,7 +297,11 @@ async function runChecks() {
 }
 
 async function fixData() {
-  if (!sbUrl || !sbKey) { alert('Geen Supabase verbinding'); return; }
+  if (!sbUrl || !sbKey) {
+    const sum = document.getElementById('summary');
+    sum.className = 'summary err'; sum.textContent = '✗ Geen Supabase verbinding';
+    return;
+  }
   let acties = 0;
 
   // 1. Verwijder corrupte training_keys uit Supabase
@@ -356,8 +328,12 @@ async function fixData() {
     } catch(e) {}
   }
 
-  alert(acties + ' reparatie(s) uitgevoerd. Pagina wordt herladen.');
-  runChecks();
+  // Geen blocking alert() — V2 toont de uitkomst gewoon even in de samenvattingsbalk
+  // vóórdat de checks automatisch opnieuw draaien.
+  const sum = document.getElementById('summary');
+  sum.className = 'summary ok';
+  sum.textContent = '✓ ' + acties + ' reparatie(s) uitgevoerd — opnieuw controleren...';
+  setTimeout(runChecks, 1200);
 }
 
 // Start automatisch

@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2B1FA0">
-<title>Wedstrijden — FCP 16-2</title>
+<title>Wedstrijden — SportCoach</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon192.png" type="image/png">
 <link rel="icon" href="icon192.png" type="image/png">
@@ -523,7 +523,7 @@ let liveFase='voor_start';
 async function openLive(id) {
   const w=wedstrijden.find(x=>x.id===id); if(!w) return;
   liveWedId=id; liveNotities=w.live_notities?[...w.live_notities]:[];
-  document.getElementById('live-tegenstander').textContent='FCP vs '+w.tegenstander;
+  document.getElementById('live-tegenstander').textContent=(loadTeamInstellingen().naam||'?')+' vs '+w.tegenstander;
   document.getElementById('live-teg-label').textContent=w.tegenstander;
   document.getElementById('live-score-eigen').textContent=w.score_eigen||0;
   document.getElementById('live-score-tegen').textContent=w.score_tegen||0;
@@ -754,7 +754,7 @@ function scoreWijzig(kant,delta){
   const el=document.getElementById('live-score-'+kant);
   const nieuw=Math.max(0,(parseInt(el.textContent)||0)+delta);
   el.textContent=nieuw;
-  if(delta>0) voegNotitieInMet('⚽ '+(kant==='eigen'?'FCP scoort':'Tegenstander scoort'),getKlokLabel());
+  if(delta>0) voegNotitieInMet('⚽ '+(kant==='eigen'?((loadTeamInstellingen().naam||'?')+' scoort'):'Tegenstander scoort'),getKlokLabel());
   // Direct doorzetten naar de live-pagina, zodat het hoofdscherm daar altijd de actuele
   // stand toont — niet pas bij de eerstvolgende push van een notitie of statuswissel.
   if (supabaseReady && liveWedId) {

@@ -7,15 +7,36 @@ let SB_URL = localStorage.getItem('sb_url') || '';
 let SB_KEY  = localStorage.getItem('sb_key')  || '';
 let supabaseReady = false;
 
+// ─── AUTH (trainer-login) ───
+// Sinds de RLS-herziening (2026-09-04) vereisen alle privétabellen een
+// ingelogde sessie (rol authenticated) — de kale anon-sleutel geeft daar
+// geen toegang meer toe. AUTH_ACCESS_TOKEN wint dus van SB_KEY in de
+// Authorization-header zodra er een (nog geldige) sessie is; de apikey-
+// header blijft altijd de anon-sleutel, dat vereist Supabase's REST-API
+// sowieso naast de Authorization-header. Zie initAuthGate() verderop.
+let AUTH_ACCESS_TOKEN = localStorage.getItem('sb_access_token') || '';
+let AUTH_REFRESH_TOKEN = localStorage.getItem('sb_refresh_token') || '';
+let AUTH_EXPIRES_AT = parseInt(localStorage.getItem('sb_expires_at'), 10) || 0;
+function huidigeAuthToken() {
+  const nu = Math.floor(Date.now() / 1000);
+  return (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 0) ? AUTH_ACCESS_TOKEN : SB_KEY;
+}
+
 async function sbFetch(path, method = 'GET', body = null) {
   if (!SB_URL || !SB_KEY) return null;
   const opts = {
     method,
     headers: {
       'apikey': SB_KEY,
-      'Authorization': 'Bearer ' + SB_KEY,
+      'Authorization': 'Bearer ' + huidigeAuthToken(),
       'Content-Type': 'application/json',
-      'Prefer': method === 'POST' ? 'return=representation' : ''
+      // PATCH krijgt ook return=representation, net als POST — alleen zo kunnen we zien
+      // of een update daadwerkelijk een rij raakte. Zonder dit antwoordt PostgREST een
+      // PATCH standaard met 204 No Content, zelfs als RLS de rij wegfilterde en er dus
+      // feitelijk niets is gewijzigd: dat zag er dan uit als een geslaagde opslag terwijl
+      // de data nooit is aangepast. Precies dit kostte op 2026-09-05 een trainer een echte
+      // wedstrijduitslag + coach-notities, stil, zonder foutmelding, tijdens een RLS-test.
+      'Prefer': (method === 'POST' || method === 'PATCH') ? 'return=representation' : ''
     }
   };
   if (body) opts.body = JSON.stringify(body);
@@ -27,8 +48,14 @@ async function sbFetch(path, method = 'GET', body = null) {
       return { _error: true, status: r.status, message: msg };
     }
     const ct = r.headers.get('content-type') || '';
-    if (ct.includes('json')) return await r.json();
-    return true;
+    const data = ct.includes('json') ? await r.json() : true;
+    // Een PATCH die 0 rijen teruggeeft, raakte niets — meestal RLS die de rij wegfiltert
+    // (verkeerde/verlopen rechten) of een inmiddels niet meer bestaand ID. De HTTP-status
+    // is dan alsnog 2xx, dus dit moet expliciet gecheckt worden, anders blijft dit stil.
+    if (method === 'PATCH' && Array.isArray(data) && data.length === 0) {
+      return { _error: true, status: r.status, message: 'Update raakte geen enkele rij (geen toegang of onbekend ID) — niets opgeslagen.' };
+    }
+    return data;
   } catch(e) {
     return { _error: true, status: 0, message: e.message };
   }
@@ -363,6 +390,18 @@ async function haalAlleSpelerBeoordelingen() {
   return res && !res._error ? res : [];
 }
 
+// Herbruikbare foutmelding voor een mislukte Supabase-verbindingstest (het resultaat van
+// sbFetch('players?limit=1&select=id')) — gebruikt door initSupabase() zelf, en door V2's
+// eigen koppel-scherm (prototype-v2.html), zodat beide dezelfde, al beproefde boodschappen
+// tonen zonder de mapping op twee plekken te onderhouden.
+function sbVerbindingsfout(test) {
+  const s = test?.status || 0;
+  return s === 0   ? '❌ Netwerkfout — controleer de URL'
+       : s === 401 || s === 403 ? '❌ Ongeldige API key'
+       : s === 404 ? '❌ Tabellen niet gevonden — SQL nog niet uitgevoerd?'
+       : '❌ Fout ' + s + ': ' + (test?.message || '');
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';
@@ -387,12 +426,7 @@ async function initSupabase(statusElId) {
   if (!test || test._error) {
     if (syncBar) syncBar.className = 'sync-bar sync-err';
     supabaseReady = false;
-    const s = test?.status || 0;
-    const msg = s === 0   ? '❌ Netwerkfout — controleer de URL'
-              : s === 401 || s === 403 ? '❌ Ongeldige API key'
-              : s === 404 ? '❌ Tabellen niet gevonden — SQL nog niet uitgevoerd?'
-              : '❌ Fout ' + s + ': ' + (test?.message || '');
-    if (msgEl) msgEl.textContent = msg;
+    if (msgEl) msgEl.textContent = sbVerbindingsfout(test);
     return false;
   }
   if (syncBar) syncBar.className = 'sync-bar sync-ok';
@@ -1019,7 +1053,7 @@ applyThema(loadThema());
 
 // ─── TEAM INSTELLINGEN ───
 function loadTeamInstellingen() {
-  return JSON.parse(localStorage.getItem('fcp_team_config') || '{"naam":"FCP 16-2","subtitel":"Seizoen 2026/2027","trainer":"Stefan & Onno"}');
+  return JSON.parse(localStorage.getItem('fcp_team_config') || '{"naam":"","subtitel":"","trainer":""}');
 }
 function saveTeamInstellingen(config) {
   localStorage.setItem('fcp_team_config', JSON.stringify(config));
@@ -1249,6 +1283,11 @@ const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oe
 function initDesktopPanel() {
   const existing = document.getElementById('desktop-panel');
   if (existing) existing.remove();
+  // Dit paneel is gestyled voor de klassieke pagina's (donkere sidebar-achtergrond
+  // uit style.css) — prototype-v2.html/live.html laden app.js ook, maar hebben geen
+  // sidebar-layout, waardoor dit paneel daar als een onleesbaar wit spookpaneel
+  // onderaan de pagina zou verschijnen. body.v2 is de marker van die andere shell.
+  if (document.body.classList.contains('v2')) return;
   if (window.innerWidth < 1100) return;
 
   const panel = document.createElement('div');
@@ -1272,9 +1311,18 @@ function initDesktopPanel() {
     ['instellingen.html','Instellingen'],
   ];
 
+  // Teamnaam/subtitel uit dezelfde instelling als de topbar (applyTeamConfig)
+  // lezen i.p.v. hardcoded — zodat een naamswijziging via Instellingen hier ook
+  // meteen meekomt, i.p.v. hier los van te raken.
+  const cfg = loadTeamInstellingen();
+  const cfgDelen = cfg.naam.split(' ');
+  const naamHtml = cfgDelen.length > 1
+    ? cfgDelen.slice(0, -1).join(' ') + ' <span style="opacity:.4">' + cfgDelen[cfgDelen.length - 1] + '</span>'
+    : cfg.naam;
+
   panel.innerHTML = `
-    <div style="font-size:26px;font-weight:800;color:#fff;margin-bottom:2px">FCP <span style="opacity:.4">16-2</span></div>
-    <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:28px">Seizoen 2026/2027</div>
+    <div style="font-size:26px;font-weight:800;color:#fff;margin-bottom:2px">${naamHtml}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:28px">${cfg.subtitel || ''}</div>
     <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Navigatie</div>
     ${links.map(([href, label]) => {
       const active = page === href || (href === 'index.html' && (page === '' || page === '/'));
@@ -1305,9 +1353,244 @@ function applyLandscape() {
   if (nav) nav.classList.toggle('nav-landscape', ls);
 }
 
+// ─── Auth-functies (login/refresh/uitloggen) — raw fetch naar Supabase's
+// eigen Auth-REST-API, zelfde stijl als sbFetch, geen supabase-js SDK nodig. ───
+function saveAuthSession(session) {
+  AUTH_ACCESS_TOKEN = session.access_token;
+  AUTH_REFRESH_TOKEN = session.refresh_token;
+  AUTH_EXPIRES_AT = Math.floor(Date.now() / 1000) + (session.expires_in || 3600);
+  localStorage.setItem('sb_access_token', AUTH_ACCESS_TOKEN);
+  localStorage.setItem('sb_refresh_token', AUTH_REFRESH_TOKEN);
+  localStorage.setItem('sb_expires_at', String(AUTH_EXPIRES_AT));
+}
+function clearAuthSession() {
+  AUTH_ACCESS_TOKEN = ''; AUTH_REFRESH_TOKEN = ''; AUTH_EXPIRES_AT = 0;
+  localStorage.removeItem('sb_access_token');
+  localStorage.removeItem('sb_refresh_token');
+  localStorage.removeItem('sb_expires_at');
+}
+async function signIn(email, wachtwoord) {
+  if (!SB_URL || !SB_KEY) return { _error: true, message: 'Geen Supabase-koppeling ingesteld.' };
+  try {
+    const r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: wachtwoord }),
+    });
+    let j;
+    try { j = await r.json(); } catch (e) { return { _error: true, message: 'Kan geen verbinding maken — controleer de Project URL.' }; }
+    if (!r.ok) return { _error: true, message: j.error_description || j.msg || 'Inloggen mislukt' };
+    saveAuthSession(j);
+    return { ok: true };
+  } catch (e) { return { _error: true, message: 'Kan geen verbinding maken — controleer de Project URL.' }; }
+}
+async function refreshAuthSession() {
+  if (!SB_URL || !SB_KEY || !AUTH_REFRESH_TOKEN) return false;
+  try {
+    const r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: AUTH_REFRESH_TOKEN }),
+    });
+    if (!r.ok) { clearAuthSession(); return false; }
+    const j = await r.json();
+    saveAuthSession(j);
+    return true;
+  } catch (e) { return false; }
+}
+function signOut() {
+  clearAuthSession();
+  location.reload();
+}
+
+// ─── Trainer-profielen (invite-only accounts) — trainer_profielen is de enige
+// bron van waarheid voor "wie mag erin"; RLS checkt dit zelf ook (self-
+// referentiële policy), dit is puur voor de UI (lijst tonen, rol bepalen). ───
+let HUIDIGE_GEBRUIKER = null;
+async function haalHuidigeGebruiker() {
+  if (HUIDIGE_GEBRUIKER) return HUIDIGE_GEBRUIKER;
+  if (!SB_URL || !AUTH_ACCESS_TOKEN) return null;
+  try {
+    const r = await fetch(SB_URL + '/auth/v1/user', { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + AUTH_ACCESS_TOKEN } });
+    if (!r.ok) return null;
+    const j = await r.json();
+    HUIDIGE_GEBRUIKER = { id: j.id, email: j.email };
+    return HUIDIGE_GEBRUIKER;
+  } catch(e) { return null; }
+}
+async function haalTrainerProfielen() {
+  const res = await sbFetch('trainer_profielen?select=*&order=created_at.asc');
+  return res && !res._error ? res : [];
+}
+// Elke actieve trainer mag beheren (uitnodigen/intrekken) — bewust geen
+// hoofdtrainer-onderscheid, zelfde regel als de Edge Function en RLS hanteren.
+async function magTrainersBeheren() {
+  const mij = await haalHuidigeGebruiker();
+  if (!mij) return false;
+  const lijst = await haalTrainerProfielen();
+  const eigen = lijst.find(t => t.user_id === mij.id);
+  return !!(eigen && eigen.status === 'actief');
+}
+// Roept de invite-trainer Edge Function aan (service_role-key blijft server-side,
+// nooit in clientcode) — die checkt zelf nogmaals dat de aanroeper een actieve
+// trainer is.
+async function nodigTrainerUit(naam, email) {
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/invite-trainer', {
+      method: 'POST',
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + huidigeAuthToken(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ naam, email }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return { _error: true, message: j.error || ('Fout ' + r.status) };
+    return { ok: true };
+  } catch(e) { return { _error: true, message: e.message }; }
+}
+async function trekTrainerIn(userId) {
+  return await sbWrite('trainer_profielen?user_id=eq.' + userId, 'PATCH', { status: 'ingetrokken' });
+}
+
+// Na een klik op een uitnodigings- of wachtwoord-reset-link stuurt Supabase
+// door naar de Site URL met de sessie in het URL-fragment (#access_token=...
+// &type=invite). Zonder dit werd dat genegeerd: Supabase had de gebruiker al
+// "ingelogd", maar de app wist van niets en toonde gewoon het normale
+// inlogscherm — precies het gat dat op 2026-09-04/05 (wachtwoord-reset) en
+// 2026-09-06 (invite) tegen de lamp liep, ook nadat de Site URL al gefixt was.
+function verwerkAuthHashIndienAanwezig() {
+  if (!location.hash || location.hash.length < 2) return false;
+  const params = new URLSearchParams(location.hash.slice(1));
+  const type = params.get('type');
+  const accessToken = params.get('access_token');
+  if (!accessToken || (type !== 'invite' && type !== 'recovery')) return false;
+  saveAuthSession({
+    access_token: accessToken,
+    refresh_token: params.get('refresh_token') || '',
+    expires_in: parseInt(params.get('expires_in'), 10) || 3600,
+  });
+  // Fragment meteen weghalen — anders blijft het token in de adresbalk staan
+  // (zichtbaar, en zou bij een herlaad opnieuw als "net binnengekomen" gelden).
+  history.replaceState(null, '', location.pathname + location.search);
+  return true;
+}
+// ─── Auth-gate — blokkeert de pagina met een inlogscherm totdat er een
+// geldige trainerssessie is. Draait vanuit dezelfde DOMContentLoaded-
+// listener als initDesktopPanel() (geen wijziging per pagina nodig). Niet
+// actief op body.v2 (prototype-v2.html — nog niet live) en sowieso niet op
+// live.html/spelerformulier.html (laden app.js niet resp. blijven bewust
+// zonder login, zie het fix-plan van 2026-09-04). ───
+async function initAuthGate() {
+  if (document.body.classList.contains('v2')) return;
+  if (!SB_URL || !SB_KEY) return; // geen koppeling ingesteld — config-banner vangt dit al af
+  if (verwerkAuthHashIndienAanwezig()) { renderWachtwoordInstellen(); return; }
+  const nu = Math.floor(Date.now() / 1000);
+  if (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 60) { renderAuthGate(false); return; }
+  if (AUTH_REFRESH_TOKEN && await refreshAuthSession()) { renderAuthGate(false); return; }
+  renderAuthGate(true);
+}
+// Toont een wachtwoord-instelscherm i.p.v. het normale inlogscherm — de sessie
+// van het invite/recovery-token staat al klaar (verwerkAuthHashIndienAanwezig),
+// er hoeft alleen nog een wachtwoord gezet te worden. Na succes: als dit een
+// invite was, de eigen trainer_profielen-rij op 'actief' zetten (mag van RLS
+// alleen als zelf-activering vanuit 'uitgenodigd', zie trainer_profielen_zelf_
+// activeren) zodat de nieuwe trainer meteen ook zelf kan uitnodigen/intrekken.
+function renderWachtwoordInstellen() {
+  const bestaand = document.getElementById('auth-gate');
+  if (bestaand) bestaand.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'auth-gate';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;font-family:var(--font-ui)';
+  overlay.innerHTML = `
+    <div style="width:100%;max-width:320px">
+      <div style="font-size:22px;font-weight:800;color:var(--text)">Wachtwoord instellen</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Kies een wachtwoord om je account te activeren.</div>
+      <div class="bmodal-label" style="margin-top:0">Nieuw wachtwoord</div>
+      <input class="bmodal-input" id="wwi-nieuw" type="password" autocomplete="new-password">
+      <div class="bmodal-label">Herhaal wachtwoord</div>
+      <input class="bmodal-input" id="wwi-herhaal" type="password" autocomplete="new-password" style="margin-bottom:14px">
+      <button id="wwi-submit" class="btn btn-primary">Wachtwoord instellen</button>
+      <div id="wwi-fout" style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const nieuwEl = document.getElementById('wwi-nieuw');
+  const herhaalEl = document.getElementById('wwi-herhaal');
+  const foutEl = document.getElementById('wwi-fout');
+  const submitEl = document.getElementById('wwi-submit');
+  const doOpslaan = async () => {
+    const ww = nieuwEl.value;
+    if (ww.length < 6) { foutEl.textContent = 'Minstens 6 tekens.'; return; }
+    if (ww !== herhaalEl.value) { foutEl.textContent = 'Wachtwoorden komen niet overeen.'; return; }
+    submitEl.disabled = true; submitEl.textContent = 'Bezig...';
+    try {
+      const r = await fetch(SB_URL + '/auth/v1/user', {
+        method: 'PUT',
+        headers: { apikey: SB_KEY, Authorization: 'Bearer ' + AUTH_ACCESS_TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: ww }),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        foutEl.textContent = j.msg || j.error_description || 'Opslaan mislukt';
+        submitEl.disabled = false; submitEl.textContent = 'Wachtwoord instellen';
+        return;
+      }
+      const mij = await haalHuidigeGebruiker();
+      if (mij) await sbFetch('trainer_profielen?user_id=eq.' + mij.id, 'PATCH', { status: 'actief' });
+    } catch(e) {
+      foutEl.textContent = e.message;
+      submitEl.disabled = false; submitEl.textContent = 'Wachtwoord instellen';
+      return;
+    }
+    location.reload();
+  };
+  submitEl.onclick = doOpslaan;
+  herhaalEl.addEventListener('keydown', e => { if (e.key === 'Enter') doOpslaan(); });
+  nieuwEl.focus();
+}
+function renderAuthGate(tonen) {
+  const bestaand = document.getElementById('auth-gate');
+  if (bestaand) bestaand.remove();
+  if (!tonen) return;
+  // Gebruikt de bestaande stijl-classes uit style.css (.bmodal-label/.bmodal-input/
+  // .btn.btn-primary) i.p.v. eigen kleuren te verzinnen — volgt zo automatisch het
+  // thema dat de trainer al gekozen had (licht/donker/fcp/licht_groen/licht_blauw),
+  // want applyThema() heeft de --custom-properties allang gezet vóór dit overlay
+  // verschijnt.
+  const overlay = document.createElement('div');
+  overlay.id = 'auth-gate';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;font-family:var(--font-ui)';
+  overlay.innerHTML = `
+    <div style="width:100%;max-width:320px">
+      <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px">Inloggen</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Alleen voor trainers — vul je inloggegevens in.</div>
+      <div class="bmodal-label" style="margin-top:0">E-mailadres</div>
+      <input class="bmodal-input" id="auth-email" type="email" autocomplete="username">
+      <div class="bmodal-label">Wachtwoord</div>
+      <input class="bmodal-input" id="auth-wachtwoord" type="password" autocomplete="current-password" style="margin-bottom:14px">
+      <button id="auth-submit" class="btn btn-primary">Inloggen</button>
+      <div id="auth-fout" style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const emailEl = document.getElementById('auth-email');
+  const wwEl = document.getElementById('auth-wachtwoord');
+  const foutEl = document.getElementById('auth-fout');
+  const submitEl = document.getElementById('auth-submit');
+  const doLogin = async () => {
+    submitEl.disabled = true; submitEl.textContent = 'Bezig...';
+    const res = await signIn(emailEl.value.trim(), wwEl.value);
+    if (res && res.ok) { location.reload(); return; }
+    foutEl.textContent = (res && res.message) || 'Inloggen mislukt';
+    submitEl.disabled = false; submitEl.textContent = 'Inloggen';
+  };
+  submitEl.onclick = doLogin;
+  wwEl.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  emailEl.focus();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initDesktopPanel();
   applyLandscape();
+  initAuthGate();
 });
 window.addEventListener('resize', () => {
   initDesktopPanel();

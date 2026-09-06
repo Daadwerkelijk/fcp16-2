@@ -124,6 +124,9 @@
 .datebox-m{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
 
 /* ═══ CHROME ═══ */
+/* Zijmarge voor schermcontent — matcht de 16px van .appbar zodat kaarten
+   uitlijnen met de titel erboven i.p.v. tegen de schermrand aan te zitten. */
+.pad{padding:0 16px}
 .appbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 12px;background:var(--bg)}
 .appbar-h1{font-size:26px;font-weight:700;letter-spacing:-.03em}
 .appbar-sub{font-size:13px;color:var(--ink3);margin-top:-1px}

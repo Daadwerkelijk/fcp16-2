@@ -30,7 +30,13 @@ async function sbFetch(path, method = 'GET', body = null) {
       'apikey': SB_KEY,
       'Authorization': 'Bearer ' + huidigeAuthToken(),
       'Content-Type': 'application/json',
-      'Prefer': method === 'POST' ? 'return=representation' : ''
+      // PATCH krijgt ook return=representation, net als POST — alleen zo kunnen we zien
+      // of een update daadwerkelijk een rij raakte. Zonder dit antwoordt PostgREST een
+      // PATCH standaard met 204 No Content, zelfs als RLS de rij wegfilterde en er dus
+      // feitelijk niets is gewijzigd: dat zag er dan uit als een geslaagde opslag terwijl
+      // de data nooit is aangepast. Precies dit kostte op 2026-09-05 een trainer een echte
+      // wedstrijduitslag + coach-notities, stil, zonder foutmelding, tijdens een RLS-test.
+      'Prefer': (method === 'POST' || method === 'PATCH') ? 'return=representation' : ''
     }
   };
   if (body) opts.body = JSON.stringify(body);
@@ -42,8 +48,14 @@ async function sbFetch(path, method = 'GET', body = null) {
       return { _error: true, status: r.status, message: msg };
     }
     const ct = r.headers.get('content-type') || '';
-    if (ct.includes('json')) return await r.json();
-    return true;
+    const data = ct.includes('json') ? await r.json() : true;
+    // Een PATCH die 0 rijen teruggeeft, raakte niets — meestal RLS die de rij wegfiltert
+    // (verkeerde/verlopen rechten) of een inmiddels niet meer bestaand ID. De HTTP-status
+    // is dan alsnog 2xx, dus dit moet expliciet gecheckt worden, anders blijft dit stil.
+    if (method === 'PATCH' && Array.isArray(data) && data.length === 0) {
+      return { _error: true, status: r.status, message: 'Update raakte geen enkele rij (geen toegang of onbekend ID) — niets opgeslagen.' };
+    }
+    return data;
   } catch(e) {
     return { _error: true, status: 0, message: e.message };
   }

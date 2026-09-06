@@ -596,10 +596,10 @@ function ppillRolClassV2(label) {
   return r === 'rol-keeper' ? 'rol-keeper' : r === 'rol-verdediger' ? 'rol-verdediger' : r === 'rol-aanval' ? 'rol-aanval' : 'rol-midden';
 }
 
-// ─── Live-state (uitsluitend lokaal in dit prototype — geen Supabase live_updates/
-// wissels-schrijfacties. Dat is een bewuste, genoemde beperking: het live-scherm
-// laat het NIEUWE interactiepatroon zien (klok, stappers, notities, wissel-in-
-// twee-stappen), niet de echte realtime-synchronisatie. ) ───
+// ─── Live-state (het interactiepatroon zelf — klok, stappers, notities,
+// wissel-in-twee-stappen — leeft alleen lokaal tijdens de sessie; de
+// daadwerkelijke Supabase-schrijfacties (registreerWissel/pushLiveUpdate)
+// gebeuren wél echt, zie de aanroepen verderop in dit bestand) ───
 let liveState = null; // {wedstrijdId, status, minuutOffset, helftStart, notities:[], lineup:{}}
 let wisselStap = null; // {uitPosId, uitSpelerId} tijdens stap 2
 
@@ -624,7 +624,12 @@ function alleAgendaItems() {
       tagTekst: w.gespeeld ? (w.score_eigen + '–' + w.score_tegen) : (w.wed_type === 'beker' ? 'Beker' : w.wed_type === 'oefenwedstrijd' ? 'Oefen' : 'Comp.'),
       tagClass: w.gespeeld ? (w.score_eigen > w.score_tegen ? 'tag--win' : w.score_eigen < w.score_tegen ? 'tag--loss' : 'tag--neutral') : 'tag--line',
       tagNum: w.gespeeld,
-      afgerond: w.gespeeld,
+      // Ook een wedstrijd waarvan de uitslag nog niet is ingevuld telt als
+      // afgerond zodra de datum verstreken is — anders wint zo'n wedstrijd
+      // altijd de "eerstvolgend"-plek van echte toekomstige wedstrijden.
+      // Zelfde datumgrens als de trainingen hierboven, en zelfde principe
+      // als de klassieke app (index.html: `w.isoDate >= vandaagIso`).
+      afgerond: w.gespeeld || w.isoDate < isoVan(new Date()),
       wedId: w.id,
     });
   });
@@ -2571,62 +2576,17 @@ function toonScherm(naam) {
   window.scrollTo(0,0);
 }
 
-// ─── Dummy-data — vult alleen aan als deze browser nog geen (echte) data
-// heeft. Bestaat de sleutel al (bijv. omdat je hier ooit de echte app hebt
-// gebruikt), dan laten we hem met rust — dit overschrijft nooit iets. ───
-function vulDummyDataAlsLeeg() {
-  if (localStorage.getItem('fcp_players')) return;
-  const namen = ['Sem de Vries','Daan Bakker','Luuk Jansen','Finn de Boer','Milan Visser','Noah Smit','Jesse Mulder','Bram Dekker','Thijs Bos','Ties Peters','Julian Hendriks','Rens Kok','Owen van Dijk'];
-  const posPerSpeler = [['Keeper'],['LB','LM'],['CB-L','CB-R'],['CB-R'],['RB','RM'],['DM-L','DM-R'],['DM-R','CM-R'],['AM-L','LAM'],['AM-R','RAM'],['ST-L','CF'],['ST-R','CF'],['CM-L'],['RM','AM-R']];
-  const players = namen.map((naam, i) => ({ id:'p' + (i+1), naam, omschrijving:'', posities: posPerSpeler[i]||[], opmerkingen:'', ontwikkeling:'' }));
-  const iso = (d) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  const dPlus = (n) => { const d = new Date(); d.setDate(d.getDate()+n); return d; };
-  const maandagDezeWeek = () => { const d = new Date(); const dag = (d.getDay()+6)%7; d.setDate(d.getDate()-dag); return d; };
-  const wed = [
-    { id:'w1', tegenstander:'VVA Delft', isoDate: iso(dPlus(2)), starttijd:'10:00', thuis_uit:'thuis', wed_type:'competitie', wed_fase:'Fase 2', score_eigen:0, score_tegen:0, gespeeld:false, motm:null, afwezig:[], ratings:{}, opmerkingen:'' },
-    { id:'w2', tegenstander:'SC Purmer', isoDate: iso(dPlus(-5)), starttijd:'11:15', thuis_uit:'uit', wed_type:'competitie', wed_fase:'Fase 2', score_eigen:3, score_tegen:1, gespeeld:true, motm:'p2', afwezig:[{pid:'p9',reden:'Ziek'}], ratings:{p1:7,p2:8.5,p3:6.5,p4:7,p5:7.5,p6:6,p7:7,p8:8,p10:7.5,p11:6.5}, opmerkingen:'Sterke tweede helft.' },
-    { id:'w3', tegenstander:'Zwaluwen', isoDate: iso(dPlus(-12)), starttijd:'09:30', thuis_uit:'thuis', wed_type:'beker', wed_fase:null, score_eigen:2, score_tegen:2, gespeeld:true, motm:'p10', afwezig:[], ratings:{p1:6.5,p2:7,p3:7,p4:6,p5:6.5,p6:7,p7:6.5,p8:7,p9:6,p10:8,p11:7,p12:6.5,p13:6.5}, opmerkingen:'' },
-  ];
-  const blokVan = (o) => ({ t:'', cat:o.cat, n:o.title, tip:o.tip||'', url:o.url||'' });
-  const oefO1 = { id:'o1', title:'Positiespel 4v2', cat:'Positiespel', tip:'Blijf breed staan' };
-  const oefO2 = { id:'o2', title:'Passing driehoek', cat:'Passing', tip:'' };
-  const oefO3 = { id:'o3', title:'Afwerken 1v1', cat:'Afwerken', tip:'' };
-  const dezeWeekIso = iso(maandagDezeWeek());
-  const vorigeWeekIso = iso(dPlus(-7 - ((new Date().getDay()+6)%7)));
-  const cw = [{ focus:'Positiespel & afwerken', isoDate: dezeWeekIso, weekNr: getISOWeekV2(new Date(dezeWeekIso)), sessies:[
-    { dag:'Dinsdag', pr:[], blokken:[blokVan(oefO1), blokVan(oefO2)] },
-    { dag:'Donderdag', pr:[], blokken:[blokVan(oefO3)] },
-  ]}, { focus:'Conditie & duels', isoDate: vorigeWeekIso, weekNr: getISOWeekV2(new Date(vorigeWeekIso)), sessies:[
-    { dag:'Dinsdag', pr:[], blokken:[blokVan(oefO1)] },
-    { dag:'Donderdag', pr:[], blokken:[blokVan(oefO2), blokVan(oefO3)] },
-  ]}];
-  const aanw = {
-    cw0_0: { p1:{afwezig:false},p2:{afwezig:false},p3:{afwezig:true,reden:'School'},p4:{afwezig:false},p5:{afwezig:false},p6:{afwezig:false},p7:{afwezig:false},p8:{afwezig:false},p9:{afwezig:true,reden:'Ziek'},p10:{afwezig:false},p11:{afwezig:false},p12:{afwezig:false},p13:{afwezig:false} },
-    cw1_0: { p1:{afwezig:false},p2:{afwezig:false},p3:{afwezig:false},p4:{afwezig:false},p5:{afwezig:false},p6:{afwezig:false},p7:{afwezig:false},p8:{afwezig:false},p9:{afwezig:true,reden:'Ziek'},p10:{afwezig:false},p11:{afwezig:false},p12:{afwezig:false},p13:{afwezig:true,reden:'Vakantie'} },
-    cw1_1: { p1:{afwezig:false},p2:{afwezig:true,reden:'Blessure'},p3:{afwezig:false},p4:{afwezig:false},p5:{afwezig:false},p6:{afwezig:false},p7:{afwezig:false},p8:{afwezig:false},p9:{afwezig:false},p10:{afwezig:false},p11:{afwezig:false},p12:{afwezig:false},p13:{afwezig:true,reden:'Vakantie'} },
-  };
-  const lineup = { GK:'p1', LB:'p2', CB_L:'p3', CB_R:'p4', RB:'p5', VM_L:'p6', VM_R:'p7', AM_L:'p8', AM_R:'p9', ST_L:'p10', ST_R:'p11' };
-  const oef = [
-    { id:'o1', title:'Positiespel 4v2', cat:'Positiespel', spelers:'8-12', desc:'Vak van 15x15m.', beschrijving:'Vak van 15x15m.', tip:'Blijf breed staan', url:'', stappen:['Balbezit vasthouden','Wisselen bij balverlies'], formaties:[] },
-    { id:'o2', title:'Passing driehoek', cat:'Passing', spelers:'6', desc:'Passing in driehoeksvorm.', beschrijving:'Passing in driehoeksvorm.', tip:'', url:'', stappen:['Kort passen','Lang passen'], formaties:[] },
-    { id:'o3', title:'Afwerken 1v1', cat:'Afwerken', spelers:'10', desc:'Duel richting doel.', beschrijving:'Duel richting doel.', tip:'', url:'', stappen:['Starten vanaf middenlijn','Afronden op doel'], formaties:[] },
-  ];
-  // Let op: geen demo-beoordelingen meer geseed — trainer-/spelerbeoordelingen
-  // leven sinds de Supabase-omzetting uitsluitend in Supabase (zie
-  // laadBeoordelingenV2), dus een lokale seed hier zou nooit ergens getoond
-  // worden. Zonder Supabase-koppeling toont de app terecht "nog geen
-  // beoordelingen" — exact zoals de echte app zich gedraagt zonder koppeling.
-  localStorage.setItem('fcp_players', JSON.stringify(players));
-  localStorage.setItem('fcp_wed', JSON.stringify(wed));
-  localStorage.setItem('fcp_custom_weken', JSON.stringify(cw));
-  localStorage.setItem('fcp_aanw', JSON.stringify(aanw));
-  localStorage.setItem('fcp_lineup', JSON.stringify(lineup));
-  localStorage.setItem('fcp_formatie', '4222');
-  localStorage.setItem('fcp_custom_formaties', '[]');
-  localStorage.setItem('fcp_oef', JSON.stringify(oef));
-  localStorage.setItem('fcp_cats', JSON.stringify(['Passing','Afwerken','Duel','Positiespel']));
-  localStorage.setItem('fcp_abs_redenen', JSON.stringify(['Ziek','Blessure','Vakantie','School','Anders']));
-  localStorage.setItem('fcp_team_config', JSON.stringify({ naam:'FCP 16-2', subtitel:'Seizoen 2026/2027' }));
+// ─── Echte data ophalen bij login — hergebruikt app.js's al beproefde
+// initSupabase()/loadFromSupabase() (dezelfde functies als de klassieke app),
+// geen eigen tweede fetch-laag. initSupabase() is veilig aan te roepen vanuit
+// V2: elke DOM-aanroep erin (config-banner/sync-bar/sb-url e.d.) is
+// null-guarded, en die elementen bestaan hier simpelweg niet. Vervangt de
+// vroegere vulDummyDataAlsLeeg() (verzonnen demo-namen) volledig — een
+// ingelogde trainer hoort nooit fictieve data te zien, ook niet bij een team
+// dat écht nog 0 spelers heeft. ───
+async function syncEchteDataV2() {
+  await initSupabase();
+  await loadFromSupabase();
 }
 
 // ─── Inlog-gate (trainer-only) — enige toegangspunt tot de rest van V2.
@@ -2691,8 +2651,8 @@ async function inlogInloggen(btn) {
 async function initAuthGateV2() {
   const nu = Math.floor(Date.now() / 1000);
   if (!SB_URL || !SB_KEY) { renderInlogScreen(); toonScherm('inlog'); return; }
-  if (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 60) { vulDummyDataAlsLeeg(); renderVandaag(); toonScherm('vandaag'); return; }
-  if (AUTH_REFRESH_TOKEN && await refreshAuthSession()) { vulDummyDataAlsLeeg(); renderVandaag(); toonScherm('vandaag'); return; }
+  if (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 60) { await syncEchteDataV2(); renderVandaag(); toonScherm('vandaag'); return; }
+  if (AUTH_REFRESH_TOKEN && await refreshAuthSession()) { await syncEchteDataV2(); renderVandaag(); toonScherm('vandaag'); return; }
   renderInlogScreen();
   toonScherm('inlog');
 }

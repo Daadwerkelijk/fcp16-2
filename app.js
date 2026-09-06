@@ -390,6 +390,18 @@ async function haalAlleSpelerBeoordelingen() {
   return res && !res._error ? res : [];
 }
 
+// Herbruikbare foutmelding voor een mislukte Supabase-verbindingstest (het resultaat van
+// sbFetch('players?limit=1&select=id')) — gebruikt door initSupabase() zelf, en door V2's
+// eigen koppel-scherm (prototype-v2.html), zodat beide dezelfde, al beproefde boodschappen
+// tonen zonder de mapping op twee plekken te onderhouden.
+function sbVerbindingsfout(test) {
+  const s = test?.status || 0;
+  return s === 0   ? '❌ Netwerkfout — controleer de URL'
+       : s === 401 || s === 403 ? '❌ Ongeldige API key'
+       : s === 404 ? '❌ Tabellen niet gevonden — SQL nog niet uitgevoerd?'
+       : '❌ Fout ' + s + ': ' + (test?.message || '');
+}
+
 async function initSupabase(statusElId) {
   SB_URL = localStorage.getItem('sb_url') || '';
   SB_KEY  = localStorage.getItem('sb_key')  || '';
@@ -414,12 +426,7 @@ async function initSupabase(statusElId) {
   if (!test || test._error) {
     if (syncBar) syncBar.className = 'sync-bar sync-err';
     supabaseReady = false;
-    const s = test?.status || 0;
-    const msg = s === 0   ? '❌ Netwerkfout — controleer de URL'
-              : s === 401 || s === 403 ? '❌ Ongeldige API key'
-              : s === 404 ? '❌ Tabellen niet gevonden — SQL nog niet uitgevoerd?'
-              : '❌ Fout ' + s + ': ' + (test?.message || '');
-    if (msgEl) msgEl.textContent = msg;
+    if (msgEl) msgEl.textContent = sbVerbindingsfout(test);
     return false;
   }
   if (syncBar) syncBar.className = 'sync-bar sync-ok';

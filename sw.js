@@ -1,7 +1,8 @@
-const CACHE = 'fcp162-v117';
+const CACHE = 'fcp162-v118';
 const ASSETS = [
   '/fcp16-2/',
   '/fcp16-2/index.html',
+  '/fcp16-2/index-classic.html',
   '/fcp16-2/opstelling.html',
   '/fcp16-2/formatie-editor.html',
   '/fcp16-2/selectie.html',
@@ -14,7 +15,6 @@ const ASSETS = [
   '/fcp16-2/handleiding.html',
   '/fcp16-2/check.html',
   '/fcp16-2/live.html',
-  '/fcp16-2/prototype-v2.html',
   '/fcp16-2/app.js',
   '/fcp16-2/style.css',
   '/fcp16-2/ui-v2.css',

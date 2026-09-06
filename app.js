@@ -81,7 +81,7 @@ async function sbWrite(path, method, body, pogingen = 3) {
 
 // ─── Datalaag: Principes ───
 // Enige plek die weet hoe een principe wordt opgeslagen (tabelnaam, veldnamen, methode).
-// Doet exact hetzelfde als de eerdere losse aanroep in index.html: zelfde tabel, zelfde
+// Doet exact hetzelfde als de eerdere losse aanroep in index-classic.html: zelfde tabel, zelfde
 // velden, zelfde foutafhandeling via sbWrite (incl. automatische herhaalpogingen).
 async function updatePrincipe(id, velden) {
   return await sbWrite('principes?id=eq.' + id, 'PATCH', velden);
@@ -392,7 +392,7 @@ async function haalAlleSpelerBeoordelingen() {
 
 // Herbruikbare foutmelding voor een mislukte Supabase-verbindingstest (het resultaat van
 // sbFetch('players?limit=1&select=id')) — gebruikt door initSupabase() zelf, en door V2's
-// eigen koppel-scherm (prototype-v2.html), zodat beide dezelfde, al beproefde boodschappen
+// eigen koppel-scherm (index.html/Interface V2), zodat beide dezelfde, al beproefde boodschappen
 // tonen zonder de mapping op twee plekken te onderhouden.
 function sbVerbindingsfout(test) {
   const s = test?.status || 0;
@@ -1260,7 +1260,7 @@ function getISOWeek(dateStr) {
 
 // ─── NAV: markeer actieve pagina ───
 function markActiveNav() {
-  const page = window.location.pathname.split('/').pop() || 'index.html';
+  const page = window.location.pathname.split('/').pop() || 'index-classic.html';
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.toggle('active', btn.getAttribute('href') === page || btn.getAttribute('data-page') === page);
   });
@@ -1284,7 +1284,7 @@ function initDesktopPanel() {
   const existing = document.getElementById('desktop-panel');
   if (existing) existing.remove();
   // Dit paneel is gestyled voor de klassieke pagina's (donkere sidebar-achtergrond
-  // uit style.css) — prototype-v2.html/live.html laden app.js ook, maar hebben geen
+  // uit style.css) — index.html/Interface V2/live.html laden app.js ook, maar hebben geen
   // sidebar-layout, waardoor dit paneel daar als een onleesbaar wit spookpaneel
   // onderaan de pagina zou verschijnen. body.v2 is de marker van die andere shell.
   if (document.body.classList.contains('v2')) return;
@@ -1299,9 +1299,12 @@ function initDesktopPanel() {
     'font-family:\'DM Sans\',sans-serif',
   ].join(';');
 
-  const page = window.location.pathname.split('/').pop() || 'index.html';
+  // Sinds de V2-omwisseling (2026-09-06, zie CLAUDE.md) is index.html V2 en heet
+  // de klassieke start-pagina index-classic.html — dit paneel bestaat alleen op
+  // klassieke pagina's (v2-guard hierboven), dus "Start" wijst hier naar die naam.
+  const page = window.location.pathname.split('/').pop();
   const links = [
-    ['index.html','Start'],
+    ['index-classic.html','Start'],
     ['opstelling.html','Opstelling'],
     ['selectie.html','Selectie'],
     ['wedstrijden.html','Wedstrijden'],
@@ -1325,7 +1328,7 @@ function initDesktopPanel() {
     <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:28px">${cfg.subtitel || ''}</div>
     <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Navigatie</div>
     ${links.map(([href, label]) => {
-      const active = page === href || (href === 'index.html' && (page === '' || page === '/'));
+      const active = page === href;
       return `<a href="${href}" style="display:block;padding:7px 12px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:${active?'600':'400'};color:${active?'#fff':'rgba(255,255,255,.45)'};background:${active?'rgba(255,255,255,.1)':'transparent'};margin-bottom:2px;transition:background .15s"
         onmouseover="this.style.background=this.style.background||'rgba(255,255,255,.05)'"
         onmouseout="this.style.background='${active?'rgba(255,255,255,.1)':'transparent'}'"
@@ -1475,8 +1478,9 @@ function verwerkAuthHashIndienAanwezig() {
 // ─── Auth-gate — blokkeert de pagina met een inlogscherm totdat er een
 // geldige trainerssessie is. Draait vanuit dezelfde DOMContentLoaded-
 // listener als initDesktopPanel() (geen wijziging per pagina nodig). Niet
-// actief op body.v2 (prototype-v2.html — nog niet live) en sowieso niet op
-// live.html/spelerformulier.html (laden app.js niet resp. blijven bewust
+// actief op body.v2 (nu index.html/Interface V2 — heeft een eigen auth-gate,
+// initAuthGateV2(), die dezelfde sessiefuncties hergebruikt) en sowieso niet
+// op live.html/spelerformulier.html (laden app.js niet resp. blijven bewust
 // zonder login, zie het fix-plan van 2026-09-04). ───
 async function initAuthGate() {
   if (document.body.classList.contains('v2')) return;

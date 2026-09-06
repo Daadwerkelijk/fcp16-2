@@ -173,16 +173,12 @@ function renderMiniField(w) {
   </div>`;
 }
 
-// Zelfde indeling-logica als de coach-pagina (wedstrijden.html: wedCategorie()), zodat
-// ouders exact dezelfde volgorde/groepen zien als in de app zelf.
+// Drie groepen, rechtstreeks op status (geen "eerstvolgende"-datumvenster meer —
+// op verzoek: een lopende wedstrijd moet altijd direct als LIVE opvallen, en
+// verder is er geen aparte tussengroep nodig naast toekomstig/gespeeld).
 function wedCategorie(w) {
   if (w.status === 'ft') return 'gespeeld';
-  const nu = new Date(); nu.setHours(0,0,0,0);
-  const d = w.iso_date ? new Date(w.iso_date) : null;
-  if (!d) return 'toekomst';
-  const diff = d - nu;
-  if (diff < 0) return 'volgend'; // datum voorbij maar niet bevestigd afgerond
-  if (diff < 7 * 24 * 60 * 60 * 1000) return 'volgend';
+  if (w.status === 'live_1e' || w.status === 'live_2e' || w.status === 'rust') return 'live';
   return 'toekomst';
 }
 
@@ -220,14 +216,14 @@ async function renderOverzicht() {
   if (!wedstrijden.length) {
     html += `<div class="empty">Nog geen wedstrijden om te volgen.</div>`;
   } else {
-    const volgend  = wedstrijden.filter(w => wedCategorie(w) === 'volgend');
-    const toekomst = wedstrijden.filter(w => wedCategorie(w) === 'toekomst');
-    const gespeeld = wedstrijden.filter(w => wedCategorie(w) === 'gespeeld')
+    const live      = wedstrijden.filter(w => wedCategorie(w) === 'live');
+    const toekomst  = wedstrijden.filter(w => wedCategorie(w) === 'toekomst');
+    const gespeeld  = wedstrijden.filter(w => wedCategorie(w) === 'gespeeld')
       .sort((a,b) => (b.iso_date+b.starttijd).localeCompare(a.iso_date+a.starttijd)); // nieuwste eerst
 
-    if (volgend.length)  html += `<div class="sec" style="margin-top:4px">Eerstvolgende</div>` + volgend.map(kaart).join('');
-    if (toekomst.length) html += `<div class="sec" style="margin-top:14px">Toekomstige wedstrijden</div>` + toekomst.map(kaart).join('');
-    if (gespeeld.length) html += `<div class="sec" style="margin-top:14px">Gespeeld</div>` + gespeeld.map(kaart).join('');
+    if (live.length)      html += `<div class="sec" style="margin-top:4px;color:var(--loss)">🔴 Live</div>` + live.map(kaart).join('');
+    if (toekomst.length)  html += `<div class="sec" style="margin-top:14px">Toekomstige wedstrijden</div>` + toekomst.map(kaart).join('');
+    if (gespeeld.length)  html += `<div class="sec" style="margin-top:14px">Gespeeld</div>` + gespeeld.map(kaart).join('');
   }
   html += `</div>`;
   app.innerHTML = html;

@@ -1395,7 +1395,7 @@ function openSpelerBewerken(id) {
   document.getElementById('sb-titel').textContent = p ? 'Speler bewerken' : 'Speler toevoegen';
   const posities = (p && p.posities) || [];
   document.getElementById('sb-content').innerHTML =
-      '<div class="field"><span class="label">Naam</span><input class="input" id="sb-naam" value="' + (p ? esc(p.naam) : '') + '"></div>'
+      '<div class="field"><span class="label">Naam</span><input class="input" id="sb-naam" maxlength="30" value="' + (p ? esc(p.naam) : '') + '"></div>'
     + (p ? (
         '<div class="field"><span class="label">Omschrijving</span><input class="input" id="sb-omschrijving" value="' + esc(p.omschrijving||'') + '"></div>'
       + '<div class="field"><span class="label">Posities</span><div style="display:flex;flex-wrap:wrap;gap:7px" id="sb-posities">' + ALL_POS_OPTS_V2.map(pos => '<button type="button" class="chip" aria-pressed="' + posities.includes(pos) + '" onclick="this.setAttribute(\'aria-pressed\', this.getAttribute(\'aria-pressed\')!==\'true\')">' + pos + '</button>').join('') + '</div></div>'
@@ -1419,7 +1419,7 @@ function openSpelerBewerken(id) {
   });
 }
 function slaSpelerOp() {
-  const naam = document.getElementById('sb-naam').value.trim();
+  const naam = document.getElementById('sb-naam').value.trim().slice(0, 30);
   if (!naam) { toonVeldFout('sb-naam', 'Vul een naam in.'); return; }
   const lijst = spelers();
   if (bewerkSpelerId) {
@@ -1473,6 +1473,7 @@ async function openTrainerBeoordelingSheet(spelerId) {
   tbSpelerId = spelerId;
   tbKeuzes = {};
   const p = spelers().find(x => x.id === spelerId);
+  if (!p) return;
   document.getElementById('tb-sub').textContent = p.naam + ' — kies per vaardigheid een niveau';
   document.getElementById('tb-delen-switch').setAttribute('aria-checked', 'false');
   renderTbSheet();
@@ -1503,7 +1504,11 @@ async function slaTrainerBeoordelingOp(btn) {
     return;
   }
   const gedeeld = document.getElementById('tb-delen-switch').getAttribute('aria-checked') === 'true';
-  await nieuweTrainerBeoordeling(tbSpelerId, { ...tbKeuzes }, gedeeld);
+  const res = await nieuweTrainerBeoordeling(tbSpelerId, { ...tbKeuzes }, gedeeld);
+  if (res && res._error) {
+    if (btn) { const orig = btn.textContent; btn.textContent = 'Opslaan mislukt — probeer opnieuw'; setTimeout(() => { if (btn.isConnected) btn.textContent = orig; }, 2500); }
+    return;
+  }
   delete beoordelingCacheV2[tbSpelerId];
   closeTrainerBeoordelingSheet();
   openSpelerBewerken(tbSpelerId);

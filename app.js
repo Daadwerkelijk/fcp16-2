@@ -1358,11 +1358,12 @@ async function signIn(email, wachtwoord) {
       headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: wachtwoord }),
     });
-    const j = await r.json();
+    let j;
+    try { j = await r.json(); } catch (e) { return { _error: true, message: 'Kan geen verbinding maken — controleer de Project URL.' }; }
     if (!r.ok) return { _error: true, message: j.error_description || j.msg || 'Inloggen mislukt' };
     saveAuthSession(j);
     return { ok: true };
-  } catch (e) { return { _error: true, message: e.message }; }
+  } catch (e) { return { _error: true, message: 'Kan geen verbinding maken — controleer de Project URL.' }; }
 }
 async function refreshAuthSession() {
   if (!SB_URL || !SB_KEY || !AUTH_REFRESH_TOKEN) return false;

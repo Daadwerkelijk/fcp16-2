@@ -1450,6 +1450,28 @@ async function trekTrainerIn(userId) {
   return await sbWrite('trainer_profielen?user_id=eq.' + userId, 'PATCH', { status: 'ingetrokken' });
 }
 
+// Na een klik op een uitnodigings- of wachtwoord-reset-link stuurt Supabase
+// door naar de Site URL met de sessie in het URL-fragment (#access_token=...
+// &type=invite). Zonder dit werd dat genegeerd: Supabase had de gebruiker al
+// "ingelogd", maar de app wist van niets en toonde gewoon het normale
+// inlogscherm — precies het gat dat op 2026-09-04/05 (wachtwoord-reset) en
+// 2026-09-06 (invite) tegen de lamp liep, ook nadat de Site URL al gefixt was.
+function verwerkAuthHashIndienAanwezig() {
+  if (!location.hash || location.hash.length < 2) return false;
+  const params = new URLSearchParams(location.hash.slice(1));
+  const type = params.get('type');
+  const accessToken = params.get('access_token');
+  if (!accessToken || (type !== 'invite' && type !== 'recovery')) return false;
+  saveAuthSession({
+    access_token: accessToken,
+    refresh_token: params.get('refresh_token') || '',
+    expires_in: parseInt(params.get('expires_in'), 10) || 3600,
+  });
+  // Fragment meteen weghalen — anders blijft het token in de adresbalk staan
+  // (zichtbaar, en zou bij een herlaad opnieuw als "net binnengekomen" gelden).
+  history.replaceState(null, '', location.pathname + location.search);
+  return true;
+}
 // ─── Auth-gate — blokkeert de pagina met een inlogscherm totdat er een
 // geldige trainerssessie is. Draait vanuit dezelfde DOMContentLoaded-
 // listener als initDesktopPanel() (geen wijziging per pagina nodig). Niet
@@ -1459,10 +1481,70 @@ async function trekTrainerIn(userId) {
 async function initAuthGate() {
   if (document.body.classList.contains('v2')) return;
   if (!SB_URL || !SB_KEY) return; // geen koppeling ingesteld — config-banner vangt dit al af
+  if (verwerkAuthHashIndienAanwezig()) { renderWachtwoordInstellen(); return; }
   const nu = Math.floor(Date.now() / 1000);
   if (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 60) { renderAuthGate(false); return; }
   if (AUTH_REFRESH_TOKEN && await refreshAuthSession()) { renderAuthGate(false); return; }
   renderAuthGate(true);
+}
+// Toont een wachtwoord-instelscherm i.p.v. het normale inlogscherm — de sessie
+// van het invite/recovery-token staat al klaar (verwerkAuthHashIndienAanwezig),
+// er hoeft alleen nog een wachtwoord gezet te worden. Na succes: als dit een
+// invite was, de eigen trainer_profielen-rij op 'actief' zetten (mag van RLS
+// alleen als zelf-activering vanuit 'uitgenodigd', zie trainer_profielen_zelf_
+// activeren) zodat de nieuwe trainer meteen ook zelf kan uitnodigen/intrekken.
+function renderWachtwoordInstellen() {
+  const bestaand = document.getElementById('auth-gate');
+  if (bestaand) bestaand.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'auth-gate';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;font-family:var(--font-ui)';
+  overlay.innerHTML = `
+    <div style="width:100%;max-width:320px">
+      <div style="font-size:22px;font-weight:800;color:var(--text)">Wachtwoord instellen</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Kies een wachtwoord om je account te activeren.</div>
+      <div class="bmodal-label" style="margin-top:0">Nieuw wachtwoord</div>
+      <input class="bmodal-input" id="wwi-nieuw" type="password" autocomplete="new-password">
+      <div class="bmodal-label">Herhaal wachtwoord</div>
+      <input class="bmodal-input" id="wwi-herhaal" type="password" autocomplete="new-password" style="margin-bottom:14px">
+      <button id="wwi-submit" class="btn btn-primary">Wachtwoord instellen</button>
+      <div id="wwi-fout" style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const nieuwEl = document.getElementById('wwi-nieuw');
+  const herhaalEl = document.getElementById('wwi-herhaal');
+  const foutEl = document.getElementById('wwi-fout');
+  const submitEl = document.getElementById('wwi-submit');
+  const doOpslaan = async () => {
+    const ww = nieuwEl.value;
+    if (ww.length < 6) { foutEl.textContent = 'Minstens 6 tekens.'; return; }
+    if (ww !== herhaalEl.value) { foutEl.textContent = 'Wachtwoorden komen niet overeen.'; return; }
+    submitEl.disabled = true; submitEl.textContent = 'Bezig...';
+    try {
+      const r = await fetch(SB_URL + '/auth/v1/user', {
+        method: 'PUT',
+        headers: { apikey: SB_KEY, Authorization: 'Bearer ' + AUTH_ACCESS_TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: ww }),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        foutEl.textContent = j.msg || j.error_description || 'Opslaan mislukt';
+        submitEl.disabled = false; submitEl.textContent = 'Wachtwoord instellen';
+        return;
+      }
+      const mij = await haalHuidigeGebruiker();
+      if (mij) await sbFetch('trainer_profielen?user_id=eq.' + mij.id, 'PATCH', { status: 'actief' });
+    } catch(e) {
+      foutEl.textContent = e.message;
+      submitEl.disabled = false; submitEl.textContent = 'Wachtwoord instellen';
+      return;
+    }
+    location.reload();
+  };
+  submitEl.onclick = doOpslaan;
+  herhaalEl.addEventListener('keydown', e => { if (e.key === 'Enter') doOpslaan(); });
+  nieuwEl.focus();
 }
 function renderAuthGate(tonen) {
   const bestaand = document.getElementById('auth-gate');

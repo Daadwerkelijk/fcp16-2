@@ -1403,6 +1403,53 @@ function signOut() {
   location.reload();
 }
 
+// ─── Trainer-profielen (invite-only accounts) — trainer_profielen is de enige
+// bron van waarheid voor "wie mag erin"; RLS checkt dit zelf ook (self-
+// referentiële policy), dit is puur voor de UI (lijst tonen, rol bepalen). ───
+let HUIDIGE_GEBRUIKER = null;
+async function haalHuidigeGebruiker() {
+  if (HUIDIGE_GEBRUIKER) return HUIDIGE_GEBRUIKER;
+  if (!SB_URL || !AUTH_ACCESS_TOKEN) return null;
+  try {
+    const r = await fetch(SB_URL + '/auth/v1/user', { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + AUTH_ACCESS_TOKEN } });
+    if (!r.ok) return null;
+    const j = await r.json();
+    HUIDIGE_GEBRUIKER = { id: j.id, email: j.email };
+    return HUIDIGE_GEBRUIKER;
+  } catch(e) { return null; }
+}
+async function haalTrainerProfielen() {
+  const res = await sbFetch('trainer_profielen?select=*&order=created_at.asc');
+  return res && !res._error ? res : [];
+}
+// Elke actieve trainer mag beheren (uitnodigen/intrekken) — bewust geen
+// hoofdtrainer-onderscheid, zelfde regel als de Edge Function en RLS hanteren.
+async function magTrainersBeheren() {
+  const mij = await haalHuidigeGebruiker();
+  if (!mij) return false;
+  const lijst = await haalTrainerProfielen();
+  const eigen = lijst.find(t => t.user_id === mij.id);
+  return !!(eigen && eigen.status === 'actief');
+}
+// Roept de invite-trainer Edge Function aan (service_role-key blijft server-side,
+// nooit in clientcode) — die checkt zelf nogmaals dat de aanroeper een actieve
+// trainer is.
+async function nodigTrainerUit(naam, email) {
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/invite-trainer', {
+      method: 'POST',
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + huidigeAuthToken(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ naam, email }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return { _error: true, message: j.error || ('Fout ' + r.status) };
+    return { ok: true };
+  } catch(e) { return { _error: true, message: e.message }; }
+}
+async function trekTrainerIn(userId) {
+  return await sbWrite('trainer_profielen?user_id=eq.' + userId, 'PATCH', { status: 'ingetrokken' });
+}
+
 // ─── Auth-gate — blokkeert de pagina met een inlogscherm totdat er een
 // geldige trainerssessie is. Draait vanuit dezelfde DOMContentLoaded-
 // listener als initDesktopPanel() (geen wijziging per pagina nodig). Niet

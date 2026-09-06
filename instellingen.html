@@ -74,6 +74,20 @@
       <button style="width:100%;margin-top:6px;padding:9px;background:transparent;border:1px solid var(--line2);border-radius:var(--rsm);color:var(--text2);font-family:var(--font-mono);font-size:12px;cursor:pointer" onclick="signOut()">🔒 Gebruiker uitloggen</button>
     </section>
 
+    <!-- ─── TRAINERS (invite-only) ─── -->
+    <section id="trainers-sectie" style="display:none">
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">👥 Trainers</div>
+      <div id="trainers-lijst" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+      <div id="trainers-uitnodigen" style="display:none">
+        <div class="bmodal-label">Naam</div>
+        <input class="bmodal-input" id="tr-uitnodigen-naam" placeholder="Naam collega">
+        <div class="bmodal-label">E-mailadres</div>
+        <input class="bmodal-input" id="tr-uitnodigen-email" placeholder="collega@voorbeeld.nl" type="email">
+        <button class="bmodal-save" style="width:100%;margin-top:4px" onclick="uitnodigenTrainer(this)">✉️ Uitnodigen</button>
+        <div id="tr-uitnodigen-fout" style="font-size:11px;color:var(--red);margin-top:6px;min-height:14px"></div>
+      </div>
+    </section>
+
     <!-- ─── SPELVORM ─── -->
     <section>
       <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line2)">⚽ Spelvorm</div>
@@ -412,6 +426,49 @@ async function onSupabaseReady() {
   renderCats();
   if (data.spelvorm) renderSpelvormDropdown();
   if (data.customFormaties) renderFormaties();
+  renderTrainers();
+}
+
+// ─── Trainers (invite-only) ───
+async function renderTrainers() {
+  const sectie = document.getElementById('trainers-sectie');
+  const lijst = await haalTrainerProfielen();
+  if (!lijst.length) { sectie.style.display = 'none'; return; }
+  sectie.style.display = 'block';
+  const magUitnodigen = await magTrainersBeheren();
+  document.getElementById('trainers-uitnodigen').style.display = magUitnodigen ? 'block' : 'none';
+  const mij = await haalHuidigeGebruiker();
+  const STATUS_LABEL = { actief:'Actief', uitgenodigd:'Uitgenodigd', ingetrokken:'Ingetrokken' };
+  document.getElementById('trainers-lijst').innerHTML = lijst.map(t => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rsm)">
+      <div style="flex:1">
+        <div style="font-size:12px;color:var(--text)">${t.naam}${mij && t.user_id===mij.id ? ' (jij)' : ''}</div>
+        <div style="font-size:10px;color:var(--text3)">${t.email} · ${STATUS_LABEL[t.status]||t.status}</div>
+      </div>
+      ${magUitnodigen && t.status !== 'ingetrokken' && !(mij && t.user_id===mij.id) ? `<button onclick="intrekTrainer('${t.user_id}')" style="padding:3px 8px;background:transparent;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:11px;cursor:pointer">Intrekken</button>` : ''}
+    </div>
+  `).join('');
+}
+async function uitnodigenTrainer(btn) {
+  const naam = document.getElementById('tr-uitnodigen-naam').value.trim();
+  const email = document.getElementById('tr-uitnodigen-email').value.trim();
+  const foutEl = document.getElementById('tr-uitnodigen-fout');
+  if (!naam || !email) { foutEl.textContent = 'Vul naam en e-mailadres in.'; return; }
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Bezig...';
+  const res = await nodigTrainerUit(naam, email);
+  btn.disabled = false; btn.textContent = orig;
+  if (res && res._error) { foutEl.textContent = res.message; return; }
+  foutEl.textContent = '';
+  document.getElementById('tr-uitnodigen-naam').value = '';
+  document.getElementById('tr-uitnodigen-email').value = '';
+  renderTrainers();
+}
+async function intrekTrainer(userId) {
+  if (!confirm('Toegang van deze trainer intrekken?')) return;
+  const res = await trekTrainerIn(userId);
+  if (res && res._error) { alert('Intrekken mislukt: ' + (res.message||res.status)); return; }
+  renderTrainers();
 }
 
 async function wisCache() {

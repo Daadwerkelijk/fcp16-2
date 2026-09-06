@@ -78,7 +78,7 @@
 .danger-zone .btn{flex:1}
 
 /* Zwevende primaire actie — altijd rechtsonder, altijd dezelfde plek */
-.fab{position:absolute;right:16px;bottom:calc(72px + 16px);width:56px;height:56px;border-radius:var(--r-pill);background:var(--accent);color:var(--accent-ink);border:none;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh2);cursor:pointer;z-index:20}
+.fab{position:fixed;right:16px;bottom:calc(72px + 16px);width:56px;height:56px;border-radius:var(--r-pill);background:var(--accent);color:var(--accent-ink);border:none;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh2);cursor:pointer;z-index:20}
 .fab svg{width:24px;height:24px}
 .fab:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
 
@@ -109,6 +109,7 @@
 /* Lijstrij — één rijpatroon voor elk object in de app */
 .row{display:flex;align-items:center;gap:13px;min-height:64px;padding:11px 16px;background:var(--surface);cursor:pointer;text-decoration:none;color:inherit;transition:background .14s}
 .row:hover{background:var(--surface2)}
+.row--compact{min-height:auto;padding-top:10px;padding-bottom:10px}
 .row+.row{box-shadow:inset 0 1px 0 var(--line)}
 .row-lead{width:44px;flex-shrink:0;text-align:center}
 .row-body{flex:1;min-width:0}

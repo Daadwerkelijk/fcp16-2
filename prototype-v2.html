@@ -343,6 +343,15 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   </div></div>
 </div>
 
+<!-- ═══ SHEET: oefening-details bekijken vanuit een trainingsblok ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-blok-detail" onclick="if(event.target===this)closeBlokDetail()">
+  <div class="sheet-wrap"><div class="sheet">
+    <div class="sheet-grip"></div>
+    <div id="bd-content"></div>
+    <button class="btn btn--secondary btn--block" style="margin-top:10px" onclick="closeBlokDetail()">Sluiten</button>
+  </div></div>
+</div>
+
 <!-- ═══ SHEET: positie toewijzen — gedeeld door team- en wedstrijd-opstelling ═══ -->
 <div class="sheet-overlay verborgen" id="sheet-opst-kies" onclick="if(event.target===this)closeOpstSlotKiezer()">
   <div class="sheet-wrap"><div class="sheet" style="max-height:80vh;display:flex;flex-direction:column">
@@ -531,49 +540,11 @@ async function laadBeoordelingenV2(spelerId) {
 // is, niet opnieuw ontwerpen. Representatieve subset: 1 systeem per spelvorm
 // (4/6/7/8/9) plus de 3 bestaande 11-tegen-11-systemen — niet alle 22 uit de
 // echte app, omdat dit prototype geen productiepagina is. ───
-const FORMATIES_V2 = {
-  'sv4_22': { label:'2-2', spelvorm:4, pos:[
-    {id:'ACHT_L',label:'ACHT-L',role:'back',x:30,y:65},{id:'ACHT_R',label:'ACHT-R',role:'back',x:70,y:65},
-    {id:'VOOR_L',label:'VOOR-L',role:'st',x:30,y:30},{id:'VOOR_R',label:'VOOR-R',role:'st',x:70,y:30},
-  ]},
-  'sv6_212': { label:'2-1-2', spelvorm:6, pos:[
-    {id:'GK',label:'GK',role:'keeper',x:50,y:88},{id:'DEF_L',label:'DEF-L',role:'back',x:30,y:68},{id:'DEF_R',label:'DEF-R',role:'back',x:70,y:68},
-    {id:'MID',label:'MID',role:'dm',x:50,y:48},{id:'AANV_L',label:'AANV-L',role:'st',x:32,y:22},{id:'AANV_R',label:'AANV-R',role:'st',x:68,y:22},
-  ]},
-  'sv7_321': { label:'3-2-1', spelvorm:7, pos:[
-    {id:'GK',label:'GK',role:'keeper',x:50,y:88},{id:'DEF_L',label:'DEF-L',role:'back',x:25,y:68},{id:'DEF_C',label:'DEF-C',role:'cb',x:50,y:72},
-    {id:'DEF_R',label:'DEF-R',role:'back',x:75,y:68},{id:'MID_L',label:'MID-L',role:'dm',x:32,y:44},{id:'MID_R',label:'MID-R',role:'dm',x:68,y:44},
-    {id:'AANV',label:'AANV',role:'st',x:50,y:18},
-  ]},
-  'sv8_331': { label:'3-3-1', spelvorm:8, pos:[
-    {id:'GK',label:'GK',role:'keeper',x:50,y:88},{id:'DEF_L',label:'DEF-L',role:'back',x:22,y:70},{id:'DEF_C',label:'DEF-C',role:'cb',x:50,y:74},
-    {id:'DEF_R',label:'DEF-R',role:'back',x:78,y:70},{id:'MID_L',label:'MID-L',role:'dm',x:22,y:46},{id:'MID_C',label:'MID-C',role:'dm',x:50,y:48},
-    {id:'MID_R',label:'MID-R',role:'dm',x:78,y:46},{id:'AANV',label:'AANV',role:'st',x:50,y:18},
-  ]},
-  'sv9_332': { label:'3-3-2', spelvorm:9, pos:[
-    {id:'GK',label:'GK',role:'keeper',x:50,y:88},{id:'DEF_L',label:'DEF-L',role:'back',x:22,y:72},{id:'DEF_C',label:'DEF-C',role:'cb',x:50,y:76},
-    {id:'DEF_R',label:'DEF-R',role:'back',x:78,y:72},{id:'MID_L',label:'MID-L',role:'dm',x:22,y:48},{id:'MID_C',label:'MID-C',role:'dm',x:50,y:50},
-    {id:'MID_R',label:'MID-R',role:'dm',x:78,y:48},{id:'AANV_L',label:'AANV-L',role:'st',x:35,y:18},{id:'AANV_R',label:'AANV-R',role:'st',x:65,y:18},
-  ]},
-  '4222': { label:'4-2-2-2', spelvorm:11, pos:[
-    {id:'GK',label:'GK',role:'keeper',x:50,y:88},{id:'LB',label:'LB',role:'back',x:14,y:72},{id:'CB_L',label:'CB-L',role:'cb',x:36,y:75},
-    {id:'CB_R',label:'CB-R',role:'cb',x:64,y:75},{id:'RB',label:'RB',role:'back',x:86,y:72},{id:'VM_L',label:'VM-L',role:'dm',x:36,y:53},
-    {id:'VM_R',label:'VM-R',role:'dm',x:64,y:53},{id:'AM_L',label:'AM-L',role:'am',x:24,y:36},{id:'AM_R',label:'AM-R',role:'am',x:76,y:36},
-    {id:'ST_L',label:'ST-L',role:'st',x:14,y:16},{id:'ST_R',label:'ST-R',role:'st',x:86,y:16},
-  ]},
-  '433a': { label:'4-3-3 (punt achter)', spelvorm:11, pos:[
-    {id:'GK',label:'GK',role:'keeper',x:50,y:88},{id:'LB',label:'LB',role:'back',x:14,y:72},{id:'CB_L',label:'CB-L',role:'cb',x:36,y:75},
-    {id:'CB_R',label:'CB-R',role:'cb',x:64,y:75},{id:'RB',label:'RB',role:'back',x:86,y:72},{id:'CM_L',label:'CM-L',role:'dm',x:22,y:52},
-    {id:'CM_C',label:'CM-C',role:'dm',x:50,y:60},{id:'CM_R',label:'CM-R',role:'dm',x:78,y:52},{id:'LW',label:'LW',role:'am',x:14,y:28},
-    {id:'ST',label:'ST',role:'st',x:50,y:16},{id:'RW',label:'RW',role:'am',x:86,y:28},
-  ]},
-  '352': { label:'3-5-2 (punt voor)', spelvorm:11, pos:[
-    {id:'GK',label:'GK',role:'keeper',x:50,y:88},{id:'CB_L',label:'CB-L',role:'cb',x:26,y:75},{id:'CB_C',label:'CB-C',role:'cb',x:50,y:78},
-    {id:'CB_R',label:'CB-R',role:'cb',x:74,y:75},{id:'LWB',label:'LWB',role:'back',x:10,y:55},{id:'CM_L',label:'CM-L',role:'dm',x:32,y:55},
-    {id:'CM_C',label:'CM-C',role:'dm',x:50,y:60},{id:'CM_R',label:'CM-R',role:'dm',x:68,y:55},{id:'RWB',label:'RWB',role:'back',x:90,y:55},
-    {id:'ST_L',label:'ST-L',role:'st',x:36,y:22},{id:'ST_R',label:'ST-R',role:'st',x:64,y:22},
-  ]},
-};
+// Formaties komen nu rechtstreeks uit app.js's FORMATIES_BUILTIN (22 systemen,
+// alle spelvormen) i.p.v. een eigen, hier hand-gekopieerde subset — die
+// eerdere subset (FORMATIES_V2, 8 systemen) miste bijvoorbeeld "4-2-3-1",
+// waardoor oefeningen die daarmee getagd waren in de klassieke app nergens
+// in V2 herkenbaar waren. app.js is hier al geladen, dus geen duplicatie nodig.
 function customFormaties() { return ls('fcp_custom_formaties', '[]'); }
 const ROL_NAAR_ROLE_V2 = { verdediger:'back', midden:'dm', aanval:'st', keeper:'keeper' };
 function normaliseerCustomFormatieV2(f) {
@@ -583,7 +554,7 @@ function normaliseerCustomFormatieV2(f) {
 function alleFormatiesV2() {
   const eigen = {};
   customFormaties().forEach(f => { eigen[f.id] = normaliseerCustomFormatieV2(f); });
-  return { ...FORMATIES_V2, ...eigen };
+  return { ...FORMATIES_BUILTIN, ...eigen };
 }
 function fieldRoleClassV2(label) {
   if (label === 'GK') return 'rol-keeper';
@@ -698,9 +669,15 @@ function renderVandaag() {
       + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">'
       + '<span class="eyebrow">' + DAG_VOL[d.getDay()][0].toUpperCase() + DAG_VOL[d.getDay()].slice(1) + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + (w.starttijd ? ' · ' + w.starttijd : '') + '</span>'
       + '<span class="tag ' + eersteWed.tagClass + '">' + eersteWed.tagTekst + '</span></div>'
-      + '<div class="vs"><div class="crest">' + esc(teamCrestV2()) + '</div><div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600;letter-spacing:-.01em">' + (w.thuis_uit === 'uit' ? esc(w.tegenstander || '?') : esc(teamNaamV2())) + '</div><div style="font-size:13px;color:var(--ink3)">' + (w.thuis_uit === 'uit' ? 'Uit' : 'Thuis') + '</div></div></div>'
-      + '<div style="height:1px;background:var(--line);margin:10px 0"></div>'
-      + '<div class="vs"><div class="crest">' + (w.thuis_uit === 'uit' ? esc(teamCrestV2()) : esc((w.tegenstander || '?').slice(0, 3).toUpperCase())) + '</div><div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600;letter-spacing:-.01em">' + (w.thuis_uit === 'uit' ? esc(teamNaamV2()) : esc(w.tegenstander || '?')) + '</div></div></div>'
+      // Thuisploeg altijd eerst genoemd (staand sportapp-conventie) — .crest had
+      // hier nooit eigen afmetingen gekregen (in tegenstelling tot elders waar
+      // dezelfde class wél inline gestyled wordt), dus viel terug op ongestylde
+      // blokken die daardoor los onder elkaar stonden i.p.v. op 1 regel.
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<div class="crest" style="width:26px;height:26px;border-radius:7px;font-size:10px;font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--surface2)">' + esc(w.thuis_uit === 'uit' ? (w.tegenstander || '?').slice(0, 3).toUpperCase() : teamCrestV2()) + '</div>'
+      + '<div style="flex:1;min-width:0;font-size:15px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(w.thuis_uit === 'uit' ? (w.tegenstander || '?') : teamNaamV2()) + '<span style="color:var(--ink3);font-weight:400"> – </span>' + esc(w.thuis_uit === 'uit' ? teamNaamV2() : (w.tegenstander || '?')) + '</div>'
+      + '<div class="crest" style="width:26px;height:26px;border-radius:7px;font-size:10px;font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--surface2)">' + esc(w.thuis_uit === 'uit' ? teamCrestV2() : (w.tegenstander || '?').slice(0, 3).toUpperCase()) + '</div>'
+      + '</div>'
       + '<button class="btn btn--secondary btn--block btn--sm" style="margin-top:14px" onclick="toonWedstrijd(\'' + w.id + '\')">Wedstrijd bekijken</button></div>';
   }
 
@@ -739,9 +716,16 @@ function setAgendaFilter(f) {
 function rijHtml(item) {
   const d = new Date(item.isoDate);
   const klik = item.type === 'wedstrijd' ? "toonWedstrijd('" + item.wedId + "')" : "openTrainingSessie(" + item.wi + "," + item.si + ")";
-  return '<a class="row" href="#" onclick="' + klik + ';return false">'
+  // Wedstrijden op 1 regel (titel+sub samengevoegd, afgekapt met ellipsis i.p.v.
+  // twee gestapelde regels) — trainingen blijven 2 regels, die tonen relevantere
+  // detail (aanwezig-teller) waar minder op gescand hoeft te worden.
+  const isWed = item.type === 'wedstrijd';
+  const body = isWed
+    ? '<div class="row-body" style="min-width:0"><div class="row-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(item.titel) + ' <span style="font-weight:400;color:var(--ink3)">· ' + item.sub + '</span></div></div>'
+    : '<div class="row-body"><div class="row-title">' + esc(item.titel) + '</div><div class="row-sub">' + item.sub + '</div></div>';
+  return '<a class="row' + (isWed ? ' row--compact' : '') + '" href="#" onclick="' + klik + ';return false">'
     + '<div class="row-lead datebox"><div class="datebox-d num">' + d.getDate() + '</div><div class="datebox-m">' + DAG_KORT[d.getDay()] + '</div></div>'
-    + '<div class="row-body"><div class="row-title">' + esc(item.titel) + '</div><div class="row-sub">' + item.sub + '</div></div>'
+    + body
     + '<span class="tag ' + item.tagClass + (item.tagNum ? ' num' : '') + '">' + item.tagTekst + '</span></a>';
 }
 function renderAgenda() {
@@ -882,15 +866,17 @@ function openOpstSlotKiezer(posId, ctx) {
   document.getElementById('sheet-opst-kies').classList.remove('verborgen');
 }
 function closeOpstSlotKiezer() { document.getElementById('sheet-opst-kies').classList.add('verborgen'); }
-function kiesOpstSlot(spelerId) {
+async function kiesOpstSlot(spelerId) {
   if (!opstAssignCtx) { closeOpstSlotKiezer(); return; }
   const { posId, ctx } = opstAssignCtx;
   const lineup = ctx.getLineup();
-  if (spelerId) { Object.keys(lineup).forEach(k => { if (lineup[k] === spelerId) lineup[k] = null; }); }
+  const geraakt = [posId];
+  if (spelerId) { Object.keys(lineup).forEach(k => { if (lineup[k] === spelerId && k !== posId) { lineup[k] = null; geraakt.push(k); } }); }
   lineup[posId] = spelerId;
   ctx.setLineup(lineup);
   closeOpstSlotKiezer();
   ctx.herrender();
+  if (supabaseReady) await ctx.remoteSync(lineup, geraakt);
 }
 function opstPitchHtml(f, lineup, ctx) {
   return f.pos.map(pos => {
@@ -910,10 +896,20 @@ const teamOpstCtx = {
   getLineup() { return ls('fcp_lineup', '{}'); },
   setLineup(l) { localStorage.setItem('fcp_lineup', JSON.stringify(l)); },
   herrender() { renderTeamOpstelling(); },
+  async remoteSync(lineup, geraakt) {
+    for (const pos of geraakt) {
+      const res = await assignLineupPositie(pos, lineup[pos] || null);
+      if (res && res._error) showToast('⚠️ Opstelling niet opgeslagen naar Supabase: ' + (res.message || res.status));
+    }
+  },
 };
-function teamOpstWissen(btn) {
+async function teamOpstWissen(btn) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Wissen'; }, 3000); return; }
   localStorage.setItem('fcp_lineup', '{}');
+  if (supabaseReady) {
+    const res = await clearLineupRemote();
+    if (res && res._error) showToast('⚠️ Niet gewist in Supabase: ' + (res.message || res.status));
+  }
   renderTeamOpstelling();
 }
 function teamOpstDelen() {
@@ -960,10 +956,14 @@ function renderTeamOpstelling() {
     + '<button class="btn btn--ghost btn--block" style="margin-top:10px" onclick="openFormatieEditor(null,{type:\'team\'})">+ Eigen systeem maken</button>'
     + '</div>';
 }
-function teamOpstVerwijderFormatie(btn, id) {
+async function teamOpstVerwijderFormatie(btn, id) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Verwijderen'; }, 3000); return; }
   localStorage.setItem('fcp_custom_formaties', JSON.stringify(customFormaties().filter(f => f.id !== id)));
   if (localStorage.getItem('fcp_formatie') === id) localStorage.setItem('fcp_formatie', '4222');
+  if (supabaseReady) {
+    const res = await deleteFormatieRemote(id);
+    if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
+  }
   renderTeamOpstelling();
 }
 
@@ -976,19 +976,31 @@ function wedOpstCtx(wedId) {
     getLineup() { const w = wedstrijden().find(x => x.id === wedId); return w.wed_lineup || {}; },
     setLineup(l) { const lijst = wedstrijden(); const w = lijst.find(x => x.id === wedId); w.wed_lineup = l; localStorage.setItem('fcp_wed', JSON.stringify(lijst)); },
     herrender() { renderWedOpstelling(wedId); },
+    async remoteSync(lineup) {
+      const res = await updateWedstrijd(wedId, { wed_lineup: JSON.stringify(lineup) });
+      if (res && res._error) showToast('⚠️ Opstelling niet opgeslagen naar Supabase: ' + (res.message || res.status));
+    },
   };
 }
-function wedOpstZetFormatie(wedId, formatieKey) {
+async function wedOpstZetFormatie(wedId, formatieKey) {
   const lijst = wedstrijden();
   lijst.find(x => x.id === wedId).formatie = formatieKey;
   localStorage.setItem('fcp_wed', JSON.stringify(lijst));
+  if (supabaseReady) {
+    const res = await updateWedstrijd(wedId, { formatie: formatieKey });
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   renderWedOpstelling(wedId);
 }
-function wedOpstWissen(btn, wedId) {
+async function wedOpstWissen(btn, wedId) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Wissen'; }, 3000); return; }
   const lijst = wedstrijden();
   lijst.find(x => x.id === wedId).wed_lineup = {};
   localStorage.setItem('fcp_wed', JSON.stringify(lijst));
+  if (supabaseReady) {
+    const res = await updateWedstrijd(wedId, { wed_lineup: '{}' });
+    if (res && res._error) showToast('⚠️ Niet gewist in Supabase: ' + (res.message || res.status));
+  }
   renderWedOpstelling(wedId);
 }
 function wedOpstDelen(wedId) {
@@ -1016,13 +1028,19 @@ function renderWedOpstelling(wedId) {
     + '<button class="btn btn--ghost btn--block" style="margin-top:10px" onclick="openFormatieEditor(null,{type:\'wed\',wedId:\'' + wedId + '\'})">+ Eigen systeem maken</button>';
   toonScherm('wedstrijd-opstelling');
 }
-function wedOpstVerwijderFormatie(btn, wedId, id) {
+async function wedOpstVerwijderFormatie(btn, wedId, id) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Verwijderen'; }, 3000); return; }
   localStorage.setItem('fcp_custom_formaties', JSON.stringify(customFormaties().filter(f => f.id !== id)));
   const lijst = wedstrijden();
   const w = lijst.find(x => x.id === wedId);
-  if (w.formatie === id) w.formatie = null;
+  const wasActief = w.formatie === id;
+  if (wasActief) w.formatie = null;
   localStorage.setItem('fcp_wed', JSON.stringify(lijst));
+  if (supabaseReady) {
+    let res = await deleteFormatieRemote(id);
+    if ((!res || !res._error) && wasActief) res = await updateWedstrijd(wedId, { formatie: null });
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   renderWedOpstelling(wedId);
 }
 
@@ -1169,7 +1187,7 @@ function foTerugNaarOpstelling() {
   else { setTeamTab('opstelling'); toonScherm('team'); }
 }
 function foAnnuleer() { foTerugNaarOpstelling(); }
-function foOpslaan() {
+async function foOpslaan() {
   const naam = document.getElementById('fo-naam-input').value.trim() || foBerekenTitel();
   const payload = {
     id: foBewerkId || 'i' + Date.now() + Math.random().toString(36).slice(2, 6),
@@ -1182,12 +1200,21 @@ function foOpslaan() {
   };
   const lijst = customFormaties();
   const idx = foBewerkId ? lijst.findIndex(f => f.id === foBewerkId) : -1;
+  const isNieuw = idx < 0;
   if (idx >= 0) lijst[idx] = payload; else lijst.push(payload);
   localStorage.setItem('fcp_custom_formaties', JSON.stringify(lijst));
+  if (supabaseReady) {
+    const res = isNieuw ? await createFormatie(payload) : await updateFormatie(payload.id, payload);
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   if (foTerugCtx.type === 'wed') {
     const wedLijst = wedstrijden();
     wedLijst.find(x => x.id === foTerugCtx.wedId).formatie = payload.id;
     localStorage.setItem('fcp_wed', JSON.stringify(wedLijst));
+    if (supabaseReady) {
+      const res = await updateWedstrijd(foTerugCtx.wedId, { formatie: payload.id });
+      if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+    }
     renderWedOpstelling(foTerugCtx.wedId);
   } else if (foTerugCtx.type === 'instellingen') {
     renderInstellingen();
@@ -1200,18 +1227,48 @@ function foOpslaan() {
 }
 
 // ─── Team → Oefeningen ───
+// Filter op categorie en/of systeem — twee compacte dropdowns naast elkaar
+// (zelfde .input-select-stijl als overal elders, bv. #ob-cat), niet de
+// eerdere multi-select chips: die namen te veel verticale ruimte in.
+// Single-select, net als de categorie-dropdown in de klassieke
+// oefeningen.html (setActiveFilter/cat-dropdown) — geen meervoudige keuze
+// nodig voor een filter dat je snel weer wist via "Alle ...".
+let oefFilterCat = '';
+let oefFilterSysteem = '';
+function oefZetFilterCat(v) { oefFilterCat = v; renderTeamOefeningen(); }
+function oefZetFilterSysteem(v) { oefFilterSysteem = v; renderTeamOefeningen(); }
 function renderTeamOefeningen() {
   const cont = document.getElementById('t-content');
-  const lijst = [...oefeningenLijst()].sort((a, b) => (a.cat||'').localeCompare(b.cat||''));
+  const alle = [...oefeningenLijst()].sort((a, b) => (a.cat||'').localeCompare(b.cat||''));
+  const catsAanwezig = [...new Set(alle.map(o => o.cat).filter(Boolean))].sort();
+  // Systemen van de huidige spelvorm — altijd getoond, ongeacht of er al een
+  // oefening mee getagd is (anders verschijnt dit filter nooit totdat je toevallig
+  // al iets getagd hebt, een kip-en-ei-probleem dat de gebruiker tegenkwam).
+  const alleFormaties = formatiesVoorSpelvorm(alleFormatiesV2(), loadSpelvorm());
+  const systemenTonen = Object.keys(alleFormaties);
+  const lijst = alle.filter(o =>
+    (!oefFilterCat || o.cat === oefFilterCat)
+    && (!oefFilterSysteem || (o.formaties || []).includes(oefFilterSysteem))
+  );
   cont.innerHTML = '<div class="pad" style="margin-top:14px">'
     + '<button class="btn btn--ghost btn--sm" onclick="openCatSheet()">Categorieën beheren</button>'
+    + '<div style="display:flex;gap:8px;margin-top:10px">'
+    + '<select class="input" style="flex:1;min-width:0" onchange="oefZetFilterCat(this.value)">'
+      + '<option value="">Alle categorieën</option>'
+      + catsAanwezig.map(c => '<option value="' + esc(c) + '"' + (oefFilterCat === c ? ' selected' : '') + '>' + esc(c) + '</option>').join('')
+      + '</select>'
+    + '<select class="input" style="flex:1;min-width:0" onchange="oefZetFilterSysteem(this.value)">'
+      + '<option value="">Alle systemen</option>'
+      + systemenTonen.map(k => '<option value="' + k + '"' + (oefFilterSysteem === k ? ' selected' : '') + '>' + esc(alleFormaties[k].label) + '</option>').join('')
+      + '</select>'
+    + '</div>'
     + '</div>'
     + '<div class="pad"><div class="rows">'
     + (lijst.length ? lijst.map(o => '<a class="row" href="#" onclick="openOefeningBewerken(\'' + o.id + '\');return false">'
         + '<div class="row-lead"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="margin:0 auto;display:block;color:var(--ink3)"><path d="M8 21L10.5 6h3L16 21H8z"/><line x1="7" y1="13" x2="17" y2="13"/></svg></div>'
         + '<div class="row-body"><div class="row-title">' + esc(o.title) + '</div><div class="row-sub">' + esc(o.cat||'—') + (o.duur ? ' · ' + esc(o.duur) : '') + '</div></div>'
         + '<svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>').join('')
-        : '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">Nog geen eigen oefeningen.</div>')
+        : '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">' + (alle.length ? 'Geen oefeningen bij deze filters.' : 'Nog geen eigen oefeningen.') + '</div>')
     + '</div></div>';
   toonTeamFab();
 }
@@ -1246,10 +1303,10 @@ function renderCatSheet() {
   }).join('');
 }
 // Hernoemt zowel in de categorieënlijst als op elke oefening die de oude
-// naam gebruikte (zelfde cascade als saveCatEdit() in oefeningen.html) —
-// alleen lokaal, want V2's oefeningen/categorieën zijn nog niet
-// Supabase-gesynchroniseerd (hoort bij de nog te bouwen datasync-laag).
-function bewaarCategorieNaam(i) {
+// naam gebruikte (zelfde cascade als saveCatEdit() in oefeningen.html), nu
+// ook echt via renameCategorie() naar Supabase (was eerder bewust lokaal-
+// only, hoorde bij de datasync-laag die nu gebouwd is).
+async function bewaarCategorieNaam(i) {
   const input = document.getElementById('cat-bewerk-input');
   const val = input.value.trim();
   const cats = categorieen();
@@ -1262,11 +1319,15 @@ function bewaarCategorieNaam(i) {
     const oef = oefeningenLijst();
     oef.forEach(o => { if (o.cat === oud) o.cat = val; });
     localStorage.setItem('fcp_oef', JSON.stringify(oef));
+    if (supabaseReady) {
+      const { r1, r2 } = await renameCategorie(oud, val);
+      if ((r1 && r1._error) || (r2 && r2._error)) showToast('⚠️ Niet volledig opgeslagen naar Supabase');
+    }
   }
   catBewerkIndex = null;
   renderCatSheet();
 }
-function voegCategorieToe() {
+async function voegCategorieToe() {
   const inp = document.getElementById('cat-nieuw-input');
   const val = inp.value.trim();
   if (!val) return;
@@ -1274,13 +1335,22 @@ function voegCategorieToe() {
   if (cats.includes(val)) { inp.value = ''; return; }
   cats.push(val);
   localStorage.setItem('fcp_cats', JSON.stringify(cats));
+  if (supabaseReady) {
+    const res = await createCategorie(val, cats.length);
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   inp.value = '';
   renderCatSheet();
 }
-function verwijderCategorie(i) {
+async function verwijderCategorie(i) {
   const cats = categorieen();
+  const naam = cats[i];
   cats.splice(i, 1);
   localStorage.setItem('fcp_cats', JSON.stringify(cats));
+  if (supabaseReady) {
+    const res = await deleteCategorieRemote(naam);
+    if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
+  }
   renderCatSheet();
 }
 
@@ -1357,9 +1427,13 @@ function renderFormatiesSheet() {
     + '</div>'
   ).join('');
 }
-function instVerwijderFormatie(id) {
+async function instVerwijderFormatie(id) {
   localStorage.setItem('fcp_custom_formaties', JSON.stringify(customFormaties().filter(f => f.id !== id)));
   if (localStorage.getItem('fcp_formatie') === id) localStorage.setItem('fcp_formatie', '4222');
+  if (supabaseReady) {
+    const res = await deleteFormatieRemote(id);
+    if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
+  }
   renderFormatiesSheet();
 }
 
@@ -1397,7 +1471,7 @@ function voegOefStapToe(waarde) {
   row.innerHTML = '<div class="stap-n">' + n + '</div><input class="input" style="flex:1" value="' + (typeof waarde === 'string' ? esc(waarde) : '') + '"><button type="button" class="btn btn--ghost btn--icon btn--sm" onclick="this.parentElement.remove()" aria-label="Verwijder stap">✕</button>';
   cont.appendChild(row);
 }
-function slaOefeningOp() {
+async function slaOefeningOp() {
   const naam = document.getElementById('ob-naam').value.trim();
   if (!naam) { toonVeldFout('ob-naam', 'Vul een naam in.'); return; }
   const stappen = [...document.querySelectorAll('#ob-stappen .input')].map(i => i.value.trim()).filter(Boolean);
@@ -1412,15 +1486,25 @@ function slaOefeningOp() {
   };
   const lijst = oefeningenLijst();
   const idx = lijst.findIndex(x => x.id === oef.id);
+  const isNieuw = idx < 0;
   if (idx >= 0) lijst[idx] = oef; else lijst.push(oef);
   localStorage.setItem('fcp_oef', JSON.stringify(lijst));
+  if (supabaseReady) {
+    const res = isNieuw ? await createOefening(oef) : await updateOefening(oef.id, oef);
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   setTeamTab('oefeningen');
   toonScherm('team');
 }
-function verwijderOefening(btn) {
+async function verwijderOefening(btn) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Oefening verwijderen'; }, 3000); return; }
-  const lijst = oefeningenLijst().filter(x => x.id !== bewerkOefId);
+  const id = bewerkOefId;
+  const lijst = oefeningenLijst().filter(x => x.id !== id);
   localStorage.setItem('fcp_oef', JSON.stringify(lijst));
+  if (supabaseReady) {
+    const res = await deleteOefeningRemote(id);
+    if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
+  }
   setTeamTab('oefeningen');
   toonScherm('team');
 }
@@ -1480,30 +1564,44 @@ function openSpelerBewerken(id) {
     if (el) el.innerHTML = html;
   });
 }
-function slaSpelerOp() {
+async function slaSpelerOp() {
   const naam = document.getElementById('sb-naam').value.trim().slice(0, 30);
   if (!naam) { toonVeldFout('sb-naam', 'Vul een naam in.'); return; }
   const lijst = spelers();
-  if (bewerkSpelerId) {
-    const p = lijst.find(x => x.id === bewerkSpelerId);
+  const isNieuw = !bewerkSpelerId;
+  let p;
+  if (!isNieuw) {
+    p = lijst.find(x => x.id === bewerkSpelerId);
     p.naam = naam;
     p.omschrijving = document.getElementById('sb-omschrijving').value.trim();
     p.posities = [...document.querySelectorAll('#sb-posities .chip[aria-pressed="true"]')].map(c => c.textContent);
     p.opmerkingen = document.getElementById('sb-opmerkingen').value;
     p.ontwikkeling = document.getElementById('sb-ontwikkeling').value;
   } else {
-    lijst.push({ id: 'i' + Date.now() + Math.random().toString(36).slice(2,6), naam, omschrijving:'', posities:[], opmerkingen:'', ontwikkeling:'' });
+    p = { id: 'i' + Date.now() + Math.random().toString(36).slice(2,6), naam, omschrijving:'', posities:[], opmerkingen:'', ontwikkeling:'' };
+    lijst.push(p);
   }
   localStorage.setItem('fcp_players', JSON.stringify(lijst));
+  if (supabaseReady) {
+    const res = isNieuw ? await createPlayer(p) : await updatePlayer(p.id, { naam:p.naam, omschrijving:p.omschrijving, posities:p.posities, opmerkingen:p.opmerkingen, ontwikkeling:p.ontwikkeling });
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   setTeamTab('spelers');
   toonScherm('team');
 }
-function verwijderSpeler(btn) {
+async function verwijderSpeler(btn) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Speler verwijderen'; }, 3000); return; }
-  localStorage.setItem('fcp_players', JSON.stringify(spelers().filter(x => x.id !== bewerkSpelerId)));
+  const id = bewerkSpelerId;
+  localStorage.setItem('fcp_players', JSON.stringify(spelers().filter(x => x.id !== id)));
   const lineup = ls('fcp_lineup', '{}');
-  Object.keys(lineup).forEach(pos => { if (lineup[pos] === bewerkSpelerId) delete lineup[pos]; });
+  const geraaktePos = Object.keys(lineup).filter(pos => lineup[pos] === id);
+  geraaktePos.forEach(pos => delete lineup[pos]);
   localStorage.setItem('fcp_lineup', JSON.stringify(lineup));
+  if (supabaseReady) {
+    const res = await deletePlayerRemote(id);
+    if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
+    for (const pos of geraaktePos) await assignLineupPositie(pos, null);
+  }
   setTeamTab('spelers');
   toonScherm('team');
 }
@@ -1684,7 +1782,9 @@ function renderTrainingSessie() {
   html += '<button class="btn btn--secondary btn--sm" onclick="openAfwezigSheet()">+ Afwezig</button></div>';
 
   html += '<div class="card" style="margin-top:10px"><div class="sec">Oefeningen</div>'
-    + (s.blokken && s.blokken.length ? s.blokken.map(b => '<div class="row" style="cursor:default;padding-left:0;padding-right:0"><div class="row-body"><div class="row-title">' + esc(b.n) + '</div><div class="row-sub">' + esc(b.cat || '') + (b.tip ? ' · ' + esc(b.tip) : '') + '</div></div></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen oefeningen gepland.</div>')
+    + (s.blokken && s.blokken.length ? s.blokken.map((b, bi) => '<a class="row" href="#" style="padding-left:0" onclick="openBlokDetail(' + bi + ');return false"><div class="row-body"><div class="row-title">' + esc(b.n) + '</div><div class="row-sub">' + esc(b.cat || '') + (b.tip ? ' · ' + esc(b.tip) : '') + '</div></div>'
+        + (b.url ? '<button type="button" onclick="event.stopPropagation();event.preventDefault();window.open(\'' + esc(b.url) + '\',\'_blank\',\'noopener\')" style="font-size:18px;background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0" aria-label="Uitleg openen">▶️</button>' : '')
+        + '<svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen oefeningen gepland.</div>')
     + '</div>';
 
   if (notitie) html += '<div class="card" style="margin-top:10px"><div class="sec">Notities</div><div style="font-size:13.5px;white-space:pre-wrap">' + esc(notitie) + '</div></div>';
@@ -1698,11 +1798,38 @@ function renderTrainingSessie() {
 
   document.getElementById('tr-content').innerHTML = html;
 }
-function verwijderAfwezig(pid) {
+// Blokken bevatten zelf alleen naam/categorie/tip/url (een momentopname, geen
+// live verwijzing naar de oefening — zelfde beperking als de klassieke app).
+// Best-effort op titel matchen met de oefeningenbibliotheek voor de volledige
+// omschrijving/stappen als die oefening nog bestaat; werkt het scherm anders
+// gewoon met wat het blok zelf al heeft.
+function openBlokDetail(bi) {
+  const weken = customWeken();
+  const s = weken[huidigTrainingWi]?.sessies?.[huidigTrainingSi];
+  const b = s?.blokken?.[bi];
+  if (!b) return;
+  const volledig = oefeningenLijst().find(o => o.title === b.n);
+  let html = '<div class="sheet-title">' + esc(b.n) + '</div>';
+  if (b.cat) html += '<span class="chip" aria-pressed="true" style="margin-bottom:10px">' + esc(b.cat) + '</span>';
+  if (b.tip) html += '<div style="font-size:13.5px;color:var(--ink2);margin:10px 0">' + esc(b.tip) + '</div>';
+  const desc = volledig && (volledig.desc || volledig.beschrijving);
+  if (desc) html += '<div class="sec" style="margin-top:10px">Omschrijving</div><div style="font-size:13.5px">' + esc(desc) + '</div>';
+  if (volledig && volledig.spelers) html += '<div class="sec" style="margin-top:10px">Aantal spelers</div><div style="font-size:13.5px">' + esc(volledig.spelers) + '</div>';
+  if (volledig && volledig.stappen && volledig.stappen.length) html += '<div class="sec" style="margin-top:10px">Stappen</div><ol style="margin:0;padding-left:18px;font-size:13.5px">' + volledig.stappen.filter(Boolean).map(st => '<li>' + esc(st) + '</li>').join('') + '</ol>';
+  if (b.url) html += '<a class="btn btn--primary btn--block" style="margin-top:14px" href="' + esc(b.url) + '" target="_blank" rel="noopener">▶ Uitleg openen</a>';
+  document.getElementById('bd-content').innerHTML = html;
+  document.getElementById('sheet-blok-detail').classList.remove('verborgen');
+}
+function closeBlokDetail() { document.getElementById('sheet-blok-detail').classList.add('verborgen'); }
+async function verwijderAfwezig(pid) {
   const nk = nkVan(huidigTrainingWi, huidigTrainingSi);
   const aanw = aanwAlles();
   if (aanw[nk] && aanw[nk][pid]) aanw[nk][pid] = { afwezig: false, reden: '' };
   localStorage.setItem('fcp_aanw', JSON.stringify(aanw));
+  if (supabaseReady) {
+    const ok = await saveAanwezigheidRemote(nk, spelers(), aanw[nk] || {});
+    if (!ok) showToast('⚠️ Niet opgeslagen naar Supabase');
+  }
   renderTrainingSessie();
 }
 function openAfwezigSheet() {
@@ -1715,7 +1842,7 @@ function openAfwezigSheet() {
   document.getElementById('sheet-afwezig-toevoegen').classList.remove('verborgen');
 }
 function closeAfwezigSheet() { document.getElementById('sheet-afwezig-toevoegen').classList.add('verborgen'); }
-function slaAfwezigOp() {
+async function slaAfwezigOp() {
   const pid = document.getElementById('af-speler').value;
   const reden = document.getElementById('af-reden').value;
   if (!pid) { closeAfwezigSheet(); return; }
@@ -1724,6 +1851,10 @@ function slaAfwezigOp() {
   aanw[nk] = aanw[nk] || {};
   aanw[nk][pid] = { afwezig: true, reden };
   localStorage.setItem('fcp_aanw', JSON.stringify(aanw));
+  if (supabaseReady) {
+    const ok = await saveAanwezigheidRemote(nk, spelers(), aanw[nk]);
+    if (!ok) showToast('⚠️ Niet opgeslagen naar Supabase');
+  }
   closeAfwezigSheet();
   renderTrainingSessie();
 }
@@ -1737,29 +1868,29 @@ function deelTrainingWhatsapp() {
 function toonExtraTrainingVeld() {
   document.getElementById('tr-extra-veld').innerHTML = '<div class="field" style="margin-top:10px"><span class="label">Naam nieuwe training</span><div style="display:flex;gap:8px"><input class="input" id="tr-extra-naam" placeholder="bijv. Zaterdagtraining" style="flex:1"><button class="btn btn--primary btn--sm" onclick="voegExtraTrainingToe()">Toevoegen</button></div></div>';
 }
-function voegExtraTrainingToe() {
+async function voegExtraTrainingToe() {
   const naam = document.getElementById('tr-extra-naam').value.trim();
   if (!naam) return;
   const weken = customWeken();
   weken[huidigTrainingWi].sessies.push({ dag: naam, pr: [], blokken: [] });
-  localStorage.setItem('fcp_custom_weken', JSON.stringify(weken));
+  await syncCustomWeken(weken);
   huidigTrainingSi = weken[huidigTrainingWi].sessies.length - 1;
   renderTrainingSessie();
 }
-function kopieerTrainingWeek() {
+async function kopieerTrainingWeek() {
   const weken = customWeken();
   const wk = weken[huidigTrainingWi];
   const nieuw = { focus: wk.focus, isoDate: isoVan(new Date(new Date(wk.isoDate).getTime() + 7 * 86400000)), sessies: JSON.parse(JSON.stringify(wk.sessies)) };
   nieuw.weekNr = getISOWeekV2(new Date(nieuw.isoDate));
   weken.push(nieuw);
-  localStorage.setItem('fcp_custom_weken', JSON.stringify(weken));
+  await syncCustomWeken(weken);
   openTrainingSessie(weken.length - 1, 0);
 }
-function verwijderTrainingWeek(btn) {
+async function verwijderTrainingWeek(btn) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Hele week verwijderen'; }, 3000); return; }
   const weken = customWeken();
   weken.splice(huidigTrainingWi, 1);
-  localStorage.setItem('fcp_custom_weken', JSON.stringify(weken));
+  await syncCustomWeken(weken);
   toonScherm('agenda');
 }
 
@@ -1791,37 +1922,50 @@ function renderTrbBlokken() {
 function trbVerplaats(i, dir) { const t = trbBlokken[i]; trbBlokken[i] = trbBlokken[i + dir]; trbBlokken[i + dir] = t; renderTrbBlokken(); }
 function trbVerwijder(i) { trbBlokken.splice(i, 1); renderTrbBlokken(); }
 const trbCtx = { voegToe(blok) { trbBlokken.push(blok); renderTrbBlokken(); } };
-function slaTrainingBewerkOp() {
+async function slaTrainingBewerkOp() {
   const weken = customWeken();
   if (!weken[huidigTrainingWi] || !weken[huidigTrainingWi].sessies[huidigTrainingSi]) { toonScherm('agenda'); return; }
   const s = weken[huidigTrainingWi].sessies[huidigTrainingSi];
   s.dag = document.getElementById('trb-dag').value.trim() || s.dag;
   s.blokken = trbBlokken;
-  localStorage.setItem('fcp_custom_weken', JSON.stringify(weken));
+  await syncCustomWeken(weken);
+  const nk = nkVan(huidigTrainingWi, huidigTrainingSi);
   const notes = sessionNotes();
-  notes[nkVan(huidigTrainingWi, huidigTrainingSi)] = document.getElementById('trb-notitie').value;
+  notes[nk] = document.getElementById('trb-notitie').value;
   saveSessionNotes(notes);
+  if (supabaseReady) {
+    const res = await saveTrainingNoteRemote(nk, notes[nk]);
+    if (res && res._error) showToast('⚠️ Notitie niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   hervatTrainingSessie();
 }
 function hervatTrainingSessie() { renderTrainingSessie(); toonScherm('training'); }
-function verwijderTrainingSessie(btn) {
+async function verwijderTrainingSessie(btn) {
   const weken = customWeken();
   const wk = weken[huidigTrainingWi];
   if (wk.sessies.length <= 1) { btn.textContent = 'Minstens 1 training per week nodig'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Training verwijderen'; }, 3000); return; }
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Training verwijderen'; }, 3000); return; }
   const si = huidigTrainingSi;
   wk.sessies.splice(si, 1);
-  localStorage.setItem('fcp_custom_weken', JSON.stringify(weken));
+  await syncCustomWeken(weken);
   // Aanwezigheid/notities van latere sessies in deze week één plek opschuiven,
   // zodat data niet aan de verkeerde dag blijft hangen.
   const aanw = aanwAlles(); const notes = sessionNotes();
+  const verschoven = [];
+  let laatsteVan = null;
   for (let s2 = si + 1; s2 < wk.sessies.length + 1; s2++) {
     const van = nkVan(huidigTrainingWi, s2), naar = nkVan(huidigTrainingWi, s2 - 1);
-    if (aanw[van]) { aanw[naar] = aanw[van]; delete aanw[van]; }
+    laatsteVan = van;
+    if (aanw[van]) { aanw[naar] = aanw[van]; delete aanw[van]; verschoven.push(naar); }
     if (notes[van]) { notes[naar] = notes[van]; delete notes[van]; }
   }
   localStorage.setItem('fcp_aanw', JSON.stringify(aanw));
   saveSessionNotes(notes);
+  if (supabaseReady) {
+    for (const naar of verschoven) await saveAanwezigheidRemote(naar, spelers(), aanw[naar]);
+    if (laatsteVan) await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(laatsteVan), 'DELETE');
+    if (laatsteVan) await saveTrainingNoteRemote(laatsteVan, '');
+  }
   toonScherm('agenda');
 }
 
@@ -1854,15 +1998,23 @@ function openBlokNieuweOef() {
   document.getElementById('sheet-blok-nieuw').classList.remove('verborgen');
 }
 function closeBlokNieuweOef() { document.getElementById('sheet-blok-nieuw').classList.add('verborgen'); }
-function slaBlokNieuweOefOp() {
+async function slaBlokNieuweOefOp() {
   const naam = document.getElementById('bn-naam').value.trim();
   if (!naam) { toonVeldFout('bn-naam', 'Vul een naam in.'); return; }
   const cat = document.getElementById('bn-cat').value;
   const tip = document.getElementById('bn-tip').value.trim();
   const url = document.getElementById('bn-url').value.trim();
   const lijst = oefeningenLijst();
-  lijst.push({ id: 'i' + Date.now() + Math.random().toString(36).slice(2, 6), title: naam, cat, spelers: '', desc: '', beschrijving: '', tip, url, stappen: [], formaties: [] });
+  const oef = { id: 'i' + Date.now() + Math.random().toString(36).slice(2, 6), title: naam, cat, spelers: '', desc: '', beschrijving: '', tip, url, stappen: [], formaties: [] };
+  lijst.push(oef);
   localStorage.setItem('fcp_oef', JSON.stringify(lijst));
+  if (supabaseReady) {
+    // createOefeningQuick (met herhaalpogingen via sbWrite) i.p.v. createOefening — dit is
+    // hetzelfde bewuste verschil dat app.js al kent tussen de twee plekken waar een oefening
+    // kan ontstaan (zie toelichting bij createOefeningQuick in app.js).
+    const res = await createOefeningQuick(oef);
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   closeBlokNieuweOef();
   blokKiesCtx.voegToe({ t: '', cat, n: naam, tip, url });
   closeBlokKiezer();
@@ -1898,7 +2050,7 @@ function renderTwnBlokken(n) {
   document.getElementById('twn-blokken' + n).innerHTML = lijst.length ? lijst.map((b, i) => '<div class="bench-row" style="margin-bottom:6px"><div class="bench-nm">' + esc(b.n) + '</div><button class="btn btn--ghost btn--icon btn--sm" onclick="twnVerwijder(' + n + ',' + i + ')" aria-label="Verwijder">✕</button></div>').join('') : '';
 }
 function twnVerwijder(n, i) { (n === 1 ? twnBlokken1 : twnBlokken2).splice(i, 1); renderTwnBlokken(n); }
-function slaTrainingWeekNieuwOp() {
+async function slaTrainingWeekNieuwOp() {
   const isoDate = document.getElementById('twn-datum').value;
   if (!isoDate) { toonVeldFout('twn-datum', 'Kies een datum.'); return; }
   const weken = customWeken();
@@ -1910,7 +2062,7 @@ function slaTrainingWeekNieuwOp() {
       { dag: document.getElementById('twn-naam2').value.trim() || 'Training 2', pr: [], blokken: twnBlokken2 },
     ],
   });
-  localStorage.setItem('fcp_custom_weken', JSON.stringify(weken));
+  await syncCustomWeken(weken);
   toonScherm('agenda');
 }
 
@@ -1974,7 +2126,7 @@ function wbToggleAfwezig(btn) {
   const sel = document.querySelector('#wb-afwezig select[data-reden-voor="' + btn.dataset.pid + '"]');
   if (sel) sel.style.display = nieuw ? 'block' : 'none';
 }
-function slaWedstrijdOp() {
+async function slaWedstrijdOp() {
   const tegenstander = document.getElementById('wb-tegenstander').value.trim();
   if (!tegenstander) { toonVeldFout('wb-tegenstander', 'Vul een tegenstander in.'); return; }
   const isoDate = document.getElementById('wb-datum').value;
@@ -2008,12 +2160,34 @@ function slaWedstrijdOp() {
   if (idx >= 0) lijst[idx] = volledig; else lijst.push(volledig);
   localStorage.setItem('fcp_wed', JSON.stringify(lijst));
   huidigWedstrijdId = volledig.id;
+  if (supabaseReady) {
+    const velden = {
+      tegenstander: volledig.tegenstander, datum: volledig.datum, iso_date: volledig.isoDate || '',
+      starttijd: volledig.starttijd || '', thuis_uit: volledig.thuis_uit, wed_type: volledig.wed_type, wed_fase: volledig.wed_fase,
+      score_eigen: volledig.score_eigen, score_tegen: volledig.score_tegen, opmerkingen: volledig.opmerkingen,
+      gespeeld: volledig.gespeeld, motm: volledig.motm || null,
+      afwezig: JSON.stringify(volledig.afwezig || []), ratings: JSON.stringify(volledig.ratings || {}),
+    };
+    // createWedstrijd() zet zelf altijd basiswaarden (score 0-0, niet gespeeld, geen
+    // opmerkingen) — V2's formulier staat in tegenstelling tot de klassieke app toe dat je
+    // dat meteen bij aanmaken al invult, dus een directe update erachteraan om die waarden
+    // ook echt door te zetten.
+    let res = bestaand ? null : await createWedstrijd(volledig);
+    if (!res || !res._error) res = await updateWedstrijd(volledig.id, velden);
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   toonWedstrijd(volledig.id);
 }
-function verwijderWedstrijd(btn) {
+async function verwijderWedstrijd(btn) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Wedstrijd verwijderen'; }, 3000); return; }
-  const lijst = wedstrijden().filter(x => x.id !== huidigWedstrijdId);
+  const id = huidigWedstrijdId;
+  const lijst = wedstrijden().filter(x => x.id !== id);
   localStorage.setItem('fcp_wed', JSON.stringify(lijst));
+  if (supabaseReady) {
+    const res = await deleteWedstrijdRemote(id);
+    if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
+    else deleteLiveWedstrijd(id);
+  }
   toonScherm('agenda');
 }
 
@@ -2113,6 +2287,10 @@ async function ltEinde() {
   renderLiveTrainer();
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     const eindMinuut = liveState.minsPerHelft * 2;
+    if (w) {
+      const res = await updateWedstrijd(w.id, { gespeeld: true, score_eigen: w.score_eigen, score_tegen: w.score_tegen });
+      if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+    }
     await setLiveStatus(liveState.wedstrijdId, 'ft', null, eindMinuut, liveState.scoreEigen, liveState.scoreTegen);
     await pushLiveUpdate(liveState.wedstrijdId, 'einde', '', liveState.scoreEigen, liveState.scoreTegen, eindMinuut);
   }

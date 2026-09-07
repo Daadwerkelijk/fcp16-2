@@ -166,6 +166,10 @@
 .trk-dot--ghost{width:10px;height:10px;background:var(--surface);border:2px solid currentColor}
 .src-speler{color:var(--ink)}
 .src-trainer{color:var(--win)}
+.skillrow{display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:8px;padding:5px 6px;margin:0 -6px;transition:background .12s}
+.skillrow:hover{background:var(--surface2)}
+.skillrow:hover .skillrow-chev{opacity:1}
+.skillrow-chev{color:var(--ink3);flex-shrink:0;opacity:0;transition:opacity .12s}
 
 /* Balken */
 .bar{height:8px;border-radius:var(--r-pill);background:var(--surface2);overflow:hidden;display:flex}

@@ -2958,9 +2958,64 @@ async function inlogInloggen(btn) {
   }
   initAuthGateV2();
 }
+// Wachtwoord instellen na een invite/recovery-link — V2-eigen versie van
+// renderWachtwoordInstellen() (app.js), met dezelfde submit-logica (PUT
+// /auth/v1/user + zelf-activeren in trainer_profielen) maar in V2-componenten
+// i.p.v. de klassieke .bmodal-*-classes/CSS-variabelen, die hier niet bestaan
+// (index.html laadt alleen ui-v2.css, geen style.css). Bug gevonden 2026-09-07:
+// initAuthGateV2() verwerkte de #access_token-hash uit een invite-link nooit —
+// sinds V2 de standaard-ingang is (2026-09-06) landde elke uitnodiging dus op
+// het gewone inlogscherm, met het token onopgemerkt in de URL.
+function renderWachtwoordInstellenV2() {
+  const titel = document.querySelector('#screen-inlog .appbar-h1');
+  if (titel) titel.textContent = 'Wachtwoord instellen';
+  document.getElementById('inlog-content').innerHTML =
+      '<div class="card">'
+    + '<div class="sec">Wachtwoord instellen</div>'
+    + '<div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Kies een wachtwoord om je account te activeren.</div>'
+    + '<div class="field"><span class="label">Nieuw wachtwoord</span><input class="input" id="wwi-nieuw-v2" type="password" autocomplete="new-password"></div>'
+    + '<div class="field"><span class="label">Herhaal wachtwoord</span><input class="input" id="wwi-herhaal-v2" type="password" autocomplete="new-password" style="margin-bottom:14px"></div>'
+    + '<button class="btn btn--primary btn--block" id="wwi-submit-v2" onclick="wwiOpslaanV2(this)">Wachtwoord instellen</button>'
+    + '<div id="wwi-fout-v2" style="color:var(--loss);font-size:12.5px;margin-top:10px;min-height:16px"></div>'
+    + '</div>';
+  const herhaalEl = document.getElementById('wwi-herhaal-v2');
+  herhaalEl.addEventListener('keydown', e => { if (e.key === 'Enter') wwiOpslaanV2(document.getElementById('wwi-submit-v2')); });
+  document.getElementById('wwi-nieuw-v2').focus();
+}
+async function wwiOpslaanV2(btn) {
+  const nieuwEl = document.getElementById('wwi-nieuw-v2');
+  const herhaalEl = document.getElementById('wwi-herhaal-v2');
+  const foutEl = document.getElementById('wwi-fout-v2');
+  const ww = nieuwEl.value;
+  if (ww.length < 6) { foutEl.textContent = 'Minstens 6 tekens.'; return; }
+  if (ww !== herhaalEl.value) { foutEl.textContent = 'Wachtwoorden komen niet overeen.'; return; }
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Bezig...';
+  try {
+    const r = await fetch(SB_URL + '/auth/v1/user', {
+      method: 'PUT',
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + AUTH_ACCESS_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: ww }),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      foutEl.textContent = j.msg || j.error_description || 'Opslaan mislukt';
+      btn.disabled = false; btn.textContent = orig;
+      return;
+    }
+    const mij = await haalHuidigeGebruiker();
+    if (mij) await sbFetch('trainer_profielen?user_id=eq.' + mij.id, 'PATCH', { status: 'actief' });
+  } catch (e) {
+    foutEl.textContent = e.message;
+    btn.disabled = false; btn.textContent = orig;
+    return;
+  }
+  location.reload();
+}
 async function initAuthGateV2() {
   const nu = Math.floor(Date.now() / 1000);
   if (!SB_URL || !SB_KEY) { renderInlogScreen(); toonScherm('inlog'); return; }
+  if (verwerkAuthHashIndienAanwezig()) { renderWachtwoordInstellenV2(); toonScherm('inlog'); return; }
   if (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 60) { await syncEchteDataV2(); renderVandaag(); toonScherm('vandaag'); return; }
   if (AUTH_REFRESH_TOKEN && await refreshAuthSession()) { await syncEchteDataV2(); renderVandaag(); toonScherm('vandaag'); return; }
   renderInlogScreen();

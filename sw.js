@@ -1,4 +1,4 @@
-const CACHE = 'fcp162-v123';
+const CACHE = 'fcp162-v124';
 const ASSETS = [
   '/fcp16-2/',
   '/fcp16-2/index.html',

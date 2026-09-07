@@ -305,6 +305,24 @@ async function haalAlleWissels() {
   const res = await sbFetch('wissels?select=*&order=wedstrijd_minuut.asc,created_at.asc');
   return res && !res._error ? res : [];
 }
+// ─── Datalaag: Doelpunten (structureel, per helft — voor "Doelpunten per fase" op
+// het desktop-dashboard). Los van de vrije-tekst-notities in live_updates: elke +1-tik
+// tijdens Live (scoreWijzig() in wedstrijden.html) schrijft hier direct een eigen rij
+// weg, i.p.v. alleen lokaal in liveNotities te blijven hangen tot iemand 'm apart deelt. ───
+async function registreerDoelpunt(wedstrijdId, kant, helft, minuut) {
+  const res = await sbWrite('doelpunten', 'POST', {
+    id: genId(), wedstrijd_id: wedstrijdId, kant, helft, wedstrijd_minuut: minuut,
+  });
+  return (res && res._error) ? null : res;
+}
+async function haalDoelpuntenVoorWedstrijd(wedstrijdId) {
+  const res = await sbFetch('doelpunten?select=*&wedstrijd_id=eq.' + wedstrijdId + '&order=wedstrijd_minuut.asc,created_at.asc');
+  return res && !res._error ? res : [];
+}
+async function haalAlleDoelpunten() {
+  const res = await sbFetch('doelpunten?select=*&order=created_at.asc');
+  return res && !res._error ? res : [];
+}
 // Eind-minuut per wedstrijd (uit live_updates, type 'einde') — nodig om de speeltijd van een
 // speler die de wedstrijd op het veld heeft uitgespeeld correct af te sluiten (zie berekenSpeeltijd).
 async function haalAlleEindeMomenten() {

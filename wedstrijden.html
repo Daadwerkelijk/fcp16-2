@@ -761,6 +761,10 @@ function scoreWijzig(kant,delta){
     const eigen = parseInt(document.getElementById('live-score-eigen').textContent)||0;
     const tegen = parseInt(document.getElementById('live-score-tegen').textContent)||0;
     pushLiveScore(liveWedId, eigen, tegen);
+    // Structurele doelpuntregistratie (kant/helft/minuut) voor "Doelpunten per fase" op het
+    // desktop-dashboard — los van de vrije-tekst-notitie hierboven, die alleen lokaal blijft
+    // tot 'm apart gedeeld wordt. Alleen bij een echt doelpunt (delta>0), niet bij corrigeren.
+    if (delta>0) registreerDoelpunt(liveWedId, kant, liveHelft===2?'2e':'1e', getKlokMinuut());
   }
 }
 

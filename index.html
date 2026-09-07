@@ -2721,7 +2721,8 @@ function inzToggleRankingFase(f) {
   if (inzRankingFases.has(f)) inzRankingFases.delete(f); else inzRankingFases.add(f);
   renderInzRanking();
 }
-function renderInzRanking() {
+async function renderInzRanking() {
+  document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
   const sp = spelers();
   let wed = wedstrijden().filter(w => w.gespeeld && (inzRankingType === 'alle' || (w.wed_type || 'oefenwedstrijd') === inzRankingType));
   // Fase-chips alleen bij Competitie, zelfde regel als team.html — gevuld met
@@ -2740,6 +2741,28 @@ function renderInzRanking() {
     return { p, gem: vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null, n: vals.length };
   }).filter(x => x.gem != null);
   if (inzRankingSort === 'cijfer') cijfers.sort((a, b) => b.gem - a.gem); else cijfers.sort((a, b) => a.p.naam.localeCompare(b.p.naam));
+
+  // Doelpunten per fase — leest de structurele doelpuntregistratie (app.js,
+  // registreerDoelpunt() tijdens Live), gefilterd op hetzelfde wedstrijdtype als
+  // hierboven. Begint leeg: de registratie is pas net gebouwd (2026-09-07), dus dit
+  // vult zich vanzelf naarmate er weer live wedstrijden mee gespeeld worden.
+  let doelpuntenHtml = '';
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const wedIds = new Set(wed.map(w => w.id));
+    const alleDoelpunten = await haalAlleDoelpunten();
+    const dp = alleDoelpunten.filter(d => wedIds.has(d.wedstrijd_id));
+    const e1 = dp.filter(d => d.kant === 'eigen' && d.helft === '1e').length;
+    const e2 = dp.filter(d => d.kant === 'eigen' && d.helft === '2e').length;
+    const teg = dp.filter(d => d.kant === 'tegen').length;
+    const max = Math.max(e1, e2, teg, 1);
+    const balkRij = (label, n, kleur) => '<div style="display:flex;align-items:center;gap:12px"><span style="width:64px;font-size:12.5px;color:var(--ink2);font-weight:500">' + label + '</span><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + (n / max * 100) + '%;background:' + kleur + '"></div></div><span class="num" style="width:20px;text-align:right;font-size:13px;font-weight:700">' + n + '</span></div>';
+    doelpuntenHtml = '<div class="card" style="margin-top:8px"><div class="sec">Doelpunten per fase</div>'
+      + (dp.length
+          ? '<div style="display:flex;flex-direction:column;gap:9px">' + balkRij('1e helft', e1, 'var(--ink)') + balkRij('2e helft', e2, 'var(--ink)') + balkRij('Tegen', teg, 'var(--ink3)') + '</div>'
+          : '<div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter — begin een live wedstrijd om ze hier te zien verschijnen.</div>')
+      + '</div>';
+  }
+
   document.getElementById('i-content').innerHTML =
       '<div class="seg" role="tablist" style="margin-top:14px">' + ['alle', 'competitie', 'beker', 'oefenwedstrijd'].map(t => '<button type="button" class="seg-opt" aria-selected="' + (t === inzRankingType) + '" onclick="inzZetRankingType(\'' + t + '\')">' + (t === 'alle' ? 'Alle' : t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen') + '</button>').join('') + '</div>'
     + (faseOpties.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' + faseOpties.map(f => '<button type="button" class="chip" aria-pressed="' + inzRankingFases.has(f) + '" onclick="inzToggleRankingFase(\'' + esc(f) + '\')">' + esc(f) + '</button>').join('') + '</div>' : '')
@@ -2749,6 +2772,7 @@ function renderInzRanking() {
     + '<div class="card"><div class="stat-n num" style="color:var(--loss)">' + verloren + '</div><div class="stat-l">Verloren</div></div>'
     + '</div>'
     + '<div class="card" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between"><div class="stat-l" style="margin:0">Doelsaldo</div><div class="stat-n num">' + (saldo > 0 ? '+' : '') + saldo + '</div></div>'
+    + doelpuntenHtml
     + '<div class="card" style="margin-top:10px"><div class="sec">Man of the match</div>' + (motm.length ? motm.map(x => '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px"><span>' + esc(x.p.naam) + '</span><span style="color:var(--ink3)">' + x.n + '× ⭐</span></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen MOTM toegekend.</div>') + '</div>'
     + '<div class="card" style="margin-top:10px"><div class="sec" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span>Gemiddeld cijfer</span></div>'
     + '<div class="seg" role="tablist" style="margin-bottom:10px">'

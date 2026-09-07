@@ -747,7 +747,12 @@ function setAgendaFilter(f) {
   document.querySelectorAll('#a-seg .seg-opt').forEach(b => b.setAttribute('aria-selected', b.dataset.f === f ? 'true' : 'false'));
   renderAgenda();
 }
-function rijHtml(item) {
+// toonMaand: Afgerond heeft geen maand-groepering (in tegenstelling tot Aankomend,
+// dat al een maand-header erboven heeft) — dag+weekdag ("14 vr") is dan
+// dubbelzinnig zodra de lijst meerdere maanden beslaat. Daar dus dag+maand tonen
+// i.p.v. dag+weekdag, zelfde patroon als "Laatste wedstrijden" op het
+// Inzicht-dashboard. Afgestemd met gebruiker 2026-09-07.
+function rijHtml(item, toonMaand) {
   const d = new Date(item.isoDate);
   const klik = item.type === 'wedstrijd' ? "toonWedstrijd('" + item.wedId + "')" : "openTrainingSessie(" + item.wi + "," + item.si + ")";
   // Wedstrijden op 1 regel (titel+sub samengevoegd, afgekapt met ellipsis i.p.v.
@@ -758,7 +763,7 @@ function rijHtml(item) {
     ? '<div class="row-body" style="min-width:0"><div class="row-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(item.titel) + ' <span style="font-weight:400;color:var(--ink3)">· ' + item.sub + '</span></div></div>'
     : '<div class="row-body"><div class="row-title">' + esc(item.titel) + '</div><div class="row-sub">' + item.sub + '</div></div>';
   return '<a class="row' + (isWed ? ' row--compact' : '') + '" href="#" onclick="' + klik + ';return false">'
-    + '<div class="row-lead datebox"><div class="datebox-d num">' + d.getDate() + '</div><div class="datebox-m">' + DAG_KORT[d.getDay()] + '</div></div>'
+    + '<div class="row-lead datebox"><div class="datebox-d num">' + d.getDate() + '</div><div class="datebox-m">' + (toonMaand ? MAAND_KORT[d.getMonth()] : DAG_KORT[d.getDay()]) + '</div></div>'
     + body
     + '<span class="tag ' + item.tagClass + (item.tagNum ? ' num' : '') + '">' + item.tagTekst + '</span></a>';
 }
@@ -788,7 +793,7 @@ function renderAgenda() {
 
   if (afgerond.length) {
     html += '<div class="pad" style="margin-top:18px"><div class="sec">Afgerond</div></div><div class="pad"><div class="rows">';
-    afgerond.forEach(item => { html += rijHtml(item); });
+    afgerond.forEach(item => { html += rijHtml(item, true); });
     html += '</div></div>';
   }
   document.getElementById('a-lijst').innerHTML = html;

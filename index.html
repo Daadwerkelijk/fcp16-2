@@ -682,21 +682,24 @@ function renderVandaag() {
   const gelijk = gespeeld.filter(w => w.score_eigen === w.score_tegen).length;
   const verloren = gespeeld.filter(w => w.score_eigen < w.score_tegen).length;
   const saldo = gespeeld.reduce((s, w) => s + (w.score_eigen || 0) - (w.score_tegen || 0), 0);
-  html += '<div class="grid3" style="margin-top:10px">'
-    + '<div class="card"><div class="stat-n num">' + wins + '</div><div class="stat-l">Gewonnen</div></div>'
-    + '<div class="card"><div class="stat-n num">' + (saldo > 0 ? '+' : '') + saldo + '</div><div class="stat-l">Doelsaldo</div></div>'
-    + '<div class="card"><div class="stat-n num">' + gespeeld.length + '</div><div class="stat-l">Gespeeld</div></div></div>';
-
-  const laatsteVijf = [...gespeeld].sort((a, b) => (b.isoDate || '').localeCompare(a.isoDate || '')).slice(0, 5).reverse();
-  if (laatsteVijf.length) {
-    html += '<div class="card" style="margin-top:10px"><div class="stat-l" style="margin:0 0 7px">Laatste ' + laatsteVijf.length + '</div><div class="formstrip">'
-      + laatsteVijf.map(w => {
-          const u = w.score_eigen > w.score_tegen ? 'win' : w.score_eigen < w.score_tegen ? 'loss' : 'neutral';
-          const letter = u === 'win' ? 'W' : u === 'loss' ? 'V' : 'G';
-          return '<span style="background:var(--' + u + '-soft);color:var(--' + u + ')">' + letter + '</span>';
-        }).join('')
-      + '</div></div>';
-  }
+  // Eén brede kaart i.p.v. de losse "Gewonnen"-tegel + aparte "Laatste 5"-strip: toont de
+  // W/G/V-verhouding van alle gespeelde wedstrijden in één keer, incl. proportionele balk —
+  // "Laatste 5" gaf geen duidelijke tijdsrichting en "Gewonnen" alleen zei te weinig (zie
+  // mockup, voorstel B, met gebruiker afgestemd 2026-09-07).
+  html += '<div class="card" style="margin-top:10px">'
+    + '<div style="display:flex;align-items:baseline;justify-content:space-between">'
+    + '<div class="stat-l" style="margin:0">' + gespeeld.length + ' wedstrijden</div>'
+    + '<div class="num" style="font-size:12.5px;font-weight:700">'
+    + '<span style="color:var(--win)">' + wins + 'W</span> <span style="color:var(--ink3)">·</span> '
+    + '<span style="color:var(--neutral)">' + gelijk + 'G</span> <span style="color:var(--ink3)">·</span> '
+    + '<span style="color:var(--loss)">' + verloren + 'V</span></div></div>'
+    + '<div style="display:flex;height:10px;border-radius:6px;overflow:hidden;margin-top:11px;background:var(--surface3)">'
+    + '<div style="flex:' + wins + ';background:var(--win)"></div>'
+    + '<div style="flex:' + gelijk + ';background:var(--neutral)"></div>'
+    + '<div style="flex:' + verloren + ';background:var(--loss)"></div></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px">'
+    + '<div><div class="stat-n num" style="font-size:19px">' + (saldo > 0 ? '+' : '') + saldo + '</div><div class="stat-l">Doelsaldo</div></div>'
+    + '</div></div>';
 
   document.getElementById('v-content').innerHTML = html;
 }
@@ -2690,9 +2693,16 @@ async function renderInzSkills() {
           }).join('')
         + '</div>';
     }
+    // Schaalstreepjes (.trk-tick, bestond al in ui-v2.css maar werd nergens gerenderd) +
+    // eenmalige niveaunamen erboven, zodat duidelijk is wat een stip-positie betekent i.p.v.
+    // 15× herhaald bijschrift (zie mockup, met gebruiker afgestemd 2026-09-07).
+    const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
     html += '<div class="card" style="margin-top:10px"><div class="sec">Verdeling per vaardigheid</div>'
       + '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:10px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>'
+      + '<div style="display:flex;gap:10px;margin-bottom:6px"><div style="width:112px;flex-shrink:0"></div>'
+      + '<div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:9px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div></div>'
       + rijen.map(r => '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:112px;font-size:12.5px;flex-shrink:0">' + r.sk + '</div><div class="trk" style="flex:1"><div class="trk-line"></div>'
+          + NIVEAU_TICKS.map(([, pct]) => '<div class="trk-tick" style="left:' + pct + '%"></div>').join('')
           + (r.sGem != null ? '<div class="trk-dot src-speler" style="left:' + r.sGem + '%;background:currentColor"></div>' : '')
           + (r.tGem != null ? '<div class="trk-dot src-trainer" style="left:' + r.tGem + '%;background:currentColor"></div>' : '')
           + '</div></div>').join('')

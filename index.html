@@ -391,6 +391,19 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   </div></div>
 </div>
 
+<!-- ═══ SHEET: klik-door per vaardigheid (Inzicht-desktopdashboard) — wie
+     scoorde welk niveau, gegroepeerd i.p.v. alfabetisch. Zie mockup,
+     afgestemd met gebruiker 2026-09-07. ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-vaardigheid" onclick="if(event.target===this)closeVaardigheidSheet()">
+  <div class="sheet-wrap"><div class="sheet" style="max-height:80vh;display:flex;flex-direction:column">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title" id="vd-titel">Balcontrole</div>
+    <div class="sheet-sub">Wie gaf welk niveau — spelerbeoordeling naast trainerbeoordeling.</div>
+    <div id="vd-content" style="overflow-y:auto;flex:1"></div>
+    <button class="btn btn--ghost btn--block" style="margin-top:14px" onclick="closeVaardigheidSheet()">Sluiten</button>
+  </div></div>
+</div>
+
 <!-- Desktop-zijbalk (≥860px, zie media query onderaan de <style> hierboven) — zelfde
      schermen/toonScherm()-aanroepen als de mobiele tabbalk, eigen id's (side-tab-*)
      zodat beide onafhankelijk hun aria-current kunnen bijhouden. -->
@@ -2645,11 +2658,58 @@ function renderInzicht() {
   else if (inzichtTabV2 === 'ranking') renderInzRanking();
   else renderInzSpeelminuten();
 }
-// Desktop-dashboard voor Inzicht: combineert Vorm/Doelsaldo/Opkomst/Kader,
-// Zelfbeeld-vs-trainer (skills), Doelpunten per fase en Laatste wedstrijden in
-// één overzicht, met echte data via dezelfde functies als de mobiele tabbladen
-// (geen aparte databronnen). Reageert live op resize via de matchMedia-listener
-// onderaan dit script.
+// Top-afwezigen met redenen — uit dezelfde aanwAlles()-data als Inzicht → Afwezig
+// (mobiel), hier samengevat tot de 4 spelers met de meeste afwezigheid i.p.v. een
+// volledige lijst. Alleen op het desktop-dashboard (afgestemd 2026-09-07).
+function afwezigheidAandachtHtml() {
+  const sp = spelers();
+  const aanw = aanwAlles();
+  const perSpeler = {};
+  Object.values(aanw).forEach(perTraining => {
+    Object.entries(perTraining).forEach(([spelerId, rec]) => {
+      if (rec && rec.afwezig) {
+        if (!perSpeler[spelerId]) perSpeler[spelerId] = { n: 0, redenen: new Set() };
+        perSpeler[spelerId].n++;
+        if (rec.reden) perSpeler[spelerId].redenen.add(rec.reden);
+      }
+    });
+  });
+  const naamVan = id => (sp.find(p => p.id === id) || {}).naam || '?';
+  const top = Object.entries(perSpeler)
+    .map(([id, x]) => ({ naam: naamVan(id), n: x.n, redenen: [...x.redenen].join(', ') }))
+    .sort((a, b) => b.n - a.n).slice(0, 4);
+  return '<div class="sec">Afwezigheid — aandachtspunten</div>'
+    + (top.length
+        ? '<div style="display:flex;flex-direction:column;gap:9px">' + top.map(x => '<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px"><span style="font-weight:600;flex-shrink:0">' + esc(x.naam) + '</span><span style="color:var(--ink3);text-align:right">' + x.n + '×' + (x.redenen ? ' · ' + esc(x.redenen) : '') + '</span></div>').join('') + '</div>'
+        : '<div style="font-size:12.5px;color:var(--ink3)">Geen afwezigheid geregistreerd.</div>');
+}
+// Top-speeltijd — dezelfde berekenSpeeltijd()-databron als Inzicht → Minuten
+// (mobiel), samengevat tot de 4 spelers met de meeste minuten.
+async function speeltijdAandachtHtml() {
+  const sp = spelers();
+  const wed = wedstrijden().filter(w => w.gespeeld && w.wed_lineup && Object.keys(w.wed_lineup).length);
+  const totaal = {}; sp.forEach(p => { totaal[p.id] = 0; });
+  if (typeof supabaseReady !== 'undefined' && supabaseReady && wed.length) {
+    const [alleWissels, eindeMomenten] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten()]);
+    wed.forEach(w => {
+      const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
+      const eindMinuut = eindeMomenten[w.id];
+      sp.forEach(p => { totaal[p.id] += berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindMinuut); });
+    });
+  }
+  const top = sp.map(p => ({ naam: p.naam, min: totaal[p.id] })).filter(x => x.min > 0).sort((a, b) => b.min - a.min).slice(0, 4);
+  return '<div class="sec">Speeltijd</div>'
+    + (top.length
+        ? '<div style="display:flex;flex-direction:column;gap:9px">' + top.map(x => '<div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:600">' + esc(x.naam) + '</span><span style="color:var(--ink3)">' + x.min + ' min</span></div>').join('') + '</div>'
+        : '<div style="font-size:12.5px;color:var(--ink3)">Nog geen speelminuten dit seizoen.</div>');
+}
+// Desktop-dashboard voor Inzicht: donkere kop met Punten/Doelsaldo/Opkomst/Kader,
+// een smalle linkerkolom (Vorm+Doelpunten, Afwezigheid+Speeltijd) en een brede
+// rechterkolom voor Verdeling per vaardigheid (klikbaar per rij) — layout 1-op-1
+// afgestemd met gebruiker 2026-09-07 (schets: smalle datakolom, brede
+// vaardighedenkolom, "Laatste wedstrijden" bewust weggelaten). Alle data via
+// dezelfde functies als de mobiele tabbladen. Reageert live op resize via de
+// matchMedia-listener onderaan dit script.
 async function renderInzichtDesktop() {
   document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
   const sp = spelers();
@@ -2671,32 +2731,32 @@ async function renderInzichtDesktop() {
 
   const laatsteAcht = [...gespeeld].sort((a, b) => (b.isoDate || '').localeCompare(a.isoDate || '')).slice(0, 8).reverse();
 
-  const [skillsRijen, doelpuntenHtml] = await Promise.all([
+  const [skillsData, doelpuntenHtml, speeltijdHtml] = await Promise.all([
     skillsVergelijkingData(),
     doelpuntenKaartHtml(gespeeld),
+    speeltijdAandachtHtml(),
   ]);
-  const metSkillData = skillsRijen.filter(r => r.sGem != null || r.tGem != null);
-
-  const wedRijenHtml = [...gespeeld].sort((a, b) => (b.isoDate || '').localeCompare(a.isoDate || '')).slice(0, 6).map(w => {
-    const u = w.score_eigen > w.score_tegen ? 'win' : w.score_eigen < w.score_tegen ? 'loss' : 'neutral';
-    const d = w.isoDate ? new Date(w.isoDate) : null;
-    return '<div class="row">'
-      + (d ? '<div class="datebox"><div class="datebox-d num">' + d.getDate() + '</div><div class="datebox-m">' + MAAND_KORT[d.getMonth()] + '</div></div>' : '')
-      + '<div class="row-body"><div class="row-title">' + esc(w.tegenstander || '?') + '</div><div class="row-sub">' + (w.thuis_uit === 'uit' ? 'Uit' : 'Thuis') + '</div></div>'
-      + '<span class="tag tag--' + u + ' num">' + w.score_eigen + '–' + w.score_tegen + '</span>'
-      + '</div>';
-  }).join('');
+  VD_SKILLS_RAW = skillsData;
+  const metSkillData = skillsData.rijen.filter(r => r.sGem != null || r.tGem != null);
+  const afwezigheidHtml = afwezigheidAandachtHtml();
 
   document.getElementById('i-content').innerHTML =
-      '<div style="font-size:13px;color:var(--ink3);margin:14px 0 12px">' + gespeeld.length + ' wedstrijden · ' + Object.keys(aanw).length + ' trainingen</div>'
-    + '<div class="grid3" style="grid-template-columns:repeat(4,1fr)">'
-      + '<div class="card"><div class="stat-n num">' + punten + '</div><div class="stat-l">Punten</div></div>'
-      + '<div class="card"><div class="stat-n num">' + (saldo > 0 ? '+' : '') + saldo + '</div><div class="stat-l">Doelsaldo</div></div>'
-      + '<div class="card"><div class="stat-n num">' + (opkomstPct != null ? opkomstPct + '%' : '–') + '</div><div class="stat-l">Opkomst training</div></div>'
-      + '<div class="card"><div class="stat-n num">' + sp.length + '</div><div class="stat-l">Spelers</div></div>'
-    + '</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'
-      + '<div class="card">'
+      // Hero: seizoenskop + de 4 kerncijfers in één donkere band i.p.v. losse
+      // witte vlakken — zelfde .card--accent-patroon als "Eerstvolgend" op
+      // Vandaag, hier voor het eerst als headerbalk gebruikt.
+      '<div class="card card--accent" style="margin-top:14px;padding:26px 30px;display:flex;align-items:flex-end;justify-content:space-between;gap:30px;flex-wrap:wrap">'
+      + '<div><div style="font-size:26px;font-weight:700;letter-spacing:-.035em">Inzicht</div>'
+      + '<div style="font-size:13px;opacity:.6;margin-top:2px">' + gespeeld.length + ' wedstrijden · ' + Object.keys(aanw).length + ' trainingen</div></div>'
+      + '<div style="display:flex;gap:36px">'
+      + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + punten + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Punten</div></div>'
+      + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + (saldo > 0 ? '+' : '') + saldo + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Doelsaldo</div></div>'
+      + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + (opkomstPct != null ? opkomstPct + '%' : '–') + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Opkomst training</div></div>'
+      + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + sp.length + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Spelers</div></div>'
+      + '</div></div>'
+      // Smalle datakolom links (vast, 300px) / brede vaardighedenkolom rechts —
+      // 1-op-1 op de schets die de gebruiker aanleverde (2026-09-07).
+      + '<div style="display:grid;grid-template-columns:300px 1fr;grid-template-rows:auto auto;gap:14px;align-items:start;margin-top:14px;grid-template-areas:\'links1 rechts\' \'links2 rechts\'">'
+      + '<div class="card" style="grid-area:links1">'
         + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><div class="sec" style="margin:0">Vorm — ' + gespeeld.length + ' wedstrijden</div><span class="tag tag--line">' + wins + 'W · ' + gelijk + 'G · ' + verloren + 'V</span></div>'
         + '<div style="display:flex;height:10px;border-radius:6px;overflow:hidden;margin-bottom:14px;background:var(--surface3)">'
           + '<div style="flex:' + wins + ';background:var(--win)"></div><div style="flex:' + gelijk + ';background:var(--neutral)"></div><div style="flex:' + verloren + ';background:var(--loss)"></div>'
@@ -2706,11 +2766,18 @@ async function renderInzichtDesktop() {
             const letter = u === 'win' ? 'W' : u === 'loss' ? 'V' : 'G';
             return '<span style="background:var(--' + u + '-soft);color:var(--' + u + ')">' + letter + '</span>';
           }).join('') + '</div>' : '')
+        + '<div style="height:1px;background:var(--line);margin:18px 0 14px"></div>'
+        + doelpuntenHtml
       + '</div>'
-      + (metSkillData.length ? skillsVerdelingKaartHtml(skillsRijen) : '<div class="card"><div class="sec">Verdeling per vaardigheid</div><div style="font-size:13px;color:var(--ink3)">Nog geen speler- en trainerbeoordelingen om te vergelijken.</div></div>')
-    + '</div>'
-    + doelpuntenHtml
-    + (wedRijenHtml ? '<div class="card" style="padding:0;overflow:hidden;margin-top:8px"><div style="padding:16px 16px 12px"><div class="sec" style="margin:0">Laatste wedstrijden</div></div><div class="rows" style="border-radius:0;box-shadow:none">' + wedRijenHtml + '</div></div>' : '');
+      + '<div class="card" style="grid-area:links2">'
+        + afwezigheidHtml
+        + '<div style="height:1px;background:var(--line);margin:16px 0 14px"></div>'
+        + speeltijdHtml
+      + '</div>'
+      + '<div style="grid-area:rechts">'
+        + (metSkillData.length ? skillsVerdelingLijstHtml(skillsData.rijen) : '<div class="card"><div class="sec">Verdeling per vaardigheid</div><div style="font-size:13px;color:var(--ink3)">Nog geen speler- en trainerbeoordelingen om te vergelijken.</div></div>')
+      + '</div>'
+    + '</div>';
 }
 function inzToggle(headerEl) {
   const d = headerEl.parentElement.querySelector('.inz-detail');
@@ -2774,7 +2841,7 @@ async function skillsVergelijkingData() {
     });
     return { sk, sGem: sN ? sSom / sN : null, tGem: tN ? tSom / tN : null };
   });
-  return rijen;
+  return { rijen, sp, laatsteSpelerPerSpeler, laatsteTrainerPerSpeler };
 }
 // Schaalstreepjes (.trk-tick, bestond al in ui-v2.css maar werd nergens gerenderd) +
 // eenmalige niveaunamen erboven, zodat duidelijk is wat een stip-positie betekent i.p.v.
@@ -2792,9 +2859,66 @@ function skillsVerdelingKaartHtml(rijen) {
         + '</div></div>').join('')
     + '</div>';
 }
+// Desktop-variant: één lange lijst i.p.v. 2 kolommen, zodat elke track de volle
+// breedte van de kaart krijgt — meer ruimte tussen de 4 niveaus, dus duidelijker
+// verschil tussen spelers (afgestemd met gebruiker 2026-09-07). Rijen zijn
+// klikbaar: opent sheet-vaardigheid met alle spelers gegroepeerd per niveau.
+// VD_SKILLS_RAW wordt gezet door renderInzichtDesktop(), zodat de sheet niet
+// opnieuw hoeft te fetchen.
+let VD_SKILLS_RAW = null;
+function skillsVerdelingLijstHtml(rijen) {
+  const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
+  return '<div class="card">'
+    + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px"><div class="sec" style="margin:0">Verdeling per vaardigheid</div>'
+    + '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3)"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div></div>'
+    + '<div style="display:flex;gap:8px;margin:14px 0 8px"><div style="width:170px;flex-shrink:0"></div><div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:10px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div><div style="width:15px;flex-shrink:0"></div></div>'
+    + rijen.map(r => '<div class="skillrow" onclick="openVaardigheidSheet(\'' + esc(r.sk) + '\')">'
+        + '<div style="width:170px;font-size:13px;flex-shrink:0">' + esc(r.sk) + '</div>'
+        + '<div class="trk" style="flex:1"><div class="trk-line"></div>'
+        + NIVEAU_TICKS.map(([, pct]) => '<div class="trk-tick" style="left:' + pct + '%"></div>').join('')
+        + (r.sGem != null ? '<div class="trk-dot src-speler" style="left:' + r.sGem + '%;background:currentColor"></div>' : '')
+        + (r.tGem != null ? '<div class="trk-dot src-trainer" style="left:' + r.tGem + '%;background:currentColor"></div>' : '')
+        + '</div>'
+        + '<svg class="skillrow-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>'
+        + '</div>').join('')
+    + '</div>';
+}
+function openVaardigheidSheet(skill) {
+  if (!VD_SKILLS_RAW) return;
+  const { sp, laatsteSpelerPerSpeler, laatsteTrainerPerSpeler } = VD_SKILLS_RAW;
+  document.getElementById('vd-titel').textContent = skill;
+  const NIVEAU_VOLGORDE = Object.keys(SKILL_NIVEAU_PCT_V2);
+  const KLEUR = pct => pct >= 66 ? 'var(--win)' : pct >= 34 ? 'var(--ink2)' : 'var(--loss)';
+  let html = '';
+  NIVEAU_VOLGORDE.forEach(niveau => {
+    const perNiveau = sp.filter(p => {
+      const sL = laatsteSpelerPerSpeler[p.id], tL = laatsteTrainerPerSpeler[p.id];
+      const sv = sL && sL.data && sL.data.skills && sL.data.skills[skill];
+      const tv = tL && tL.skills && tL.skills[skill];
+      return sv === niveau || (!sv && tv === niveau);
+    });
+    if (!perNiveau.length) return;
+    html += '<div style="margin-top:16px;margin-bottom:2px;display:flex;align-items:center;gap:7px">'
+      + '<span style="width:8px;height:8px;border-radius:50%;background:' + KLEUR(SKILL_NIVEAU_PCT_V2[niveau]) + ';flex-shrink:0"></span>'
+      + '<span style="font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">' + esc(niveau) + '</span>'
+      + '<span style="font-size:12px;color:var(--ink3)">· ' + perNiveau.length + '</span></div>';
+    html += perNiveau.map(p => {
+      const sL = laatsteSpelerPerSpeler[p.id], tL = laatsteTrainerPerSpeler[p.id];
+      const sv = sL && sL.data && sL.data.skills && sL.data.skills[skill];
+      const tv = tL && tL.skills && tL.skills[skill];
+      const bronnen = [sv ? 'speler' : null, tv ? 'trainer' : null].filter(Boolean).join(' + ');
+      return '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13.5px"><span>' + esc(p.naam) + '</span><span style="color:var(--ink3);font-size:12px">' + bronnen + '</span></div>';
+    }).join('');
+  });
+  document.getElementById('vd-content').innerHTML = html || '<div style="font-size:13px;color:var(--ink3);padding:12px 0">Nog geen beoordelingen voor deze vaardigheid.</div>';
+  document.getElementById('sheet-vaardigheid').classList.remove('verborgen');
+}
+function closeVaardigheidSheet() {
+  document.getElementById('sheet-vaardigheid').classList.add('verborgen');
+}
 async function renderInzSkills() {
   document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
-  const rijen = await skillsVergelijkingData();
+  const { rijen } = await skillsVergelijkingData();
   const metData = rijen.filter(r => r.sGem != null || r.tGem != null);
   const metBeide = rijen.filter(r => r.sGem != null && r.tGem != null);
   const verschillen = [...metBeide].sort((a, b) => Math.abs(b.sGem - b.tGem) - Math.abs(a.sGem - a.tGem)).slice(0, 5);
@@ -2843,11 +2967,13 @@ async function doelpuntenKaartHtml(wed) {
   const teg = dp.filter(d => d.kant === 'tegen').length;
   const max = Math.max(e1, e2, teg, 1);
   const balkRij = (label, n, kleur) => '<div style="display:flex;align-items:center;gap:12px"><span style="width:64px;font-size:12.5px;color:var(--ink2);font-weight:500">' + label + '</span><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + (n / max * 100) + '%;background:' + kleur + '"></div></div><span class="num" style="width:20px;text-align:right;font-size:13px;font-weight:700">' + n + '</span></div>';
-  return '<div class="card" style="margin-top:8px"><div class="sec">Doelpunten per fase</div>'
+  // Geeft alleen de inhoud terug (geen omhullende .card) — de aanroeper bepaalt
+  // of dit een eigen kaart wordt (mobiel) of in een bestaande kaart past
+  // (desktop-dashboard, onder Vorm na een scheidingslijn).
+  return '<div class="sec">Doelpunten per fase</div>'
     + (dp.length
         ? '<div style="display:flex;flex-direction:column;gap:9px">' + balkRij('1e helft', e1, 'var(--ink)') + balkRij('2e helft', e2, 'var(--ink)') + balkRij('Tegen', teg, 'var(--ink3)') + '</div>'
-        : '<div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter — begin een live wedstrijd om ze hier te zien verschijnen.</div>')
-    + '</div>';
+        : '<div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter — begin een live wedstrijd om ze hier te zien verschijnen.</div>');
 }
 async function renderInzRanking() {
   document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
@@ -2870,7 +2996,8 @@ async function renderInzRanking() {
   }).filter(x => x.gem != null);
   if (inzRankingSort === 'cijfer') cijfers.sort((a, b) => b.gem - a.gem); else cijfers.sort((a, b) => a.p.naam.localeCompare(b.p.naam));
 
-  const doelpuntenHtml = await doelpuntenKaartHtml(wed);
+  const doelpuntenInhoud = await doelpuntenKaartHtml(wed);
+  const doelpuntenHtml = doelpuntenInhoud ? '<div class="card" style="margin-top:8px">' + doelpuntenInhoud + '</div>' : '';
 
   document.getElementById('i-content').innerHTML =
       '<div class="seg" role="tablist" style="margin-top:14px">' + ['alle', 'competitie', 'beker', 'oefenwedstrijd'].map(t => '<button type="button" class="seg-opt" aria-selected="' + (t === inzRankingType) + '" onclick="inzZetRankingType(\'' + t + '\')">' + (t === 'alle' ? 'Alle' : t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen') + '</button>').join('') + '</div>'

@@ -2367,6 +2367,13 @@ async function ltStap(veld, delta) {
   renderLiveTrainer();
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     await pushLiveScore(liveState.wedstrijdId, liveState.scoreEigen, liveState.scoreTegen);
+    // Structurele doelpuntregistratie (kant/helft/minuut) voor "Doelpunten per fase"
+    // op Inzicht — V2 heeft een eigen live-scoreflow (liveState/ltStap), los van
+    // scoreWijzig() in wedstrijden.html, dus deze aanroep stond hier nog niet.
+    // Bug gevonden 2026-09-07: een testwedstrijd met 3 doelpunten via V2 gescoord
+    // liet niets zien op Inzicht, terwijl scoreWijzig() (klassieke app) al wél
+    // registreerDoelpunt() aanriep — de daadwerkelijk gebruikte scoreflow miste 'm.
+    if (delta > 0) registreerDoelpunt(liveState.wedstrijdId, veld === 'scoreEigen' ? 'eigen' : 'tegen', liveState.status.includes('1e') ? '1e' : '2e', liveState.minuut);
   }
 }
 function ltVoegNotitieToe(gedeeld) {

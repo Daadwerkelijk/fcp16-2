@@ -2633,10 +2633,84 @@ function setInzichtTab(t) {
   renderInzicht();
 }
 function renderInzicht() {
+  // Vanaf 860px (zelfde grens als de zijbalk) één samengestelde dashboardweergave
+  // i.p.v. losse tabbladen — op desktop is er ruimte om alles gelijk te tonen,
+  // tabbladen zijn een mobiel-schaarste-oplossing (afgestemd met gebruiker
+  // 2026-09-07, zie de desktop-dashboardmockup).
+  const desktop = window.matchMedia('(min-width:860px)').matches;
+  document.getElementById('i-seg').style.display = desktop ? 'none' : '';
+  if (desktop) { renderInzichtDesktop(); return; }
   if (inzichtTabV2 === 'afwezigheid') renderInzAfwezigheid();
   else if (inzichtTabV2 === 'skills') renderInzSkills();
   else if (inzichtTabV2 === 'ranking') renderInzRanking();
   else renderInzSpeelminuten();
+}
+// Desktop-dashboard voor Inzicht: combineert Vorm/Doelsaldo/Opkomst/Kader,
+// Zelfbeeld-vs-trainer (skills), Doelpunten per fase en Laatste wedstrijden in
+// één overzicht, met echte data via dezelfde functies als de mobiele tabbladen
+// (geen aparte databronnen). Reageert live op resize via de matchMedia-listener
+// onderaan dit script.
+async function renderInzichtDesktop() {
+  document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
+  const sp = spelers();
+  const gespeeld = wedstrijden().filter(w => w.gespeeld);
+  const wins = gespeeld.filter(w => w.score_eigen > w.score_tegen).length;
+  const gelijk = gespeeld.filter(w => w.score_eigen === w.score_tegen).length;
+  const verloren = gespeeld.filter(w => w.score_eigen < w.score_tegen).length;
+  const saldo = gespeeld.reduce((s, w) => s + (w.score_eigen || 0) - (w.score_tegen || 0), 0);
+  const punten = wins * 3 + gelijk;
+
+  // Opkomst training — % over alle geregistreerde aanwezigheidsrijen (aanwAlles(),
+  // zelfde bron als Inzicht → Afwezig), hier samengevat tot één percentage.
+  const aanw = aanwAlles();
+  let totaalRijen = 0, aanwezigRijen = 0;
+  Object.values(aanw).forEach(perSpeler => {
+    Object.values(perSpeler).forEach(rec => { totaalRijen++; if (!rec.afwezig) aanwezigRijen++; });
+  });
+  const opkomstPct = totaalRijen ? Math.round(100 * aanwezigRijen / totaalRijen) : null;
+
+  const laatsteAcht = [...gespeeld].sort((a, b) => (b.isoDate || '').localeCompare(a.isoDate || '')).slice(0, 8).reverse();
+
+  const [skillsRijen, doelpuntenHtml] = await Promise.all([
+    skillsVergelijkingData(),
+    doelpuntenKaartHtml(gespeeld),
+  ]);
+  const metSkillData = skillsRijen.filter(r => r.sGem != null || r.tGem != null);
+
+  const wedRijenHtml = [...gespeeld].sort((a, b) => (b.isoDate || '').localeCompare(a.isoDate || '')).slice(0, 6).map(w => {
+    const u = w.score_eigen > w.score_tegen ? 'win' : w.score_eigen < w.score_tegen ? 'loss' : 'neutral';
+    const d = w.isoDate ? new Date(w.isoDate) : null;
+    return '<div class="row">'
+      + (d ? '<div class="datebox"><div class="datebox-d num">' + d.getDate() + '</div><div class="datebox-m">' + MAAND_KORT[d.getMonth()] + '</div></div>' : '')
+      + '<div class="row-body"><div class="row-title">' + esc(w.tegenstander || '?') + '</div><div class="row-sub">' + (w.thuis_uit === 'uit' ? 'Uit' : 'Thuis') + '</div></div>'
+      + '<span class="tag tag--' + u + ' num">' + w.score_eigen + '–' + w.score_tegen + '</span>'
+      + '</div>';
+  }).join('');
+
+  document.getElementById('i-content').innerHTML =
+      '<div style="font-size:13px;color:var(--ink3);margin:14px 0 12px">' + gespeeld.length + ' wedstrijden · ' + Object.keys(aanw).length + ' trainingen</div>'
+    + '<div class="grid3" style="grid-template-columns:repeat(4,1fr)">'
+      + '<div class="card"><div class="stat-n num">' + punten + '</div><div class="stat-l">Punten</div></div>'
+      + '<div class="card"><div class="stat-n num">' + (saldo > 0 ? '+' : '') + saldo + '</div><div class="stat-l">Doelsaldo</div></div>'
+      + '<div class="card"><div class="stat-n num">' + (opkomstPct != null ? opkomstPct + '%' : '–') + '</div><div class="stat-l">Opkomst training</div></div>'
+      + '<div class="card"><div class="stat-n num">' + sp.length + '</div><div class="stat-l">Spelers</div></div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'
+      + '<div class="card">'
+        + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><div class="sec" style="margin:0">Vorm — ' + gespeeld.length + ' wedstrijden</div><span class="tag tag--line">' + wins + 'W · ' + gelijk + 'G · ' + verloren + 'V</span></div>'
+        + '<div style="display:flex;height:10px;border-radius:6px;overflow:hidden;margin-bottom:14px;background:var(--surface3)">'
+          + '<div style="flex:' + wins + ';background:var(--win)"></div><div style="flex:' + gelijk + ';background:var(--neutral)"></div><div style="flex:' + verloren + ';background:var(--loss)"></div>'
+        + '</div>'
+        + (laatsteAcht.length ? '<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--ink3);font-weight:600;margin-bottom:5px"><span>oudste</span><span>nieuwste</span></div><div class="formstrip">' + laatsteAcht.map(w => {
+            const u = w.score_eigen > w.score_tegen ? 'win' : w.score_eigen < w.score_tegen ? 'loss' : 'neutral';
+            const letter = u === 'win' ? 'W' : u === 'loss' ? 'V' : 'G';
+            return '<span style="background:var(--' + u + '-soft);color:var(--' + u + ')">' + letter + '</span>';
+          }).join('') + '</div>' : '')
+      + '</div>'
+      + (metSkillData.length ? skillsVerdelingKaartHtml(skillsRijen) : '<div class="card"><div class="sec">Verdeling per vaardigheid</div><div style="font-size:13px;color:var(--ink3)">Nog geen speler- en trainerbeoordelingen om te vergelijken.</div></div>')
+    + '</div>'
+    + doelpuntenHtml
+    + (wedRijenHtml ? '<div class="card" style="padding:0;overflow:hidden;margin-top:8px"><div style="padding:16px 16px 12px"><div class="sec" style="margin:0">Laatste wedstrijden</div></div><div class="rows" style="border-radius:0;box-shadow:none">' + wedRijenHtml + '</div></div>' : '');
 }
 function inzToggle(headerEl) {
   const d = headerEl.parentElement.querySelector('.inz-detail');
@@ -2675,8 +2749,9 @@ function renderInzAfwezigheid() {
 // 15-vaardigheden-schaal als de individuele spelerkaart. Toont een gemiddelde
 // per vaardigheid i.p.v. de volledige verdeling-per-niveau van de echte
 // pagina — zie toelichting bij de gebruiker. ───
-async function renderInzSkills() {
-  document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
+// Berekent de speler-vs-trainer-gemiddelden per vaardigheid — herbruikt door
+// renderInzSkills() (mobiel/tabblad) en de desktop-dashboardcompositie.
+async function skillsVergelijkingData() {
   const sp = spelers();
   let alleTrainer = [], alleSpeler = [];
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
@@ -2699,6 +2774,27 @@ async function renderInzSkills() {
     });
     return { sk, sGem: sN ? sSom / sN : null, tGem: tN ? tSom / tN : null };
   });
+  return rijen;
+}
+// Schaalstreepjes (.trk-tick, bestond al in ui-v2.css maar werd nergens gerenderd) +
+// eenmalige niveaunamen erboven, zodat duidelijk is wat een stip-positie betekent i.p.v.
+// 15× herhaald bijschrift (zie mockup, met gebruiker afgestemd 2026-09-07).
+function skillsVerdelingKaartHtml(rijen) {
+  const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
+  return '<div class="card" style="margin-top:10px"><div class="sec">Verdeling per vaardigheid</div>'
+    + '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:10px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>'
+    + '<div style="display:flex;gap:10px;margin-bottom:6px"><div style="width:112px;flex-shrink:0"></div>'
+    + '<div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:9px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div></div>'
+    + rijen.map(r => '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:112px;font-size:12.5px;flex-shrink:0">' + r.sk + '</div><div class="trk" style="flex:1"><div class="trk-line"></div>'
+        + NIVEAU_TICKS.map(([, pct]) => '<div class="trk-tick" style="left:' + pct + '%"></div>').join('')
+        + (r.sGem != null ? '<div class="trk-dot src-speler" style="left:' + r.sGem + '%;background:currentColor"></div>' : '')
+        + (r.tGem != null ? '<div class="trk-dot src-trainer" style="left:' + r.tGem + '%;background:currentColor"></div>' : '')
+        + '</div></div>').join('')
+    + '</div>';
+}
+async function renderInzSkills() {
+  document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
+  const rijen = await skillsVergelijkingData();
   const metData = rijen.filter(r => r.sGem != null || r.tGem != null);
   const metBeide = rijen.filter(r => r.sGem != null && r.tGem != null);
   const verschillen = [...metBeide].sort((a, b) => Math.abs(b.sGem - b.tGem) - Math.abs(a.sGem - a.tGem)).slice(0, 5);
@@ -2716,20 +2812,7 @@ async function renderInzSkills() {
           }).join('')
         + '</div>';
     }
-    // Schaalstreepjes (.trk-tick, bestond al in ui-v2.css maar werd nergens gerenderd) +
-    // eenmalige niveaunamen erboven, zodat duidelijk is wat een stip-positie betekent i.p.v.
-    // 15× herhaald bijschrift (zie mockup, met gebruiker afgestemd 2026-09-07).
-    const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
-    html += '<div class="card" style="margin-top:10px"><div class="sec">Verdeling per vaardigheid</div>'
-      + '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:10px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>'
-      + '<div style="display:flex;gap:10px;margin-bottom:6px"><div style="width:112px;flex-shrink:0"></div>'
-      + '<div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:9px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div></div>'
-      + rijen.map(r => '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:112px;font-size:12.5px;flex-shrink:0">' + r.sk + '</div><div class="trk" style="flex:1"><div class="trk-line"></div>'
-          + NIVEAU_TICKS.map(([, pct]) => '<div class="trk-tick" style="left:' + pct + '%"></div>').join('')
-          + (r.sGem != null ? '<div class="trk-dot src-speler" style="left:' + r.sGem + '%;background:currentColor"></div>' : '')
-          + (r.tGem != null ? '<div class="trk-dot src-trainer" style="left:' + r.tGem + '%;background:currentColor"></div>' : '')
-          + '</div></div>').join('')
-      + '</div>';
+    html += skillsVerdelingKaartHtml(rijen);
   }
   document.getElementById('i-content').innerHTML = html;
 }
@@ -2743,6 +2826,28 @@ function inzZetRankingSort(m) { inzRankingSort = m; renderInzRanking(); }
 function inzToggleRankingFase(f) {
   if (inzRankingFases.has(f)) inzRankingFases.delete(f); else inzRankingFases.add(f);
   renderInzRanking();
+}
+// Doelpunten per fase — leest de structurele doelpuntregistratie (app.js,
+// registreerDoelpunt() tijdens Live) voor de meegegeven (al gefilterde) wedstrijden.
+// Herbruikt door zowel renderInzRanking() (mobiel/tabblad) als de desktop-
+// dashboardcompositie hieronder. Begint leeg: de registratie is pas net gebouwd
+// (2026-09-07), dus dit vult zich vanzelf naarmate er weer live wedstrijden mee
+// gespeeld worden.
+async function doelpuntenKaartHtml(wed) {
+  if (typeof supabaseReady === 'undefined' || !supabaseReady) return '';
+  const wedIds = new Set(wed.map(w => w.id));
+  const alleDoelpunten = await haalAlleDoelpunten();
+  const dp = alleDoelpunten.filter(d => wedIds.has(d.wedstrijd_id));
+  const e1 = dp.filter(d => d.kant === 'eigen' && d.helft === '1e').length;
+  const e2 = dp.filter(d => d.kant === 'eigen' && d.helft === '2e').length;
+  const teg = dp.filter(d => d.kant === 'tegen').length;
+  const max = Math.max(e1, e2, teg, 1);
+  const balkRij = (label, n, kleur) => '<div style="display:flex;align-items:center;gap:12px"><span style="width:64px;font-size:12.5px;color:var(--ink2);font-weight:500">' + label + '</span><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + (n / max * 100) + '%;background:' + kleur + '"></div></div><span class="num" style="width:20px;text-align:right;font-size:13px;font-weight:700">' + n + '</span></div>';
+  return '<div class="card" style="margin-top:8px"><div class="sec">Doelpunten per fase</div>'
+    + (dp.length
+        ? '<div style="display:flex;flex-direction:column;gap:9px">' + balkRij('1e helft', e1, 'var(--ink)') + balkRij('2e helft', e2, 'var(--ink)') + balkRij('Tegen', teg, 'var(--ink3)') + '</div>'
+        : '<div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter — begin een live wedstrijd om ze hier te zien verschijnen.</div>')
+    + '</div>';
 }
 async function renderInzRanking() {
   document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
@@ -2765,26 +2870,7 @@ async function renderInzRanking() {
   }).filter(x => x.gem != null);
   if (inzRankingSort === 'cijfer') cijfers.sort((a, b) => b.gem - a.gem); else cijfers.sort((a, b) => a.p.naam.localeCompare(b.p.naam));
 
-  // Doelpunten per fase — leest de structurele doelpuntregistratie (app.js,
-  // registreerDoelpunt() tijdens Live), gefilterd op hetzelfde wedstrijdtype als
-  // hierboven. Begint leeg: de registratie is pas net gebouwd (2026-09-07), dus dit
-  // vult zich vanzelf naarmate er weer live wedstrijden mee gespeeld worden.
-  let doelpuntenHtml = '';
-  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
-    const wedIds = new Set(wed.map(w => w.id));
-    const alleDoelpunten = await haalAlleDoelpunten();
-    const dp = alleDoelpunten.filter(d => wedIds.has(d.wedstrijd_id));
-    const e1 = dp.filter(d => d.kant === 'eigen' && d.helft === '1e').length;
-    const e2 = dp.filter(d => d.kant === 'eigen' && d.helft === '2e').length;
-    const teg = dp.filter(d => d.kant === 'tegen').length;
-    const max = Math.max(e1, e2, teg, 1);
-    const balkRij = (label, n, kleur) => '<div style="display:flex;align-items:center;gap:12px"><span style="width:64px;font-size:12.5px;color:var(--ink2);font-weight:500">' + label + '</span><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + (n / max * 100) + '%;background:' + kleur + '"></div></div><span class="num" style="width:20px;text-align:right;font-size:13px;font-weight:700">' + n + '</span></div>';
-    doelpuntenHtml = '<div class="card" style="margin-top:8px"><div class="sec">Doelpunten per fase</div>'
-      + (dp.length
-          ? '<div style="display:flex;flex-direction:column;gap:9px">' + balkRij('1e helft', e1, 'var(--ink)') + balkRij('2e helft', e2, 'var(--ink)') + balkRij('Tegen', teg, 'var(--ink3)') + '</div>'
-          : '<div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter — begin een live wedstrijd om ze hier te zien verschijnen.</div>')
-      + '</div>';
-  }
+  const doelpuntenHtml = await doelpuntenKaartHtml(wed);
 
   document.getElementById('i-content').innerHTML =
       '<div class="seg" role="tablist" style="margin-top:14px">' + ['alle', 'competitie', 'beker', 'oefenwedstrijd'].map(t => '<button type="button" class="seg-opt" aria-selected="' + (t === inzRankingType) + '" onclick="inzZetRankingType(\'' + t + '\')">' + (t === 'alle' ? 'Alle' : t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen') + '</button>').join('') + '</div>'
@@ -3024,6 +3110,12 @@ async function initAuthGateV2() {
 
 // Init
 initAuthGateV2();
+// Herlaadt Inzicht bij het oversteken van de 860px-grens (bv. venster resizen),
+// zodat je niet handmatig hoeft te navigeren om tussen tabbladen en dashboard
+// te wisselen. Alleen als het scherm al actief is — anders is er niets te doen.
+window.matchMedia('(min-width:860px)').addEventListener('change', () => {
+  if (document.getElementById('screen-inzicht').classList.contains('actief')) renderInzicht();
+});
 </script>
 </body>
 </html>

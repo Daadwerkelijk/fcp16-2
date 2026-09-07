@@ -34,6 +34,15 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
 .fo-slot.dragging{cursor:grabbing;z-index:50}
 .fo-slot.dragging .ppill{box-shadow:0 4px 14px rgba(0,0,0,.45)}
 .bg-fill{height:100%}
+/* Desktop (≥860px): tabbalk-onderin wordt zijbalk-links (zie <nav class="side">
+   hieronder + .side/.side-tab in ui-v2.css), en de schermkolom mag breder dan de
+   mobiele 480px — maar blijft één kolom; een echte meerkoloms dashboard-indeling
+   per scherm (zoals in de Inzicht-desktopmockup, 2026-09-07) is een latere stap. */
+@media (min-width:860px){
+  body{max-width:720px;margin-left:236px;margin-right:auto;padding-bottom:24px}
+  .tabbar{display:none!important}
+  .side{display:flex}
+}
 </style>
 </head>
 <body class="v2">
@@ -381,6 +390,20 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
     <button class="btn btn--ghost btn--block" style="margin-top:14px" onclick="closeGeschiedenisSheet()">Sluiten</button>
   </div></div>
 </div>
+
+<!-- Desktop-zijbalk (≥860px, zie media query onderaan de <style> hierboven) — zelfde
+     schermen/toonScherm()-aanroepen als de mobiele tabbalk, eigen id's (side-tab-*)
+     zodat beide onafhankelijk hun aria-current kunnen bijhouden. -->
+<nav class="side">
+  <div style="padding:0 12px 20px"><div style="font-size:17px;font-weight:700;letter-spacing:-.03em" id="side-teamnaam"></div></div>
+  <a class="side-tab" href="#" id="side-tab-vandaag" aria-current="page" onclick="toonScherm('vandaag');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l8-6.5 8 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/></svg>Vandaag</a>
+  <a class="side-tab" href="#" id="side-tab-agenda" onclick="toonScherm('agenda');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda</a>
+  <a class="side-tab" href="#" id="side-tab-team" onclick="toonScherm('team');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16.5 6.2A3.2 3.2 0 0 1 17 12.5M18 20c0-2.3-.9-4-2.4-5"/></svg>Team</a>
+  <a class="side-tab" href="#" id="side-tab-inzicht" onclick="toonScherm('inzicht');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V4M16 19v-7M22 19H2"/></svg>Inzicht</a>
+  <div style="margin-top:18px;padding-top:14px;box-shadow:inset 0 1px 0 var(--line)">
+    <a class="side-tab" href="#" onclick="toonScherm('instellingen');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Instellingen</a>
+  </div>
+</nav>
 
 <nav class="tabbar">
   <a class="tab" href="#" id="tab-vandaag" aria-current="page" onclick="toonScherm('vandaag');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l8-6.5 8 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/></svg>Vandaag</a>
@@ -2830,14 +2853,19 @@ function toonScherm(naam) {
   });
   ['vandaag','agenda','team','inzicht'].forEach(s => {
     const tab = document.getElementById('tab-' + s);
-    if (s === naam) tab.setAttribute('aria-current','page'); else tab.removeAttribute('aria-current');
+    const sideTab = document.getElementById('side-tab-' + s);
+    if (s === naam) { tab.setAttribute('aria-current','page'); sideTab.setAttribute('aria-current','page'); }
+    else { tab.removeAttribute('aria-current'); sideTab.removeAttribute('aria-current'); }
   });
   if (naam === 'agenda') renderAgenda();
   if (naam === 'team') renderTeam();
   if (naam === 'inzicht') renderInzicht();
   if (naam === 'live-publiek') renderLivePubliek();
   if (naam === 'instellingen') renderInstellingen();
-  document.querySelector('.tabbar').style.display = (naam === 'live-trainer' || naam === 'live-publiek' || naam === 'inlog') ? 'none' : 'flex';
+  const chromeVerbergen = (naam === 'live-trainer' || naam === 'live-publiek' || naam === 'inlog');
+  document.querySelector('.tabbar').style.display = chromeVerbergen ? 'none' : 'flex';
+  document.querySelector('.side').style.display = chromeVerbergen ? 'none' : '';
+  document.getElementById('side-teamnaam').textContent = teamNaamV2();
   window.scrollTo(0,0);
 }
 

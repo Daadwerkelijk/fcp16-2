@@ -673,21 +673,23 @@ function renderVandaag() {
     const d = new Date(eerste.isoDate);
     const datumTxt = DAG_VOL[d.getDay()] + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + (eerste.tijd ? ' · ' + eerste.tijd : '');
     const titelTxt = eerste.type === 'training' ? eerste.titel : 'vs ' + eerste.titel.replace(/^vs /, '');
-    html += '<div class="card card--accent">'
+    // Hele kaart klikbaar naar hetzelfde item als de knop — voelde eerst raar
+    // (alleen de knop deed iets, terwijl je de training ook gewoon wilt
+    // bekijken zonder meteen aanwezigheid te willen invullen). Knop blijft
+    // staan als duidelijke primaire actie, maar is nu geen enige ingang meer.
+    const actie = eerste.type === 'wedstrijd' ? "toonWedstrijd('" + eerste.wedId + "')" : "openTrainingSessie(" + eerste.wi + "," + eerste.si + ")";
+    const actieTxt = eerste.type === 'training' ? 'Afwezigheid invullen' : 'Wedstrijd bekijken';
+    html += '<div class="card card--accent" style="cursor:pointer" onclick="' + actie + '">'
       + '<div class="eyebrow" style="color:rgba(255,255,255,.5)">Eerstvolgend</div>'
       + '<div style="font-size:23px;font-weight:700;letter-spacing:-.03em;margin-top:6px">' + esc(titelTxt) + '</div>'
       + '<div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:2px">' + datumTxt + '</div>';
     const m = /(\d+)\/(\d+)/.exec(eerste.sub);
     if (m) {
       const pct = Math.round((+m[1] / +m[2]) * 100);
-      const missend = +m[2] - +m[1];
       html += '<div style="display:flex;align-items:center;gap:8px;margin:14px 0 0">'
         + '<div class="bar" style="flex:1;background:rgba(255,255,255,.15)"><div class="bar-fill" style="width:' + pct + '%;background:#fff"></div></div>'
         + '<div class="num" style="font-size:13px;font-weight:700">' + m[0] + '</div></div>';
-      if (missend > 0) html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:5px">' + missend + ' speler' + (missend === 1 ? '' : 's') + ' afwezig of nog niet gemeld</div>';
     }
-    const actie = eerste.type === 'wedstrijd' ? "toonWedstrijd('" + eerste.wedId + "')" : "openTrainingSessie(" + eerste.wi + "," + eerste.si + ")";
-    const actieTxt = eerste.type === 'training' ? 'Aanwezigheid invullen' : 'Wedstrijd bekijken';
     html += '<button class="btn btn--primary btn--block" style="margin-top:14px" onclick="' + actie + '">' + actieTxt + '</button></div>';
   } else {
     html += '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:28px 16px">Niets gepland — voeg iets toe via Agenda.</div>';

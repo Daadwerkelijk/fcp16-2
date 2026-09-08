@@ -2981,6 +2981,13 @@ async function renderInzichtDesktop() {
       + '<div style="grid-area:rechts">'
         + (metSkillData.length ? skillsVerdelingLijstHtml(skillsData.rijen) : '<div class="card"><div class="sec">Verdeling per vaardigheid</div><div style="font-size:13px;color:var(--ink3)">Nog geen speler- en trainerbeoordelingen om te vergelijken.</div></div>')
       + '</div>'
+    + '</div>'
+    // MOTM + Gemiddeld cijfer misten hier nog (gemeld 2026-09-08) — mobiel had
+    // dit al op het Ranking-tabblad, zelfde herbruikte kaarten, gefilterd op
+    // hetzelfde wedstrijdtype-filter hierboven.
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">'
+      + '<div class="card">' + motmKaartHtml(gespeeld, sp) + '</div>'
+      + '<div class="card">' + cijfersKaartHtml(gespeeld, sp) + '</div>'
     + '</div>';
 }
 function inzToggle(headerEl) {
@@ -3155,7 +3162,29 @@ let inzRankingFases = new Set();
 // 2026-09-08 — mobiel had dit al, desktop miste het nog, een echte
 // functionaliteitsregressie).
 function inzZetRankingType(t) { inzRankingType = t; inzRankingFases = new Set(); renderInzicht(); }
-function inzZetRankingSort(m) { inzRankingSort = m; renderInzRanking(); }
+// Herdispatcht via renderInzicht() zoals inzZetRankingType() al deed — zelfde
+// reden: moet ook op desktop werken, niet alleen op het mobiele tabblad.
+function inzZetRankingSort(m) { inzRankingSort = m; renderInzicht(); }
+// Man of the match + Gemiddeld cijfer — herbruikbaar door zowel renderInzRanking()
+// (mobiel/tabblad) als de desktop-dashboardcompositie. Misten daar nog (gemeld
+// 2026-09-08) — dezelfde databron/logica, geen aparte berekening.
+function motmKaartHtml(wed, sp) {
+  const motm = sp.map(p => ({ p, n: wed.filter(w => w.motm === p.id).length })).filter(x => x.n).sort((a, b) => b.n - a.n);
+  return '<div class="sec">Man of the match</div>' + (motm.length ? motm.map(x => '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px"><span>' + esc(x.p.naam) + '</span><span style="color:var(--ink3)">' + x.n + '× ⭐</span></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen MOTM toegekend.</div>');
+}
+function cijfersKaartHtml(wed, sp) {
+  const cijfers = sp.map(p => {
+    const vals = wed.map(w => (w.ratings || {})[p.id]).filter(v => v != null);
+    return { p, gem: vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null, n: vals.length };
+  }).filter(x => x.gem != null);
+  if (inzRankingSort === 'cijfer') cijfers.sort((a, b) => b.gem - a.gem); else cijfers.sort((a, b) => a.p.naam.localeCompare(b.p.naam));
+  return '<div class="sec" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span>Gemiddeld cijfer</span></div>'
+    + '<div class="seg" role="tablist" style="margin-bottom:10px">'
+    + '<button type="button" class="seg-opt" aria-selected="' + (inzRankingSort === 'alfa') + '" onclick="inzZetRankingSort(\'alfa\')">Alfabetisch</button>'
+    + '<button type="button" class="seg-opt" aria-selected="' + (inzRankingSort === 'cijfer') + '" onclick="inzZetRankingSort(\'cijfer\')">Hoogste cijfer</button>'
+    + '</div>'
+    + (cijfers.length ? cijfers.map((x, i) => '<div style="display:flex;align-items:center;gap:10px;padding:6px 0">' + (inzRankingSort === 'cijfer' ? '<span style="font-size:12px;font-weight:700;color:var(--ink3);min-width:16px">' + (i + 1) + '</span>' : '') + '<div style="flex:1;font-size:13.5px">' + esc(x.p.naam) + '</div><div class="bar" style="width:70px"><div class="bar-fill" style="width:' + (x.gem / 10 * 100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700;width:32px;text-align:right">' + x.gem.toFixed(1) + '</div></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen cijfers ingevuld.</div>');
+}
 function inzToggleRankingFase(f) {
   if (inzRankingFases.has(f)) inzRankingFases.delete(f); else inzRankingFases.add(f);
   renderInzRanking();
@@ -3198,12 +3227,6 @@ async function renderInzRanking() {
   const gelijk = wed.filter(w => w.score_eigen === w.score_tegen).length;
   const verloren = wed.filter(w => w.score_eigen < w.score_tegen).length;
   const saldo = wed.reduce((s, w) => s + (w.score_eigen || 0) - (w.score_tegen || 0), 0);
-  const motm = sp.map(p => ({ p, n: wed.filter(w => w.motm === p.id).length })).filter(x => x.n).sort((a, b) => b.n - a.n);
-  const cijfers = sp.map(p => {
-    const vals = wed.map(w => (w.ratings || {})[p.id]).filter(v => v != null);
-    return { p, gem: vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null, n: vals.length };
-  }).filter(x => x.gem != null);
-  if (inzRankingSort === 'cijfer') cijfers.sort((a, b) => b.gem - a.gem); else cijfers.sort((a, b) => a.p.naam.localeCompare(b.p.naam));
 
   const doelpuntenInhoud = await doelpuntenKaartHtml(wed);
   const doelpuntenHtml = doelpuntenInhoud ? '<div class="card" style="margin-top:8px">' + doelpuntenInhoud + '</div>' : '';
@@ -3218,13 +3241,8 @@ async function renderInzRanking() {
     + '</div>'
     + '<div class="card" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between"><div class="stat-l" style="margin:0">Doelsaldo</div><div class="stat-n num">' + (saldo > 0 ? '+' : '') + saldo + '</div></div>'
     + doelpuntenHtml
-    + '<div class="card" style="margin-top:10px"><div class="sec">Man of the match</div>' + (motm.length ? motm.map(x => '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px"><span>' + esc(x.p.naam) + '</span><span style="color:var(--ink3)">' + x.n + '× ⭐</span></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen MOTM toegekend.</div>') + '</div>'
-    + '<div class="card" style="margin-top:10px"><div class="sec" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span>Gemiddeld cijfer</span></div>'
-    + '<div class="seg" role="tablist" style="margin-bottom:10px">'
-    + '<button type="button" class="seg-opt" aria-selected="' + (inzRankingSort === 'alfa') + '" onclick="inzZetRankingSort(\'alfa\')">Alfabetisch</button>'
-    + '<button type="button" class="seg-opt" aria-selected="' + (inzRankingSort === 'cijfer') + '" onclick="inzZetRankingSort(\'cijfer\')">Hoogste cijfer</button>'
-    + '</div>'
-    + (cijfers.length ? cijfers.map((x, i) => '<div style="display:flex;align-items:center;gap:10px;padding:6px 0">' + (inzRankingSort === 'cijfer' ? '<span style="font-size:12px;font-weight:700;color:var(--ink3);min-width:16px">' + (i + 1) + '</span>' : '') + '<div style="flex:1;font-size:13.5px">' + esc(x.p.naam) + '</div><div class="bar" style="width:70px"><div class="bar-fill" style="width:' + (x.gem / 10 * 100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700;width:32px;text-align:right">' + x.gem.toFixed(1) + '</div></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen cijfers ingevuld.</div>') + '</div>';
+    + '<div class="card" style="margin-top:10px">' + motmKaartHtml(wed, sp) + '</div>'
+    + '<div class="card" style="margin-top:10px">' + cijfersKaartHtml(wed, sp) + '</div>';
 }
 
 // ─── Inzicht → Speelminuten — nu de echte berekenSpeeltijd() (app.js) op

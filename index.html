@@ -39,7 +39,11 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
    mobiele 480px — maar blijft één kolom; een echte meerkoloms dashboard-indeling
    per scherm (zoals in de Inzicht-desktopmockup, 2026-09-07) is een latere stap. */
 @media (min-width:860px){
-  body{max-width:720px;margin-left:236px;margin-right:auto;padding-bottom:24px}
+  /* 720px was nog de mobiele-schermbreedte-erfenis van vóór de zijbalk — de
+     "brede rechterkolom" op Inzicht kreeg daardoor in de praktijk maar ~340px
+     i.p.v. het grootste deel van het scherm (gemeld 2026-09-08). 1400px geeft
+     écht ruimte, blijft ruim binnen een laptop/desktopscherm. */
+  body{max-width:1400px;margin-left:236px;margin-right:auto;padding-bottom:24px}
   .tabbar{display:none!important}
   .side{display:flex}
 }
@@ -682,7 +686,7 @@ function renderVandaag() {
     // bekijken zonder meteen aanwezigheid te willen invullen). Knop blijft
     // staan als duidelijke primaire actie, maar is nu geen enige ingang meer.
     const actie = eerste.type === 'wedstrijd' ? "toonWedstrijd('" + eerste.wedId + "')" : "openTrainingSessie(" + eerste.wi + "," + eerste.si + ")";
-    const actieTxt = eerste.type === 'training' ? 'Afwezigheid invullen' : 'Wedstrijd bekijken';
+    const actieTxt = eerste.type === 'training' ? 'Training bekijken' : 'Wedstrijd bekijken';
     html += '<div class="card card--accent" style="cursor:pointer" onclick="' + actie + '">'
       + '<div class="eyebrow" style="color:rgba(255,255,255,.5)">Eerstvolgend</div>'
       + '<div style="font-size:23px;font-weight:700;letter-spacing:-.03em;margin-top:6px">' + esc(titelTxt) + '</div>'
@@ -1566,13 +1570,19 @@ async function renderVergelijkingV2(spelerId) {
   if (!sLaatste && !tLaatste) return '<div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Nog geen beoordelingen.</div>';
   const sSkills = (sLaatste && sLaatste.data && sLaatste.data.skills) || {};
   const tSkills = (tLaatste && tLaatste.skills) || {};
-  let html = '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:10px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>';
+  // Zelfde schaalstreepjes/niveaunamen als Inzicht → Skills (2026-09-07) — ontbraken
+  // hier nog, gemeld 2026-09-08.
+  const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
+  let html = '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:6px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>'
+    + '<div style="display:flex;gap:10px;margin-bottom:8px"><div style="width:112px;flex-shrink:0"></div>'
+    + '<div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:9px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div></div>';
   Object.entries(FORM_SKILLS_V2).forEach(([cat, skills]) => {
     html += '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">' + cat + '</div>';
     skills.forEach(sk => {
       const sv = sSkills[sk] ? SKILL_NIVEAU_PCT_V2[sSkills[sk]] : null;
       const tv = tSkills[sk] ? SKILL_NIVEAU_PCT_V2[tSkills[sk]] : null;
       html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:112px;font-size:12.5px;flex-shrink:0">' + sk + '</div><div class="trk" style="flex:1"><div class="trk-line"></div>'
+        + NIVEAU_TICKS.map(([, pct]) => '<div class="trk-tick" style="left:' + pct + '%"></div>').join('')
         + (sv != null ? '<div class="trk-dot src-speler" style="left:' + sv + '%;background:currentColor"></div>' : '')
         + (tv != null ? '<div class="trk-dot src-trainer" style="left:' + tv + '%;background:currentColor"></div>' : '')
         + '</div></div>';
@@ -1588,7 +1598,8 @@ function openSpelerBewerken(id) {
   document.getElementById('sb-content').innerHTML =
       '<div class="field"><span class="label">Naam</span><input class="input" id="sb-naam" maxlength="30" value="' + (p ? esc(p.naam) : '') + '"></div>'
     + (p ? (
-        '<div class="field"><span class="label">Omschrijving</span><input class="input" id="sb-omschrijving" value="' + esc(p.omschrijving||'') + '"></div>'
+        '<div id="sb-contact"></div>'
+      + '<div class="field"><span class="label">Omschrijving</span><input class="input" id="sb-omschrijving" value="' + esc(p.omschrijving||'') + '"></div>'
       + '<div class="field"><span class="label">Posities</span><div style="display:flex;flex-wrap:wrap;gap:7px" id="sb-posities">' + ALL_POS_OPTS_V2.map(pos => '<button type="button" class="chip" aria-pressed="' + posities.includes(pos) + '" onclick="this.setAttribute(\'aria-pressed\', this.getAttribute(\'aria-pressed\')!==\'true\')">' + pos + '</button>').join('') + '</div></div>'
       + '<div class="field"><span class="label">Opmerkingen</span><textarea class="input" id="sb-opmerkingen" style="min-height:70px;resize:vertical">' + esc(p.opmerkingen||'') + '</textarea></div>'
       + '<div class="field"><span class="label">Ontwikkeling</span><textarea class="input" id="sb-ontwikkeling" style="min-height:70px;resize:vertical">' + esc(p.ontwikkeling||'') + '</textarea></div>'
@@ -1604,10 +1615,36 @@ function openSpelerBewerken(id) {
     + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="setTeamTab(\'spelers\');toonScherm(\'team\')">Annuleren</button><button class="btn btn--primary" onclick="slaSpelerOp()">Opslaan</button></div>'
     + (p ? '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderSpeler(this)">Speler verwijderen</button></div>' : '');
   toonScherm('speler-bewerk');
-  if (p) renderVergelijkingV2(p.id).then(html => {
-    const el = document.getElementById('sb-vergelijking');
-    if (el) el.innerHTML = html;
-  });
+  if (p) {
+    renderVergelijkingV2(p.id).then(html => {
+      const el = document.getElementById('sb-vergelijking');
+      if (el) el.innerHTML = html;
+    });
+    renderSpelerContactV2(p.id).then(html => {
+      const el = document.getElementById('sb-contact');
+      if (el) el.innerHTML = html;
+    });
+  }
+}
+// Contactgegevens (mobiel/geboortedatum) — al langer door speler/ouder ingevuld via
+// het spelerformulier (speler_beoordelingen.data), maar nergens getoond in V2. Was
+// een bekend, eerder gesignaleerd gat (zie memory), hersteld 2026-09-08. Alleen
+// tonen als er echt iets is — geen lege rijen.
+async function renderSpelerContactV2(spelerId) {
+  const hist = await haalSpelerBeoordelingenGeschiedenis(spelerId);
+  const laatste = hist.length ? hist[hist.length - 1] : null;
+  const d = laatste && laatste.data;
+  if (!d || (!d.mobiel && !d.geboortedatum)) return '';
+  const rijen = [];
+  if (d.geboortedatum) {
+    const gd = new Date(d.geboortedatum);
+    if (!isNaN(gd)) rijen.push(['Geboortedatum', gd.toLocaleDateString('nl-NL')]);
+  }
+  if (d.mobiel) rijen.push(['Mobiel', esc(d.mobiel)]);
+  if (!rijen.length) return '';
+  return '<div class="card card--flat" style="margin-bottom:14px">'
+    + rijen.map(([label, val]) => '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13.5px"><span style="color:var(--ink3)">' + label + '</span><span>' + val + '</span></div>').join('')
+    + '</div>';
 }
 async function slaSpelerOp() {
   const naam = document.getElementById('sb-naam').value.trim().slice(0, 30);
@@ -2542,29 +2579,24 @@ function renderInstellingen() {
     + '</div>'
     + '<div class="divide"></div>'
 
-    + '<div class="sec">Team</div>'
-    + '<div class="field"><span class="label">Teamnaam</span><input class="input" id="inst-naam" value="' + esc(cfg.naam||'') + '" placeholder="Teamnaam"></div>'
-    + '<div class="field"><span class="label">Ondertitel startpagina</span><input class="input" id="inst-subtitel" value="' + esc(cfg.subtitel||'') + '" placeholder="Bijv. seizoen of leeftijdscategorie"></div>'
-    + '<div class="field"><span class="label">Trainer(s)</span><input class="input" id="inst-trainer" value="' + esc(cfg.trainer||'') + '" placeholder="Namen trainer(s)"></div>'
-    + '<button class="btn btn--primary btn--block" onclick="instOpslaanTeam(this)">Opslaan</button>'
-    + '<div class="divide"></div>'
-
+    // Herordend + opgeschoond op verzoek gebruiker (2026-09-08): Spelvorm eerst,
+    // "Ondertitel startpagina" → "Seizoen", het losse "Trainer(s)"-tekstveld
+    // verwijderd (bleek nergens gebruikt te worden, ook niet in de klassieke app
+    // — een dode rest van vóór de echte trainersaccounts), Beheer vóór
+    // Gebruikersbeheer (hernoemd van "Trainers"), "Gebruiker uitloggen" verplaatst
+    // naar de eigen rij in Gebruikersbeheer i.p.v. losse knop onder Supabase, en
+    // Supabase-koppeling helemaal onderaan.
     + '<div class="sec">Spelvorm</div>'
     + '<div class="field" style="margin-bottom:6px"><select class="input" onchange="saveSpelvorm(this.value)">'
     + Object.entries(SPELVORM_NAMEN_V2).map(([k, naam]) => '<option value="' + k + '"' + (k === spelvorm ? ' selected' : '') + '>' + naam + '</option>').join('')
     + '</select></div>'
     + '<div style="font-size:11.5px;color:var(--ink3);margin-bottom:14px">Bepaalt welke formaties beschikbaar zijn bij Opstelling.</div>'
 
-    + '<div class="sec">Supabase koppeling</div>'
-    + '<div class="field"><span class="label">Project URL</span><input class="input" id="inst-sb-url" value="' + esc(sbUrl) + '" placeholder="https://xxxx.supabase.co"></div>'
-    + '<div class="field"><span class="label">Anon key</span><input class="input" id="inst-sb-key" value="' + esc(sbKey) + '" placeholder="eyJ..."></div>'
-    + '<div style="font-size:11.5px;color:' + (sbUrl ? 'var(--win)' : 'var(--ink3)') + ';margin-bottom:10px">' + (sbUrl ? '✓ Gekoppeld aan ' + esc(sbUrl.replace('https://','').split('.')[0]) : 'Niet gekoppeld') + ' — test met Health check hieronder.</div>'
-    + '<button class="btn btn--secondary btn--block" onclick="instOpslaanSupabase(this)">Opslaan</button>'
-    + (sbUrl ? '<button class="btn btn--danger btn--block" style="margin-top:8px" onclick="instVerwijderSupabase(this)">Verbinding verwijderen</button>' : '')
-    + '<button class="btn btn--secondary btn--block" style="margin-top:8px" onclick="signOut()">Gebruiker uitloggen</button>'
+    + '<div class="sec">Team</div>'
+    + '<div class="field"><span class="label">Teamnaam</span><input class="input" id="inst-naam" value="' + esc(cfg.naam||'') + '" placeholder="Teamnaam"></div>'
+    + '<div class="field"><span class="label">Seizoen</span><input class="input" id="inst-subtitel" value="' + esc(cfg.subtitel||'') + '" placeholder="Bijv. 2026/2027"></div>'
+    + '<button class="btn btn--primary btn--block" onclick="instOpslaanTeam(this)">Opslaan</button>'
     + '<div class="divide"></div>'
-
-    + '<div id="inst-trainers"></div>'
 
     + '<div class="sec">Beheer</div>'
     + '<div class="row" style="border-radius:var(--r-card);box-shadow:var(--sh1)" onclick="openFormatiesSheet()"><div class="row-body"><div class="row-title">Formaties</div><div class="row-sub">' + Object.keys(alleFormatiesV2()).length + ' systemen</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>'
@@ -2573,12 +2605,22 @@ function renderInstellingen() {
     + '<div class="row" style="border-radius:var(--r-card);box-shadow:var(--sh1);margin-top:8px" onclick="openWisselRedenSheet()"><div class="row-body"><div class="row-title">Wisselredenen</div><div class="row-sub">' + wisselRedenen().length + ' redenen</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>'
     + '<div class="divide"></div>'
 
+    + '<div id="inst-trainers"></div>'
+
     + '<div class="sec">App</div>'
     + '<div class="row" style="border-radius:var(--r-card);box-shadow:var(--sh1)" onclick="location.href=\'check.html\'"><div class="row-body"><div class="row-title">Health check</div><div class="row-sub">Controleer verbinding &amp; data</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>'
     // Handleiding-rij bewust verborgen (niet verwijderd) op verzoek van de gebruiker
     // (2026-09-03) — verwijder de "// " hieronder om 'm weer te tonen.
     // + '<div class="row" style="border-radius:var(--r-card);box-shadow:var(--sh1);margin-top:8px" onclick="location.href=\'handleiding.html\'"><div class="row-body"><div class="row-title">Handleiding</div><div class="row-sub">Stap-voor-stap instructies</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>'
-    + '<button class="btn btn--secondary btn--block" style="margin-top:8px" onclick="instWisCache(this)">🗑️ Cache wissen en vernieuwen</button>';
+    + '<button class="btn btn--secondary btn--block" style="margin-top:8px" onclick="instWisCache(this)">🗑️ Cache wissen en vernieuwen</button>'
+    + '<div class="divide"></div>'
+
+    + '<div class="sec">Supabase koppeling</div>'
+    + '<div class="field"><span class="label">Project URL</span><input class="input" id="inst-sb-url" value="' + esc(sbUrl) + '" placeholder="https://xxxx.supabase.co"></div>'
+    + '<div class="field"><span class="label">Anon key</span><input class="input" id="inst-sb-key" value="' + esc(sbKey) + '" placeholder="eyJ..."></div>'
+    + '<div style="font-size:11.5px;color:' + (sbUrl ? 'var(--win)' : 'var(--ink3)') + ';margin-bottom:10px">' + (sbUrl ? '✓ Gekoppeld aan ' + esc(sbUrl.replace('https://','').split('.')[0]) : 'Niet gekoppeld') + ' — test met Health check hieronder.</div>'
+    + '<button class="btn btn--secondary btn--block" onclick="instOpslaanSupabase(this)">Opslaan</button>'
+    + (sbUrl ? '<button class="btn btn--danger btn--block" style="margin-top:8px" onclick="instVerwijderSupabase(this)">Verbinding verwijderen</button>' : '');
   renderTrainersV2();
 }
 // ─── Trainers (invite-only) — apart, async gerenderd in een placeholder-div
@@ -2594,12 +2636,18 @@ async function renderTrainersV2() {
   const magUitnodigen = await magTrainersBeheren();
   const mij = await haalHuidigeGebruiker();
   const STATUS_LABEL = { actief:'Actief', uitgenodigd:'Uitgenodigd', ingetrokken:'Ingetrokken' };
-  cont.innerHTML = '<div class="sec">Trainers</div>'
-    + lijst.map(t => '<div class="row" style="border-radius:var(--r-card);box-shadow:var(--sh1);margin-bottom:8px">'
-        + '<div class="row-body"><div class="row-title">' + esc(t.naam) + (mij && t.user_id === mij.id ? ' (jij)' : '') + '</div>'
-        + '<div class="row-sub">' + esc(t.email) + ' · ' + (STATUS_LABEL[t.status] || t.status) + '</div></div>'
-        + (magUitnodigen && t.status !== 'ingetrokken' && !(mij && t.user_id === mij.id) ? '<button class="btn btn--danger btn--sm" onclick="intrekTrainerV2(this,\'' + t.user_id + '\')">Intrekken</button>' : '')
-        + '</div>').join('')
+  cont.innerHTML = '<div class="sec">Gebruikersbeheer</div>'
+    + lijst.map(t => {
+        const isJij = mij && t.user_id === mij.id;
+        return '<div class="row" style="border-radius:var(--r-card);box-shadow:var(--sh1);margin-bottom:8px">'
+          + '<div class="row-body"><div class="row-title">' + esc(t.naam) + (isJij ? ' (jij)' : '') + '</div>'
+          + '<div class="row-sub">' + esc(t.email) + ' · ' + (STATUS_LABEL[t.status] || t.status) + '</div></div>'
+          // Eigen rij toont "Uitloggen" i.p.v. "Intrekken" — was een losse knop
+          // onder Supabase, nu op dezelfde plek als bij ieder ander (2026-09-08).
+          + (isJij ? '<button class="btn btn--secondary btn--sm" onclick="signOut()">Uitloggen</button>'
+              : (magUitnodigen && t.status !== 'ingetrokken' ? '<button class="btn btn--danger btn--sm" onclick="intrekTrainerV2(this,\'' + t.user_id + '\')">Intrekken</button>' : ''))
+          + '</div>';
+      }).join('')
     + (magUitnodigen
         ? '<div class="field"><span class="label">Naam collega</span><input class="input" id="inst-tr-naam"></div>'
           + '<div class="field"><span class="label">E-mailadres</span><input class="input" id="inst-tr-email" type="email"></div>'
@@ -2627,10 +2675,14 @@ async function intrekTrainerV2(btn, userId) {
   renderTrainersV2();
 }
 function instOpslaanTeam(btn) {
+  // Trainer(s)-veld bewust verwijderd uit dit formulier (2026-09-08, akkoord
+  // gebruiker) — bleek nergens gebruikt te worden, dubbelop met de echte
+  // trainersaccounts. Bestaande waarde blijft ongemoeid staan i.p.v. hem hier
+  // stil te wissen (die kolom wordt gedeeld met de klassieke instellingen.html).
   const cfg = {
+    ...loadTeamInstellingen(),
     naam: document.getElementById('inst-naam').value.trim(),
     subtitel: document.getElementById('inst-subtitel').value.trim(),
-    trainer: document.getElementById('inst-trainer').value.trim(),
   };
   saveTeamInstellingen(cfg);
   const orig = btn.textContent;
@@ -2743,7 +2795,12 @@ async function speeltijdAandachtHtml() {
 async function renderInzichtDesktop() {
   document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
   const sp = spelers();
-  const gespeeld = wedstrijden().filter(w => w.gespeeld);
+  // Zelfde wedstrijdtype-filter (alle/competitie/beker/oefen) als het mobiele
+  // Ranking-tabblad — miste hier nog, een echte functionaliteitsregressie
+  // t.o.v. mobiel (gemeld 2026-09-08). Filtert Punten/Doelsaldo/Vorm/Doelpunten;
+  // Opkomst/Spelers/Afwezigheid/Speeltijd/Skills blijven ongefilterd, zoals ook
+  // op mobiel (die tabbladen hebben zelf geen type-filter).
+  const gespeeld = wedstrijden().filter(w => w.gespeeld && (inzRankingType === 'alle' || (w.wed_type || 'oefenwedstrijd') === inzRankingType));
   const wins = gespeeld.filter(w => w.score_eigen > w.score_tegen).length;
   const gelijk = gespeeld.filter(w => w.score_eigen === w.score_tegen).length;
   const verloren = gespeeld.filter(w => w.score_eigen < w.score_tegen).length;
@@ -2783,6 +2840,7 @@ async function renderInzichtDesktop() {
       + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + (opkomstPct != null ? opkomstPct + '%' : '–') + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Opkomst training</div></div>'
       + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + sp.length + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Spelers</div></div>'
       + '</div></div>'
+      + '<div class="seg" role="tablist" style="margin-top:14px;max-width:420px">' + ['alle', 'competitie', 'beker', 'oefenwedstrijd'].map(t => '<button type="button" class="seg-opt" aria-selected="' + (t === inzRankingType) + '" onclick="inzZetRankingType(\'' + t + '\')">' + (t === 'alle' ? 'Alle' : t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen') + '</button>').join('') + '</div>'
       // Smalle datakolom links (vast, 300px) / brede vaardighedenkolom rechts —
       // 1-op-1 op de schets die de gebruiker aanleverde (2026-09-07).
       + '<div style="display:grid;grid-template-columns:300px 1fr;grid-template-rows:auto auto;gap:14px;align-items:start;margin-top:14px;grid-template-areas:\'links1 rechts\' \'links2 rechts\'">'
@@ -2975,7 +3033,12 @@ async function renderInzSkills() {
 let inzRankingType = 'alle';
 let inzRankingSort = 'alfa';
 let inzRankingFases = new Set();
-function inzZetRankingType(t) { inzRankingType = t; inzRankingFases = new Set(); renderInzRanking(); }
+// Herdispatcht via renderInzicht() i.p.v. rechtstreeks renderInzRanking() aan te
+// roepen — zo werkt dit filter correct vanaf zowel het mobiele Ranking-tabblad
+// als de desktop-dashboardcompositie (die zijn eigen segmented control kreeg,
+// 2026-09-08 — mobiel had dit al, desktop miste het nog, een echte
+// functionaliteitsregressie).
+function inzZetRankingType(t) { inzRankingType = t; inzRankingFases = new Set(); renderInzicht(); }
 function inzZetRankingSort(m) { inzRankingSort = m; renderInzRanking(); }
 function inzToggleRankingFase(f) {
   if (inzRankingFases.has(f)) inzRankingFases.delete(f); else inzRankingFases.add(f);

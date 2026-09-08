@@ -399,6 +399,20 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   </div></div>
 </div>
 
+<!-- ═══ SHEET: afwezigheidsperiode toevoegen (Speler bewerken) ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-periode-nieuw" onclick="if(event.target===this)closePeriodeSheet()">
+  <div class="sheet-wrap"><div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">Afwezigheidsperiode toevoegen</div>
+    <div class="sheet-sub">Trainingen en wedstrijden in deze periode worden automatisch op afwezig gezet.</div>
+    <div class="field"><span class="label">Van</span><input class="input" id="ap-van" type="date"></div>
+    <div class="field"><span class="label">Tot en met</span><input class="input" id="ap-tot" type="date"></div>
+    <div class="field"><span class="label">Reden</span><select class="input" id="ap-reden"></select></div>
+    <div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="closePeriodeSheet()">Annuleren</button><button class="btn btn--primary" style="flex:1" onclick="slaPeriodeOp()">Toevoegen</button></div>
+    <div id="ap-fout" style="font-size:12.5px;color:var(--loss);margin-top:8px;min-height:16px"></div>
+  </div></div>
+</div>
+
 <!-- ═══ SHEET: klik-door per vaardigheid (Inzicht-desktopdashboard) — wie
      scoorde welk niveau, gegroepeerd i.p.v. alfabetisch. Zie mockup,
      afgestemd met gebruiker 2026-09-07. ═══ -->
@@ -810,9 +824,36 @@ function renderAgenda() {
 }
 
 // ─── Wedstrijd — kijken ───
-function toonWedstrijd(id) {
+// Zelfde principe als checkPeriodeAfwezigTraining, maar voor wedstrijden — die
+// hebben hun eigen afwezig-array op de wedstrijd zelf i.p.v. de gedeelde
+// aanwezigheids-tabel. (a && a.pid ? a.pid : a) volgt dezelfde defensieve
+// omgang met het oude bare-pid-formaat als de rest van deze functies elders.
+async function checkPeriodeAfwezigWedstrijd(w) {
+  if (typeof supabaseReady === 'undefined' || !supabaseReady || !w.isoDate) return;
+  const periodes = await haalAlleAfwezigheidsperiodes();
+  if (!periodes.length) return;
+  const afwezig = w.afwezig || [];
+  const bekend = new Set(afwezig.map(a => (a && a.pid) ? a.pid : a));
+  let gewijzigd = false;
+  spelers().forEach(p => {
+    if (bekend.has(p.id)) return;
+    const match = periodes.find(pd => pd.speler_id === p.id && w.isoDate >= pd.van && w.isoDate <= pd.tot);
+    if (match) { afwezig.push({ pid: p.id, reden: match.reden || 'Vakantie' }); gewijzigd = true; }
+  });
+  if (!gewijzigd) return;
+  w.afwezig = afwezig;
+  const lijst = wedstrijden();
+  const idx = lijst.findIndex(x => x.id === w.id);
+  if (idx > -1) { lijst[idx] = w; localStorage.setItem('fcp_wed', JSON.stringify(lijst)); }
+  await updateWedstrijd(w.id, { afwezig: JSON.stringify(afwezig) });
+}
+async function toonWedstrijd(id) {
   const w = wedstrijden().find(x => x.id === id);
   if (!w) return;
+  // Zelfde live check als bij trainingen (checkPeriodeAfwezigTraining) maar dan
+  // voor de wedstrijd-eigen afwezig-lijst — muteert w.afwezig vóór de rest van
+  // deze functie 'm leest, dus geen aparte herrender nodig.
+  await checkPeriodeAfwezigWedstrijd(w);
   const sp = spelers();
   const afw = (w.afwezig || []).length;
   const aanwTal = sp.length - afw;
@@ -1604,6 +1645,10 @@ function openSpelerBewerken(id) {
       + '<div class="field"><span class="label">Opmerkingen</span><textarea class="input" id="sb-opmerkingen" style="min-height:70px;resize:vertical">' + esc(p.opmerkingen||'') + '</textarea></div>'
       + '<div class="field"><span class="label">Ontwikkeling</span><textarea class="input" id="sb-ontwikkeling" style="min-height:70px;resize:vertical">' + esc(p.ontwikkeling||'') + '</textarea></div>'
       + '<div class="divide"></div>'
+      + '<div class="sec">Afwezigheidsperiodes</div>'
+      + '<div id="sb-periodes" style="margin-bottom:10px">Laden…</div>'
+      + '<button class="btn btn--ghost btn--sm" onclick="openPeriodeSheet(\'' + p.id + '\')">+ Periode toevoegen</button>'
+      + '<div class="divide"></div>'
       + '<div class="sec">Beoordeling — speler vs. trainer</div>'
       + '<div id="sb-vergelijking" style="font-size:13px;color:var(--ink3);margin-bottom:14px">Laden…</div>'
       + '<div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="openGeschiedenisSheet(\'' + p.id + '\')">Geschiedenis</button><button class="btn btn--primary" style="flex:1" onclick="openTrainerBeoordelingSheet(\'' + p.id + '\')">Beoordelen</button></div>'
@@ -1624,7 +1669,48 @@ function openSpelerBewerken(id) {
       const el = document.getElementById('sb-contact');
       if (el) el.innerHTML = html;
     });
+    renderSpelerPeriodesV2(p.id);
   }
+}
+// Afwezigheidsperiodes — door de trainer zelf ingevoerd (niet via het
+// spelerformulier), meerdere per speler. Zie checkPeriodeAfwezigTraining/
+// -Wedstrijd voor waar dit automatisch wordt toegepast.
+async function renderSpelerPeriodesV2(spelerId) {
+  const el = document.getElementById('sb-periodes');
+  if (!el) return;
+  const periodes = await haalAfwezigheidsperiodes(spelerId);
+  const fmt = iso => { const d = new Date(iso); return d.getDate() + ' ' + MAAND_KORT[d.getMonth()]; };
+  el.innerHTML = periodes.length
+    ? periodes.map(pd => '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px"><span>' + fmt(pd.van) + ' – ' + fmt(pd.tot) + (pd.reden ? ' · ' + esc(pd.reden) : '') + '</span><button class="btn btn--ghost btn--sm" style="padding:0 8px" onclick="verwijderPeriodeV2(\'' + pd.id + '\',\'' + spelerId + '\')" aria-label="Verwijderen">✕</button></div>').join('')
+    : '<div style="font-size:12.5px;color:var(--ink3)">Geen periodes geregistreerd.</div>';
+}
+let periodeSpelerId = null;
+function openPeriodeSheet(spelerId) {
+  periodeSpelerId = spelerId;
+  document.getElementById('ap-van').value = '';
+  document.getElementById('ap-tot').value = '';
+  const redenen = absRedenen();
+  document.getElementById('ap-reden').innerHTML = redenen.map(r => '<option' + (r === 'Vakantie' ? ' selected' : '') + '>' + esc(r) + '</option>').join('');
+  document.getElementById('ap-fout').textContent = '';
+  document.getElementById('sheet-periode-nieuw').classList.remove('verborgen');
+}
+function closePeriodeSheet() { document.getElementById('sheet-periode-nieuw').classList.add('verborgen'); }
+async function slaPeriodeOp() {
+  const van = document.getElementById('ap-van').value;
+  const tot = document.getElementById('ap-tot').value;
+  const reden = document.getElementById('ap-reden').value;
+  const foutEl = document.getElementById('ap-fout');
+  if (!van || !tot) { foutEl.textContent = 'Vul beide data in.'; return; }
+  if (tot < van) { foutEl.textContent = '"Tot en met" ligt vóór "Van".'; return; }
+  const id = await voegAfwezigheidsperiodeToe(periodeSpelerId, van, tot, reden);
+  if (!id) { foutEl.textContent = 'Opslaan mislukt.'; return; }
+  closePeriodeSheet();
+  renderSpelerPeriodesV2(periodeSpelerId);
+}
+async function verwijderPeriodeV2(id, spelerId) {
+  const res = await verwijderAfwezigheidsperiode(id);
+  if (res && res._error) { showToast('⚠️ Verwijderen mislukt: ' + (res.message || res.status)); return; }
+  renderSpelerPeriodesV2(spelerId);
 }
 // Contactgegevens (mobiel/geboortedatum) — al langer door speler/ouder ingevuld via
 // het spelerformulier (speler_beoordelingen.data), maar nergens getoond in V2. Was
@@ -1838,7 +1924,28 @@ function renderGsTijdlijn() {
 // prototype niet heeft. ───
 function nkVan(wi, si) { return 'cw' + wi + '_' + si; }
 let huidigTrainingWi = null, huidigTrainingSi = null;
-function openTrainingSessie(wi, si) {
+// Vult afwezigheidsperiodes (app.js) automatisch in de gedeelde aanwezigheids-
+// data in, maar alleen voor spelers waar nog HELEMAAL niets bekend is voor
+// deze training — een bestaande melding (afwezig óf expliciet aanwezig) wint
+// altijd, ongeacht wat een periode zegt. Schrijft net als slaAfwezigOp() de
+// volledige rijenset voor deze training-key opnieuw weg.
+async function checkPeriodeAfwezigTraining(nk, isoDate) {
+  if (typeof supabaseReady === 'undefined' || !supabaseReady) return;
+  const periodes = await haalAlleAfwezigheidsperiodes();
+  if (!periodes.length) return;
+  const aanw = aanwAlles();
+  aanw[nk] = aanw[nk] || {};
+  let gewijzigd = false;
+  spelers().forEach(p => {
+    if (aanw[nk][p.id] !== undefined) return;
+    const match = periodes.find(pd => pd.speler_id === p.id && isoDate >= pd.van && isoDate <= pd.tot);
+    if (match) { aanw[nk][p.id] = { afwezig: true, reden: match.reden || 'Vakantie' }; gewijzigd = true; }
+  });
+  if (!gewijzigd) return;
+  localStorage.setItem('fcp_aanw', JSON.stringify(aanw));
+  await saveAanwezigheidRemote(nk, spelers(), aanw[nk]);
+}
+async function openTrainingSessie(wi, si) {
   // wi/si zijn array-indexen, gebakken in de Agenda-rij op rendermoment. Als
   // een training/week ondertussen elders verwijderd is, kan die index niet
   // meer kloppen — val dan terug op Agenda i.p.v. te crashen op een
@@ -1846,6 +1953,12 @@ function openTrainingSessie(wi, si) {
   const weken = customWeken();
   if (!weken[wi] || !weken[wi].sessies || !weken[wi].sessies[si]) { toonScherm('agenda'); return; }
   huidigTrainingWi = wi; huidigTrainingSi = si;
+  // Vult afwezigheidsperiodes automatisch in vóór het eerste tonen — werkt
+  // daardoor ook voor trainingen die pas ná de periode-registratie zijn
+  // aangemaakt (geen eenmalige actie op registratiemoment, maar een live
+  // check bij elke keer openen). Zie afwezigheidsperiodes in app.js.
+  const wk = weken[wi], s = wk.sessies[si];
+  await checkPeriodeAfwezigTraining(nkVan(wi, si), isoVan(sessieDatum(wk.isoDate, s, si)));
   renderTrainingSessie();
   toonScherm('training');
 }

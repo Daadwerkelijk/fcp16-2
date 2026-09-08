@@ -301,6 +301,30 @@ async function haalWisselsVoorWedstrijd(wedstrijdId) {
   const res = await sbFetch('wissels?select=*&wedstrijd_id=eq.' + wedstrijdId + '&order=wedstrijd_minuut.asc,created_at.asc');
   return res && !res._error ? res : [];
 }
+
+// ─── Datalaag: Afwezigheidsperiodes — door de trainer zelf ingevoerd op het
+// spelerscherm (niet via het spelerformulier, dat blijft zijn eigen, aparte
+// enkelvoudige vakantieveld houden — bewust niet samengevoegd, zie gebruiker
+// 2026-09-08). Meerdere periodes per speler, worden live gecheckt bij het
+// openen van een training/wedstrijd (zie checkPeriodeAfwezigTraining/Wedstrijd
+// in index.html) i.p.v. eenmalig weggeschreven — werkt daardoor ook met
+// terugwerkende kracht voor items die pas ná de registratie zijn aangemaakt.
+async function haalAfwezigheidsperiodes(spelerId) {
+  const res = await sbFetch('afwezigheidsperiodes?select=*&speler_id=eq.' + spelerId + '&order=van.asc');
+  return res && !res._error ? res : [];
+}
+async function haalAlleAfwezigheidsperiodes() {
+  const res = await sbFetch('afwezigheidsperiodes?select=*&order=van.asc');
+  return res && !res._error ? res : [];
+}
+async function voegAfwezigheidsperiodeToe(spelerId, van, tot, reden) {
+  const id = genId();
+  const res = await sbWrite('afwezigheidsperiodes', 'POST', { id, speler_id: spelerId, van, tot, reden: reden || '' });
+  return (res && res._error) ? null : id;
+}
+async function verwijderAfwezigheidsperiode(id) {
+  return await sbWrite('afwezigheidsperiodes?id=eq.' + id, 'DELETE');
+}
 async function haalAlleWissels() {
   const res = await sbFetch('wissels?select=*&order=wedstrijd_minuut.asc,created_at.asc');
   return res && !res._error ? res : [];

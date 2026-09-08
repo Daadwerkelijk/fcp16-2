@@ -2870,12 +2870,15 @@ function afwezigheidAandachtHtml() {
     });
   });
   const naamVan = id => (sp.find(p => p.id === id) || {}).naam || '?';
-  const top = Object.entries(perSpeler)
+  // Volledige lijst i.p.v. top 4 — dit is op desktop de enige plek om afwezigheid
+  // te zien (geen apart "Afwezig"-tabblad meer zoals op mobiel), dus een
+  // afgekapte lijst liet het totaal onvindbaar. Gemeld 2026-09-08.
+  const alle = Object.entries(perSpeler)
     .map(([id, x]) => ({ naam: naamVan(id), n: x.n, redenen: [...x.redenen].join(', ') }))
-    .sort((a, b) => b.n - a.n).slice(0, 4);
-  return '<div class="sec">Afwezigheid — aandachtspunten</div>'
-    + (top.length
-        ? '<div style="display:flex;flex-direction:column;gap:9px">' + top.map(x => '<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px"><span style="font-weight:600;flex-shrink:0">' + esc(x.naam) + '</span><span style="color:var(--ink3);text-align:right">' + x.n + '×' + (x.redenen ? ' · ' + esc(x.redenen) : '') + '</span></div>').join('') + '</div>'
+    .sort((a, b) => b.n - a.n);
+  return '<div class="sec">Afwezigheid</div>'
+    + (alle.length
+        ? '<div style="display:flex;flex-direction:column;gap:9px">' + alle.map(x => '<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px"><span style="font-weight:600;flex-shrink:0">' + esc(x.naam) + '</span><span style="color:var(--ink3);text-align:right">' + x.n + '×' + (x.redenen ? ' · ' + esc(x.redenen) : '') + '</span></div>').join('') + '</div>'
         : '<div style="font-size:12.5px;color:var(--ink3)">Geen afwezigheid geregistreerd.</div>');
 }
 // Top-speeltijd — dezelfde berekenSpeeltijd()-databron als Inzicht → Minuten

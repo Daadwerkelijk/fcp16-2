@@ -1279,6 +1279,9 @@ function foTerugNaarOpstelling() {
 function foAnnuleer() { foTerugNaarOpstelling(); }
 async function foOpslaan() {
   const naam = document.getElementById('fo-naam-input').value.trim() || foBerekenTitel();
+  const lijst = customFormaties();
+  const idx = foBewerkId ? lijst.findIndex(f => f.id === foBewerkId) : -1;
+  const isNieuw = idx < 0;
   const payload = {
     id: foBewerkId || 'i' + Date.now() + Math.random().toString(36).slice(2, 6),
     // Spelvorm volgt uit het aantal posities — zelfde conventie als FORMATIES_V2/
@@ -1288,9 +1291,10 @@ async function foOpslaan() {
     titel: naam, spelvorm: foPosities.length,
     posities: foPosities.map(p => ({ id: p.label.replace(/-/g, '_'), x: Math.round(p.x), y: Math.round(p.y), rol: foRolVan(p) })),
   };
-  const lijst = customFormaties();
-  const idx = foBewerkId ? lijst.findIndex(f => f.id === foBewerkId) : -1;
-  const isNieuw = idx < 0;
+  // Nieuw systeem gaat altijd achteraan de herschikbare eigen-lijst; bij bewerken
+  // van een bestaand systeem laten we sortOrder ongezet (blijft undefined), zodat
+  // toSbFormatie() 'm weglaat en de bestaande volgorde in Supabase niet wordt geraakt.
+  if (isNieuw) payload.sortOrder = lijst.length;
   if (idx >= 0) lijst[idx] = payload; else lijst.push(payload);
   localStorage.setItem('fcp_custom_formaties', JSON.stringify(lijst));
   if (supabaseReady) {
@@ -1373,6 +1377,15 @@ function toonTeamFab() {
   document.getElementById('screen-team').appendChild(btn);
 }
 
+// Gedeeld ▲/▼-knoppenpaar voor herschikbare Beheer-lijsten (categorieën,
+// formaties, afwezigheids-/wisselredenen) — zelfde interactiepatroon als
+// trbVerplaats() bij trainingsblokken, hier als icon-button i.p.v. tekstpijl
+// om te matchen met de bewerken/verwijderen-knoppen die deze rijen al hebben.
+function verplaatsKnoppen(kanOmhoog, kanOmlaag, onUp, onDown) {
+  return (kanOmhoog ? '<button class="btn btn--ghost btn--icon btn--sm" onclick="' + onUp + '" aria-label="Omhoog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>' : '')
+    + (kanOmlaag ? '<button class="btn btn--ghost btn--icon btn--sm" onclick="' + onDown + '" aria-label="Omlaag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>' : '');
+}
+
 // ─── Categorieën-sheet ───
 function openCatSheet() { renderCatSheet(); document.getElementById('sheet-categorieen').classList.remove('verborgen'); }
 function closeCatSheet() { catBewerkIndex = null; document.getElementById('sheet-categorieen').classList.add('verborgen'); renderTeamOefeningen(); if (document.getElementById('screen-instellingen').classList.contains('actief')) renderInstellingen(); }
@@ -1388,6 +1401,7 @@ function renderCatSheet() {
         + '</div>';
     }
     return '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl)"><div class="row-body"><div class="row-title" style="font-size:14px">' + esc(c) + '</div></div>'
+    + verplaatsKnoppen(i > 0, i < cats.length - 1, 'verplaatsCategorie(' + i + ',-1)', 'verplaatsCategorie(' + i + ',1)')
     + '<button class="btn btn--ghost btn--icon btn--sm" onclick="catBewerkIndex=' + i + ';renderCatSheet()" aria-label="Hernoemen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>'
     + '<button class="btn btn--ghost btn--icon btn--sm" onclick="verwijderCategorie(' + i + ')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button></div>';
   }).join('');
@@ -1443,6 +1457,19 @@ async function verwijderCategorie(i) {
   }
   renderCatSheet();
 }
+function verplaatsCategorie(i, dir) {
+  const cats = categorieen();
+  const j = i + dir;
+  if (j < 0 || j >= cats.length) return;
+  [cats[i], cats[j]] = [cats[j], cats[i]];
+  localStorage.setItem('fcp_cats', JSON.stringify(cats));
+  renderCatSheet();
+  if (supabaseReady) {
+    Promise.all(cats.map((naam, idx) => updateCategorieSortOrder(naam, idx))).then(resultaten => {
+      if (resultaten.some(r => r && r._error)) showToast('⚠️ Volgorde niet volledig opgeslagen naar Supabase');
+    });
+  }
+}
 
 // ─── Afwezigheidsredenen-sheet ───
 function openAfwRedenSheet() { renderAfwRedenSheet(); document.getElementById('sheet-afw-redenen').classList.remove('verborgen'); }
@@ -1451,6 +1478,7 @@ function renderAfwRedenSheet() {
   const redenen = absRedenen();
   document.getElementById('afw-reden-lijst-v2').innerHTML = redenen.map((r, i) =>
     '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl)"><div class="row-body"><div class="row-title" style="font-size:14px">' + esc(r) + '</div></div>'
+    + verplaatsKnoppen(i > 0, i < redenen.length - 1, 'verplaatsAfwReden(' + i + ',-1)', 'verplaatsAfwReden(' + i + ',1)')
     + '<button class="btn btn--ghost btn--icon btn--sm" onclick="verwijderAfwReden(' + i + ')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button></div>'
   ).join('');
 }
@@ -1471,6 +1499,14 @@ function verwijderAfwReden(i) {
   localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen));
   renderAfwRedenSheet();
 }
+function verplaatsAfwReden(i, dir) {
+  const redenen = absRedenen();
+  const j = i + dir;
+  if (j < 0 || j >= redenen.length) return;
+  [redenen[i], redenen[j]] = [redenen[j], redenen[i]];
+  localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen));
+  renderAfwRedenSheet();
+}
 
 // ─── Wisselredenen-sheet ───
 function openWisselRedenSheet() { renderWisselRedenSheet(); document.getElementById('sheet-wissel-redenen').classList.remove('verborgen'); }
@@ -1479,6 +1515,7 @@ function renderWisselRedenSheet() {
   const redenen = wisselRedenen();
   document.getElementById('wissel-reden-lijst-v2').innerHTML = redenen.map((r, i) =>
     '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl)"><div class="row-body"><div class="row-title" style="font-size:14px">' + esc(r) + '</div></div>'
+    + verplaatsKnoppen(i > 0, i < redenen.length - 1, 'verplaatsWisselReden(' + i + ',-1)', 'verplaatsWisselReden(' + i + ',1)')
     + '<button class="btn btn--ghost btn--icon btn--sm" onclick="verwijderWisselReden(' + i + ')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button></div>'
   ).join('');
 }
@@ -1499,6 +1536,14 @@ function verwijderWisselReden(i) {
   localStorage.setItem('fcp_wissel_redenen', JSON.stringify(redenen));
   renderWisselRedenSheet();
 }
+function verplaatsWisselReden(i, dir) {
+  const redenen = wisselRedenen();
+  const j = i + dir;
+  if (j < 0 || j >= redenen.length) return;
+  [redenen[i], redenen[j]] = [redenen[j], redenen[i]];
+  localStorage.setItem('fcp_wissel_redenen', JSON.stringify(redenen));
+  renderWisselRedenSheet();
+}
 
 // ─── Formaties-sheet — zelfde ingebouwd+eigen-lijst als de "Formaties
 // library" in de echte instellingen.html, hier bereikbaar vanuit Beheer
@@ -1507,15 +1552,17 @@ function openFormatiesSheet() { renderFormatiesSheet(); document.getElementById(
 function closeFormatiesSheet() { document.getElementById('sheet-formaties').classList.add('verborgen'); if (document.getElementById('screen-instellingen').classList.contains('actief')) renderInstellingen(); }
 function renderFormatiesSheet() {
   const alle = alleFormatiesV2();
-  document.getElementById('formaties-lijst-v2').innerHTML = Object.entries(alle).map(([id, f]) =>
+  const eigenIds = customFormaties().map(f => f.id);
+  document.getElementById('formaties-lijst-v2').innerHTML = Object.entries(alle).map(([id, f]) => { const ei = eigenIds.indexOf(id); return (
     '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl);cursor:default">'
     + '<div class="row-body"><div class="row-title" style="font-size:14px;display:flex;align-items:center;gap:7px">' + esc(f.label) + (f.eigen ? '' : '<span class="tag tag--line" style="font-size:10px;padding:2px 7px">ingebouwd</span>') + '</div><div class="row-sub">' + f.pos.length + ' posities · spelvorm ' + f.spelvorm + '</div></div>'
     + (f.eigen
-        ? '<button class="btn btn--ghost btn--icon btn--sm" onclick="closeFormatiesSheet();openFormatieEditor(\'' + id + '\',{type:\'instellingen\'})" aria-label="Bewerken"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+        ? verplaatsKnoppen(ei > 0, ei < eigenIds.length - 1, 'verplaatsFormatie(\'' + id + '\',-1)', 'verplaatsFormatie(\'' + id + '\',1)')
+        + '<button class="btn btn--ghost btn--icon btn--sm" onclick="closeFormatiesSheet();openFormatieEditor(\'' + id + '\',{type:\'instellingen\'})" aria-label="Bewerken"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
         + '<button class="btn btn--ghost btn--icon btn--sm" onclick="instVerwijderFormatie(\'' + id + '\')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button>'
         : '')
     + '</div>'
-  ).join('');
+  ); }).join('');
 }
 async function instVerwijderFormatie(id) {
   localStorage.setItem('fcp_custom_formaties', JSON.stringify(customFormaties().filter(f => f.id !== id)));
@@ -1525,6 +1572,20 @@ async function instVerwijderFormatie(id) {
     if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
   }
   renderFormatiesSheet();
+}
+function verplaatsFormatie(id, dir) {
+  const lijst = customFormaties();
+  const i = lijst.findIndex(f => f.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= lijst.length) return;
+  [lijst[i], lijst[j]] = [lijst[j], lijst[i]];
+  localStorage.setItem('fcp_custom_formaties', JSON.stringify(lijst));
+  renderFormatiesSheet();
+  if (supabaseReady) {
+    Promise.all(lijst.map((f, idx) => updateFormatieSortOrder(f.id, idx))).then(resultaten => {
+      if (resultaten.some(r => r && r._error)) showToast('⚠️ Volgorde niet volledig opgeslagen naar Supabase');
+    });
+  }
 }
 
 // ─── Oefening aanmaken/bewerken ───

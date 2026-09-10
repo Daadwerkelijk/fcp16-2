@@ -129,6 +129,9 @@ async function renameCategorie(oudeNaam, nieuweNaam) {
   const r2 = await sbWrite('custom_oef?cat=eq.' + encodeURIComponent(oudeNaam), 'PATCH', { cat: nieuweNaam });
   return { r1, r2 };
 }
+async function updateCategorieSortOrder(naam, sortOrder) {
+  return await sbWrite('categories?naam=eq.' + encodeURIComponent(naam), 'PATCH', { sort_order: sortOrder });
+}
 async function deleteCategorieRemote(naam) {
   return await sbFetch('categories?naam=eq.' + encodeURIComponent(naam), 'DELETE');
 }
@@ -603,7 +606,7 @@ async function loadFromSupabase() {
     sbFetch('principes?select=*&order=sort_order'),
     sbFetch('aanwezigheid?select=*'),
     sbFetch('training_weken?select=*&order=iso_date'),
-    sbFetch('custom_formaties?select=*&order=created_at'),
+    sbFetch('custom_formaties?select=*&order=sort_order'),
     sbFetch('training_sessies?select=*&order=volgorde'),
   ]);
   const result = {};
@@ -1007,10 +1010,16 @@ function saveCustomFormatiesLijst(lijst) {
   localStorage.setItem('fcp_custom_formaties', JSON.stringify(lijst));
 }
 function toSbFormatie(f) {
-  return { id:f.id, titel:f.titel, spelvorm:f.spelvorm, posities:f.posities || [] };
+  // sort_order alleen meesturen als expliciet gezet (nieuw aangemaakt of herschikt) —
+  // JSON.stringify laat een undefined-property weg, dus een gewone bewerk-save laat
+  // de bestaande volgorde in Supabase onaangeroerd.
+  return { id:f.id, titel:f.titel, spelvorm:f.spelvorm, posities:f.posities || [], sort_order:f.sortOrder };
 }
 async function createFormatie(f) {
   return await sbFetch('custom_formaties', 'POST', toSbFormatie(f));
+}
+async function updateFormatieSortOrder(id, sortOrder) {
+  return await sbWrite('custom_formaties?id=eq.' + id, 'PATCH', { sort_order: sortOrder });
 }
 async function updateFormatie(id, f) {
   return await sbFetch('custom_formaties?id=eq.' + id, 'PATCH', toSbFormatie(f));

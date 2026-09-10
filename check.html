@@ -181,11 +181,15 @@ async function runChecks() {
       ? checkItem('✗', 'Tabel session_notes', 'Fout: ' + sn._error, 'err')
       : checkItem('✓', 'Tabel session_notes', 'OK', 'ok');
 
-    // Custom weken
-    const cw = await sbFetch('custom_weken?select=id,data&limit=1');
-    tabHtml += cw._error
-      ? checkItem('✗', 'Tabel custom_weken', 'Fout: ' + cw._error, 'err')
-      : checkItem('✓', 'Tabel custom_weken', 'OK', 'ok');
+    // Trainingsweken/-sessies (vervangt de vroegere custom_weken-blob-tabel)
+    const tw = await sbFetch('training_weken?select=id&limit=1');
+    tabHtml += tw._error
+      ? checkItem('✗', 'Tabel training_weken', 'Fout: ' + tw._error, 'err')
+      : checkItem('✓', 'Tabel training_weken', 'OK', 'ok');
+    const ts = await sbFetch('training_sessies?select=id&limit=1');
+    tabHtml += ts._error
+      ? checkItem('✗', 'Tabel training_sessies', 'Fout: ' + ts._error, 'err')
+      : checkItem('✓', 'Tabel training_sessies', 'OK', 'ok');
   }
   document.getElementById('check-tabellen').innerHTML = tabHtml;
 
@@ -195,7 +199,11 @@ async function runChecks() {
     // Corrupte training_keys
     const aanwAll = await sbFetch('aanwezigheid?select=training_key');
     if (!aanwAll._error) {
-      const corrupt = aanwAll.filter(r => r.training_key && (r.training_key.length > 20 || r.training_key.includes('[object') || r.training_key.startsWith('{')));
+      // Drempel opgehoogd naar 40: sessie-id's zijn nu stabiele id's (tot 36 tekens
+      // voor de eenmalig gemigreerde rijen, ~20 voor nieuwe) i.p.v. de vroegere
+      // korte cw{wi}_{si}-notatie — de "[object Object]"/"{"-check blijft het
+      // eigenlijke corruptiesignaal.
+      const corrupt = aanwAll.filter(r => r.training_key && (r.training_key.length > 40 || r.training_key.includes('[object') || r.training_key.startsWith('{')));
       dataHtml += corrupt.length > 0
         ? checkItem('✗', 'Corrupte training_keys gevonden', corrupt.length + ' rijen — gebruik Repareer knop', 'err')
         : checkItem('✓', 'Training keys correct', aanwAll.length + ' rijen gecontroleerd', 'ok');
@@ -242,7 +250,7 @@ async function runChecks() {
       if (k === 'fcp_aanw') {
         try {
           const aanwObj = JSON.parse(val);
-          const corrupt = Object.keys(aanwObj).filter(key => key.length > 20 || key.includes('[object') || key.startsWith('{'));
+          const corrupt = Object.keys(aanwObj).filter(key => key.length > 40 || key.includes('[object') || key.startsWith('{'));
           if (corrupt.length > 0) {
             localHtml += checkItem('⚠', k, corrupt.length + ' corrupte keys in lokale opslag', 'warn');
           } else {
@@ -318,7 +326,7 @@ async function fixData() {
       const aanwObj = JSON.parse(raw);
       let gewijzigd = false;
       Object.keys(aanwObj).forEach(k => {
-        if (k.length > 20 || k.includes('[object') || k.startsWith('{')) {
+        if (k.length > 40 || k.includes('[object') || k.startsWith('{')) {
           delete aanwObj[k];
           gewijzigd = true;
           acties++;

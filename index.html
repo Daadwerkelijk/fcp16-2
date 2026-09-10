@@ -355,6 +355,17 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   </div></div>
 </div>
 
+<!-- ═══ SHEET: afwezig toevoegen voor een wedstrijd ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-wed-afwezig-toevoegen" onclick="if(event.target===this)closeWedAfwezigSheet()">
+  <div class="sheet-wrap"><div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">Afwezig toevoegen</div>
+    <div class="field"><span class="label">Speler</span><select class="input" id="waf-speler"></select></div>
+    <div class="field"><span class="label">Reden</span><select class="input" id="waf-reden"></select></div>
+    <div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeWedAfwezigSheet()">Annuleren</button><button class="btn btn--primary" onclick="slaWedAfwezigOp()">Toevoegen</button></div>
+  </div></div>
+</div>
+
 <!-- ═══ SHEET: oefening-details bekijken vanuit een trainingsblok ═══ -->
 <div class="sheet-overlay verborgen" id="sheet-blok-detail" onclick="if(event.target===this)closeBlokDetail()">
   <div class="sheet-wrap"><div class="sheet">
@@ -642,9 +653,13 @@ function alleAgendaItems() {
     items.push({
       type: 'wedstrijd', isoDate: w.isoDate, tijd: w.starttijd || '',
       titel: w.tegenstander || '?',
-      sub: w.gespeeld
-        ? ((w.thuis_uit === 'uit' ? 'Uit' : 'Thuis') + (sp.length ? ' · ' + (sp.length - afw) + '/' + sp.length + ' aanwezig' : ''))
-        : ((w.thuis_uit === 'uit' ? 'Uit' : 'Thuis') + (w.starttijd ? ' · ' + w.starttijd : '')),
+      // Attendance-breuk staat er nu ook al vóór de wedstrijd gespeeld is (was
+      // voorheen alleen ná afloop) — anders liet de Vandaag-kaart (die deze breuk
+      // uit .sub parst) bij een nog te spelen wedstrijd nooit een voortgangsbalk
+      // zien, zelfs niet als er al afwezigheid was ingevuld.
+      sub: (w.thuis_uit === 'uit' ? 'Uit' : 'Thuis')
+        + (w.gespeeld ? '' : (w.starttijd ? ' · ' + w.starttijd : ''))
+        + (sp.length ? ' · ' + (sp.length - afw) + '/' + sp.length + ' aanwezig' : ''),
       tagTekst: w.gespeeld ? (w.score_eigen + '–' + w.score_tegen) : (w.wed_type === 'beker' ? 'Beker' : w.wed_type === 'oefenwedstrijd' ? 'Oefen' : 'Comp.'),
       tagClass: w.gespeeld ? (w.score_eigen > w.score_tegen ? 'tag--win' : w.score_eigen < w.score_tegen ? 'tag--loss' : 'tag--neutral') : 'tag--line',
       tagNum: w.gespeeld,
@@ -847,6 +862,49 @@ async function checkPeriodeAfwezigWedstrijd(w) {
   if (idx > -1) { lijst[idx] = w; localStorage.setItem('fcp_wed', JSON.stringify(lijst)); }
   await updateWedstrijd(w.id, { afwezig: JSON.stringify(afwezig) });
 }
+// Zelfde patroon als openAfwezigSheet()/slaAfwezigOp()/verwijderAfwezig() bij
+// trainingen, maar schrijvend naar w.afwezig i.p.v. de gedeelde
+// aanwezigheids-tabel (matcht hoe checkPeriodeAfwezigWedstrijd hierboven al
+// met w.afwezig omgaat, incl. de bare-pid/{pid,...}-compatibiliteit).
+function openWedAfwezigSheet() {
+  const w = wedstrijden().find(x => x.id === huidigWedstrijdId);
+  if (!w) return;
+  const afwezigeIds = new Set((w.afwezig || []).map(a => (a && a.pid) ? a.pid : a));
+  const sp = spelers().filter(p => !afwezigeIds.has(p.id));
+  document.getElementById('waf-speler').innerHTML = sp.map(p => '<option value="' + p.id + '">' + esc(p.naam) + '</option>').join('');
+  document.getElementById('waf-reden').innerHTML = absRedenen().map(r => '<option>' + r + '</option>').join('');
+  document.getElementById('sheet-wed-afwezig-toevoegen').classList.remove('verborgen');
+}
+function closeWedAfwezigSheet() { document.getElementById('sheet-wed-afwezig-toevoegen').classList.add('verborgen'); }
+async function slaWedAfwezigOp() {
+  const pid = document.getElementById('waf-speler').value;
+  const reden = document.getElementById('waf-reden').value;
+  if (!pid) { closeWedAfwezigSheet(); return; }
+  const lijst = wedstrijden();
+  const w = lijst.find(x => x.id === huidigWedstrijdId);
+  if (!w) { closeWedAfwezigSheet(); return; }
+  w.afwezig = w.afwezig || [];
+  w.afwezig.push({ pid, reden });
+  localStorage.setItem('fcp_wed', JSON.stringify(lijst));
+  if (supabaseReady) {
+    const res = await updateWedstrijd(w.id, { afwezig: JSON.stringify(w.afwezig) });
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
+  closeWedAfwezigSheet();
+  toonWedstrijd(w.id);
+}
+async function verwijderWedAfwezig(pid) {
+  const lijst = wedstrijden();
+  const w = lijst.find(x => x.id === huidigWedstrijdId);
+  if (!w) return;
+  w.afwezig = (w.afwezig || []).filter(a => ((a && a.pid) ? a.pid : a) !== pid);
+  localStorage.setItem('fcp_wed', JSON.stringify(lijst));
+  if (supabaseReady) {
+    const res = await updateWedstrijd(w.id, { afwezig: JSON.stringify(w.afwezig) });
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
+  toonWedstrijd(w.id);
+}
 async function toonWedstrijd(id) {
   const w = wedstrijden().find(x => x.id === id);
   if (!w) return;
@@ -874,9 +932,20 @@ async function toonWedstrijd(id) {
     + '<div style="flex:1;text-align:center"><div class="crest" style="margin:0 auto 7px">' + (w.thuis_uit === 'uit' ? esc(teamCrestV2()) : esc((w.tegenstander || '?').slice(0,3).toUpperCase())) + '</div><div style="font-size:13px;font-weight:600">' + (w.thuis_uit === 'uit' ? esc(teamNaamV2()) : esc(w.tegenstander || '?')) + '</div></div>'
     + '</div></div>';
 
+  // Zelfde afwezig-chips+knop-patroon als renderTrainingSessie() (afwPids-chips
+  // met ✕ + "+ Afwezig"-knop) — was hier voorheen alleen-lezen tekst, met als
+  // enige manier om iemand af te melden het volledige wedstrijd-bewerkformulier.
   html += '<div class="card" style="margin-top:10px"><div class="sec">Selectie</div>'
     + (sp.length ? '<div style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + Math.round(aanwTal/sp.length*100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + sp.length + '</div></div>' : '<div style="color:var(--ink3);font-size:13px">Nog geen spelers.</div>')
-    + (afw ? '<div style="font-size:13px;color:var(--ink3);margin-top:7px">' + afw + ' afwezig' + ((w.afwezig||[]).some(a=>a.reden) ? ' · ' + (w.afwezig||[]).map(a=>a.reden).filter(Boolean).join(', ') : '') + '</div>' : '')
+    + (afw
+        ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' + (w.afwezig || []).map(a => {
+            const pid = (a && a.pid) ? a.pid : a;
+            const reden = (a && a.reden) || '';
+            const p = sp.find(x => x.id === pid);
+            return '<span class="chip" aria-pressed="true" style="cursor:pointer" onclick="verwijderWedAfwezig(\'' + pid + '\')">' + esc(p ? p.naam : '?') + (reden ? ' · ' + esc(reden) : '') + ' ✕</span>';
+          }).join('') + '</div>'
+        : '')
+    + '<button class="btn btn--secondary btn--sm" style="margin-top:10px" onclick="openWedAfwezigSheet()">+ Afwezig</button>'
     + '<button class="btn btn--ghost btn--sm" style="margin-top:10px" onclick="renderWedOpstelling(\'' + w.id + '\')">Opstelling voor deze wedstrijd →</button>'
     + '</div>';
 

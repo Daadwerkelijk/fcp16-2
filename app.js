@@ -536,11 +536,21 @@ function saveCategories(cats)      { localStorage.setItem('fcp_cats',         JS
 function saveWedstrijden(wed)      { localStorage.setItem('fcp_wed',          JSON.stringify(wed)); }
 function saveAanwezigheid(aanw)    { localStorage.setItem('fcp_aanw',         JSON.stringify(aanw)); }
 function saveCustomWeken(weken)    { localStorage.setItem('fcp_custom_weken', JSON.stringify(weken)); }
+// Gebruikte voorheen sbFetch (geen retries, geen foutmelding) voor zowel de DELETE
+// als de POST — een mislukte schrijfactie (bv. een 409 omdat de DELETE geen effect
+// had) ging daardoor volledig ongemerkt voorbij: lokaal leek alles opgeslagen, maar
+// Supabase kreeg de wijziging nooit, en de eerstvolgende loadFromSupabase() zette
+// de oude data er stilzwijgend weer overheen. custom_weken is de enige tabel die
+// als hele-array-blob wordt weggeschreven (i.p.v. per-rij CRUD), dus juist hier is
+// een mislukte sync extra makkelijk te missen. sbWrite (retries + duidelijke
+// waarschuwing bij definitief mislukken) is precies hiervoor gebouwd — nooit eerder
+// op deze functie toegepast.
 async function syncCustomWeken(weken) {
   saveCustomWeken(weken);
   if (!supabaseReady) return;
-  await sbFetch('custom_weken?id=eq.singleton', 'DELETE');
-  await sbFetch('custom_weken', 'POST', { id:'singleton', data: JSON.stringify(weken) });
+  const del = await sbWrite('custom_weken?id=eq.singleton', 'DELETE');
+  if (del && del._error) return;
+  await sbWrite('custom_weken', 'POST', { id:'singleton', data: JSON.stringify(weken) });
 }
 
 // ─── SUPABASE LOAD ALL ───

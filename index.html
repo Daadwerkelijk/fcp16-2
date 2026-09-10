@@ -52,7 +52,13 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
 <body class="v2">
 
 <!-- ═══ INLOG ═══ -->
-<div class="screen actief" id="screen-inlog">
+<!-- Niet standaard "actief": initAuthGateV2() (onderaan) beslist synchroon-
+     genoeg-aanvoelend welk scherm als eerste moet tonen. Stond dit hier wel
+     standaard aan, dan flitste het inlogscherm altijd even op — ook bij een
+     geldige sessie — in de fractie van een seconde vóór die async check klaar
+     is. Zonder standaard-actief scherm is dat gaatje gewoon de achtergrond-
+     kleur van de app, geen misleidende "Inloggen"-titel. -->
+<div class="screen" id="screen-inlog">
   <div class="appbar"><div><div class="appbar-h1">Inloggen</div></div></div>
   <div class="pad" id="inlog-content"></div>
 </div>

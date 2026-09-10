@@ -678,7 +678,7 @@ function alleAgendaItems() {
     wk.sessies.forEach((s, si) => {
       const d = sessieDatum(wk.isoDate, s, si);
       const iso = isoVan(d);
-      const nk = 'cw' + wi + '_' + si;
+      const nk = s.id || ('cw' + wi + '_' + si);
       const afwNum = Object.values(aanw[nk] || {}).filter(v => v && v.afwezig).length;
       const aanwTxt = sp.length ? (sp.length - afwNum) + '/' + sp.length : '';
       const inVerleden = iso < isoVan(new Date());
@@ -2052,7 +2052,10 @@ function renderGsTijdlijn() {
 // afwezig zetten op basis van vakantie-opgaven in het spelerformulier) is
 // ook niet overgenomen: dat leest live Supabase-formulierdata die dit
 // prototype niet heeft. ───
-function nkVan(wi, si) { return 'cw' + wi + '_' + si; }
+// sessieKey() (app.js) zoekt het echte, stabiele sessie-id op i.p.v. een string
+// uit de positie te bouwen — voorkomt dat aanwezigheid/notities naar de
+// verkeerde training gaan wijzen als weken worden herordend/verwijderd.
+function nkVan(wi, si) { return sessieKey(customWeken(), wi, si); }
 let huidigTrainingWi = null, huidigTrainingSi = null;
 // Vult afwezigheidsperiodes (app.js) automatisch in de gedeelde aanwezigheids-
 // data in, maar alleen voor spelers waar nog HELEMAAL niets bekend is voor
@@ -2204,25 +2207,46 @@ async function voegExtraTrainingToe() {
   const naam = document.getElementById('tr-extra-naam').value.trim();
   if (!naam) return;
   const weken = customWeken();
-  weken[huidigTrainingWi].sessies.push({ dag: naam, pr: [], blokken: [] });
-  await syncCustomWeken(weken);
+  const wk = weken[huidigTrainingWi];
+  const volgorde = wk.sessies.length;
+  const sessie = { id: nieuwTrainingId(), dag: naam, blokken: [] };
+  wk.sessies.push(sessie);
+  saveCustomWeken(weken);
+  if (supabaseReady) {
+    const res = await createTrainingSessie(wk.id, sessie, volgorde);
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   huidigTrainingSi = weken[huidigTrainingWi].sessies.length - 1;
   renderTrainingSessie();
 }
 async function kopieerTrainingWeek() {
   const weken = customWeken();
   const wk = weken[huidigTrainingWi];
-  const nieuw = { focus: wk.focus, isoDate: isoVan(new Date(new Date(wk.isoDate).getTime() + 7 * 86400000)), sessies: JSON.parse(JSON.stringify(wk.sessies)) };
+  const nieuw = {
+    id: nieuwTrainingId(), focus: wk.focus,
+    isoDate: isoVan(new Date(new Date(wk.isoDate).getTime() + 7 * 86400000)),
+    sessies: wk.sessies.map(s => ({ id: nieuwTrainingId(), dag: s.dag, blokken: JSON.parse(JSON.stringify(s.blokken || [])) })),
+  };
   nieuw.weekNr = getISOWeekV2(new Date(nieuw.isoDate));
   weken.push(nieuw);
-  await syncCustomWeken(weken);
+  saveCustomWeken(weken);
+  if (supabaseReady) {
+    const res = await createTrainingWeek(nieuw);
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   openTrainingSessie(weken.length - 1, 0);
 }
 async function verwijderTrainingWeek(btn) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Hele week verwijderen'; }, 3000); return; }
   const weken = customWeken();
+  const weekId = weken[huidigTrainingWi].id;
   weken.splice(huidigTrainingWi, 1);
-  await syncCustomWeken(weken);
+  saveCustomWeken(weken);
+  if (supabaseReady && weekId) {
+    // ON DELETE CASCADE op training_sessies.week_id ruimt de sessies vanzelf op.
+    const res = await deleteTrainingWeek(weekId);
+    if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
+  }
   toonScherm('agenda');
 }
 
@@ -2258,10 +2282,14 @@ async function slaTrainingBewerkOp() {
   const weken = customWeken();
   if (!weken[huidigTrainingWi] || !weken[huidigTrainingWi].sessies[huidigTrainingSi]) { toonScherm('agenda'); return; }
   const s = weken[huidigTrainingWi].sessies[huidigTrainingSi];
+  const nk = nkVan(huidigTrainingWi, huidigTrainingSi);
   s.dag = document.getElementById('trb-dag').value.trim() || s.dag;
   s.blokken = trbBlokken;
-  await syncCustomWeken(weken);
-  const nk = nkVan(huidigTrainingWi, huidigTrainingSi);
+  saveCustomWeken(weken);
+  if (supabaseReady && s.id) {
+    const res = await updateTrainingSessie(s.id, { dag: s.dag, blokken: s.blokken });
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   const notes = sessionNotes();
   notes[nk] = document.getElementById('trb-notitie').value;
   saveSessionNotes(notes);
@@ -2278,25 +2306,21 @@ async function verwijderTrainingSessie(btn) {
   if (wk.sessies.length <= 1) { btn.textContent = 'Minstens 1 training per week nodig'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Training verwijderen'; }, 3000); return; }
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Training verwijderen'; }, 3000); return; }
   const si = huidigTrainingSi;
+  const sessieId = wk.sessies[si].id;
   wk.sessies.splice(si, 1);
-  await syncCustomWeken(weken);
-  // Aanwezigheid/notities van latere sessies in deze week één plek opschuiven,
-  // zodat data niet aan de verkeerde dag blijft hangen.
-  const aanw = aanwAlles(); const notes = sessionNotes();
-  const verschoven = [];
-  let laatsteVan = null;
-  for (let s2 = si + 1; s2 < wk.sessies.length + 1; s2++) {
-    const van = nkVan(huidigTrainingWi, s2), naar = nkVan(huidigTrainingWi, s2 - 1);
-    laatsteVan = van;
-    if (aanw[van]) { aanw[naar] = aanw[van]; delete aanw[van]; verschoven.push(naar); }
-    if (notes[van]) { notes[naar] = notes[van]; delete notes[van]; }
-  }
-  localStorage.setItem('fcp_aanw', JSON.stringify(aanw));
-  saveSessionNotes(notes);
-  if (supabaseReady) {
-    for (const naar of verschoven) await saveAanwezigheidRemote(naar, spelers(), aanw[naar]);
-    if (laatsteVan) await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(laatsteVan), 'DELETE');
-    if (laatsteVan) await saveTrainingNoteRemote(laatsteVan, '');
+  saveCustomWeken(weken);
+  // Elke sessie heeft nu een eigen stabiel id — de andere sessies in deze week
+  // blijven gewoon bij hun eigen aanwezigheid/notities horen, ongeacht hun
+  // nieuwe positie in de lijst. Geen schuif-workaround meer nodig.
+  if (sessieId) {
+    const aanw = aanwAlles(); delete aanw[sessieId]; localStorage.setItem('fcp_aanw', JSON.stringify(aanw));
+    const notes = sessionNotes(); delete notes[sessieId]; saveSessionNotes(notes);
+    if (supabaseReady) {
+      const res = await deleteTrainingSessie(sessieId);
+      if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
+      await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(sessieId), 'DELETE');
+      await sbFetch('session_notes?note_key=eq.' + encodeURIComponent('training-note:' + sessieId), 'DELETE');
+    }
   }
   toonScherm('agenda');
 }
@@ -2398,15 +2422,21 @@ async function slaTrainingWeekNieuwOp() {
   const isoDate = document.getElementById('twn-datum').value;
   if (!isoDate) { toonVeldFout('twn-datum', 'Kies een datum.'); return; }
   const weken = customWeken();
-  weken.push({
+  const nieuw = {
+    id: nieuwTrainingId(),
     focus: document.getElementById('twn-focus').value.trim(),
     isoDate, weekNr: getISOWeekV2(new Date(isoDate)),
     sessies: [
-      { dag: document.getElementById('twn-naam1').value.trim() || 'Training 1', pr: [], blokken: twnBlokken1 },
-      { dag: document.getElementById('twn-naam2').value.trim() || 'Training 2', pr: [], blokken: twnBlokken2 },
+      { id: nieuwTrainingId(), dag: document.getElementById('twn-naam1').value.trim() || 'Training 1', blokken: twnBlokken1 },
+      { id: nieuwTrainingId(), dag: document.getElementById('twn-naam2').value.trim() || 'Training 2', blokken: twnBlokken2 },
     ],
-  });
-  await syncCustomWeken(weken);
+  };
+  weken.push(nieuw);
+  saveCustomWeken(weken);
+  if (supabaseReady) {
+    const res = await createTrainingWeek(nieuw);
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
   toonScherm('agenda');
 }
 
@@ -3133,7 +3163,7 @@ function renderInzAfwezigheid() {
   const perSpeler = sp.map(p => {
     let totaal = 0; const perReden = {}; const detail = [];
     weken.forEach((wk, wi) => (wk.sessies || []).forEach((s, si) => {
-      const nk = 'cw' + wi + '_' + si;
+      const nk = s.id || ('cw' + wi + '_' + si);
       const rec = aanw[nk] && aanw[nk][p.id];
       if (rec && rec.afwezig) {
         totaal++;

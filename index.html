@@ -719,7 +719,7 @@ function renderVandaag() {
   const items = alleAgendaItems().filter(i => !i.afgerond);
   const eerste = items[0];
   const eersteWed = items.find(i => i.type === 'wedstrijd');
-  let html = '';
+  let html = '<div id="v-live-banner"></div>';
 
   if (eerste) {
     const d = new Date(eerste.isoDate);
@@ -792,6 +792,28 @@ function renderVandaag() {
     + '</div></div>';
 
   document.getElementById('v-content').innerHTML = html;
+  checkLiveBannerV2();
+}
+// Toont een opvallende snelkoppeling bovenaan Vandaag zodra er ergens (welk
+// apparaat/trainer dan ook) een wedstrijd live staat — gevraagd door
+// gebruiker 2026-09-11: "ik wil ergens in de app heel eenvoudig naar de live
+// pagina kunnen gaan", i.p.v. eerst via Agenda de juiste wedstrijd te moeten
+// zoeken. Los van renderVandaag() zelf gehouden (die blijft synchroon, wordt
+// op veel plekken aangeroepen) i.p.v. renderVandaag() zelf async te maken.
+async function checkLiveBannerV2() {
+  const el = document.getElementById('v-live-banner');
+  if (!el) return; // ander scherm inmiddels actief
+  if (typeof supabaseReady === 'undefined' || !supabaseReady) { el.innerHTML = ''; return; }
+  const live = await haalActieveLiveWedstrijd();
+  const elNu = document.getElementById('v-live-banner');
+  if (!elNu) return; // scherm intussen weg/opnieuw gerenderd terwijl dit liep
+  elNu.innerHTML = !live ? '' : (
+    '<div class="card" style="cursor:pointer;margin-bottom:10px;background:var(--loss-soft);border:1.5px solid var(--loss)" onclick="openLiveTrainer(\'' + live.id + '\')">'
+    + '<div style="display:flex;align-items:center;gap:8px"><span class="livedot"></span><span class="eyebrow" style="color:var(--loss)">Nu live</span></div>'
+    + '<div style="font-size:19px;font-weight:700;margin-top:4px">vs ' + esc(live.tegenstander || '?') + '</div>'
+    + '<button class="btn btn--primary btn--block" style="margin-top:12px" onclick="event.stopPropagation();openLiveTrainer(\'' + live.id + '\')">Naar Live →</button>'
+    + '</div>'
+  );
 }
 
 // ─── Agenda ───
@@ -996,6 +1018,14 @@ async function toonWedstrijd(id) {
   // voor de wedstrijd-eigen afwezig-lijst — muteert w.afwezig vóór de rest van
   // deze functie 'm leest, dus geen aparte herrender nodig.
   await checkPeriodeAfwezigWedstrijd(w);
+  // Live-status ophalen (ongeacht welk apparaat 'm gestart heeft) om een
+  // LIVE-badge te tonen en de knop "Live starten" → "Ga verder met Live" aan
+  // te passen — gemeld door gebruiker 2026-09-11: geen enkele aanwijzing dat
+  // een wedstrijd al live was, en "Live starten" bood dan alsnog een verse
+  // (potentieel overschrijvende) sessie aan.
+  const LT_LOPEND_STATUS = ['live_1e', 'pauze_1e', 'rust', 'live_2e', 'pauze_2e'];
+  const liveInfo = (typeof supabaseReady !== 'undefined' && supabaseReady) ? await haalLiveStatus(id) : null;
+  const isLiveElders = !!(liveInfo && LT_LOPEND_STATUS.includes(liveInfo.status));
   const sp = spelers();
   const afw = (w.afwezig || []).length;
   const aanwTal = sp.length - afw;
@@ -1005,7 +1035,7 @@ async function toonWedstrijd(id) {
 
   let html = '<div class="card">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'
-    + '<span class="eyebrow">' + DAG_KORT[d.getDay()] + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + (w.starttijd ? ' · ' + w.starttijd : '') + '</span>'
+    + '<span class="eyebrow" style="display:flex;align-items:center;gap:6px">' + (isLiveElders ? '<span class="livedot"></span><span style="color:var(--loss)">LIVE ·</span>' : '') + ' ' + DAG_KORT[d.getDay()] + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + (w.starttijd ? ' · ' + w.starttijd : '') + '</span>'
     + (w.gespeeld
         ? '<span class="tag ' + (w.score_eigen > w.score_tegen ? 'tag--win' : w.score_eigen < w.score_tegen ? 'tag--loss' : 'tag--neutral') + '">' + (w.score_eigen > w.score_tegen ? 'Gewonnen' : w.score_eigen < w.score_tegen ? 'Verloren' : 'Gelijk') + '</span>'
         : '<span class="tag tag--line">' + (w.wed_type === 'beker' ? 'Beker' : w.wed_type === 'oefenwedstrijd' ? 'Oefenwedstrijd' : 'Competitie') + '</span>')
@@ -1047,6 +1077,11 @@ async function toonWedstrijd(id) {
 
   document.getElementById('w-content').innerHTML = html;
   huidigWedstrijdId = w.id;
+  // w-live-btn zit in de vaste schermschil (buiten w-content), dus hier altijd
+  // expliciet resetten — anders blijft "Ga verder met Live" van een vorig
+  // bezochte, wél live wedstrijd per ongeluk staan op een andere die dat niet is.
+  const liveBtn = document.getElementById('w-live-btn');
+  if (liveBtn) liveBtn.textContent = isLiveElders ? 'Ga verder met Live' : 'Live starten';
   toonScherm('wedstrijd');
 }
 
@@ -2717,6 +2752,34 @@ async function openLiveTrainer(id) {
   ltStopTick();
   const startLineup = w.startLineup || w.wed_lineup || ls('fcp_lineup', '{}');
   liveState = { wedstrijdId: id, status: 'gepland', minsPerHelft: w.minsPerHelft || 40, minuut: 0, helftStartTs: null, scoreEigen: w.score_eigen||0, scoreTegen: w.score_tegen||0, notities: [], lineup: { ...startLineup } };
+  // Live-status van elders overnemen i.p.v. altijd blanco beginnen — anders kon
+  // dit apparaat de voortgang van een ander apparaat/trainer overschrijven
+  // zodra er iets bediend werd, zonder enige waarschuwing (gemeld door
+  // gebruiker 2026-09-11: kon op mobiel "Live starten" drukken terwijl desktop
+  // al actief live was). Zelfde probleem en oplossing als openLive() in
+  // wedstrijden.html al had (zie commentaar daar, 2026-09-0x) — hier nooit
+  // overgenomen toen V2 gebouwd werd. Pauzeminuut is een schatting
+  // (Date.now() - helft_start): er wordt geen apart pauzemoment bijgehouden,
+  // dus een lange pauze op het andere apparaat telt hier even mee door.
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const remote = await haalLiveStatus(id);
+    if (remote) {
+      if (remote.score_eigen != null) liveState.scoreEigen = remote.score_eigen;
+      if (remote.score_tegen != null) liveState.scoreTegen = remote.score_tegen;
+      if (remote.status === 'ft') {
+        liveState.status = 'ft';
+      } else if (remote.status === 'rust') {
+        liveState.status = 'rust';
+        if (remote.minuut_offset) liveState.minsPerHelft = remote.minuut_offset;
+      } else if (['live_1e', 'pauze_1e', 'live_2e', 'pauze_2e'].includes(remote.status) && remote.helft_start) {
+        liveState.status = remote.status;
+        liveState.helftStartTs = new Date(remote.helft_start).getTime();
+        if ((remote.status === 'live_2e' || remote.status === 'pauze_2e') && remote.minuut_offset) liveState.minsPerHelft = remote.minuut_offset;
+        if (remote.status === 'live_1e' || remote.status === 'live_2e') ltStartTick();
+        else liveState.minuut = Math.max(0, Math.floor((Date.now() - liveState.helftStartTs) / 60000));
+      }
+    }
+  }
   toonScherm('live-trainer');
   renderLiveTrainer();
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {

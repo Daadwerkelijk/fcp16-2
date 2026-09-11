@@ -92,12 +92,24 @@ pasThemaToe();
 
 const sbUrl = localStorage.getItem('sb_url');
 const sbKey = localStorage.getItem('sb_key');
+// Deze pagina vroeg tot nu toe altijd met de kale anon-sleutel op — sinds de
+// RLS-herziening (2026-09-04) is elke tabel met een privé-regel dan leeg,
+// ongeacht of je bent ingelogd. Gebruikt nu de echte sessie-token als die er
+// nog geldig is (gemeld en uitgezocht met gebruiker 2026-09-11, bevestigd met
+// een live RLS-test in de database zelf: rechten en account bleken in orde,
+// dit was de daadwerkelijke oorzaak). Geen ververs-logica zoals
+// huidigeAuthToken() in app.js — dit is een eenmalige diagnosecontrole, geen
+// lopende sessie; is de token hier verlopen, gebruik dan even de app zelf
+// (die ververst zichzelf automatisch) en herlaad deze pagina daarna.
+const sbAccessToken = localStorage.getItem('sb_access_token');
+const sbExpiresAt = parseInt(localStorage.getItem('sb_expires_at'), 10) || 0;
+const sbAuthToken = (sbAccessToken && sbExpiresAt - Math.floor(Date.now() / 1000) > 0) ? sbAccessToken : sbKey;
 let totaalOk = 0, totaalWarn = 0, totaalErr = 0;
 
 async function sbFetch(path) {
   try {
     const r = await fetch(sbUrl + '/rest/v1/' + path, {
-      headers: { apikey: sbKey, Authorization: 'Bearer ' + sbKey, 'Content-Type': 'application/json' }
+      headers: { apikey: sbKey, Authorization: 'Bearer ' + sbAuthToken, 'Content-Type': 'application/json' }
     });
     if (!r.ok) return { _error: r.status, _msg: await r.text() };
     return await r.json();
@@ -131,6 +143,10 @@ async function runChecks() {
     verbHtml = checkItem('✗', 'Geen Supabase credentials', 'Stel URL en key in via Instellingen', 'err');
   } else {
     verbHtml = checkItem('✓', 'Credentials aanwezig', sbUrl, 'ok');
+    const nuSec = Math.floor(Date.now() / 1000);
+    verbHtml += (sbAccessToken && sbExpiresAt - nuSec > 0)
+      ? checkItem('✓', 'Ingelogde sessie', 'Geldig, nog ' + Math.round((sbExpiresAt - nuSec) / 60) + ' minuten', 'ok')
+      : checkItem('⚠', 'Geen geldige ingelogde sessie', 'Gebruikt de anonieme sleutel — tabellen met beveiliging tonen dan niets, ook al is de verbinding zelf OK. Log in via de app en herlaad deze pagina.', 'warn');
     const test = await sbFetch('players?select=id&limit=1');
     if (test._error) {
       verbHtml += checkItem('✗', 'Verbinding mislukt', 'Status: ' + test._error + ' — ' + test._msg, 'err');
@@ -316,10 +332,11 @@ async function fixData() {
   }
   let acties = 0;
 
-  // 1. Verwijder corrupte training_keys uit Supabase
+  // 1. Verwijder corrupte training_keys uit Supabase — zelfde sbAuthToken als
+  // hierboven; met de kale anon-sleutel faalt dit schrijven nu stil door RLS.
   const res = await fetch(sbUrl + '/rest/v1/aanwezigheid?training_key=like.*%7B*', {
     method: 'DELETE',
-    headers: { apikey: sbKey, Authorization: 'Bearer ' + sbKey, Prefer: 'return=minimal' }
+    headers: { apikey: sbKey, Authorization: 'Bearer ' + sbAuthToken, Prefer: 'return=minimal' }
   });
   if (res.ok) acties++;
 

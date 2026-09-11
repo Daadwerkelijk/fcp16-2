@@ -243,14 +243,23 @@ async function syncLiveWedstrijd(w, players) {
       if (speler) opstelling.push({ pos: posId.replace(/_/g, '-'), naam: speler.naam });
     });
   }
-  const bestaandArr = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset&id=eq.' + w.id);
+  const bestaandArr = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset,score_eigen,score_tegen&id=eq.' + w.id);
   const bestaand = (bestaandArr && bestaandArr[0]) || null;
-  const liveStatussen = ['live_1e', 'rust', 'live_2e', 'ft'];
-  const status = (bestaand && liveStatussen.includes(bestaand.status)) ? bestaand.status : (w.gespeeld ? 'ft' : 'gepland');
+  // pauze_1e/pauze_2e stonden hier niet bij (bug, gevonden 2026-09-11 tijdens
+  // het multi-device-live-onderzoek): een gepauzeerde wedstrijd werd bij élke
+  // aanroep van openLiveTrainer() — dus ook gewoon bij zelf hervatten op
+  // hetzelfde apparaat — stilletjes teruggezet naar "gepland". Score viel
+  // daarbij ook altijd terug op het verouderde, lokale wedstrijden.score_eigen
+  // i.p.v. de echte live-stand te behouden (die alleen in live_wedstrijden
+  // live wordt bijgehouden via pushLiveScore, niet in wedstrijden zelf).
+  const liveStatussen = ['live_1e', 'pauze_1e', 'rust', 'live_2e', 'pauze_2e', 'ft'];
+  const isLopend = bestaand && liveStatussen.includes(bestaand.status);
+  const status = isLopend ? bestaand.status : (w.gespeeld ? 'ft' : 'gepland');
   const payload = {
     tegenstander: w.tegenstander, datum: w.datum, iso_date: w.isoDate || '',
     starttijd: w.starttijd || '', thuis_uit: w.thuis_uit, status,
-    score_eigen: w.score_eigen || 0, score_tegen: w.score_tegen || 0,
+    score_eigen: isLopend ? bestaand.score_eigen : (w.score_eigen || 0),
+    score_tegen: isLopend ? bestaand.score_tegen : (w.score_tegen || 0),
     formatie: w.formatie || '', opstelling,
     helft_start: bestaand ? bestaand.helft_start : null,
     minuut_offset: bestaand ? bestaand.minuut_offset : 0,
@@ -293,8 +302,22 @@ async function intrekkenLiveUpdate(id) {
   return await sbFetch('live_updates?id=eq.' + id, 'DELETE');
 }
 async function haalLiveStatus(id) {
-  const res = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset&id=eq.' + id);
+  // score_eigen/score_tegen toegevoegd (2026-09-11) — live_wedstrijden is de
+  // écht actuele bron tijdens Live (pushLiveScore schrijft elke wijziging hier
+  // meteen naartoe), nodig om de stand goed over te nemen bij het hervatten
+  // van een live wedstrijd op een ander apparaat, zie openLiveTrainer() in
+  // index.html.
+  const res = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset,score_eigen,score_tegen&id=eq.' + id);
   return (res && res[0]) || null;
+}
+// Is er ergens (op welk apparaat/trainer dan ook) een wedstrijd live? Gebruikt
+// voor een snelkoppeling naar Live vanaf het Vandaag-scherm in V2 (gevraagd
+// door gebruiker 2026-09-11: "ik wil ergens in de app heel eenvoudig naar de
+// live pagina kunnen gaan"), i.p.v. dat de trainer eerst via Agenda naar de
+// juiste wedstrijd moet zoeken.
+async function haalActieveLiveWedstrijd() {
+  const res = await sbFetch('live_wedstrijden?select=id,tegenstander&status=in.(live_1e,pauze_1e,rust,live_2e,pauze_2e)&limit=1');
+  return (res && !res._error && res[0]) || null;
 }
 // Alle gedeelde push-momenten van een wedstrijd, chronologisch — dit is de bron van waarheid
 // voor de opmerkingen-tekst bij het sluiten van Live (zie closeLive() in wedstrijden.html),

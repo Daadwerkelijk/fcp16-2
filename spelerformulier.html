@@ -4,15 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#F7F5F2">
+<meta name="color-scheme" content="light">
 <title>Spelersformulier — FCP 16-2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="ui-v2.css">
 <style>
-  /* Alleen wat ui-v2.css zelf niet al biedt (toast bestaat daar niet — de
-     klassieke .toast uit style.css hierheen overgezet met V2-tokens i.p.v.
-     de oude hardcoded kleuren). Bewust geen data-thema/donker-logica hier —
-     dit formulier blijft altijd de lichte versie (gebruiker 2026-09-11). */
+  /* color-scheme:light (meta + hier) voorkomt dat Android/Chrome's "forced
+     dark"-heuristiek deze pagina zelf gaat herkleuren — zonder die hint
+     kreeg de achtergrond een groenige waas op sommige toestellen, gemeld
+     door gebruiker 2026-09-11. Verder alleen wat ui-v2.css zelf niet al
+     biedt (toast bestaat daar niet — de klassieke .toast uit style.css
+     hierheen overgezet met V2-tokens i.p.v. de oude hardcoded kleuren).
+     Bewust geen data-thema/donker-logica: dit formulier blijft altijd de
+     lichte versie. */
+  html{color-scheme:light}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:var(--r-pill);font:600 13px/1 var(--font);opacity:0;transition:all .3s;z-index:300;pointer-events:none;white-space:nowrap}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -91,7 +97,7 @@
 
 <div id="loading-msg" style="padding:60px 20px;text-align:center;color:var(--ink3);font-size:13px">Formulier laden...</div>
 <div id="success-msg" style="display:none;text-align:center;padding:60px 20px">
-  <div style="font-size:48px;margin-bottom:16px">✅</div>
+  <div style="width:64px;height:64px;border-radius:50%;background:var(--win-soft);color:var(--win);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;margin:0 auto 16px">✓</div>
   <div class="appbar-h1" style="font-size:22px;margin-bottom:8px">Bedankt!</div>
   <div style="font-size:13px;color:var(--ink3)">Je formulier is ontvangen door de trainer.</div>
 </div>
@@ -193,27 +199,28 @@ function herstelVoortgang() {
   } catch(e) { return false; }
 }
 
-// Vult het formulier voor bij met de laatst bekende inzending uit de geschiedenis (Supabase),
-// puur als handig startpunt — opslaan maakt altijd een NIEUWE rij aan, dit overschrijft niets.
+// Vult ALLEEN Persoonlijke gegevens voor met de laatst bekende inzending uit
+// Supabase — verlof, Leiderschap, vaardigheden, wens en bijzonderheden
+// blijven bewust leeg, zodat de speler elke keer objectief opnieuw
+// beoordeelt in plaats van beïnvloed te worden door een eerdere inzending
+// (gebruiker 2026-09-11 — eerst alleen verlof leeg, nu alle evaluatie-
+// onderdelen). Opslaan maakt sowieso altijd een NIEUWE rij aan, dit
+// overschrijft niets. Geen bannermelding hier (gebruiker wilde 'm weg) — dit
+// vooraf invullen is nu zo klein/vanzelfsprekend dat het geen aankondiging
+// meer nodig heeft. herstel-banner blijft wel bestaan voor herstelVoortgang()
+// (een echt niet-verzonden concept terugvinden is wél meldenswaardig).
 async function laadLaatsteInzending() {
   if (!spelerId) return;
   const ok = await initSupabase();
   if (!ok) return;
   const rows = await sbFetch('speler_beoordelingen?select=data&speler_id=eq.' + spelerId + '&order=created_at.desc&limit=1');
   if (rows && rows[0] && rows[0].data) {
-    vulFormulierIn(rows[0].data);
-    // Verlofvelden bewust leeg laten bij vooraf-invullen vanuit een oudere
-    // inzending (i.t.t. de rest van het formulier) — anders blijft bv. een
-    // zomervakantie-periode zichtbaar staan als het formulier maanden later
-    // weer geopend wordt, wat verwarrend is (gemeld door gebruiker 2026-09-11).
-    // herstelVoortgang() (eigen, nog niet verzonden concept) laat dit wel
-    // staan, dat is gewoon werk-in-uitvoering herstellen, geen oude inzending.
-    const vak = document.getElementById('f-vakantie');
-    if (vak) { vak.value = ''; vak.dispatchEvent(new Event('change')); }
-    const van = document.getElementById('f-vakantie-van'); if (van) van.value = '';
-    const tot = document.getElementById('f-vakantie-tot'); if (tot) tot.value = '';
-    const banner = document.getElementById('herstel-banner');
-    if (banner) { banner.style.display = 'flex'; banner.querySelector('span').textContent = 'Ingevuld met je vorige inzending — pas aan waar nodig'; }
+    const d = rows[0].data;
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+    set('f-naam', d.naam);
+    set('f-geboortedatum', d.geboortedatum);
+    set('f-positie', d.positie);
+    set('f-mobiel', d.mobiel);
   }
 }
 

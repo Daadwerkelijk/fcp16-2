@@ -2766,6 +2766,17 @@ async function openLiveTrainer(id) {
     if (remote) {
       if (remote.score_eigen != null) liveState.scoreEigen = remote.score_eigen;
       if (remote.score_tegen != null) liveState.scoreTegen = remote.score_tegen;
+      // Actuele wed_lineup rechtstreeks ophalen i.p.v. te vertrouwen op wat dit
+      // apparaat toevallig lokaal al had — ltStartHelft(1) schrijft de
+      // definitieve aftrap-opstelling hier ook naartoe, juist voor dit geval
+      // (tweede telefoon die een al lopende wedstrijd erbij pakt).
+      const wedRes = await sbFetch('wedstrijden?select=wed_lineup&id=eq.' + id);
+      const wedLineupRemote = wedRes && wedRes[0] && wedRes[0].wed_lineup;
+      if (wedLineupRemote && (typeof wedLineupRemote !== 'string' || wedLineupRemote !== '{}')) {
+        try {
+          liveState.lineup = typeof wedLineupRemote === 'string' ? JSON.parse(wedLineupRemote) : wedLineupRemote;
+        } catch(e) {}
+      }
       if (remote.status === 'ft') {
         liveState.status = 'ft';
       } else if (remote.status === 'rust') {
@@ -2799,16 +2810,33 @@ async function ltStartHelft(helft) {
   liveState.helftStartTs = helft === 1 ? Date.now() : Date.now() - liveState.minsPerHelft * 60000;
   if (helft === 2) liveState.notities.unshift({ id: Date.now(), tekst: 'Rust afgelopen — 2e helft gestart', minuut: liveState.minsPerHelft, gedeeld: false });
   if (helft === 1) {
-    // Startopstelling + helftlengte vastleggen op de wedstrijd zelf, zodat
-    // speelminuten later (Inzicht → Minuten) hierop kunnen terugrekenen —
-    // exact hetzelfde principe als de wissels-tabel in de echte app.
+    // Startopstelling + helftlengte vastleggen op de wedstrijd zelf — dit
+    // schrijft alleen lokaal weg (fcp_wed), niet naar Supabase. De opmerking
+    // hierboven dat Inzicht → Minuten dit nodig heeft klopt niet meer (zie
+    // berekenSpeeltijd() in app.js: die gebruikt gewoon wedstrijd.wed_lineup,
+    // het gesynchroniseerde veld, niet startLineup) — waarschijnlijk stale
+    // sinds die functie is overgezet op de echte Supabase-wisselregistraties.
+    // startLineup/minsPerHelft/startFormatie blijven dus lokale bookkeeping.
     const lijst = wedstrijden();
     const w = lijst.find(x => x.id === liveState.wedstrijdId);
     w.startLineup = { ...liveState.lineup };
     w.minsPerHelft = liveState.minsPerHelft;
     w.startFormatie = w.formatie || localStorage.getItem('fcp_formatie') || '4222';
     w.wissels = w.wissels || [];
+    // wed_lineup (wél gesynchroniseerd, normaal gezet via "Opstelling voor
+    // deze wedstrijd" vóór de wedstrijd) hier bewust ook overschrijven met de
+    // definitieve aftrap-opstelling — vangt laatste-moment-wissels die
+    // rechtstreeks in dit live-scherm zijn gedaan (die landden voorheen alleen
+    // in het lokale startLineup hierboven), zodat een tweede telefoon die de
+    // wedstrijd erbij pakt via openLiveTrainer()'s wed_lineup-fallback ook
+    // echt de juiste elf te zien krijgt. Gemeld door gebruiker 2026-09-11
+    // (mogelijk 2 telefoons tegelijk morgen).
+    w.wed_lineup = { ...liveState.lineup };
     localStorage.setItem('fcp_wed', JSON.stringify(lijst));
+    if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+      const res = await updateWedstrijd(liveState.wedstrijdId, { wed_lineup: JSON.stringify(liveState.lineup) });
+      if (res && res._error) showToast('⚠️ Opstelling niet gesynchroniseerd: ' + (res.message || res.status));
+    }
   }
   ltStartTick();
   renderLiveTrainer();

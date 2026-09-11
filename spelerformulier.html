@@ -10,15 +10,25 @@
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="ui-v2.css">
 <style>
-  /* color-scheme:light (meta + hier) voorkomt dat Android/Chrome's "forced
-     dark"-heuristiek deze pagina zelf gaat herkleuren — zonder die hint
-     kreeg de achtergrond een groenige waas op sommige toestellen, gemeld
-     door gebruiker 2026-09-11. Verder alleen wat ui-v2.css zelf niet al
-     biedt (toast bestaat daar niet — de klassieke .toast uit style.css
-     hierheen overgezet met V2-tokens i.p.v. de oude hardcoded kleuren).
-     Bewust geen data-thema/donker-logica: dit formulier blijft altijd de
-     lichte versie. */
+  /* color-scheme:light (meta + hier) — voorkomt dat een browser zelf
+     kleuren gaat "corrigeren" op een pagina zonder expliciete lichte hint.
+     Los daarvan (echte oorzaak, gevonden 2026-09-11 via live devtools-
+     onderzoek): op dit gedeelde-link-formulier bleek --accent/--bg soms
+     ALSNOG overschreven te worden door iets buiten deze pagina om (een
+     los geïnjecteerde stylesheet — bevestigd met een browserextensie op
+     de testmachine, maar de precieze oorzaak kan per toestel verschillen).
+     ui-v2.css zelf bleek steeds correct (--accent:#E8481F geverifieerd via
+     document.styleSheets), dus dit is geen bug in de eigen CSS — de
+     !important-herdeclaratie hieronder wint sowieso, ongeacht de bron. */
   html{color-scheme:light}
+  html{
+    --bg:#F7F5F2 !important; --surface:#FFFFFF !important; --surface2:#F1EEE9 !important; --surface3:#E9E4DC !important;
+    --ink:#1C1917 !important; --ink2:#57534E !important; --ink3:#8B857E !important;
+    --line:#E6E1DA !important;
+    --accent:#E8481F !important; --accent-ink:#FFFFFF !important; --accent-soft:#FDEDE8 !important; --accent-press:#C93A14 !important;
+    --win:#157F4C !important; --win-soft:#E6F2EB !important; --neutral:#8B857E !important; --neutral-soft:#EFECE7 !important; --loss:#8E2F26 !important; --loss-soft:#F8EAE8 !important;
+    --focus:#E8481F !important;
+  }
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:var(--r-pill);font:600 13px/1 var(--font);opacity:0;transition:all .3s;z-index:300;pointer-events:none;white-space:nowrap}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>

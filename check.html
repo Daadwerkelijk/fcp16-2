@@ -29,7 +29,11 @@ body{max-width:480px;margin:0 auto;padding-bottom:32px;min-height:100dvh}
 <body class="v2">
 
 <div class="appbar">
-  <a class="btn btn--ghost btn--icon" href="instellingen.html" aria-label="Terug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 19l-7-7 7-7"/></svg></a>
+  <!-- Ging voorheen naar instellingen.html (de klassieke, losse pagina) — sinds
+       Interface V2 de standaard-app is (2026-09-06) hoort terug naar index.html
+       te gaan, anders beland je via deze health-check-pagina in de oude
+       appwereld (gemeld door gebruiker 2026-09-11). -->
+  <a class="btn btn--ghost btn--icon" href="index.html" aria-label="Terug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 19l-7-7 7-7"/></svg></a>
   <div class="appbar-h1" style="font-size:18px">Health Check</div>
 </div>
 

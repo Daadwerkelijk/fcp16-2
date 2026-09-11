@@ -906,14 +906,47 @@ function wedAfwezigNaWijziging(w) {
     toonWedstrijd(w.id);
   }
 }
+// Nog-niet-opgeslagen nieuwe wedstrijd: dezelfde chips+"+ Afwezig"-look als
+// een bestaande wedstrijd (wedAfwezigChipsHtml), maar zonder wedstrijd-id om
+// meteen naar te schrijven — de selectie blijft dus lokaal in dit array staan
+// tot Opslaan, net als alle andere velden van een nieuwe wedstrijd. Was eerst
+// nog de oude lange chip-per-speler-lijst hier (enige plek die nog niet was
+// meegenomen bij de wedAfwezigChipsHtml-omzetting), gemeld door gebruiker
+// 2026-09-11: "ik zou hier andere functionaliteit verwachten".
+let wbNieuwAfwezig = [];
+function wedAfwezigChipsHtmlNieuw() {
+  return (wbNieuwAfwezig.length
+    ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + wbNieuwAfwezig.map(a => {
+        const p = spelers().find(x => x.id === a.pid);
+        return '<span class="chip" aria-pressed="true" style="cursor:pointer" onclick="verwijderWedAfwezigNieuw(\'' + a.pid + '\')">' + esc(p ? p.naam : '?') + (a.reden ? ' · ' + esc(a.reden) : '') + ' ✕</span>';
+      }).join('') + '</div>'
+    : '')
+    + '<button class="btn btn--secondary btn--sm" onclick="openWedAfwezigSheet(\'nieuw\')">+ Afwezig</button>';
+}
+function verwijderWedAfwezigNieuw(pid) {
+  wbNieuwAfwezig = wbNieuwAfwezig.filter(a => a.pid !== pid);
+  const el = document.getElementById('wb-afwezig');
+  if (el) el.innerHTML = wedAfwezigChipsHtmlNieuw();
+}
 // Zelfde patroon als openAfwezigSheet()/slaAfwezigOp()/verwijderAfwezig() bij
 // trainingen, maar schrijvend naar w.afwezig i.p.v. de gedeelde
 // aanwezigheids-tabel (matcht hoe checkPeriodeAfwezigWedstrijd hierboven al
 // met w.afwezig omgaat, incl. de bare-pid/{pid,...}-compatibiliteit).
-function openWedAfwezigSheet() {
-  const w = wedstrijden().find(x => x.id === huidigWedstrijdId);
-  if (!w) return;
-  const afwezigeIds = new Set((w.afwezig || []).map(a => (a && a.pid) ? a.pid : a));
+// modus ('bestaand' | 'nieuw', standaard 'bestaand'): bepaalt of Opslaan in
+// de sheet meteen naar Supabase schrijft (bestaande wedstrijd) of alleen
+// wbNieuwAfwezig bijwerkt (nog niet opgeslagen nieuwe wedstrijd) — zie
+// slaWedAfwezigOp() hieronder.
+let wafModus = 'bestaand';
+function openWedAfwezigSheet(modus) {
+  wafModus = modus || 'bestaand';
+  let afwezigeIds;
+  if (wafModus === 'nieuw') {
+    afwezigeIds = new Set(wbNieuwAfwezig.map(a => a.pid));
+  } else {
+    const w = wedstrijden().find(x => x.id === huidigWedstrijdId);
+    if (!w) return;
+    afwezigeIds = new Set((w.afwezig || []).map(a => (a && a.pid) ? a.pid : a));
+  }
   const sp = spelers().filter(p => !afwezigeIds.has(p.id));
   document.getElementById('waf-speler').innerHTML = sp.map(p => '<option value="' + p.id + '">' + esc(p.naam) + '</option>').join('');
   document.getElementById('waf-reden').innerHTML = absRedenen().map(r => '<option>' + r + '</option>').join('');
@@ -924,6 +957,13 @@ async function slaWedAfwezigOp() {
   const pid = document.getElementById('waf-speler').value;
   const reden = document.getElementById('waf-reden').value;
   if (!pid) { closeWedAfwezigSheet(); return; }
+  if (wafModus === 'nieuw') {
+    wbNieuwAfwezig.push({ pid, reden });
+    closeWedAfwezigSheet();
+    const el = document.getElementById('wb-afwezig');
+    if (el) el.innerHTML = wedAfwezigChipsHtmlNieuw();
+    return;
+  }
   const lijst = wedstrijden();
   const w = lijst.find(x => x.id === huidigWedstrijdId);
   if (!w) { closeWedAfwezigSheet(); return; }
@@ -2524,6 +2564,7 @@ const WED_FASES_V2 = ['Fase 1','Fase 2','Fase 3'];
 function openWedstrijdBewerken(id) {
   huidigWedstrijdId = id;
   const w = id ? wedstrijden().find(x => x.id === id) : null;
+  if (!w) wbNieuwAfwezig = []; // vers formulier, geen leftover van een eerder afgebroken poging
   const sp = spelers();
   const ratings = (w && w.ratings) || {};
   document.getElementById('wb-content').innerHTML =
@@ -2538,20 +2579,12 @@ function openWedstrijdBewerken(id) {
     + '<div class="field"><span class="label">Man of the match</span><select class="input" id="wb-motm"><option value="">— geen —</option>' + sp.map(p => '<option value="' + p.id + '" ' + (w && w.motm===p.id ? 'selected' : '') + '>' + esc(p.naam) + '</option>').join('') + '</select></div>'
     + '<div class="divide"></div>'
     + '<div class="sec">Afwezig</div>'
-    // Bestaande wedstrijd: zelfde chips+"+ Afwezig"-sheet als het detailscherm
-    // (wedAfwezigChipsHtml), schrijft meteen weg — zie wedAfwezigNaWijziging()
-    // voor de in-place refresh die de rest van dit formulier niet aanraakt.
-    // Nieuwe, nog niet opgeslagen wedstrijd: de sheet kan niets vinden om aan
-    // te schrijven (geen wedstrijd-record, geen id), dus daar blijft de oude
-    // inline chip-per-speler-lijst staan, verzameld in slaWedstrijdOp().
-    + '<div style="margin-bottom:10px" id="wb-afwezig">' + (w ? wedAfwezigChipsHtml(w) : sp.map(p => {
-        const bestaand = ((w && w.afwezig) || []).find(a => (a && a.pid ? a.pid : a) === p.id);
-        const reden = bestaand ? (bestaand.reden || '') : '';
-        return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
-          + '<button type="button" class="chip" data-pid="' + p.id + '" aria-pressed="' + !!bestaand + '" onclick="wbToggleAfwezig(this)">' + esc(p.naam) + '</button>'
-          + '<select class="input" data-reden-voor="' + p.id + '" style="flex:1;min-height:36px;display:' + (bestaand ? 'block' : 'none') + '"><option value="">— reden —</option>' + absRedenen().map(r => '<option value="' + esc(r) + '"' + (r === reden ? ' selected' : '') + '>' + esc(r) + '</option>').join('') + '</select>'
-          + '</div>';
-      }).join('')) + '</div>'
+    // Zelfde chips+"+ Afwezig"-sheet als het detailscherm, ook voor een nog
+    // niet opgeslagen nieuwe wedstrijd (wedAfwezigChipsHtmlNieuw) — die schrijft
+    // lokaal naar wbNieuwAfwezig i.p.v. meteen naar Supabase. Was hiervoor nog
+    // de oude lange chip-per-speler-lijst voor het nieuwe-wedstrijd-geval,
+    // gemeld door gebruiker 2026-09-11.
+    + '<div style="margin-bottom:10px" id="wb-afwezig">' + (w ? wedAfwezigChipsHtml(w) : wedAfwezigChipsHtmlNieuw()) + '</div>'
     // Los van de team-basisopstelling (net als op het detailscherm) — slaat
     // eerst de rest van dit formulier op (naOpslaan-param op slaWedstrijdOp),
     // zodat score/opmerkingen/cijfers niet verloren gaan bij het wegnavigeren.
@@ -2581,12 +2614,6 @@ function wbKiesFase(btn, fase) {
   document.querySelectorAll('#wb-fase-chips .chip').forEach(c => c.setAttribute('aria-pressed', 'false'));
   btn.setAttribute('aria-pressed', nieuw);
 }
-function wbToggleAfwezig(btn) {
-  const nieuw = btn.getAttribute('aria-pressed') !== 'true';
-  btn.setAttribute('aria-pressed', nieuw);
-  const sel = document.querySelector('#wb-afwezig select[data-reden-voor="' + btn.dataset.pid + '"]');
-  if (sel) sel.style.display = nieuw ? 'block' : 'none';
-}
 // naOpslaan (optioneel): waar na het opslaan naartoe genavigeerd wordt i.p.v.
 // het standaard toonWedstrijd() — gebruikt door de Opstelling-knop hierboven
 // zodat "eerst opslaan, dan naar de opstelling" één druk op de knop is i.p.v.
@@ -2598,15 +2625,13 @@ async function slaWedstrijdOp(naOpslaan) {
   const d = isoDate ? new Date(isoDate) : null;
   const gekozenFase = document.querySelector('#wb-fase-chips .chip[aria-pressed="true"]');
   const bestaandVoorAfwezig = huidigWedstrijdId ? wedstrijden().find(x => x.id === huidigWedstrijdId) : null;
-  // Bestaande wedstrijd: #wb-afwezig bevat nu de chips+"+ Afwezig"-sheet-variant
+  // Bestaande wedstrijd: #wb-afwezig bevat de chips+"+ Afwezig"-sheet-variant
   // (wedAfwezigChipsHtml), die al direct wegschrijft — hier dus het al opgeslagen
-  // w.afwezig overnemen i.p.v. de oude DOM-selector, anders veegt Opslaan het per
-  // ongeluk leeg. Nieuwe wedstrijd: geen bestaand record om van over te nemen,
-  // dus daar nog wel de inline chip-lijst uit het formulier zelf lezen.
-  const afwezig = bestaandVoorAfwezig ? (bestaandVoorAfwezig.afwezig || []) : [...document.querySelectorAll('#wb-afwezig .chip[aria-pressed="true"]')].map(c => {
-    const sel = document.querySelector('#wb-afwezig select[data-reden-voor="' + c.dataset.pid + '"]');
-    return { pid: c.dataset.pid, reden: sel ? sel.value : '' };
-  });
+  // w.afwezig overnemen i.p.v. opnieuw uit te lezen, anders veegt Opslaan het per
+  // ongeluk leeg. Nieuwe wedstrijd: wbNieuwAfwezig is de lokale, nog niet
+  // opgeslagen selectie uit dezelfde chips+"+ Afwezig"-sheet-variant
+  // (wedAfwezigChipsHtmlNieuw), pas hier voor het eerst echt weggeschreven.
+  const afwezig = bestaandVoorAfwezig ? (bestaandVoorAfwezig.afwezig || []) : wbNieuwAfwezig;
   const ratings = {};
   document.querySelectorAll('#wb-content .rows input[data-pid]').forEach(inp => { if (inp.value !== '') ratings[inp.dataset.pid] = +inp.value; });
   const w = {

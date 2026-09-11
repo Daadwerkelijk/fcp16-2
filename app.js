@@ -17,9 +17,27 @@ let supabaseReady = false;
 let AUTH_ACCESS_TOKEN = localStorage.getItem('sb_access_token') || '';
 let AUTH_REFRESH_TOKEN = localStorage.getItem('sb_refresh_token') || '';
 let AUTH_EXPIRES_AT = parseInt(localStorage.getItem('sb_expires_at'), 10) || 0;
-function huidigeAuthToken() {
+// Ververst de sessie zelf, ruim vóór het echte verlopen (60s marge, zelfde
+// marge als initAuthGateV2() bij het opstarten gebruikt) — een open sessie
+// blijft zo geldig zolang de refresh-token geldig is en de app af en toe iets
+// ophaalt, i.p.v. na een uur stilzwijgend terug te vallen op de anon-sleutel
+// (RLS filtert dan alles leeg, zonder foutmelding, zonder signaal). Gemeld
+// door gebruiker 2026-09-11: "ik wil uitloggen als ik zeg dat ik wil
+// uitloggen en anders niet". Async i.p.v. sync omdat verversen zelf een
+// netwerkaanroep is; bezigMetVerversen voorkomt dat meerdere gelijktijdige
+// sbFetch-aanroepen elk hun eigen refresh-aanvraag sturen (Supabase's
+// refresh-tokens zijn single-use/rotating, dus een tweede gelijktijdige
+// aanvraag met dezelfde token zou juist mislukken).
+let bezigMetVerversen = null;
+async function huidigeAuthToken() {
   const nu = Math.floor(Date.now() / 1000);
-  return (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 0) ? AUTH_ACCESS_TOKEN : SB_KEY;
+  if (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 60) return AUTH_ACCESS_TOKEN;
+  if (AUTH_REFRESH_TOKEN) {
+    if (!bezigMetVerversen) bezigMetVerversen = refreshAuthSession().finally(() => { bezigMetVerversen = null; });
+    const ok = await bezigMetVerversen;
+    if (ok) return AUTH_ACCESS_TOKEN;
+  }
+  return SB_KEY; // geen (geldige) sessie meer — val terug op anon; het inlogscherm vangt dit verderop af
 }
 
 async function sbFetch(path, method = 'GET', body = null) {
@@ -28,7 +46,7 @@ async function sbFetch(path, method = 'GET', body = null) {
     method,
     headers: {
       'apikey': SB_KEY,
-      'Authorization': 'Bearer ' + huidigeAuthToken(),
+      'Authorization': 'Bearer ' + await huidigeAuthToken(),
       'Content-Type': 'application/json',
       // PATCH krijgt ook return=representation, net als POST — alleen zo kunnen we zien
       // of een update daadwerkelijk een rij raakte. Zonder dit antwoordt PostgREST een
@@ -1545,7 +1563,7 @@ async function haalHuidigeGebruiker() {
   if (HUIDIGE_GEBRUIKER) return HUIDIGE_GEBRUIKER;
   if (!SB_URL || !AUTH_ACCESS_TOKEN) return null;
   try {
-    const r = await fetch(SB_URL + '/auth/v1/user', { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + AUTH_ACCESS_TOKEN } });
+    const r = await fetch(SB_URL + '/auth/v1/user', { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + await huidigeAuthToken() } });
     if (!r.ok) return null;
     const j = await r.json();
     HUIDIGE_GEBRUIKER = { id: j.id, email: j.email };
@@ -1572,7 +1590,7 @@ async function nodigTrainerUit(naam, email) {
   try {
     const r = await fetch(SB_URL + '/functions/v1/invite-trainer', {
       method: 'POST',
-      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + huidigeAuthToken(), 'Content-Type': 'application/json' },
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + await huidigeAuthToken(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ naam, email }),
     });
     const j = await r.json().catch(() => ({}));

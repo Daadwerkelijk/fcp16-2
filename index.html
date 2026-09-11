@@ -1774,6 +1774,20 @@ async function verwijderOefening(btn) {
 // velden/functies als selectie.html, in het vaste kijk/bewerk-schermpatroon
 // van dit ontwerp i.p.v. de uitklapbare kaarten van de huidige app. ───
 let bewerkSpelerId = null;
+// Klein trendpijltje t.o.v. de vórige trainersbeoordeling van deze ene
+// vaardigheid — bewust geen tekst/aantal niveaus (gebruiker 2026-09-11), dat
+// detail staat al in de Geschiedenis-sheet. Leeg zolang er nog geen 2e
+// trainersmeting is om mee te vergelijken. Alleen trainer, niet speler-zelf —
+// zelfde keuze als de gebruiker bevestigde voor de vergelijkingsbasis.
+function skillTrendPijlHtml(trainerHist, sk) {
+  const metingen = trainerHist.filter(r => r.skills && r.skills[sk]).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  if (metingen.length < 2) return '';
+  const verschil = SKILL_NIVEAU_PCT_V2[metingen[metingen.length - 1].skills[sk]] - SKILL_NIVEAU_PCT_V2[metingen[metingen.length - 2].skills[sk]];
+  const pijl = verschil > 0 ? '↑' : verschil < 0 ? '↓' : '→';
+  const kleur = verschil > 0 ? 'win' : verschil < 0 ? 'loss' : 'ink3';
+  const label = verschil > 0 ? 'Vooruitgang t.o.v. vorige trainersbeoordeling' : verschil < 0 ? 'Achteruitgang t.o.v. vorige trainersbeoordeling' : 'Gelijk t.o.v. vorige trainersbeoordeling';
+  return '<span aria-label="' + label + '" title="' + label + '" style="color:var(--' + kleur + ');font-weight:700;font-size:13px">' + pijl + '</span>';
+}
 async function renderVergelijkingV2(spelerId) {
   const { spelerHist, trainerHist } = await laadBeoordelingenV2(spelerId);
   const sLaatste = spelerHist.length ? spelerHist[spelerHist.length - 1] : null;
@@ -1784,19 +1798,27 @@ async function renderVergelijkingV2(spelerId) {
   // Zelfde schaalstreepjes/niveaunamen als Inzicht → Skills (2026-09-07) — ontbraken
   // hier nog, gemeld 2026-09-08.
   const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
+  // Klik-door naar de Geschiedenis-sheet (vooringesteld op die ene vaardigheid)
+  // alleen op desktop/laptop — zelfde breakpoint als Inzicht al gebruikt voor
+  // zijn mobiel/desktop-onderscheid. Op mobiel blijft de rij puur informatief,
+  // alleen het pijltje erbij, geen extra tik-doel (gebruiker 2026-09-11).
+  const desktop = window.matchMedia('(min-width:860px)').matches;
   let html = '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:6px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>'
     + '<div style="display:flex;gap:10px;margin-bottom:8px"><div style="width:112px;flex-shrink:0"></div>'
-    + '<div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:9px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div></div>';
+    + '<div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:9px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div>'
+    + '<div style="width:18px;flex-shrink:0"></div></div>';
   Object.entries(FORM_SKILLS_V2).forEach(([cat, skills]) => {
     html += '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">' + cat + '</div>';
     skills.forEach(sk => {
       const sv = sSkills[sk] ? SKILL_NIVEAU_PCT_V2[sSkills[sk]] : null;
       const tv = tSkills[sk] ? SKILL_NIVEAU_PCT_V2[tSkills[sk]] : null;
-      html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:112px;font-size:12.5px;flex-shrink:0">' + sk + '</div><div class="trk" style="flex:1"><div class="trk-line"></div>'
+      const rijStyle = 'display:flex;align-items:center;gap:10px;margin-bottom:9px' + (desktop ? ';cursor:pointer' : '');
+      const onclickAttr = desktop ? ' onclick="openGeschiedenisSheet(\'' + spelerId + '\',\'' + sk + '\')"' : '';
+      html += '<div style="' + rijStyle + '"' + onclickAttr + '><div style="width:112px;font-size:12.5px;flex-shrink:0">' + sk + '</div><div class="trk" style="flex:1"><div class="trk-line"></div>'
         + NIVEAU_TICKS.map(([, pct]) => '<div class="trk-tick" style="left:' + pct + '%"></div>').join('')
         + (sv != null ? '<div class="trk-dot src-speler" style="left:' + sv + '%;background:currentColor"></div>' : '')
         + (tv != null ? '<div class="trk-dot src-trainer" style="left:' + tv + '%;background:currentColor"></div>' : '')
-        + '</div></div>';
+        + '</div><div style="width:18px;flex-shrink:0;text-align:center">' + skillTrendPijlHtml(trainerHist, sk) + '</div></div>';
     });
   });
   return html;
@@ -2024,14 +2046,18 @@ async function slaTrainerBeoordelingOp(btn) {
 // renderGeschiedenisTijdlijn()), i.p.v. alleen hele beoordeelmomenten. ───
 let gsSpelerId = null;
 let gsSpelerHist = [], gsTrainerHist = [];
-function openGeschiedenisSheet(spelerId) { gsSpelerId = spelerId; renderGsSheet(); document.getElementById('sheet-geschiedenis').classList.remove('verborgen'); }
+// vaardigheid (optioneel): direct openen op die ene vaardigheid i.p.v. de
+// eerste uit de dropdown — gebruikt door de klik-door-pijltjes op desktop in
+// renderVergelijkingV2 (gebruiker 2026-09-11), zonder de gewone
+// "Geschiedenis"-knop (die dit argument weglaat) te veranderen.
+function openGeschiedenisSheet(spelerId, vaardigheid) { gsSpelerId = spelerId; renderGsSheet(vaardigheid); document.getElementById('sheet-geschiedenis').classList.remove('verborgen'); }
 function closeGeschiedenisSheet() { document.getElementById('sheet-geschiedenis').classList.add('verborgen'); }
 async function gsIntrekken(id) {
   await intrekkenTrainerBeoordeling(id);
   delete beoordelingCacheV2[gsSpelerId];
   renderGsSheet();
 }
-async function renderGsSheet() {
+async function renderGsSheet(vaardigheid) {
   document.getElementById('gs-content').innerHTML = '<div style="font-size:13px;color:var(--ink3)">Laden…</div>';
   const select = document.getElementById('gs-vaardigheid-select');
   select.innerHTML = '';
@@ -2050,6 +2076,7 @@ async function renderGsSheet() {
   const volgorde = Object.values(FORM_SKILLS_V2).flat();
   const gesorteerd = volgorde.filter(s => alleSkills.has(s));
   select.innerHTML = gesorteerd.map(s => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('');
+  if (vaardigheid && gesorteerd.includes(vaardigheid)) select.value = vaardigheid;
   renderGsTijdlijn();
 }
 function renderGsTijdlijn() {
@@ -3687,8 +3714,16 @@ initAuthGateV2();
 // Herlaadt Inzicht bij het oversteken van de 860px-grens (bv. venster resizen),
 // zodat je niet handmatig hoeft te navigeren om tussen tabbladen en dashboard
 // te wisselen. Alleen als het scherm al actief is — anders is er niets te doen.
+// Zelfde reden voor het speler-scherm: de klik-door-pijltjes in
+// renderVergelijkingV2 zijn alleen op desktop actief (gebruiker 2026-09-11).
 window.matchMedia('(min-width:860px)').addEventListener('change', () => {
   if (document.getElementById('screen-inzicht').classList.contains('actief')) renderInzicht();
+  if (document.getElementById('screen-speler-bewerk').classList.contains('actief') && bewerkSpelerId) {
+    renderVergelijkingV2(bewerkSpelerId).then(html => {
+      const el = document.getElementById('sb-vergelijking');
+      if (el) el.innerHTML = html;
+    });
+  }
 });
 </script>
 </body>

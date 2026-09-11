@@ -248,6 +248,16 @@ async function laadLaatsteInzending() {
   const rows = await sbFetch('speler_beoordelingen?select=data&speler_id=eq.' + spelerId + '&order=created_at.desc&limit=1');
   if (rows && rows[0] && rows[0].data) {
     vulFormulierIn(rows[0].data);
+    // Verlofvelden bewust leeg laten bij vooraf-invullen vanuit een oudere
+    // inzending (i.t.t. de rest van het formulier) — anders blijft bv. een
+    // zomervakantie-periode zichtbaar staan als het formulier maanden later
+    // weer geopend wordt, wat verwarrend is (gemeld door gebruiker 2026-09-11).
+    // herstelVoortgang() (eigen, nog niet verzonden concept) laat dit wel
+    // staan, dat is gewoon werk-in-uitvoering herstellen, geen oude inzending.
+    const vak = document.getElementById('f-vakantie');
+    if (vak) { vak.value = ''; vak.dispatchEvent(new Event('change')); }
+    const van = document.getElementById('f-vakantie-van'); if (van) van.value = '';
+    const tot = document.getElementById('f-vakantie-tot'); if (tot) tot.value = '';
     const banner = document.getElementById('herstel-banner');
     if (banner) { banner.style.display = 'block'; banner.querySelector('span').textContent = 'Ingevuld met je vorige inzending — pas aan waar nodig'; }
   }

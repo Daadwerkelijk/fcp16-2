@@ -1965,7 +1965,7 @@ async function verwijderSpeler(btn) {
   setTeamTab('spelers');
   toonScherm('team');
 }
-function deelFormulierV2(spelerId) {
+async function deelFormulierV2(spelerId) {
   const p = spelers().find(x => x.id === spelerId);
   const token = safeEncode(spelerId + ':' + p.naam);
   // Zelfde su/sk-toevoeging als deelFormulier() in selectie.html: de speler die
@@ -1977,7 +1977,17 @@ function deelFormulierV2(spelerId) {
   if (sbUrl) link += '&su=' + encodeURIComponent(safeEncode(sbUrl));
   if (sbKey) link += '&sk=' + encodeURIComponent(safeEncode(sbKey));
   const veld = document.getElementById('sb-link-veld');
-  veld.innerHTML = '<div class="field" style="margin-top:10px"><span class="label">Link om te delen</span><div style="display:flex;gap:8px"><input class="input" id="sb-link-input" readonly style="flex:1;font-size:12px"><button class="btn btn--secondary btn--sm" id="sb-link-kopieer">Kopieer</button></div></div>';
+  // Bekende eerdere afwezigheidsperiodes er even bij tonen op het moment van
+  // delen — het formulier zelf laat de verlofvelden bewust leeg starten (zie
+  // laadLaatsteInzending() in spelerformulier.html) zodat oude data niet als
+  // actueel oogt, dus dit overzicht staat hier als geheugensteun voor de
+  // trainer, direct naast de deel-actie (gebruiker 2026-09-11).
+  const periodes = await haalAfwezigheidsperiodes(spelerId);
+  const fmt = iso => { const d = new Date(iso); return d.getDate() + ' ' + MAAND_KORT[d.getMonth()]; };
+  const historieHtml = periodes.length
+    ? '<div style="font-size:12px;color:var(--ink3);margin-top:10px">Bekende eerdere afwezigheid: ' + periodes.map(pd => fmt(pd.van) + '–' + fmt(pd.tot) + (pd.reden ? ' (' + esc(pd.reden) + ')' : '')).join(', ') + '</div>'
+    : '';
+  veld.innerHTML = '<div class="field" style="margin-top:10px"><span class="label">Link om te delen</span><div style="display:flex;gap:8px"><input class="input" id="sb-link-input" readonly style="flex:1;font-size:12px"><button class="btn btn--secondary btn--sm" id="sb-link-kopieer">Kopieer</button></div>' + historieHtml + '</div>';
   document.getElementById('sb-link-input').value = link;
   document.getElementById('sb-link-kopieer').onclick = function () {
     const btn = this;

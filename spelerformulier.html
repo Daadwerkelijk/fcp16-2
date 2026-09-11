@@ -3,170 +3,133 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#2B1FA0">
-<title>Spelersformulier — SportCoach</title>
-<link rel="stylesheet" href="style.css">
+<meta name="theme-color" content="#F7F5F2">
+<title>Spelersformulier — FCP 16-2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ui-v2.css">
 <style>
-  .pf-section { background:var(--bg2); border:1px solid var(--line2); border-radius:var(--rsm); padding:14px; margin-bottom:12px; }
-  .pf-section-title { font-family:var(--font-display); font-size:14px; font-weight:600; color:var(--text); margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid var(--line2); }
-  .pf-row { margin-bottom:10px; }
-  .form-label { font-size:11px; color:var(--text3); margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em; }
-  .pf-input { width:100%; padding:9px 10px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--rsm); color:var(--text); font-family:var(--font-mono); font-size:13px; box-sizing:border-box; }
-  .form-select { width:100%; padding:9px 10px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--rsm); color:var(--text); font-family:var(--font-mono); font-size:13px; }
-  .form-textarea { width:100%; padding:9px 10px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--rsm); color:var(--text); font-family:var(--font-mono); font-size:13px; min-height:80px; resize:vertical; box-sizing:border-box; }
-  .skill-tabel { width:100%; border-collapse:collapse; }
-  .skill-tabel th { font-size:10px; color:var(--text3); text-align:center; padding:4px 2px; font-weight:400; }
-  .skill-tabel td { padding:5px 3px; border-bottom:1px solid var(--line2); }
-  .skill-naam { font-size:12px; color:var(--text2); }
-  .skill-radio-cel { text-align:center; }
-  .skill-radio-cel input[type=radio] { width:18px; height:18px; accent-color:var(--accent); cursor:pointer; }
-  .submit-btn { width:100%; padding:14px; background:var(--accent); border:none; border-radius:var(--rsm); color:#0a1200; font-family:var(--font-mono); font-size:14px; font-weight:700; cursor:pointer; margin-top:8px; }
-  .success-msg { text-align:center; padding:40px 20px; }
+  /* Alleen wat ui-v2.css zelf niet al biedt (toast bestaat daar niet — de
+     klassieke .toast uit style.css hierheen overgezet met V2-tokens i.p.v.
+     de oude hardcoded kleuren). Bewust geen data-thema/donker-logica hier —
+     dit formulier blijft altijd de lichte versie (gebruiker 2026-09-11). */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:var(--r-pill);font:600 13px/1 var(--font);opacity:0;transition:all .3s;z-index:300;pointer-events:none;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
-<body>
+<body class="v2">
 <div class="toast" id="toast"></div>
 
-<div id="herstel-banner" style="display:none;margin:10px 16px 0;padding:10px 13px;background:#EEF2FF;border:1px solid #C7D4FC;border-radius:10px;font-size:12px;color:#1a3799;align-items:center;gap:8px">
-    🔄 <span></span>
+<div id="herstel-banner" style="display:none;margin:14px 16px 0;padding:10px 13px;background:var(--accent-soft);border-radius:var(--r-ctl);font-size:12px;color:var(--accent);align-items:center;gap:8px">
+  🔄 <span></span>
+</div>
+<div id="autosave-indicator" style="text-align:right;font-size:11px;color:var(--win);padding:6px 16px 0;opacity:0;transition:opacity .5s"></div>
+
+<div id="form-wrap" style="display:none">
+  <div style="padding:28px 16px 16px">
+    <div class="eyebrow">FCP 16-2 · Spelersformulier</div>
+    <div class="appbar-h1" style="margin-top:2px" id="form-speler-naam">—</div>
   </div>
-  <div id="autosave-indicator" style="text-align:right;font-size:11px;color:#1B7A4B;padding:6px 16px 0;opacity:0;transition:opacity .5s"></div>
 
-  <div id="form-wrap" style="display:none">
-  <div style="padding:48px 16px 8px;background:var(--bg2);border-bottom:1px solid var(--line2);margin-bottom:16px">
-    <div style="font-size:11px;color:var(--text3);margin-bottom:2px">FCP 16-2 · Spelersformulier</div>
-    <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--text)" id="form-speler-naam">—</div>
-  </div>
+  <div class="pad" style="padding-bottom:40px">
 
-  <div style="padding:0 16px 32px">
-
-    <!-- Persoonlijke gegevens -->
-    <div class="pf-section">
-      <div class="pf-section-title">Persoonlijke gegevens</div>
-      <div class="pf-row">
-        <div class="form-label">Naam</div>
-        <input class="pf-input" id="f-naam" placeholder="Volledige naam">
-      </div>
-      <div class="pf-row">
-        <div class="form-label">Geboortedatum</div>
-        <input class="pf-input" id="f-geboortedatum" type="date">
-      </div>
-      <div class="pf-row">
-        <div class="form-label">Voorkeurspositie</div>
-        <select class="form-select" id="f-positie">
-          <option value="">Kies positie...</option>
-          <option>Keeper</option>
-          <option>Verdediger</option>
-          <option>Middenvelder</option>
-          <option>Aanvaller</option>
-        </select>
-      </div>
-      <div class="pf-row">
-        <div class="form-label">Mobielnummer</div>
-        <input class="pf-input" id="f-mobiel" type="tel" placeholder="06-...">
-      </div>
-      <div class="pf-row">
-        <div class="form-label">Ga je op vakantie?</div>
-        <select class="form-select" id="f-vakantie">
-          <option value="">Kies...</option>
-          <option value="ja">Ja</option>
-          <option value="nee">Nee</option>
-        </select>
-      </div>
+    <div class="card">
+      <div class="sec">Persoonlijke gegevens</div>
+      <div class="field"><span class="label">Naam</span><input class="input" id="f-naam" placeholder="Volledige naam"></div>
+      <div class="field"><span class="label">Geboortedatum</span><input class="input" id="f-geboortedatum" type="date"></div>
+      <div class="field"><span class="label">Voorkeurspositie</span><select class="input" id="f-positie">
+        <option value="">Kies positie...</option>
+        <option>Keeper</option>
+        <option>Verdediger</option>
+        <option>Middenvelder</option>
+        <option>Aanvaller</option>
+      </select></div>
+      <div class="field"><span class="label">Mobielnummer</span><input class="input" id="f-mobiel" type="tel" placeholder="06-..."></div>
+      <div class="field"><span class="label">Ga je op vakantie?</span><select class="input" id="f-vakantie">
+        <option value="">Kies...</option>
+        <option value="ja">Ja</option>
+        <option value="nee">Nee</option>
+      </select></div>
       <div id="vakantie-details" style="display:none">
-        <div class="pf-row">
-          <div class="form-label">Van</div>
-          <input class="pf-input" id="f-vakantie-van" type="date">
-        </div>
-        <div class="pf-row">
-          <div class="form-label">Tot</div>
-          <input class="pf-input" id="f-vakantie-tot" type="date">
+        <div class="field" style="display:flex;gap:10px">
+          <div style="flex:1"><span class="label">Van</span><input class="input" id="f-vakantie-van" type="date"></div>
+          <div style="flex:1"><span class="label">Tot</span><input class="input" id="f-vakantie-tot" type="date"></div>
         </div>
       </div>
     </div>
 
-    <!-- Leiderschap -->
-    <div class="pf-section">
-      <div class="pf-section-title">Leiderschap</div>
-      <div class="pf-row">
-        <div class="form-label">Wil je aanvoerder zijn?</div>
-        <select class="form-select" id="f-aanvoerder" onchange="toggleAanvoerder()">
-          <option value="">Kies...</option>
-          <option value="ja">Ja</option>
-          <option value="nee">Nee</option>
-        </select>
-      </div>
-      <div id="aanvoerder-ja" style="display:none" class="pf-row">
-        <div class="form-label">Zo ja, waarom?</div>
-        <textarea class="form-textarea" id="f-aanvoerder-waarom" placeholder="Leg uit..."></textarea>
-      </div>
-      <div id="aanvoerder-nee" style="display:none" class="pf-row">
-        <div class="form-label">Zo nee, wie dan?</div>
-        <input class="pf-input" id="f-aanvoerder-wie" placeholder="Naam van ploeggenoot">
-      </div>
-      <div class="pf-row">
-        <div class="form-label">Waarom deze speler?</div>
-        <textarea class="form-textarea" id="f-aanvoerder-waarom2" placeholder="Leg uit..."></textarea>
-      </div>
+    <div class="card" style="margin-top:10px">
+      <div class="sec">Leiderschap</div>
+      <div class="field"><span class="label">Wil je aanvoerder zijn?</span><select class="input" id="f-aanvoerder" onchange="toggleAanvoerder()">
+        <option value="">Kies...</option>
+        <option value="ja">Ja</option>
+        <option value="nee">Nee</option>
+      </select></div>
+      <div id="aanvoerder-ja" style="display:none" class="field"><span class="label">Zo ja, waarom?</span><textarea class="input" id="f-aanvoerder-waarom" style="min-height:70px;resize:vertical" placeholder="Leg uit..."></textarea></div>
+      <div id="aanvoerder-nee" style="display:none" class="field"><span class="label">Zo nee, wie dan?</span><input class="input" id="f-aanvoerder-wie" placeholder="Naam van ploeggenoot"></div>
+      <div class="field"><span class="label">Waarom deze speler?</span><textarea class="input" id="f-aanvoerder-waarom2" style="min-height:70px;resize:vertical" placeholder="Leg uit..."></textarea></div>
     </div>
 
-    <!-- Skills: Techniek -->
-    <div class="pf-section">
-      <div class="pf-section-title">Techniek</div>
-      <div id="skill-techniek"></div>
+    <div class="card" style="margin-top:10px"><div class="sec">Techniek</div><div id="skill-techniek"></div></div>
+    <div class="card" style="margin-top:10px"><div class="sec">Tactiek</div><div id="skill-tactiek"></div></div>
+    <div class="card" style="margin-top:10px"><div class="sec">Fysiek</div><div id="skill-fysiek"></div></div>
+    <div class="card" style="margin-top:10px"><div class="sec">Mentaal</div><div id="skill-mentaal"></div></div>
+
+    <div class="card" style="margin-top:10px">
+      <div class="sec">Wens dit seizoen</div>
+      <div class="field"><span class="label">Waar wil je dit seizoen aan werken?</span><textarea class="input" id="f-wens" style="min-height:100px;resize:vertical" placeholder="Beschrijf je persoonlijke doel..."></textarea></div>
     </div>
 
-    <!-- Skills: Tactiek -->
-    <div class="pf-section">
-      <div class="pf-section-title">Tactiek</div>
-      <div id="skill-tactiek"></div>
+    <div class="card" style="margin-top:10px">
+      <div class="sec">Bijzonderheden</div>
+      <textarea class="input" id="f-bijzonderheden" style="min-height:80px;resize:vertical" placeholder="Medische info, blessures, afspraken..."></textarea>
     </div>
 
-    <!-- Skills: Fysiek -->
-    <div class="pf-section">
-      <div class="pf-section-title">Fysiek</div>
-      <div id="skill-fysiek"></div>
-    </div>
-
-    <!-- Skills: Mentaal -->
-    <div class="pf-section">
-      <div class="pf-section-title">Mentaal</div>
-      <div id="skill-mentaal"></div>
-    </div>
-
-    <!-- Wens -->
-    <div class="pf-section">
-      <div class="pf-section-title">Wens dit seizoen</div>
-      <div class="pf-row">
-        <div class="form-label">Waar wil je dit seizoen aan werken?</div>
-        <textarea class="form-textarea" id="f-wens" placeholder="Beschrijf je persoonlijke doel..." style="min-height:100px"></textarea>
-      </div>
-    </div>
-
-    <!-- Bijzonderheden -->
-    <div class="pf-section">
-      <div class="pf-section-title">Bijzonderheden</div>
-      <textarea class="form-textarea" id="f-bijzonderheden" placeholder="Medische info, blessures, afspraken..." style="min-height:80px"></textarea>
-    </div>
-
-    <button class="submit-btn" onclick="submitFormulier()">✓ Formulier insturen</button>
+    <button class="btn btn--primary btn--block" style="margin-top:16px" onclick="submitFormulier()">✓ Formulier insturen</button>
   </div>
 </div>
 
-<div id="loading-msg" style="padding:60px 20px;text-align:center;color:var(--text3);font-size:13px">Formulier laden...</div>
-<div id="success-msg" style="display:none" class="success-msg">
+<div id="loading-msg" style="padding:60px 20px;text-align:center;color:var(--ink3);font-size:13px">Formulier laden...</div>
+<div id="success-msg" style="display:none;text-align:center;padding:60px 20px">
   <div style="font-size:48px;margin-bottom:16px">✅</div>
-  <div style="font-family:var(--font-display);font-size:22px;color:var(--text);margin-bottom:8px">Bedankt!</div>
-  <div style="font-size:13px;color:var(--text3)">Je formulier is ontvangen door de trainer.</div>
+  <div class="appbar-h1" style="font-size:22px;margin-bottom:8px">Bedankt!</div>
+  <div style="font-size:13px;color:var(--ink3)">Je formulier is ontvangen door de trainer.</div>
 </div>
 
 <script src="app.js"></script>
 <script>
-// FORM_SKILLS en SKILL_OPTIES komen nu uit app.js (gedeeld met de trainersbeoordeling)
+// FORM_SKILLS en SKILL_OPTIES komen uit app.js (gedeeld met de trainersbeoordeling)
 
 let spelerId = null;
 let spelerNaam = '';
 let autoSaveTimer = null;
+
+// ─── Skills: chips per vaardigheid (zelfde patroon/component als
+// renderTbSheet() in index.html voor de trainersbeoordeling — voorheen een
+// radio-tabel uit de klassieke opmaak, nu dezelfde chip-rijen als de trainer
+// al gebruikt, zie gebruiker 2026-09-11). ───
+let formSkillKeuzes = {};
+function renderSkillCategorie(cat, skills) {
+  const el = document.getElementById('skill-' + cat);
+  if (!el) return;
+  el.innerHTML = skills.map(s =>
+    '<div style="margin-bottom:14px"><div style="font-size:13.5px;font-weight:600;margin-bottom:6px">' + s + '</div><div style="display:flex;flex-wrap:wrap;gap:6px">'
+      + SKILL_OPTIES.map(niv => '<button type="button" class="chip" aria-pressed="' + (formSkillKeuzes[s] === niv) + '" onclick="kiesFormSkill(\'' + s + '\',\'' + niv + '\')">' + niv + '</button>').join('')
+      + '</div></div>'
+  ).join('');
+}
+function renderAlleSkillCategorieen() {
+  Object.entries(FORM_SKILLS).forEach(([cat, skills]) => renderSkillCategorie(cat, skills));
+}
+function kiesFormSkill(skill, niveau) {
+  formSkillKeuzes[skill] = niveau;
+  renderAlleSkillCategorieen();
+  // Chips zijn geen native form-inputs, dus die triggeren de input/change-
+  // delegatie van startAutoSave() niet vanzelf — hier alsnog debounced opslaan.
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveVoortgang, 1000);
+}
+function collectSkills() { return { ...formSkillKeuzes }; }
 
 // ─── AUTO-SAVE ───
 function autoSaveKey() { return 'formulier_draft_' + spelerId; }
@@ -191,7 +154,6 @@ function saveVoortgang() {
     opgeslagen_op:     new Date().toISOString(),
   };
   localStorage.setItem(autoSaveKey(), JSON.stringify(draft));
-  // Toon indicator
   const ind = document.getElementById('autosave-indicator');
   if (ind) { ind.textContent = '✓ Voortgang opgeslagen'; ind.style.opacity = '1'; setTimeout(() => ind.style.opacity = '0', 2000); }
 }
@@ -211,16 +173,8 @@ function vulFormulierIn(d) {
   set('f-aanvoerder-waarom2', d.aanvoerder_waarom2);
   set('f-wens', d.wens);
   set('f-bijzonderheden', d.bijzonderheden);
-  // Skills herstellen
-  if (d.skills) {
-    Object.entries(d.skills).forEach(([skill, waarde]) => {
-      const sid = 'skill-' + ['techniek','tactiek','fysiek','mentaal'].find(cat =>
-        (FORM_SKILLS[cat]||[]).includes(skill)
-      ) + '-' + skill.replace(/\s+/g,'_');
-      const radio = document.querySelector(`input[name="${sid}"][value="${waarde}"]`);
-      if (radio) radio.checked = true;
-    });
-  }
+  formSkillKeuzes = { ...(d.skills || {}) };
+  renderAlleSkillCategorieen();
   document.getElementById('f-vakantie')?.dispatchEvent(new Event('change'));
   toggleAanvoerder();
 }
@@ -234,7 +188,7 @@ function herstelVoortgang() {
     vulFormulierIn(d);
     const datum = d.opgeslagen_op ? new Date(d.opgeslagen_op).toLocaleString('nl-NL') : '';
     const banner = document.getElementById('herstel-banner');
-    if (banner) { banner.style.display = 'block'; banner.querySelector('span').textContent = 'Voortgang hersteld van ' + datum; }
+    if (banner) { banner.style.display = 'flex'; banner.querySelector('span').textContent = 'Voortgang hersteld van ' + datum; }
     return true;
   } catch(e) { return false; }
 }
@@ -259,7 +213,7 @@ async function laadLaatsteInzending() {
     const van = document.getElementById('f-vakantie-van'); if (van) van.value = '';
     const tot = document.getElementById('f-vakantie-tot'); if (tot) tot.value = '';
     const banner = document.getElementById('herstel-banner');
-    if (banner) { banner.style.display = 'block'; banner.querySelector('span').textContent = 'Ingevuld met je vorige inzending — pas aan waar nodig'; }
+    if (banner) { banner.style.display = 'flex'; banner.querySelector('span').textContent = 'Ingevuld met je vorige inzending — pas aan waar nodig'; }
   }
 }
 
@@ -289,22 +243,6 @@ function getTokenFromUrl() {
   return params.get('token');
 }
 
-function buildSkillTabel(cat, skills) {
-  let html = '<table class="skill-tabel"><thead><tr><th style="text-align:left">Skill</th>';
-  SKILL_OPTIES.forEach(o => html += `<th>${o}</th>`);
-  html += '</tr></thead><tbody>';
-  skills.forEach(s => {
-    const sid = 'skill-' + cat + '-' + s.replace(/\s+/g,'_');
-    html += `<tr><td class="skill-naam">${s}</td>`;
-    SKILL_OPTIES.forEach((o, i) => {
-      html += `<td class="skill-radio-cel"><input type="radio" name="${sid}" value="${o}" id="${sid}-${i}"></td>`;
-    });
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-  return html;
-}
-
 function toggleAanvoerder() {
   const val = document.getElementById('f-aanvoerder').value;
   document.getElementById('aanvoerder-ja').style.display  = val === 'ja'  ? 'block' : 'none';
@@ -314,18 +252,6 @@ function toggleAanvoerder() {
 document.getElementById('f-vakantie').addEventListener('change', function() {
   document.getElementById('vakantie-details').style.display = this.value === 'ja' ? 'block' : 'none';
 });
-
-function collectSkills() {
-  const skills = {};
-  Object.entries(FORM_SKILLS).forEach(([cat, lijst]) => {
-    lijst.forEach(s => {
-      const sid = 'skill-' + cat + '-' + s.replace(/\s+/g,'_');
-      const checked = document.querySelector(`input[name="${sid}"]:checked`);
-      if (checked) skills[s] = checked.value;
-    });
-  });
-  return skills;
-}
 
 async function submitFormulier() {
   const data = {
@@ -376,11 +302,7 @@ if (token) {
     spelerNaam = parts.slice(1).join(':');
     document.getElementById('form-speler-naam').textContent = spelerNaam;
     document.getElementById('f-naam').value = spelerNaam;
-    // Bouw skill tabellen
-    Object.entries(FORM_SKILLS).forEach(([cat, skills]) => {
-      const el = document.getElementById('skill-' + cat);
-      if (el) el.innerHTML = buildSkillTabel(cat, skills);
-    });
+    renderAlleSkillCategorieen();
     document.getElementById('loading-msg').style.display = 'none';
     document.getElementById('form-wrap').style.display = 'block';
     const heeftConcept = herstelVoortgang();

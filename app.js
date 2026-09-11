@@ -646,6 +646,9 @@ async function loadFromSupabase() {
       const sv = parseInt(notes['spelvorm'], 10);
       if (sv) { result.spelvorm = sv; localStorage.setItem('fcp_spelvorm', String(sv)); }
     }
+    if (notes['actieve_formatie']) {
+      result.formatie = notes['actieve_formatie']; localStorage.setItem('fcp_formatie', notes['actieve_formatie']);
+    }
   }
   if (oe && !oe._error) {
     const oef = oe.map(o => ({
@@ -1195,6 +1198,21 @@ function saveSpelvorm(spelvorm) {
     );
   }
   return sv;
+}
+
+// Welke opstelling (custom_formaties/FORMATIES_BUILTIN-id) als team-basis geldt.
+// Was tot 2026-09-11 alleen lokaal (fcp_formatie) — anders dan de opstelling
+// zelf (tabel lineup) en de systemen (custom_formaties), die al wel gesynchroniseerd
+// waren. Gebruiker meldde dat dit per apparaat/trainer uit elkaar kon lopen.
+// Zelfde session_notes-patroon als saveSpelvorm() hierboven.
+function saveFormatie(id) {
+  localStorage.setItem('fcp_formatie', id);
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    sbFetch('session_notes?note_key=eq.actieve_formatie', 'DELETE').then(() =>
+      sbFetch('session_notes', 'POST', { note_key:'actieve_formatie', content:id })
+    );
+  }
+  return id;
 }
 
 // ─── SCHEMA DATA ───

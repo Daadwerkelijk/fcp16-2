@@ -163,7 +163,7 @@ async function verwijderActieveFormatie() {
 
 function setFormatie(f) {
   activeFormatie = f;
-  localStorage.setItem('fcp_formatie', f);
+  saveFormatie(f);
   const sel = document.getElementById('formatie-select');
   if (sel) sel.value = f;
   toonEigenSysteemKnoppen();

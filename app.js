@@ -539,16 +539,64 @@ function saveCategories(cats)      { localStorage.setItem('fcp_cats',         JS
 function saveWedstrijden(wed)      { localStorage.setItem('fcp_wed',          JSON.stringify(wed)); }
 function saveAanwezigheid(aanw)    { localStorage.setItem('fcp_aanw',         JSON.stringify(aanw)); }
 function saveCustomWeken(weken)    { localStorage.setItem('fcp_custom_weken', JSON.stringify(weken)); }
-async function syncCustomWeken(weken) {
-  saveCustomWeken(weken);
-  if (!supabaseReady) return;
-  await sbFetch('custom_weken?id=eq.singleton', 'DELETE');
-  await sbFetch('custom_weken', 'POST', { id:'singleton', data: JSON.stringify(weken) });
+
+// ─── Datalaag: Trainingsweken & -sessies (training_weken/training_sessies) ───
+// Vervangt de vroegere custom_weken-singleton-blob (hele array in 1 JSON-kolom,
+// DELETE+POST bij elke wijziging). Dat kostte op 9 sept een echte trainings-
+// bewerking: een mislukte schrijfactie ging stil verloren, én sowieso kon de
+// laatste opslag van twee rond hetzelfde moment gemaakte wijzigingen de andere
+// zonder foutmelding overschrijven, omdat allebei de hele array vervingen. Nu
+// per week/sessie een eigen rij met een eigen stabiel id, zoals de rest van de
+// app al werkt — een wijziging aan sessie X kan nooit meer een wijziging aan
+// sessie Y overschrijven, ongeacht de volgorde waarin ze binnenkomen.
+function nieuwTrainingId() { return 'i' + Date.now() + Math.random().toString(36).slice(2, 8); }
+// weken expliciet meegeven i.p.v. hier zelf op te halen: index.html heeft
+// customWeken() als functie (leest localStorage), trainen.html heeft
+// customWeken als gewone variabele — een gedeelde functie kan dat verschil
+// niet zelf raden, dus de aanroeper geeft de actuele array mee.
+function sessieKey(weken, wi, si) {
+  const wk = weken[wi];
+  const id = wk && wk.sessies && wk.sessies[si] && wk.sessies[si].id;
+  // Val terug op de oude positie-sleutel als er (nog) geen id bekend is — zou na
+  // de migratie niet meer moeten voorkomen, puur defensief.
+  return id || ('cw' + wi + '_' + si);
+}
+function toSbSessie(sessie, weekId, volgorde) {
+  return {
+    id: sessie.id || ('i' + Date.now() + Math.random().toString(36).slice(2, 6)),
+    week_id: weekId, dag: sessie.dag, blokken: sessie.blokken || [], volgorde,
+  };
+}
+async function createTrainingWeek(week) {
+  const weekId = week.id || ('i' + Date.now() + Math.random().toString(36).slice(2, 6));
+  const resWeek = await sbWrite('training_weken', 'POST', { id: weekId, iso_date: week.isoDate, focus: week.focus || '', week_nr: week.weekNr || null });
+  if (resWeek && resWeek._error) return resWeek;
+  const sessies = week.sessies || [];
+  for (let i = 0; i < sessies.length; i++) {
+    const res = await sbWrite('training_sessies', 'POST', toSbSessie(sessies[i], weekId, i));
+    if (res && res._error) return res;
+  }
+  return { id: weekId };
+}
+async function updateTrainingWeek(id, velden) {
+  return await sbWrite('training_weken?id=eq.' + id, 'PATCH', velden);
+}
+async function deleteTrainingWeek(id) {
+  return await sbWrite('training_weken?id=eq.' + id, 'DELETE');
+}
+async function createTrainingSessie(weekId, sessie, volgorde) {
+  return await sbWrite('training_sessies', 'POST', toSbSessie(sessie, weekId, volgorde));
+}
+async function updateTrainingSessie(id, velden) {
+  return await sbWrite('training_sessies?id=eq.' + id, 'PATCH', velden);
+}
+async function deleteTrainingSessie(id) {
+  return await sbWrite('training_sessies?id=eq.' + id, 'DELETE');
 }
 
 // ─── SUPABASE LOAD ALL ───
 async function loadFromSupabase() {
-  const [pl, lu, sn, oe, ca, wd, pr, aanw, cw, cf] = await Promise.all([
+  const [pl, lu, sn, oe, ca, wd, pr, aanw, tw, cf, ts] = await Promise.all([
     sbFetch('players?select=*&order=created_at'),
     sbFetch('lineup?select=*'),
     sbFetch('session_notes?select=*'),
@@ -557,8 +605,9 @@ async function loadFromSupabase() {
     sbFetch('wedstrijden?select=*&order=created_at'),
     sbFetch('principes?select=*&order=sort_order'),
     sbFetch('aanwezigheid?select=*'),
-    sbFetch('custom_weken?id=eq.singleton&select=*'),
+    sbFetch('training_weken?select=*&order=iso_date'),
     sbFetch('custom_formaties?select=*&order=sort_order'),
+    sbFetch('training_sessies?select=*&order=volgorde'),
   ]);
   const result = {};
   if (pl && !pl._error) { result.players = pl; savePlayers(pl); }
@@ -628,7 +677,12 @@ async function loadFromSupabase() {
   if (pr && !pr._error && pr.length) { result.principes = pr; }
   if (aanw && !aanw._error) {
     const aanwObj = {};
-    aanw.filter(r => r.training_key && r.training_key !== '[object Object]' && r.training_key.length < 20).forEach(r => {
+    // Drempel was 20 tekens — te krap sinds sessie-id's nu stabiele id's zijn
+    // (nieuwTrainingId() ~20 tekens, de migratie-generated uuid's tot 36 tekens)
+    // i.p.v. de oude, korte cw{wi}_{si}-notatie. Opgehoogd naar 40; de eigenlijke
+    // corruptiesignalen ("[object Object]"/beginnend met "{") blijven de
+    // daadwerkelijke check.
+    aanw.filter(r => r.training_key && r.training_key !== '[object Object]' && r.training_key.length < 40).forEach(r => {
       if (!aanwObj[r.training_key]) aanwObj[r.training_key] = {};
       // Ondersteuning voor oud formaat (boolean) en nieuw formaat ({afwezig, reden})
       if (typeof r.aanwezig === 'boolean') {
@@ -640,12 +694,20 @@ async function loadFromSupabase() {
     result.aanwezigheid = aanwObj;
     // Opschonen - verwijder corrupte keys (te lang of object Object)
     Object.keys(aanwObj).forEach(k => {
-      if (k.length > 20 || k.includes('[object') || k.startsWith('{')) delete aanwObj[k];
+      if (k.length > 40 || k.includes('[object') || k.startsWith('{')) delete aanwObj[k];
     });
     localStorage.setItem('fcp_aanw', JSON.stringify(aanwObj));
   }
-  if (cw && !cw._error && cw.length) {
-    const weken = typeof cw[0].data === 'string' ? JSON.parse(cw[0].data) : cw[0].data;
+  // training_weken/training_sessies zijn per-rij (elk met een eigen stabiel id) i.p.v. de
+  // vroegere custom_weken-singleton-blob — hier client-side weer samengevoegd tot exact
+  // dezelfde geneste vorm die de rest van de app altijd al las, nu wél met een echt id per
+  // week/sessie i.p.v. alleen een array-positie.
+  if (tw && !tw._error && ts && !ts._error) {
+    const weken = tw.map(w => ({
+      id: w.id, isoDate: w.iso_date, focus: w.focus || '', weekNr: w.week_nr,
+      sessies: ts.filter(s => s.week_id === w.id).sort((a, b) => a.volgorde - b.volgorde)
+        .map(s => ({ id: s.id, dag: s.dag, blokken: s.blokken || [] })),
+    }));
     result.customWeken = weken; saveCustomWeken(weken);
   }
   if (cf && !cf._error) {

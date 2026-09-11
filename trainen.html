@@ -397,17 +397,39 @@ function getBlokken(nk) {
   }
 }
 
+// nk is nog steeds de positie-sleutel (cw{wi}_{si}) voor lokale weergave/lookup
+// (verandert niet binnen 1 renderpas) — maar zodra we naar Supabase schrijven,
+// gaat dat via het echte, stabiele sessie-id (zelfde principe als sessieKey()
+// in app.js, hier lokaal toegepast omdat trainen.html zijn eigen nk-notatie
+// gebruikt in plaats van index.html's nkVan()).
+function persistKey(nk) {
+  const m = /^cw(\d+)_(\d+)(.*)$/.exec(nk);
+  if (!m) return nk;
+  return sessieKey(customWeken, +m[1], +m[2]) + m[3];
+}
 function persistBlokken(nk) {
-  if (nk.startsWith('cw')) syncCustomWeken(customWeken);
+  if (!nk.startsWith('cw')) return;
+  const [wi, si] = nk.replace('cw','').split('_').map(Number);
+  const sessie = customWeken[wi]?.sessies?.[si];
+  if (!sessie) return;
+  saveCustomWeken(customWeken);
+  if (supabaseReady && sessie.id) {
+    updateTrainingSessie(sessie.id, { blokken: sessie.blokken }).then(res => {
+      if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+    });
+  }
 }
 
 function saveUrl(key) {
+  // Lokaal blijft onder de positie-sleutel (zo wordt 'm elders ook weer gelezen,
+  // bv. regel 331) — alleen de Supabase-schrijfactie gaat via het echte,
+  // stabiele sessie-id, zodat die niet naar de verkeerde training kan wijzen.
   const val = document.getElementById('url-' + key)?.value.trim() || '';
   sessionNotes[key] = val;
   saveSessionNotes(sessionNotes);
   const el = document.getElementById('urlplay-' + key);
   if (el) el.innerHTML = val ? `<a href="${val}" target="_blank" rel="noopener" style="font-size:18px;text-decoration:none">▶️</a>` : '';
-  if (supabaseReady) saveTrainingUrlRemote(key, val);
+  if (supabaseReady) saveTrainingUrlRemote(persistKey(key), val);
 }
 
 async function saveNote(nk) {
@@ -415,7 +437,7 @@ async function saveNote(nk) {
   sessionNotes[nk] = val;
   saveSessionNotes(sessionNotes);
   if (supabaseReady) {
-    const res = await saveTrainingNoteRemote(nk, val);
+    const res = await saveTrainingNoteRemote(persistKey(nk), val);
     if (res && res._error) return;
   }
   showToast('Aantekening opgeslagen');
@@ -426,7 +448,7 @@ async function saveAanwezigheid(nk) {
   if (!aanwezigheid[nk]) aanwezigheid[nk] = {};
   localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
   if (supabaseReady) {
-    const succes = await saveAanwezigheidRemote(nk, players, aanwezigheid[nk] || {});
+    const succes = await saveAanwezigheidRemote(persistKey(nk), players, aanwezigheid[nk] || {});
     if (!succes) showToast('⚠️ Niet alle data opgeslagen in Supabase');
   }
   const nkData2 = aanwezigheid[nk] || {};
@@ -554,11 +576,19 @@ function removeAfwezig(nk, pid) {
   renderAanw(nk);
 }
 
-function addExtraTraining(wid, customIdx) {
+async function addExtraTraining(wid, customIdx) {
   const naam = prompt('Naam extra training:', 'Extra training'); if (!naam) return;
-  const newSess = { dag:naam, pr:[], blokken:[] };
+  const newSess = { dag:naam, blokken:[] };
   if (customIdx !== null && customIdx !== undefined) {
-    customWeken[customIdx].sessies.push(newSess); syncCustomWeken(customWeken);
+    newSess.id = nieuwTrainingId();
+    const wk = customWeken[customIdx];
+    const volgorde = wk.sessies.length;
+    wk.sessies.push(newSess);
+    saveCustomWeken(customWeken);
+    if (supabaseReady && wk.id) {
+      const res = await createTrainingSessie(wk.id, newSess, volgorde);
+      if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+    }
   } else {
     const weekNum = parseInt(wid.replace('w','')); const week = SCHEMA.find(w => w.week === weekNum);
     if (week) week.sessies.push(newSess);
@@ -701,20 +731,41 @@ function closeQuickOef() { document.getElementById('bmodalQuickOef').classList.r
 function closeBModalPickOefDirect() { document.getElementById('bmodalPickOef').classList.remove('open'); }
 function closeBModalWeekDirect()    { document.getElementById('bmodalWeek').classList.remove('open'); weekBlokken = [[],[]]; }
 
-function saveNieuweWeek() {
+async function saveNieuweWeek() {
   const focus   = document.getElementById('week-f-focus').value.trim() || 'Eigen trainingsweek';
   const isoDate = document.getElementById('week-f-datum').value;
   const weekNr  = document.getElementById('week-f-nr').textContent;
   const tr1naam = document.getElementById('tr1-naam').value.trim() || 'Training 1';
   const tr2naam = document.getElementById('tr2-naam').value.trim() || 'Training 2';
+  // Bij bewerken van een bestaande week: bestaande sessie-id's hergebruiken
+  // (positie 0/1) i.p.v. nieuwe te genereren, anders raakt de al opgeslagen
+  // aanwezigheid/notities van die sessies los van deze training.
+  const bestaand = editingWeekIdx !== null ? customWeken[editingWeekIdx] : null;
   const sessies = [
-    { dag:tr1naam, pr:[], blokken:weekBlokken[0].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
-    { dag:tr2naam, pr:[], blokken:weekBlokken[1].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
+    { id: bestaand?.sessies?.[0]?.id || nieuwTrainingId(), dag:tr1naam, blokken:weekBlokken[0].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
+    { id: bestaand?.sessies?.[1]?.id || nieuwTrainingId(), dag:tr2naam, blokken:weekBlokken[1].map(b => ({ t:'', cat:normaliseerCat(b.cat), n:b.oefNaam, tip:b.tip, url:b.url })) },
   ];
-  const week = { focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
-  if (editingWeekIdx !== null) { customWeken[editingWeekIdx] = week; showToast('Week bijgewerkt'); }
+  const weekId = bestaand?.id || nieuwTrainingId();
+  const week = { id: weekId, focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
+  const isNieuw = editingWeekIdx === null;
+  if (!isNieuw) { customWeken[editingWeekIdx] = week; showToast('Week bijgewerkt'); }
   else { customWeken.push(week); showToast('Week aangemaakt: ' + focus); }
-  syncCustomWeken(customWeken);
+  saveCustomWeken(customWeken);
+  if (supabaseReady) {
+    if (isNieuw) {
+      const res = await createTrainingWeek(week);
+      if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+    } else {
+      const resW = await updateTrainingWeek(weekId, { iso_date: isoDate, focus, week_nr: weekNr });
+      if (resW && resW._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (resW.message || resW.status));
+      for (let i = 0; i < sessies.length; i++) {
+        const s = sessies[i];
+        const bestondAl = bestaand?.sessies?.[i]?.id;
+        const res = bestondAl ? await updateTrainingSessie(s.id, { dag: s.dag, blokken: s.blokken }) : await createTrainingSessie(weekId, s, i);
+        if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+      }
+    }
+  }
   closeBModalWeekDirect();
   buildSchema();
 }
@@ -766,15 +817,21 @@ function saveKopieerWeek() {
   const focus   = document.getElementById('kopieer-focus').value.trim() || bron.focus + ' (kopie)';
   const isoDate = document.getElementById('kopieer-datum').value;
   const weekNr  = document.getElementById('kopieer-nr').textContent;
-  // Diepe kopie van sessies — blokken overnemen, aanwezigheid/aantekeningen niet
+  // Diepe kopie van sessies — blokken overnemen, aanwezigheid/aantekeningen niet,
+  // elke gekopieerde sessie krijgt bewust een eigen nieuw id (het is een nieuwe
+  // training, geen voortzetting van de bron-sessie).
   const sessies = bron.sessies.map(s => ({
-    dag:    s.dag,
-    pr:     [...(s.pr || [])],
+    id: nieuwTrainingId(), dag: s.dag,
     blokken: (s.blokken || []).map(b => ({ t:b.t||'', cat:normaliseerCat(b.cat), n:b.n, tip:b.tip||'', url:b.url||'' }))
   }));
-  const nieuw = { focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
+  const nieuw = { id: nieuwTrainingId(), focus, isoDate, weekNr, datum: isoDate ? formatDatumShort(isoDate) : '', sessies };
   customWeken.push(nieuw);
-  syncCustomWeken(customWeken);
+  saveCustomWeken(customWeken);
+  if (supabaseReady) {
+    createTrainingWeek(nieuw).then(res => {
+      if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+    });
+  }
   closeBModalKopieer();
   buildSchema();
   showToast('Week gekopieerd: ' + focus);
@@ -782,7 +839,17 @@ function saveKopieerWeek() {
 
 function deleteCustomWeek(wi) {
   if (!confirm('Verwijder deze week?')) return;
-  customWeken.splice(wi, 1); syncCustomWeken(customWeken); buildSchema(); showToast('Week verwijderd');
+  const weekId = customWeken[wi].id;
+  customWeken.splice(wi, 1);
+  saveCustomWeken(customWeken);
+  if (supabaseReady && weekId) {
+    // ON DELETE CASCADE op training_sessies.week_id ruimt de sessies vanzelf op.
+    deleteTrainingWeek(weekId).then(res => {
+      if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
+    });
+  }
+  buildSchema();
+  showToast('Week verwijderd');
 }
 
 async function deleteSessie(wi, si) {
@@ -790,39 +857,24 @@ async function deleteSessie(wi, si) {
   if (week.sessies.length <= 1) { showToast('Een week heeft minstens 1 training nodig'); return; }
   if (!confirm('Deze trainingsdag verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
 
-  const oudAantal = week.sessies.length;
+  const sessieId = week.sessies[si].id;
   week.sessies.splice(si, 1);
-  const nieuwAantal = week.sessies.length;
 
-  // Verschuif lokale aanwezigheid/aantekeningen: alles na de verwijderde index één plek naar voren,
-  // zodat data van latere trainingen niet per ongeluk aan de verkeerde dag blijft hangen.
+  // Elke sessie heeft een eigen stabiel id — de overige sessies in deze week
+  // blijven gewoon bij hun eigen aanwezigheid/notities horen, ongeacht hun
+  // nieuwe positie in de lijst. Geen schuif-workaround meer nodig.
   const prefix = 'cw' + wi + '_';
   delete aanwezigheid[prefix + si];
   delete sessionNotes[prefix + si];
-  for (let s = si + 1; s < oudAantal; s++) {
-    const oldK = prefix + s, newK = prefix + (s - 1);
-    if (aanwezigheid[oldK]  !== undefined) { aanwezigheid[newK]  = aanwezigheid[oldK];  delete aanwezigheid[oldK]; }
-    if (sessionNotes[oldK]  !== undefined) { sessionNotes[newK]  = sessionNotes[oldK];  delete sessionNotes[oldK]; }
-  }
   localStorage.setItem('fcp_aanw', JSON.stringify(aanwezigheid));
   saveSessionNotes(sessionNotes);
-  syncCustomWeken(customWeken);
+  saveCustomWeken(customWeken);
 
-  if (supabaseReady) {
-    // Ruim alle oude sleutels van deze week op (spant een breder bereik dan de nieuwe lengte)
-    for (let s = 0; s < oudAantal; s++) {
-      const k = prefix + s;
-      await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(k), 'DELETE');
-      await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingNoteKey(k)), 'DELETE');
-    }
-    // Zet de (verschoven) huidige sessies opnieuw weg, via dezelfde datalaag-functies
-    // als een normale opslag — dus ook dezelfde herhaalpogingen bij een hapering.
-    for (let s = 0; s < nieuwAantal; s++) {
-      const k = prefix + s;
-      await saveAanwezigheidRemote(k, players, aanwezigheid[k] || {});
-      const noteVal = sessionNotes[k];
-      if (noteVal) await saveTrainingNoteRemote(k, noteVal);
-    }
+  if (supabaseReady && sessieId) {
+    const res = await deleteTrainingSessie(sessieId);
+    if (res && res._error) showToast('⚠️ Niet verwijderd uit Supabase: ' + (res.message || res.status));
+    await sbFetch('aanwezigheid?training_key=eq.' + encodeURIComponent(sessieId), 'DELETE');
+    await sbFetch('session_notes?note_key=eq.' + encodeURIComponent(trainingNoteKey(sessieId)), 'DELETE');
   }
 
   const openWeken   = [...document.querySelectorAll('.week-item.open')].map(el => el.id);

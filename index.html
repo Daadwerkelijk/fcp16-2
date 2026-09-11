@@ -546,7 +546,16 @@ const MAAND_VOL = ['januari','februari','maart','april','mei','juni','juli','aug
 const DAG_KORT = ['zo','ma','di','wo','do','vr','za'];
 const DAG_VOL = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
 
-function spelers() { return ls('fcp_players', '[]'); }
+// Alfabetisch op naam (voornaam staat voorop in dit veld) — de opslagvolgorde
+// zelf is toevoegvolgorde (created_at, zie loadFromSupabase() in app.js) en
+// zegt niets over hoe een trainer een speler wil terugvinden. Overal waar
+// verder geen eigen logica op deze lijst zit (Afwezig, MOTM, Cijfers, "Overige
+// spelers" in de opstelling-kiezer) werkt dit dus meteen alfabetisch mee; waar
+// wél eigen logica zit (bv. "Passende positie" eerst in openOpstSlotKiezer)
+// blijft die groepering intact, alleen de volgorde erbínnen wordt alfabetisch.
+function spelers() {
+  return ls('fcp_players', '[]').slice().sort((a, b) => (a.naam || '').localeCompare(b.naam || '', 'nl', { sensitivity: 'base' }));
+}
 // Eigen teamnaam/-crest — nu overal afgeleid van de echte teaminstelling
 // (loadTeamInstellingen() uit app.js) i.p.v. hardcoded 'FCP'/'FCP 16-2',
 // zelfde '?'-terugval als bij een lege tegenstandernaam elders in dit bestand.
@@ -862,6 +871,35 @@ async function checkPeriodeAfwezigWedstrijd(w) {
   if (idx > -1) { lijst[idx] = w; localStorage.setItem('fcp_wed', JSON.stringify(lijst)); }
   await updateWedstrijd(w.id, { afwezig: JSON.stringify(afwezig) });
 }
+// Gedeelde chips+knop-renderer voor wedstrijd-afwezigheid — gebruikt door zowel
+// toonWedstrijd() (view, container #w-afwezig) als openWedstrijdBewerken()
+// (bewerkformulier, container #wb-afwezig), zodat er niet twee keer dezelfde
+// markup onderhouden hoeft te worden.
+function wedAfwezigChipsHtml(w) {
+  return ((w.afwezig || []).length
+    ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + (w.afwezig || []).map(a => {
+        const pid = (a && a.pid) ? a.pid : a;
+        const reden = (a && a.reden) || '';
+        const p = spelers().find(x => x.id === pid);
+        return '<span class="chip" aria-pressed="true" style="cursor:pointer" onclick="verwijderWedAfwezig(\'' + pid + '\')">' + esc(p ? p.naam : '?') + (reden ? ' · ' + esc(reden) : '') + ' ✕</span>';
+      }).join('') + '</div>'
+    : '')
+    + '<button class="btn btn--secondary btn--sm" onclick="openWedAfwezigSheet()">+ Afwezig</button>';
+}
+// Ná een afwezig-wijziging herrendert dit voorheen altijd toonWedstrijd() —
+// maar als het bewerkformulier openstaat (screen-wedstrijd-bewerk) zou dat de
+// nog niet opgeslagen andere velden (score/opmerkingen/cijfers) weggooien.
+// Ververst daarom in-place binnen #wb-afwezig als dat scherm actief is, zelfde
+// scherm-bewuste refresh-idioom als de vier Beheer-sheets in Instellingen.
+function wedAfwezigNaWijziging(w) {
+  const bewerkScherm = document.getElementById('screen-wedstrijd-bewerk');
+  if (bewerkScherm && bewerkScherm.classList.contains('actief') && huidigWedstrijdId === w.id) {
+    const el = document.getElementById('wb-afwezig');
+    if (el) el.innerHTML = wedAfwezigChipsHtml(w);
+  } else {
+    toonWedstrijd(w.id);
+  }
+}
 // Zelfde patroon als openAfwezigSheet()/slaAfwezigOp()/verwijderAfwezig() bij
 // trainingen, maar schrijvend naar w.afwezig i.p.v. de gedeelde
 // aanwezigheids-tabel (matcht hoe checkPeriodeAfwezigWedstrijd hierboven al
@@ -891,7 +929,7 @@ async function slaWedAfwezigOp() {
     if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
   }
   closeWedAfwezigSheet();
-  toonWedstrijd(w.id);
+  wedAfwezigNaWijziging(w);
 }
 async function verwijderWedAfwezig(pid) {
   const lijst = wedstrijden();
@@ -903,7 +941,7 @@ async function verwijderWedAfwezig(pid) {
     const res = await updateWedstrijd(w.id, { afwezig: JSON.stringify(w.afwezig) });
     if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
   }
-  toonWedstrijd(w.id);
+  wedAfwezigNaWijziging(w);
 }
 async function toonWedstrijd(id) {
   const w = wedstrijden().find(x => x.id === id);
@@ -935,17 +973,13 @@ async function toonWedstrijd(id) {
   // Zelfde afwezig-chips+knop-patroon als renderTrainingSessie() (afwPids-chips
   // met ✕ + "+ Afwezig"-knop) — was hier voorheen alleen-lezen tekst, met als
   // enige manier om iemand af te melden het volledige wedstrijd-bewerkformulier.
+  // wedAfwezigChipsHtml() is de gedeelde renderer, ook gebruikt in
+  // openWedstrijdBewerken() — daar moest ditzelfde patroon nog aan toegevoegd
+  // worden, zie wedAfwezigNaWijziging() voor waarom dat scherm-bewust herrendert
+  // i.p.v. altijd naar toonWedstrijd() te springen.
   html += '<div class="card" style="margin-top:10px"><div class="sec">Selectie</div>'
     + (sp.length ? '<div style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + Math.round(aanwTal/sp.length*100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + sp.length + '</div></div>' : '<div style="color:var(--ink3);font-size:13px">Nog geen spelers.</div>')
-    + (afw
-        ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' + (w.afwezig || []).map(a => {
-            const pid = (a && a.pid) ? a.pid : a;
-            const reden = (a && a.reden) || '';
-            const p = sp.find(x => x.id === pid);
-            return '<span class="chip" aria-pressed="true" style="cursor:pointer" onclick="verwijderWedAfwezig(\'' + pid + '\')">' + esc(p ? p.naam : '?') + (reden ? ' · ' + esc(reden) : '') + ' ✕</span>';
-          }).join('') + '</div>'
-        : '')
-    + '<button class="btn btn--secondary btn--sm" style="margin-top:10px" onclick="openWedAfwezigSheet()">+ Afwezig</button>'
+    + '<div style="margin-top:10px" id="w-afwezig">' + wedAfwezigChipsHtml(w) + '</div>'
     + '<button class="btn btn--ghost btn--sm" style="margin-top:10px" onclick="renderWedOpstelling(\'' + w.id + '\')">Opstelling voor deze wedstrijd →</button>'
     + '</div>';
 
@@ -2431,14 +2465,24 @@ function openWedstrijdBewerken(id) {
     + '<div class="field"><span class="label">Man of the match</span><select class="input" id="wb-motm"><option value="">— geen —</option>' + sp.map(p => '<option value="' + p.id + '" ' + (w && w.motm===p.id ? 'selected' : '') + '>' + esc(p.naam) + '</option>').join('') + '</select></div>'
     + '<div class="divide"></div>'
     + '<div class="sec">Afwezig</div>'
-    + '<div style="margin-bottom:16px" id="wb-afwezig">' + sp.map(p => {
+    // Bestaande wedstrijd: zelfde chips+"+ Afwezig"-sheet als het detailscherm
+    // (wedAfwezigChipsHtml), schrijft meteen weg — zie wedAfwezigNaWijziging()
+    // voor de in-place refresh die de rest van dit formulier niet aanraakt.
+    // Nieuwe, nog niet opgeslagen wedstrijd: de sheet kan niets vinden om aan
+    // te schrijven (geen wedstrijd-record, geen id), dus daar blijft de oude
+    // inline chip-per-speler-lijst staan, verzameld in slaWedstrijdOp().
+    + '<div style="margin-bottom:10px" id="wb-afwezig">' + (w ? wedAfwezigChipsHtml(w) : sp.map(p => {
         const bestaand = ((w && w.afwezig) || []).find(a => (a && a.pid ? a.pid : a) === p.id);
         const reden = bestaand ? (bestaand.reden || '') : '';
         return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
           + '<button type="button" class="chip" data-pid="' + p.id + '" aria-pressed="' + !!bestaand + '" onclick="wbToggleAfwezig(this)">' + esc(p.naam) + '</button>'
           + '<select class="input" data-reden-voor="' + p.id + '" style="flex:1;min-height:36px;display:' + (bestaand ? 'block' : 'none') + '"><option value="">— reden —</option>' + absRedenen().map(r => '<option value="' + esc(r) + '"' + (r === reden ? ' selected' : '') + '>' + esc(r) + '</option>').join('') + '</select>'
           + '</div>';
-      }).join('') + '</div>'
+      }).join('')) + '</div>'
+    // Los van de team-basisopstelling (net als op het detailscherm) — slaat
+    // eerst de rest van dit formulier op (naOpslaan-param op slaWedstrijdOp),
+    // zodat score/opmerkingen/cijfers niet verloren gaan bij het wegnavigeren.
+    + (w ? '<button class="btn btn--ghost btn--sm" style="margin-bottom:16px" onclick="slaWedstrijdOp(renderWedOpstelling)">Opstelling voor deze wedstrijd →</button>' : '')
     + '<div class="sec">Cijfers per speler (1–10)</div>'
     + '<div class="rows" style="margin-bottom:16px">' + sp.map(p => '<div class="row" style="cursor:default"><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div></div><input class="input" data-pid="' + p.id + '" type="number" min="1" max="10" step="0.5" placeholder="—" value="' + (ratings[p.id] != null ? ratings[p.id] : '') + '" style="width:64px;min-height:36px;padding:6px;text-align:center;font-weight:700"></div>').join('') + '</div>'
     + '<div class="field"><span class="label">Opmerkingen</span><textarea class="input" id="wb-opmerkingen" style="min-height:80px;resize:vertical">' + esc((w && w.opmerkingen) || '') + '</textarea></div>'
@@ -2470,13 +2514,23 @@ function wbToggleAfwezig(btn) {
   const sel = document.querySelector('#wb-afwezig select[data-reden-voor="' + btn.dataset.pid + '"]');
   if (sel) sel.style.display = nieuw ? 'block' : 'none';
 }
-async function slaWedstrijdOp() {
+// naOpslaan (optioneel): waar na het opslaan naartoe genavigeerd wordt i.p.v.
+// het standaard toonWedstrijd() — gebruikt door de Opstelling-knop hierboven
+// zodat "eerst opslaan, dan naar de opstelling" één druk op de knop is i.p.v.
+// een aparte, botsende sla-actie.
+async function slaWedstrijdOp(naOpslaan) {
   const tegenstander = document.getElementById('wb-tegenstander').value.trim();
   if (!tegenstander) { toonVeldFout('wb-tegenstander', 'Vul een tegenstander in.'); return; }
   const isoDate = document.getElementById('wb-datum').value;
   const d = isoDate ? new Date(isoDate) : null;
   const gekozenFase = document.querySelector('#wb-fase-chips .chip[aria-pressed="true"]');
-  const afwezig = [...document.querySelectorAll('#wb-afwezig .chip[aria-pressed="true"]')].map(c => {
+  const bestaandVoorAfwezig = huidigWedstrijdId ? wedstrijden().find(x => x.id === huidigWedstrijdId) : null;
+  // Bestaande wedstrijd: #wb-afwezig bevat nu de chips+"+ Afwezig"-sheet-variant
+  // (wedAfwezigChipsHtml), die al direct wegschrijft — hier dus het al opgeslagen
+  // w.afwezig overnemen i.p.v. de oude DOM-selector, anders veegt Opslaan het per
+  // ongeluk leeg. Nieuwe wedstrijd: geen bestaand record om van over te nemen,
+  // dus daar nog wel de inline chip-lijst uit het formulier zelf lezen.
+  const afwezig = bestaandVoorAfwezig ? (bestaandVoorAfwezig.afwezig || []) : [...document.querySelectorAll('#wb-afwezig .chip[aria-pressed="true"]')].map(c => {
     const sel = document.querySelector('#wb-afwezig select[data-reden-voor="' + c.dataset.pid + '"]');
     return { pid: c.dataset.pid, reden: sel ? sel.value : '' };
   });
@@ -2497,7 +2551,7 @@ async function slaWedstrijdOp() {
     afwezig, ratings,
     opmerkingen: document.getElementById('wb-opmerkingen').value,
   };
-  const bestaand = huidigWedstrijdId ? wedstrijden().find(x => x.id === huidigWedstrijdId) : null;
+  const bestaand = bestaandVoorAfwezig;
   const lijst = wedstrijden();
   const idx = lijst.findIndex(x => x.id === w.id);
   const volledig = bestaand ? { ...bestaand, ...w } : { ...w };
@@ -2520,7 +2574,7 @@ async function slaWedstrijdOp() {
     if (!res || !res._error) res = await updateWedstrijd(volledig.id, velden);
     if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
   }
-  toonWedstrijd(volledig.id);
+  (naOpslaan || toonWedstrijd)(volledig.id);
 }
 async function verwijderWedstrijd(btn) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Wedstrijd verwijderen'; }, 3000); return; }

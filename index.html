@@ -2918,10 +2918,12 @@ async function ltStap(veld, delta) {
       // "gedeeld:false" terwijl 'm wél publiek stond, waardoor "Voorbeeld wat
       // ouders zien" 'm niet liet zien terwijl live.html 'm wél toonde
       // (gemeld door gebruiker 2026-09-12).
-      const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', veld === 'scoreEigen' ? ('⚽ ' + teamNaamV2() + ' scoort') : '⚽ Tegenstander scoort', liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+      const publiekeDoelpuntTekst = veld === 'scoreEigen' ? ('⚽ ' + teamNaamV2() + ' scoort') : '⚽ Tegenstander scoort';
+      const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', publiekeDoelpuntTekst, liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
       if (liveUpdateId && doelpuntNotitie) {
         doelpuntNotitie.gedeeld = true;
         doelpuntNotitie.liveUpdateId = liveUpdateId;
+        doelpuntNotitie.publiekeTekst = publiekeDoelpuntTekst;
         renderLiveTrainer();
         await ltSyncNotities();
       }
@@ -3202,10 +3204,17 @@ async function bevestigWissel(reden) {
     // 2026-09-12).
     const naamUit = spUit ? spUit.naam.split(' ')[0] : '?';
     const naamIn = spIn ? spIn.naam.split(' ')[0] : '?';
-    const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', '🔄 Wissel: ' + naamIn + ' erin, ' + naamUit + ' eruit', liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+    const publiekeWisselTekst = '🔄 Wissel: ' + naamIn + ' erin, ' + naamUit + ' eruit';
+    const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', publiekeWisselTekst, liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
     if (liveUpdateId) {
       wisselNotitie.gedeeld = true;
       wisselNotitie.liveUpdateId = liveUpdateId;
+      // publiekeTekst apart bewaard: de lokale tekst bevat de reden (bv. "—
+      // Tactisch"), maar die wordt bewust nooit gepusht (kan gevoelige
+      // coach-commentaar zijn). "Voorbeeld wat ouders zien" moet exact tonen
+      // wat er echt publiek staat, dus zonder reden — gemeld door gebruiker
+      // 2026-09-12 dat de reden daar ten onrechte wél zichtbaar was.
+      wisselNotitie.publiekeTekst = publiekeWisselTekst;
       renderLiveTrainer();
       await ltSyncNotities();
     }
@@ -3224,7 +3233,7 @@ function renderLivePubliek() {
     + '</div>'
     + '<div class="card" style="margin-top:10px"><div class="sec">Verloop</div>'
     + (liveState.notities.filter(n => n.gedeeld).length
-        ? '<div style="display:flex;flex-direction:column;gap:7px">' + liveState.notities.filter(n => n.gedeeld).map(n => '<div class="note note--gedeeld"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(ltStripAtTekens(n.tekst)) + '</div></div>').join('') + '</div>'
+        ? '<div style="display:flex;flex-direction:column;gap:7px">' + liveState.notities.filter(n => n.gedeeld).map(n => '<div class="note note--gedeeld"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(n.publiekeTekst || ltStripAtTekens(n.tekst)) + '</div></div>').join('') + '</div>'
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen gedeelde updates.</div>')
     + '</div>'
     + '<div style="font-size:11px;color:var(--ink3);text-align:center;margin-top:10px">Alleen-lezen · geen tabbalk in de echte publieke pagina</div>';

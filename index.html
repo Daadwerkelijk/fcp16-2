@@ -2974,13 +2974,43 @@ async function ltVoegNotitieToe(gedeeld) {
   const inp = document.getElementById('lt-notitie-input');
   const tekst = inp.value.trim();
   if (!tekst) return;
-  liveState.notities.unshift({ id: Date.now(), tekst, minuut: liveState.minuut, gedeeld, spelerIds: ltTagsUitTekst(tekst) });
+  // gedeeld start bewust op false: pas echt "gedeeld" zodra de push naar
+  // live_updates ook echt gelukt is — zelfde principe als pushNotitie() in
+  // wedstrijden.html (klassieke app), die n.gedeeld ook pas op success zet.
+  const notitie = { id: Date.now(), tekst, minuut: liveState.minuut, gedeeld: false, spelerIds: ltTagsUitTekst(tekst) };
+  liveState.notities.unshift(notitie);
   inp.value = '';
   document.getElementById('lt-mention-dropdown').style.display = 'none';
   renderLiveTrainer();
   await ltSyncNotities();
+  // "Delen & opslaan" zette tot 2026-09-12 alleen lokaal gedeeld:true, maar
+  // pushte 'm nooit echt naar live_updates — de tabel die de publieke
+  // live.html (wat ouders zien) daadwerkelijk uitleest. Zelfde patroon als
+  // pushNotitie() in wedstrijden.html: type 'update' + liveUpdateId bewaren
+  // zodat ltIntrekken 'm ook weer van de publieke pagina kan halen. Gemeld
+  // door gebruiker 2026-09-12 tijdens een echte wedstrijd: gedeelde notitie
+  // kwam niet aan op de "ouderpagina".
+  if (gedeeld) {
+    if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+      const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', tekst, liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+      if (liveUpdateId) {
+        notitie.gedeeld = true;
+        notitie.liveUpdateId = liveUpdateId;
+        renderLiveTrainer();
+      } else {
+        showToast('⚠️ Delen naar live-pagina mislukt — wel privé opgeslagen');
+      }
+      await ltSyncNotities();
+    } else {
+      showToast('⚠️ Geen verbinding — notitie alleen privé opgeslagen');
+    }
+  }
 }
 async function ltIntrekken(id) {
+  const notitie = liveState.notities.find(n => n.id === id);
+  if (notitie && notitie.liveUpdateId && typeof supabaseReady !== 'undefined' && supabaseReady) {
+    await intrekkenLiveUpdate(notitie.liveUpdateId);
+  }
   liveState.notities = liveState.notities.filter(n => n.id !== id);
   renderLiveTrainer();
   await ltSyncNotities();
@@ -3089,7 +3119,14 @@ function renderWisselSheet() {
 async function bevestigWissel(reden) {
   if (!liveState || !wisselStap) { closeWisselSheet(); return; }
   liveState.lineup[wisselStap.posId] = wisselStap.inSpelerId;
-  liveState.notities.unshift({ id: Date.now(), tekst: 'Wissel: ' + reden, minuut: liveState.minuut, gedeeld: false });
+  // Notitietekst toonde alleen de reden, niet wie voor wie ging — gemeld
+  // door gebruiker 2026-09-12. spelerIds hier gevuld met beide spelers,
+  // zelfde veld als bij @tags, zodat wissel + tag straks samen bevraagbaar
+  // zijn (net als bij een getypte @tag-notitie).
+  const spUit = spelers().find(p => p.id === wisselStap.uitSpelerId);
+  const spIn = spelers().find(p => p.id === wisselStap.inSpelerId);
+  const wisselTekst = 'Wissel: ' + (spUit ? spUit.naam.split(' ')[0] : '?') + ' ➜ ' + (spIn ? spIn.naam.split(' ')[0] : '?') + ' — ' + reden;
+  liveState.notities.unshift({ id: Date.now(), tekst: wisselTekst, minuut: liveState.minuut, gedeeld: false, spelerIds: [wisselStap.uitSpelerId, wisselStap.inSpelerId].filter(Boolean) });
   const lijst = wedstrijden();
   const w = lijst.find(x => x.id === liveState.wedstrijdId);
   w.wissels = w.wissels || [];

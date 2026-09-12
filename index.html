@@ -3149,6 +3149,14 @@ async function bevestigWissel(reden) {
     // van vóór de wissel. Gemeld door gebruiker 2026-09-12.
     const res = await updateWedstrijd(liveState.wedstrijdId, { wed_lineup: JSON.stringify(liveState.lineup) });
     if (res && res._error) showToast('⚠️ Opstelling niet gesynchroniseerd: ' + (res.message || res.status));
+    // Wissel ook automatisch naar de publieke live-pagina pushen — gevraagd
+    // door gebruiker 2026-09-12, zelfde principe als de "Delen & opslaan"-fix
+    // hierboven. Bewust zonder reden (die kan gevoelige coach-commentaar
+    // bevatten, bv. "Gedrag"/"Minder goed") — alleen wie erin/eruit gaat is
+    // hier standaard publiek, net als bij een wissel op het scorebord.
+    const naamUit = spUit ? spUit.naam.split(' ')[0] : '?';
+    const naamIn = spIn ? spIn.naam.split(' ')[0] : '?';
+    await pushLiveUpdate(liveState.wedstrijdId, 'update', '🔄 Wissel: ' + naamIn + ' erin, ' + naamUit + ' eruit', liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
   }
 }
 
@@ -3966,11 +3974,17 @@ async function wwiOpslaanV2(btn) {
 // eerst checken of er ergens een wedstrijd live staat, en zo ja daar direct
 // naartoe i.p.v. naar Vandaag.
 async function gaNaarVandaagOfLiveV2() {
+  // Bug gevonden 2026-09-12 tijdens een echte wedstrijd: Vandaag werd hier
+  // overgeslagen zodra er een live wedstrijd was (rechtstreeks naar Live),
+  // waardoor v-content nooit gevuld werd. Ging dan de trainer terug naar het
+  // Vandaag-tabblad (dat toonScherm() zelf niet opnieuw rendert, zie
+  // toonScherm() hierboven), dan zag hij een he-le-maal lege pagina. Daarom
+  // hier altijd renderVandaag() aanroepen, en pas dáárna evt. naar Live gaan.
+  renderVandaag();
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     const actief = await haalActieveLiveWedstrijd();
     if (actief) { await openLiveTrainer(actief.id); return; }
   }
-  renderVandaag();
   toonScherm('vandaag');
 }
 async function initAuthGateV2() {

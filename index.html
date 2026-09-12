@@ -2906,7 +2906,14 @@ async function ltStap(veld, delta) {
     // Bug gevonden 2026-09-07: een testwedstrijd met 3 doelpunten via V2 gescoord
     // liet niets zien op Inzicht, terwijl scoreWijzig() (klassieke app) al wél
     // registreerDoelpunt() aanriep — de daadwerkelijk gebruikte scoreflow miste 'm.
-    if (delta > 0) registreerDoelpunt(liveState.wedstrijdId, veld === 'scoreEigen' ? 'eigen' : 'tegen', liveState.status.includes('1e') ? '1e' : '2e', liveState.minuut);
+    if (delta > 0) {
+      registreerDoelpunt(liveState.wedstrijdId, veld === 'scoreEigen' ? 'eigen' : 'tegen', liveState.status.includes('1e') ? '1e' : '2e', liveState.minuut);
+      // Doelpunt ook automatisch naar de publieke live-pagina — gevraagd door
+      // gebruiker 2026-09-12, zelfde principe als de wissel-auto-push
+      // hierboven. pushLiveScore hierboven zet alleen het cijfer, dit zet 'm
+      // ook echt als regel in de tijdlijn ("Verloop").
+      await pushLiveUpdate(liveState.wedstrijdId, 'update', veld === 'scoreEigen' ? ('⚽ ' + teamNaamV2() + ' scoort') : '⚽ Tegenstander scoort', liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+    }
   }
 }
 // Notities zaten tot 2026-09-12 alleen in liveState (in-memory) — elke
@@ -2970,6 +2977,18 @@ function ltTagsUitTekst(tekst) {
     return new RegExp('@' + naamKort + '(?![a-zA-Zà-ÿÀ-ÖØ-öø-ÿ])', 'i').test(tekst);
   }).map(p => p.id);
 }
+// Toont "Jelmer" i.p.v. "@Jelmer" — de "@" is alleen nodig tijdens het typen
+// om te herkennen dat je wilt taggen, niet in de weergave. Gevraagd door
+// gebruiker 2026-09-12. De opgeslagen tekst zelf blijft ongewijzigd (incl.
+// "@"), dit is puur voor weergave/publieke push.
+function ltStripAtTekens(tekst) {
+  let out = tekst;
+  spelers().forEach(p => {
+    const naamKort = p.naam.split(' ')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(new RegExp('@(' + naamKort + ')(?![a-zA-Zà-ÿÀ-ÖØ-öø-ÿ])', 'gi'), '$1');
+  });
+  return out;
+}
 async function ltVoegNotitieToe(gedeeld) {
   const inp = document.getElementById('lt-notitie-input');
   const tekst = inp.value.trim();
@@ -2992,7 +3011,7 @@ async function ltVoegNotitieToe(gedeeld) {
   // kwam niet aan op de "ouderpagina".
   if (gedeeld) {
     if (typeof supabaseReady !== 'undefined' && supabaseReady) {
-      const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', tekst, liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+      const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', ltStripAtTekens(tekst), liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
       if (liveUpdateId) {
         notitie.gedeeld = true;
         notitie.liveUpdateId = liveUpdateId;
@@ -3072,7 +3091,7 @@ function renderLiveTrainer() {
     + '</div>'
     + '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn--secondary btn--sm" style="flex:1" onclick="ltVoegNotitieToe(false)">Privé opslaan</button><button class="btn btn--primary btn--sm" style="flex:1" onclick="ltVoegNotitieToe(true)">Delen &amp; opslaan</button></div>'
     + (liveState.notities.length ? liveState.notities.map(n =>
-        '<div class="note' + (n.gedeeld ? ' note--gedeeld' : '') + '" style="margin-bottom:7px"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(n.tekst) + (n.gedeeld ? ' <span style="color:var(--accent);font-weight:700">· gedeeld</span>' : '') + '</div>'
+        '<div class="note' + (n.gedeeld ? ' note--gedeeld' : '') + '" style="margin-bottom:7px"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(ltStripAtTekens(n.tekst)) + (n.gedeeld ? ' <span style="color:var(--accent);font-weight:700">· gedeeld</span>' : '') + '</div>'
         + (n.spelerIds && n.spelerIds.length ? '<div style="font-size:11.5px;color:var(--ink3);margin-top:2px">Getagd: ' + n.spelerIds.map(pid => { const p = sp.find(x => x.id === pid); return p ? esc(p.naam.split(' ')[0]) : null; }).filter(Boolean).join(', ') + '</div>' : '')
         + '<button class="note-act" onclick="ltIntrekken(' + n.id + ')" aria-label="Intrekken">✕</button></div>'
       ).join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen notities.</div>')
@@ -3118,19 +3137,29 @@ function renderWisselSheet() {
 }
 async function bevestigWissel(reden) {
   if (!liveState || !wisselStap) { closeWisselSheet(); return; }
-  liveState.lineup[wisselStap.posId] = wisselStap.inSpelerId;
+  // BUG gevonden 2026-09-12 (tijdens een echte wedstrijd — hierdoor is geen
+  // enkele wissel ooit in de wissels-tabel/live-pagina beland sinds V2
+  // bestaat): closeWisselSheet() hieronder zet het globale wisselStap op
+  // null, maar de Supabase-writes verderop lazen wisselStap.uitSpelerId/
+  // inSpelerId pas ná die reset — dat gooide een TypeError die de rest van
+  // deze functie stil afbrak (geen registreerWissel, geen wed_lineup-update,
+  // geen live_updates-push). Daarom hier meteen lokaal vastleggen.
+  const posId = wisselStap.posId;
+  const uitSpelerId = wisselStap.uitSpelerId;
+  const inSpelerId = wisselStap.inSpelerId;
+  liveState.lineup[posId] = inSpelerId;
   // Notitietekst toonde alleen de reden, niet wie voor wie ging — gemeld
   // door gebruiker 2026-09-12. spelerIds hier gevuld met beide spelers,
   // zelfde veld als bij @tags, zodat wissel + tag straks samen bevraagbaar
   // zijn (net als bij een getypte @tag-notitie).
-  const spUit = spelers().find(p => p.id === wisselStap.uitSpelerId);
-  const spIn = spelers().find(p => p.id === wisselStap.inSpelerId);
+  const spUit = spelers().find(p => p.id === uitSpelerId);
+  const spIn = spelers().find(p => p.id === inSpelerId);
   const wisselTekst = 'Wissel: ' + (spUit ? spUit.naam.split(' ')[0] : '?') + ' ➜ ' + (spIn ? spIn.naam.split(' ')[0] : '?') + ' — ' + reden;
-  liveState.notities.unshift({ id: Date.now(), tekst: wisselTekst, minuut: liveState.minuut, gedeeld: false, spelerIds: [wisselStap.uitSpelerId, wisselStap.inSpelerId].filter(Boolean) });
+  liveState.notities.unshift({ id: Date.now(), tekst: wisselTekst, minuut: liveState.minuut, gedeeld: false, spelerIds: [uitSpelerId, inSpelerId].filter(Boolean) });
   const lijst = wedstrijden();
   const w = lijst.find(x => x.id === liveState.wedstrijdId);
   w.wissels = w.wissels || [];
-  w.wissels.push({ id: 'i' + Date.now() + Math.random().toString(36).slice(2,6), positie: wisselStap.posId, spelerUit: wisselStap.uitSpelerId, spelerIn: wisselStap.inSpelerId, minuut: liveState.minuut, reden });
+  w.wissels.push({ id: 'i' + Date.now() + Math.random().toString(36).slice(2,6), positie: posId, spelerUit: uitSpelerId, spelerIn: inSpelerId, minuut: liveState.minuut, reden });
   w.wed_lineup = { ...liveState.lineup };
   localStorage.setItem('fcp_wed', JSON.stringify(lijst));
   closeWisselSheet();
@@ -3141,8 +3170,8 @@ async function bevestigWissel(reden) {
     // tweede stap ná registratie patcht via updateWisselReden) — meteen meegeven
     // aan de 'eruit'-registratie levert dezelfde einddata op in wissels.
     await Promise.all([
-      registreerWissel(liveState.wedstrijdId, wisselStap.uitSpelerId, 'eruit', liveState.minuut, reden),
-      registreerWissel(liveState.wedstrijdId, wisselStap.inSpelerId, 'erin', liveState.minuut, ''),
+      registreerWissel(liveState.wedstrijdId, uitSpelerId, 'eruit', liveState.minuut, reden),
+      registreerWissel(liveState.wedstrijdId, inSpelerId, 'erin', liveState.minuut, ''),
     ]);
     // wed_lineup ook na een wissel bijwerken — anders toont een 2e telefoon
     // (of dit apparaat na een refresh) na een wissel nog de basisopstelling
@@ -3172,7 +3201,7 @@ function renderLivePubliek() {
     + '</div>'
     + '<div class="card" style="margin-top:10px"><div class="sec">Verloop</div>'
     + (liveState.notities.filter(n => n.gedeeld).length
-        ? '<div style="display:flex;flex-direction:column;gap:7px">' + liveState.notities.filter(n => n.gedeeld).map(n => '<div class="note note--gedeeld"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(n.tekst) + '</div></div>').join('') + '</div>'
+        ? '<div style="display:flex;flex-direction:column;gap:7px">' + liveState.notities.filter(n => n.gedeeld).map(n => '<div class="note note--gedeeld"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(ltStripAtTekens(n.tekst)) + '</div></div>').join('') + '</div>'
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen gedeelde updates.</div>')
     + '</div>'
     + '<div style="font-size:11px;color:var(--ink3);text-align:center;margin-top:10px">Alleen-lezen · geen tabbalk in de echte publieke pagina</div>';

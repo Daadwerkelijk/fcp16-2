@@ -2893,8 +2893,10 @@ async function ltEinde() {
 }
 async function ltStap(veld, delta) {
   liveState[veld] = Math.max(0, liveState[veld] + delta);
+  let doelpuntNotitie = null;
   if (delta > 0) {
-    liveState.notities.unshift({ id: Date.now(), tekst: veld === 'scoreEigen' ? ('⚽ ' + teamNaamV2() + ' scoort') : '⚽ Tegenstander scoort', minuut: liveState.minuut, gedeeld: false });
+    doelpuntNotitie = { id: Date.now(), tekst: veld === 'scoreEigen' ? ('⚽ ' + teamNaamV2() + ' scoort') : '⚽ Tegenstander scoort', minuut: liveState.minuut, gedeeld: false };
+    liveState.notities.unshift(doelpuntNotitie);
     await ltSyncNotities();
   }
   renderLiveTrainer();
@@ -2911,8 +2913,18 @@ async function ltStap(veld, delta) {
       // Doelpunt ook automatisch naar de publieke live-pagina — gevraagd door
       // gebruiker 2026-09-12, zelfde principe als de wissel-auto-push
       // hierboven. pushLiveScore hierboven zet alleen het cijfer, dit zet 'm
-      // ook echt als regel in de tijdlijn ("Verloop").
-      await pushLiveUpdate(liveState.wedstrijdId, 'update', veld === 'scoreEigen' ? ('⚽ ' + teamNaamV2() + ' scoort') : '⚽ Tegenstander scoort', liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+      // ook echt als regel in de tijdlijn ("Verloop"). gedeeld pas op true
+      // zetten na succesvolle push — anders bleef de lokale notitie
+      // "gedeeld:false" terwijl 'm wél publiek stond, waardoor "Voorbeeld wat
+      // ouders zien" 'm niet liet zien terwijl live.html 'm wél toonde
+      // (gemeld door gebruiker 2026-09-12).
+      const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', veld === 'scoreEigen' ? ('⚽ ' + teamNaamV2() + ' scoort') : '⚽ Tegenstander scoort', liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+      if (liveUpdateId && doelpuntNotitie) {
+        doelpuntNotitie.gedeeld = true;
+        doelpuntNotitie.liveUpdateId = liveUpdateId;
+        renderLiveTrainer();
+        await ltSyncNotities();
+      }
     }
   }
 }
@@ -3155,7 +3167,8 @@ async function bevestigWissel(reden) {
   const spUit = spelers().find(p => p.id === uitSpelerId);
   const spIn = spelers().find(p => p.id === inSpelerId);
   const wisselTekst = 'Wissel: ' + (spUit ? spUit.naam.split(' ')[0] : '?') + ' ➜ ' + (spIn ? spIn.naam.split(' ')[0] : '?') + ' — ' + reden;
-  liveState.notities.unshift({ id: Date.now(), tekst: wisselTekst, minuut: liveState.minuut, gedeeld: false, spelerIds: [uitSpelerId, inSpelerId].filter(Boolean) });
+  const wisselNotitie = { id: Date.now(), tekst: wisselTekst, minuut: liveState.minuut, gedeeld: false, spelerIds: [uitSpelerId, inSpelerId].filter(Boolean) };
+  liveState.notities.unshift(wisselNotitie);
   const lijst = wedstrijden();
   const w = lijst.find(x => x.id === liveState.wedstrijdId);
   w.wissels = w.wissels || [];
@@ -3183,9 +3196,19 @@ async function bevestigWissel(reden) {
     // hierboven. Bewust zonder reden (die kan gevoelige coach-commentaar
     // bevatten, bv. "Gedrag"/"Minder goed") — alleen wie erin/eruit gaat is
     // hier standaard publiek, net als bij een wissel op het scorebord.
+    // gedeeld pas op true zetten na succesvolle push (zelfde reden als bij
+    // het doelpunt hierboven) — anders klopte "Voorbeeld wat ouders zien"
+    // niet met wat er echt op live.html stond (gemeld door gebruiker
+    // 2026-09-12).
     const naamUit = spUit ? spUit.naam.split(' ')[0] : '?';
     const naamIn = spIn ? spIn.naam.split(' ')[0] : '?';
-    await pushLiveUpdate(liveState.wedstrijdId, 'update', '🔄 Wissel: ' + naamIn + ' erin, ' + naamUit + ' eruit', liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+    const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', '🔄 Wissel: ' + naamIn + ' erin, ' + naamUit + ' eruit', liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+    if (liveUpdateId) {
+      wisselNotitie.gedeeld = true;
+      wisselNotitie.liveUpdateId = liveUpdateId;
+      renderLiveTrainer();
+      await ltSyncNotities();
+    }
   }
 }
 

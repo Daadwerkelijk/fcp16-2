@@ -3003,6 +3003,18 @@ function ltStripAtTekens(tekst) {
   });
   return out;
 }
+// Wat "Voorbeeld wat ouders zien" mag tonen voor een gedeelde notitie.
+// publiekeTekst (vanaf 2026-09-12) is de exacte tekst die echt gepusht is —
+// leidend zodra aanwezig. Wissel-notities van vóór die datum hebben nog geen
+// publiekeTekst en vallen terug op de lokale tekst; die bevat de coach-reden
+// ("Wissel: X ➜ Y — reden"), die nooit publiek hoort te staan (gemeld door
+// gebruiker 2026-09-12) — daarom hier ook voor die oudere notities de reden
+// eraf knippen op basis van het vaste "Wissel: "-format.
+function ltPubliekeNotitieTekst(n) {
+  if (n.publiekeTekst) return n.publiekeTekst;
+  if (/^Wissel: /.test(n.tekst)) return n.tekst.replace(/ — .*$/, '');
+  return ltStripAtTekens(n.tekst);
+}
 async function ltVoegNotitieToe(gedeeld) {
   const inp = document.getElementById('lt-notitie-input');
   const tekst = inp.value.trim();
@@ -3233,7 +3245,7 @@ function renderLivePubliek() {
     + '</div>'
     + '<div class="card" style="margin-top:10px"><div class="sec">Verloop</div>'
     + (liveState.notities.filter(n => n.gedeeld).length
-        ? '<div style="display:flex;flex-direction:column;gap:7px">' + liveState.notities.filter(n => n.gedeeld).map(n => '<div class="note note--gedeeld"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(n.publiekeTekst || ltStripAtTekens(n.tekst)) + '</div></div>').join('') + '</div>'
+        ? '<div style="display:flex;flex-direction:column;gap:7px">' + liveState.notities.filter(n => n.gedeeld).map(n => '<div class="note note--gedeeld"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(ltPubliekeNotitieTekst(n)) + '</div></div>').join('') + '</div>'
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen gedeelde updates.</div>')
     + '</div>'
     + '<div style="font-size:11px;color:var(--ink3);text-align:center;margin-top:10px">Alleen-lezen · geen tabbalk in de echte publieke pagina</div>';

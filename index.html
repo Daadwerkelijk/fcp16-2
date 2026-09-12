@@ -2762,6 +2762,14 @@ async function openLiveTrainer(id) {
   // (Date.now() - helft_start): er wordt geen apart pauzemoment bijgehouden,
   // dus een lange pauze op het andere apparaat telt hier even mee door.
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    // Notities herstellen — deze stonden tot 2026-09-12 alleen in liveState en
+    // gingen dus verloren bij elke refresh of nieuwe opening van Live (gemeld
+    // door gebruiker). Los van de live-status hierboven, dus buiten die check.
+    const notitiesRes = await sbFetch('session_notes?select=content&note_key=eq.live_notities_' + id);
+    const notitiesRaw = notitiesRes && notitiesRes[0] && notitiesRes[0].content;
+    if (notitiesRaw) {
+      try { liveState.notities = JSON.parse(notitiesRaw); } catch(e) {}
+    }
     const remote = await haalLiveStatus(id);
     if (remote) {
       if (remote.score_eigen != null) liveState.scoreEigen = remote.score_eigen;
@@ -2809,6 +2817,7 @@ async function ltStartHelft(helft) {
   liveState.status = helft === 1 ? 'live_1e' : 'live_2e';
   liveState.helftStartTs = helft === 1 ? Date.now() : Date.now() - liveState.minsPerHelft * 60000;
   if (helft === 2) liveState.notities.unshift({ id: Date.now(), tekst: 'Rust afgelopen — 2e helft gestart', minuut: liveState.minsPerHelft, gedeeld: false });
+  if (helft === 2) await ltSyncNotities();
   if (helft === 1) {
     // Startopstelling + helftlengte vastleggen op de wedstrijd zelf — dit
     // schrijft alleen lokaal weg (fcp_wed), niet naar Supabase. De opmerking
@@ -2886,6 +2895,7 @@ async function ltStap(veld, delta) {
   liveState[veld] = Math.max(0, liveState[veld] + delta);
   if (delta > 0) {
     liveState.notities.unshift({ id: Date.now(), tekst: veld === 'scoreEigen' ? ('⚽ ' + teamNaamV2() + ' scoort') : '⚽ Tegenstander scoort', minuut: liveState.minuut, gedeeld: false });
+    await ltSyncNotities();
   }
   renderLiveTrainer();
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
@@ -2899,17 +2909,81 @@ async function ltStap(veld, delta) {
     if (delta > 0) registreerDoelpunt(liveState.wedstrijdId, veld === 'scoreEigen' ? 'eigen' : 'tegen', liveState.status.includes('1e') ? '1e' : '2e', liveState.minuut);
   }
 }
-function ltVoegNotitieToe(gedeeld) {
+// Notities zaten tot 2026-09-12 alleen in liveState (in-memory) — elke
+// refresh of het opnieuw openen van Live op hetzelfde/een ander apparaat
+// veegde ze weg. Bewaard via session_notes (privé, trainer-only tabel, niet
+// de publieke live_updates — anders zou een niet-gedeelde notitie over een
+// speler zichtbaar worden op de publieke live.html). Zelfde
+// DELETE+POST-patroon als saveFormatie() in app.js; session_notes heeft geen
+// inkomende FK dus dat is hier veilig.
+async function ltSyncNotities() {
+  if (typeof supabaseReady === 'undefined' || !supabaseReady || !liveState) return;
+  const key = 'live_notities_' + liveState.wedstrijdId;
+  await sbFetch('session_notes?note_key=eq.' + key, 'DELETE');
+  const res = await sbFetch('session_notes', 'POST', { note_key: key, content: JSON.stringify(liveState.notities) });
+  if (res && res._error) showToast('⚠️ Notitie niet gesynchroniseerd: ' + (res.message || res.status));
+}
+// ─── @tag in notities — zelfde patroon als mockup-speler-tag-chips.html:
+// typ @ gevolgd door een voornaam, klik-suggestielijst tijdens het typen, en
+// bij opslaan wordt de tekst gescand op "@Voornaam" om de getagde speler_id's
+// vast te leggen (niet alleen als losse tekst) — nodig om tags en wissels
+// later samen te kunnen bevragen bij analyses (gebruiker 2026-09-11).
+function ltMentionQuery(inp) {
+  const voorCursor = inp.value.slice(0, inp.selectionStart);
+  const m = voorCursor.match(/@([a-zA-Zà-ÿÀ-ÖØ-öø-ÿ]*)$/);
+  return m ? m[1] : null;
+}
+function ltNotitieInput() {
+  const inp = document.getElementById('lt-notitie-input');
+  const dd = document.getElementById('lt-mention-dropdown');
+  const q = ltMentionQuery(inp);
+  if (q === null) { dd.style.display = 'none'; return; }
+  const ql = q.toLowerCase();
+  const matches = spelers().filter(p => p.naam.split(' ')[0].toLowerCase().startsWith(ql)).slice(0, 6);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = matches.map(p => '<div onmousedown="ltKiesMention(\'' + p.id + '\')" style="padding:9px 13px;font-size:13.5px;cursor:pointer">' + esc(p.naam.split(' ')[0]) + '</div>').join('');
+  dd.style.display = 'block';
+}
+function ltNotitieKeyup(e) {
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) ltNotitieInput();
+  if (e.key === 'Escape') document.getElementById('lt-mention-dropdown').style.display = 'none';
+}
+function ltNotitieBlur() {
+  setTimeout(() => { const dd = document.getElementById('lt-mention-dropdown'); if (dd) dd.style.display = 'none'; }, 150);
+}
+function ltKiesMention(spelerId) {
+  const speler = spelers().find(p => p.id === spelerId);
+  const inp = document.getElementById('lt-notitie-input');
+  if (!speler || !inp) return;
+  const naamKort = speler.naam.split(' ')[0];
+  const pos = inp.selectionStart;
+  const voor = inp.value.slice(0, pos).replace(/@([a-zA-Zà-ÿÀ-ÖØ-öø-ÿ]*)$/, '@' + naamKort + ' ');
+  const na = inp.value.slice(pos);
+  inp.value = voor + na;
+  const nieuwePos = voor.length;
+  document.getElementById('lt-mention-dropdown').style.display = 'none';
+  requestAnimationFrame(() => { inp.focus(); inp.setSelectionRange(nieuwePos, nieuwePos); });
+}
+function ltTagsUitTekst(tekst) {
+  return spelers().filter(p => {
+    const naamKort = p.naam.split(' ')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('@' + naamKort + '(?![a-zA-Zà-ÿÀ-ÖØ-öø-ÿ])', 'i').test(tekst);
+  }).map(p => p.id);
+}
+async function ltVoegNotitieToe(gedeeld) {
   const inp = document.getElementById('lt-notitie-input');
   const tekst = inp.value.trim();
   if (!tekst) return;
-  liveState.notities.unshift({ id: Date.now(), tekst, minuut: liveState.minuut, gedeeld });
+  liveState.notities.unshift({ id: Date.now(), tekst, minuut: liveState.minuut, gedeeld, spelerIds: ltTagsUitTekst(tekst) });
   inp.value = '';
+  document.getElementById('lt-mention-dropdown').style.display = 'none';
   renderLiveTrainer();
+  await ltSyncNotities();
 }
-function ltIntrekken(id) {
+async function ltIntrekken(id) {
   liveState.notities = liveState.notities.filter(n => n.id !== id);
   renderLiveTrainer();
+  await ltSyncNotities();
 }
 const STATUS_LABEL = { gepland:'Nog niet gestart', live_1e:'1e helft', pauze_1e:'1e helft · pauze', rust:'Rust', live_2e:'2e helft', pauze_2e:'2e helft · pauze', ft:'Afgelopen' };
 const LT_LOPEND = ['live_1e','pauze_1e','live_2e','pauze_2e'];
@@ -2920,7 +2994,12 @@ function renderLiveTrainer() {
   document.getElementById('lt-dot').style.display = LT_LOPEND.includes(liveState.status) ? 'inline-block' : 'none';
 
   const alle = alleFormatiesV2();
-  let actief = localStorage.getItem('fcp_formatie') || '4222';
+  // Formatie van de wedstrijd zelf gebruiken (waarmee de opstelling ook echt
+  // is vastgelegd), niet het lokale fcp_formatie van dit apparaat — anders
+  // toont een 2e telefoon met een andere actieve formatie lokaal alleen de
+  // posities die toevallig dezelfde pos.id hebben (vaak enkel de
+  // verdediging), de rest lijkt dan "leeg". Gemeld door gebruiker 2026-09-12.
+  let actief = w.formatie || w.startFormatie || localStorage.getItem('fcp_formatie') || '4222';
   if (!alle[actief]) actief = Object.keys(alle)[0];
   const f = alle[actief];
   const slots = f.pos.map(pos => {
@@ -2957,10 +3036,15 @@ function renderLiveTrainer() {
     + '</div>'
     + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="height:320px"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div></div>'
     + '<div class="card" style="margin-top:10px"><div class="sec">Notities</div>'
-    + '<div style="display:flex;gap:8px;margin-bottom:12px"><input class="input" id="lt-notitie-input" placeholder="Typ een notitie..." style="flex:1"><button class="btn btn--secondary btn--icon" aria-label="Inspreken" title="Spraakinvoer (nog niet beschikbaar)" disabled style="opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button></div>'
+    + '<div style="position:relative;margin-bottom:12px">'
+    + '<div style="display:flex;gap:8px"><input class="input" id="lt-notitie-input" placeholder="Typ een notitie... @naam om te taggen" style="flex:1" oninput="ltNotitieInput()" onkeyup="ltNotitieKeyup(event)" onblur="ltNotitieBlur()"><button class="btn btn--secondary btn--icon" aria-label="Inspreken" title="Spraakinvoer (nog niet beschikbaar)" disabled style="opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button></div>'
+    + '<div id="lt-mention-dropdown" style="display:none;position:absolute;left:0;right:44px;top:100%;margin-top:4px;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-ctl);box-shadow:var(--sh2);z-index:10;overflow:hidden"></div>'
+    + '</div>'
     + '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn--secondary btn--sm" style="flex:1" onclick="ltVoegNotitieToe(false)">Privé opslaan</button><button class="btn btn--primary btn--sm" style="flex:1" onclick="ltVoegNotitieToe(true)">Delen &amp; opslaan</button></div>'
     + (liveState.notities.length ? liveState.notities.map(n =>
-        '<div class="note' + (n.gedeeld ? ' note--gedeeld' : '') + '" style="margin-bottom:7px"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(n.tekst) + (n.gedeeld ? ' <span style="color:var(--accent);font-weight:700">· gedeeld</span>' : '') + '</div><button class="note-act" onclick="ltIntrekken(' + n.id + ')" aria-label="Intrekken">✕</button></div>'
+        '<div class="note' + (n.gedeeld ? ' note--gedeeld' : '') + '" style="margin-bottom:7px"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(n.tekst) + (n.gedeeld ? ' <span style="color:var(--accent);font-weight:700">· gedeeld</span>' : '') + '</div>'
+        + (n.spelerIds && n.spelerIds.length ? '<div style="font-size:11.5px;color:var(--ink3);margin-top:2px">Getagd: ' + n.spelerIds.map(pid => { const p = sp.find(x => x.id === pid); return p ? esc(p.naam.split(' ')[0]) : null; }).filter(Boolean).join(', ') + '</div>' : '')
+        + '<button class="note-act" onclick="ltIntrekken(' + n.id + ')" aria-label="Intrekken">✕</button></div>'
       ).join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen notities.</div>')
     + '</div>';
 }
@@ -3010,9 +3094,11 @@ async function bevestigWissel(reden) {
   const w = lijst.find(x => x.id === liveState.wedstrijdId);
   w.wissels = w.wissels || [];
   w.wissels.push({ id: 'i' + Date.now() + Math.random().toString(36).slice(2,6), positie: wisselStap.posId, spelerUit: wisselStap.uitSpelerId, spelerIn: wisselStap.inSpelerId, minuut: liveState.minuut, reden });
+  w.wed_lineup = { ...liveState.lineup };
   localStorage.setItem('fcp_wed', JSON.stringify(lijst));
   closeWisselSheet();
   renderLiveTrainer();
+  await ltSyncNotities();
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     // Reden is hier al bekend (in tegenstelling tot de echte app, die 'm in een
     // tweede stap ná registratie patcht via updateWisselReden) — meteen meegeven
@@ -3021,6 +3107,11 @@ async function bevestigWissel(reden) {
       registreerWissel(liveState.wedstrijdId, wisselStap.uitSpelerId, 'eruit', liveState.minuut, reden),
       registreerWissel(liveState.wedstrijdId, wisselStap.inSpelerId, 'erin', liveState.minuut, ''),
     ]);
+    // wed_lineup ook na een wissel bijwerken — anders toont een 2e telefoon
+    // (of dit apparaat na een refresh) na een wissel nog de basisopstelling
+    // van vóór de wissel. Gemeld door gebruiker 2026-09-12.
+    const res = await updateWedstrijd(liveState.wedstrijdId, { wed_lineup: JSON.stringify(liveState.lineup) });
+    if (res && res._error) showToast('⚠️ Opstelling niet gesynchroniseerd: ' + (res.message || res.status));
   }
 }
 
@@ -3832,12 +3923,25 @@ async function wwiOpslaanV2(btn) {
   }
   location.reload();
 }
+// Bij een refresh tijdens een live wedstrijd landde je altijd op Vandaag, en
+// moest je zelf weer naar Live navigeren — gemeld door gebruiker 2026-09-12
+// als "spring uit de Live pagina naar vandaag" bij elke page refresh. Nu:
+// eerst checken of er ergens een wedstrijd live staat, en zo ja daar direct
+// naartoe i.p.v. naar Vandaag.
+async function gaNaarVandaagOfLiveV2() {
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const actief = await haalActieveLiveWedstrijd();
+    if (actief) { await openLiveTrainer(actief.id); return; }
+  }
+  renderVandaag();
+  toonScherm('vandaag');
+}
 async function initAuthGateV2() {
   const nu = Math.floor(Date.now() / 1000);
   if (!SB_URL || !SB_KEY) { renderInlogScreen(); toonScherm('inlog'); return; }
   if (verwerkAuthHashIndienAanwezig()) { renderWachtwoordInstellenV2(); toonScherm('inlog'); return; }
-  if (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 60) { await syncEchteDataV2(); renderVandaag(); toonScherm('vandaag'); return; }
-  if (AUTH_REFRESH_TOKEN && await refreshAuthSession()) { await syncEchteDataV2(); renderVandaag(); toonScherm('vandaag'); return; }
+  if (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 60) { await syncEchteDataV2(); await gaNaarVandaagOfLiveV2(); return; }
+  if (AUTH_REFRESH_TOKEN && await refreshAuthSession()) { await syncEchteDataV2(); await gaNaarVandaagOfLiveV2(); return; }
   renderInlogScreen();
   toonScherm('inlog');
 }

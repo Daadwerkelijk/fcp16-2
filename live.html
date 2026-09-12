@@ -140,7 +140,12 @@ function renderTijdlijnItem(u) {
   const toonStand = u.type === 'update' && u.score_eigen !== null && u.score_eigen !== undefined;
   const standTxt = toonStand ? ` (${u.score_eigen}-${u.score_tegen})` : '';
   const minTxt = u.wedstrijd_minuut !== null && u.wedstrijd_minuut !== undefined ? u.wedstrijd_minuut + "'" : '';
-  return `<div class="note" style="margin-bottom:8px">
+  // Doelpunten/wissels er oranje uit laten springen tussen gewone gedeelde
+  // notities — herkend aan de vaste emoji-prefix die index.html er zelf op
+  // zet, dezelfde .note--gedeeld-stijl als de trainer-kant al gebruikt.
+  // Gevraagd door gebruiker 2026-09-12: die zag alles als "wit bericht".
+  const belangrijk = u.type === 'update' && (tekst.startsWith('⚽') || tekst.startsWith('🔄'));
+  return `<div class="note${belangrijk ? ' note--gedeeld' : ''}" style="margin-bottom:8px">
     <div class="note-t">${minTxt}</div>
     <div class="note-tx">${tekst}${standTxt}</div>
   </div>`;

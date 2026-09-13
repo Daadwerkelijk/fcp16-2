@@ -3025,6 +3025,80 @@ function ltNotitieKeyup(e) {
 function ltNotitieBlur() {
   setTimeout(() => { const dd = document.getElementById('lt-mention-dropdown'); if (dd) dd.style.display = 'none'; }, 150);
 }
+
+// ─── Spraaknotities — gevraagd door gebruiker 2026-09-13: de microfoonknop
+// deed nog niets. Web Speech API (Chrome/Android — dezelfde combinatie als
+// deze trainers 'm in de praktijk gebruiken, zie user-agent in de
+// Supabase-logs). Geen server nodig, wél een live internetverbinding
+// (Chrome's spraakherkenning draait niet lokaal). Kan hier niet echt met een
+// microfoon getest worden (geen audio-hardware in deze omgeving) — de
+// tekst-/matchlogica is wel end-to-end getest door SpeechRecognition-
+// resultaten na te bootsen.
+function ltSpraakOndersteund() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+let ltRecognition = null;
+let ltSpraakActief = false;
+function ltUpdateMicKnop() {
+  const btn = document.getElementById('lt-mic-btn');
+  if (!btn) return;
+  btn.classList.toggle('btn--danger', ltSpraakActief);
+  btn.setAttribute('aria-label', ltSpraakActief ? 'Stop opname' : 'Inspreken');
+  btn.title = ltSpraakActief ? 'Stop opname' : 'Spraakinvoer';
+}
+function ltToggleSpraak() {
+  if (ltSpraakActief) { if (ltRecognition) ltRecognition.stop(); return; }
+  ltStartSpraak();
+}
+function ltStartSpraak() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  const inp = document.getElementById('lt-notitie-input');
+  const startWaarde = inp.value.trim();
+  ltRecognition = new SR();
+  ltRecognition.lang = 'nl-NL';
+  ltRecognition.interimResults = true;
+  ltRecognition.continuous = true;
+  ltRecognition.onstart = () => { ltSpraakActief = true; ltUpdateMicKnop(); };
+  ltRecognition.onresult = (e) => {
+    let final = '', interim = '';
+    for (let i = 0; i < e.results.length; i++) {
+      const tekst = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += tekst; else interim += tekst;
+    }
+    inp.value = (startWaarde ? startWaarde + ' ' : '') + final + interim;
+    ltToonNaamSuggesties();
+  };
+  ltRecognition.onerror = (e) => {
+    if (e.error === 'no-speech' || e.error === 'aborted') return;
+    showToast('⚠️ Spraakherkenning mislukt: ' + e.error);
+  };
+  ltRecognition.onend = () => { ltSpraakActief = false; ltRecognition = null; ltUpdateMicKnop(); ltToonNaamSuggesties(); };
+  try { ltRecognition.start(); } catch (e) { showToast('⚠️ Spraakherkenning kon niet starten'); }
+}
+// Herkent gesproken (nog niet getagde) spelersnamen in de notitietekst en
+// toont ze als aantikbare suggestie — hetzelfde idee als @tag tijdens
+// typen, maar dan voor woorden die je uitspreekt zonder "@" ervoor.
+function ltToonNaamSuggesties() {
+  const el = document.getElementById('lt-naam-suggesties');
+  if (!el) return;
+  const inp = document.getElementById('lt-notitie-input');
+  const tekst = inp.value;
+  const gevonden = spelers().filter(p => {
+    const naamKort = p.naam.split(' ')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(?<!@)\\b' + naamKort + '\\b', 'i').test(tekst);
+  });
+  if (!gevonden.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.innerHTML = '<div style="font-size:11.5px;color:var(--ink3);margin-bottom:5px">Speler herkend — tik om te taggen:</div><div style="display:flex;flex-wrap:wrap;gap:6px">'
+    + gevonden.map(p => '<button type="button" class="chip" onclick="ltTagSuggestie(\'' + p.id + '\')">' + esc(p.naam.split(' ')[0]) + '</button>').join('') + '</div>';
+  el.style.display = 'block';
+}
+function ltTagSuggestie(spelerId) {
+  const speler = spelers().find(p => p.id === spelerId);
+  const inp = document.getElementById('lt-notitie-input');
+  if (!speler || !inp) return;
+  const naamKort = speler.naam.split(' ')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  inp.value = inp.value.replace(new RegExp('(?<!@)\\b' + naamKort + '\\b', 'i'), '@' + speler.naam.split(' ')[0]);
+  ltToonNaamSuggesties();
+}
 function ltKiesMention(spelerId) {
   const speler = spelers().find(p => p.id === spelerId);
   const inp = document.getElementById('lt-notitie-input');
@@ -3079,6 +3153,7 @@ async function ltVoegNotitieToe(gedeeld) {
   liveState.notities.unshift(notitie);
   inp.value = '';
   document.getElementById('lt-mention-dropdown').style.display = 'none';
+  ltToonNaamSuggesties();
   renderLiveTrainer();
   await ltSyncNotities();
   // "Delen & opslaan" zette tot 2026-09-12 alleen lokaal gedeeld:true, maar
@@ -3167,9 +3242,12 @@ function renderLiveTrainer() {
     + (liveState.status !== 'gepland' ? '<div class="card" style="margin-top:10px;display:flex;gap:8px"><button class="btn btn--secondary" style="flex:1" onclick="openPositieSwapSheet()">Posities wisselen</button><button class="btn btn--secondary" style="flex:1" onclick="openFormatieWijzigenSheet()">Formatie wijzigen</button></div>' : '')
     + '<div class="card" style="margin-top:10px"><div class="sec">Notities</div>'
     + '<div style="position:relative;margin-bottom:12px">'
-    + '<div style="display:flex;gap:8px"><input class="input" id="lt-notitie-input" placeholder="Typ een notitie... @naam om te taggen" style="flex:1" oninput="ltNotitieInput()" onkeyup="ltNotitieKeyup(event)" onblur="ltNotitieBlur()"><button class="btn btn--secondary btn--icon" aria-label="Inspreken" title="Spraakinvoer (nog niet beschikbaar)" disabled style="opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button></div>'
+    + '<div style="display:flex;gap:8px"><input class="input" id="lt-notitie-input" placeholder="Typ een notitie... @naam om te taggen" style="flex:1" oninput="ltNotitieInput();ltToonNaamSuggesties()" onkeyup="ltNotitieKeyup(event)" onblur="ltNotitieBlur()">' + (ltSpraakOndersteund()
+        ? '<button class="btn btn--secondary btn--icon" id="lt-mic-btn" aria-label="Inspreken" title="Spraakinvoer" onclick="ltToggleSpraak()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button>'
+        : '<button class="btn btn--secondary btn--icon" aria-label="Inspreken" title="Spraakinvoer wordt niet ondersteund door deze browser" disabled style="opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button>') + '</div>'
     + '<div id="lt-mention-dropdown" style="display:none;position:absolute;left:0;right:44px;top:100%;margin-top:4px;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-ctl);box-shadow:var(--sh2);z-index:10;overflow:hidden"></div>'
     + '</div>'
+    + '<div id="lt-naam-suggesties" style="display:none;margin:-4px 0 10px"></div>'
     + '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn--secondary btn--sm" style="flex:1" onclick="ltVoegNotitieToe(false)">Privé opslaan</button><button class="btn btn--primary btn--sm" style="flex:1" onclick="ltVoegNotitieToe(true)">Delen &amp; opslaan</button></div>'
     + (liveState.notities.length ? liveState.notities.map(n =>
         '<div class="note' + (n.gedeeld ? ' note--gedeeld' : '') + '" style="margin-bottom:7px"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(ltStripAtTekens(n.tekst)) + (n.gedeeld ? ' <span style="color:var(--accent);font-weight:700">· gedeeld</span>' : '') + '</div>'

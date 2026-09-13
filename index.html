@@ -3044,19 +3044,34 @@ function ltUpdateMicKnop() {
   btn.setAttribute('aria-label', ltSpraakActief ? 'Stop opname' : 'Inspreken');
   btn.title = ltSpraakActief ? 'Stop opname' : 'Spraakinvoer';
 }
+// continuous:true bleek op Android Chrome onbetrouwbaar — gemeld door
+// gebruiker 2026-09-13: herhaalde dezelfde woorden meerdere keren achter
+// elkaar (bekend Android-euvel: de engine herstart zichzelf intern en
+// stuurt dan overlappende/verse resultaten die niet meer bij de vorige
+// sessie passen). Nu losse zinnen (continuous:false, dat IS betrouwbaar) die
+// bij het einde van elke zin automatisch opnieuw starten zolang de trainer
+// niet zelf op stop heeft getikt — zelfde ervaring (blijft luisteren), maar
+// zonder de dubbele-tekst-bug.
+let ltSpraakGewenstActief = false;
 function ltToggleSpraak() {
-  if (ltSpraakActief) { if (ltRecognition) ltRecognition.stop(); return; }
+  if (ltSpraakActief || ltSpraakGewenstActief) {
+    ltSpraakGewenstActief = false;
+    if (ltRecognition) ltRecognition.stop();
+    return;
+  }
+  ltSpraakGewenstActief = true;
+  const inp = document.getElementById('lt-notitie-input');
+  inp.dataset.spraakBasis = inp.value.trim();
   ltStartSpraak();
 }
 function ltStartSpraak() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return;
   const inp = document.getElementById('lt-notitie-input');
-  const startWaarde = inp.value.trim();
   ltRecognition = new SR();
   ltRecognition.lang = 'nl-NL';
   ltRecognition.interimResults = true;
-  ltRecognition.continuous = true;
+  ltRecognition.continuous = false;
   ltRecognition.onstart = () => { ltSpraakActief = true; ltUpdateMicKnop(); };
   ltRecognition.onresult = (e) => {
     let final = '', interim = '';
@@ -3064,15 +3079,26 @@ function ltStartSpraak() {
       const tekst = e.results[i][0].transcript;
       if (e.results[i].isFinal) final += tekst; else interim += tekst;
     }
-    inp.value = (startWaarde ? startWaarde + ' ' : '') + final + interim;
+    const basis = inp.dataset.spraakBasis || '';
+    inp.value = (basis ? basis + ' ' : '') + final + interim;
     ltToonNaamSuggesties();
   };
   ltRecognition.onerror = (e) => {
     if (e.error === 'no-speech' || e.error === 'aborted') return;
     showToast('⚠️ Spraakherkenning mislukt: ' + e.error);
   };
-  ltRecognition.onend = () => { ltSpraakActief = false; ltRecognition = null; ltUpdateMicKnop(); ltToonNaamSuggesties(); };
-  try { ltRecognition.start(); } catch (e) { showToast('⚠️ Spraakherkenning kon niet starten'); }
+  ltRecognition.onend = () => {
+    inp.dataset.spraakBasis = inp.value.trim();
+    if (ltSpraakGewenstActief) { setTimeout(ltStartSpraak, 50); return; }
+    ltSpraakActief = false;
+    ltRecognition = null;
+    ltUpdateMicKnop();
+    ltToonNaamSuggesties();
+  };
+  try { ltRecognition.start(); } catch (e) {
+    showToast('⚠️ Spraakherkenning kon niet starten');
+    ltSpraakGewenstActief = false; ltSpraakActief = false; ltUpdateMicKnop();
+  }
 }
 // Herkent gesproken (nog niet getagde) spelersnamen in de notitietekst en
 // toont ze als aantikbare suggestie — hetzelfde idee als @tag tijdens

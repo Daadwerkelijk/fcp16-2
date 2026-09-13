@@ -364,6 +364,35 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   </div></div>
 </div>
 
+<!-- ═══ SHEET: doelpunt eigen team — wie scoort ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-doelpunt-scorer" onclick="if(event.target===this)ltAfrondenDoelpuntEigen(null,null)">
+  <div class="sheet-wrap"><div class="sheet" style="max-height:85vh">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">⚽ Wie scoort?</div>
+    <div id="dp-scorer-lijst" class="bench" style="max-height:320px;overflow-y:auto"></div>
+    <button class="btn btn--ghost btn--block" style="margin-top:14px" onclick="ltAfrondenDoelpuntEigen(null,null)">Overslaan</button>
+  </div></div>
+</div>
+
+<!-- ═══ SHEET: doelpunt eigen team — wie geeft de assist ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-doelpunt-assist" onclick="if(event.target===this)ltKiesAssist(null)">
+  <div class="sheet-wrap"><div class="sheet" style="max-height:85vh">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">Wie geeft de assist?</div>
+    <div id="dp-assist-lijst" class="bench" style="max-height:320px;overflow-y:auto"></div>
+  </div></div>
+</div>
+
+<!-- ═══ SHEET: doelpunt tegenstander — eigen doelpunt van ons? ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-doelpunt-eigen" onclick="if(event.target===this)ltAfrondenDoelpuntTegen(null)">
+  <div class="sheet-wrap"><div class="sheet" style="max-height:85vh">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">Doelpunt tegenstander</div>
+    <div class="sheet-sub">Was dit een eigen doelpunt van iemand van ons?</div>
+    <div id="dp-eigen-lijst" class="bench" style="max-height:320px;overflow-y:auto"></div>
+  </div></div>
+</div>
+
 <!-- ═══ SHEET: oefening toevoegen aan trainingsblok — categorie-gefilterd,
      zelfde als de echte oefening-picker in trainen.html, incl. snel-nieuw ═══ -->
 <div class="sheet-overlay verborgen" id="sheet-blok-kies" onclick="if(event.target===this)closeBlokKiezer()">
@@ -2946,40 +2975,104 @@ async function ltEinde() {
 }
 async function ltStap(veld, delta) {
   liveState[veld] = Math.max(0, liveState[veld] + delta);
-  let doelpuntNotitie = null;
-  if (delta > 0) {
-    doelpuntNotitie = { id: Date.now(), tekst: veld === 'scoreEigen' ? ('⚽ ' + teamNaamV2() + ' scoort') : '⚽ Tegenstander scoort', minuut: liveState.minuut, gedeeld: false };
-    liveState.notities.unshift(doelpuntNotitie);
-    await ltSyncNotities();
-  }
   renderLiveTrainer();
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     await pushLiveScore(liveState.wedstrijdId, liveState.scoreEigen, liveState.scoreTegen);
-    // Structurele doelpuntregistratie (kant/helft/minuut) voor "Doelpunten per fase"
-    // op Inzicht — V2 heeft een eigen live-scoreflow (liveState/ltStap), los van
-    // scoreWijzig() in wedstrijden.html, dus deze aanroep stond hier nog niet.
-    // Bug gevonden 2026-09-07: een testwedstrijd met 3 doelpunten via V2 gescoord
-    // liet niets zien op Inzicht, terwijl scoreWijzig() (klassieke app) al wél
-    // registreerDoelpunt() aanriep — de daadwerkelijk gebruikte scoreflow miste 'm.
-    if (delta > 0) {
-      registreerDoelpunt(liveState.wedstrijdId, veld === 'scoreEigen' ? 'eigen' : 'tegen', liveState.status.includes('1e') ? '1e' : '2e', liveState.minuut);
-      // Doelpunt ook automatisch naar de publieke live-pagina — gevraagd door
-      // gebruiker 2026-09-12, zelfde principe als de wissel-auto-push
-      // hierboven. pushLiveScore hierboven zet alleen het cijfer, dit zet 'm
-      // ook echt als regel in de tijdlijn ("Verloop"). gedeeld pas op true
-      // zetten na succesvolle push — anders bleef de lokale notitie
-      // "gedeeld:false" terwijl 'm wél publiek stond, waardoor "Voorbeeld wat
-      // ouders zien" 'm niet liet zien terwijl live.html 'm wél toonde
-      // (gemeld door gebruiker 2026-09-12).
-      const publiekeDoelpuntTekst = veld === 'scoreEigen' ? ('⚽ ' + teamNaamV2() + ' scoort') : '⚽ Tegenstander scoort';
-      const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', publiekeDoelpuntTekst, liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
-      if (liveUpdateId && doelpuntNotitie) {
-        doelpuntNotitie.gedeeld = true;
-        doelpuntNotitie.liveUpdateId = liveUpdateId;
-        doelpuntNotitie.publiekeTekst = publiekeDoelpuntTekst;
-        renderLiveTrainer();
-        await ltSyncNotities();
-      }
+  }
+  // Bij een +1 een pop-up voor wie scoort/assist (eigen team) of of het een
+  // eigen doelpunt van ons was (tegenstander) — gevraagd door gebruiker
+  // 2026-09-13. De rest van de oude afhandeling (notitie, registreerDoelpunt,
+  // publieke push) is verplaatst naar ltAfrondenDoelpuntEigen/Tegen, die
+  // hierna pas afronden zodra de pop-up beantwoord is (of overgeslagen).
+  if (delta > 0) {
+    if (veld === 'scoreEigen') openDoelpuntScorerSheet();
+    else openDoelpuntEigenSheet();
+  }
+}
+function ltDoelpuntSheetsSluiten() {
+  document.getElementById('sheet-doelpunt-scorer').classList.add('verborgen');
+  document.getElementById('sheet-doelpunt-assist').classList.add('verborgen');
+  document.getElementById('sheet-doelpunt-eigen').classList.add('verborgen');
+}
+function openDoelpuntScorerSheet() {
+  document.getElementById('dp-scorer-lijst').innerHTML = spelers().map(p =>
+    '<div class="bench-row" onclick="ltKiesScorer(\'' + p.id + '\')"><div class="bench-nm">' + esc(p.naam) + '</div></div>'
+  ).join('');
+  document.getElementById('sheet-doelpunt-scorer').classList.remove('verborgen');
+}
+let ltDoelpuntScorerId = null;
+function ltKiesScorer(spelerId) {
+  ltDoelpuntScorerId = spelerId;
+  document.getElementById('sheet-doelpunt-scorer').classList.add('verborgen');
+  const sp = spelers().filter(p => p.id !== spelerId);
+  document.getElementById('dp-assist-lijst').innerHTML =
+    '<div class="bench-row" onclick="ltKiesAssist(null)"><div class="bench-nm">Geen assist</div></div>'
+    + sp.map(p => '<div class="bench-row" onclick="ltKiesAssist(\'' + p.id + '\')"><div class="bench-nm">' + esc(p.naam) + '</div></div>').join('');
+  document.getElementById('sheet-doelpunt-assist').classList.remove('verborgen');
+}
+function ltKiesAssist(assistId) {
+  document.getElementById('sheet-doelpunt-assist').classList.add('verborgen');
+  ltAfrondenDoelpuntEigen(ltDoelpuntScorerId, assistId);
+}
+function openDoelpuntEigenSheet() {
+  document.getElementById('dp-eigen-lijst').innerHTML =
+    '<div class="bench-row" onclick="ltAfrondenDoelpuntTegen(null)"><div class="bench-nm">Nee, doelpunt tegenstander</div></div>'
+    + spelers().map(p => '<div class="bench-row" onclick="ltAfrondenDoelpuntTegen(\'' + p.id + '\')"><div class="bench-nm">' + esc(p.naam) + '</div></div>').join('');
+  document.getElementById('sheet-doelpunt-eigen').classList.remove('verborgen');
+}
+// Structurele doelpuntregistratie (kant/helft/minuut/scorer/assist) voor
+// "Doelpunten per fase" op Inzicht — V2 heeft een eigen live-scoreflow
+// (liveState/ltStap), los van scoreWijzig() in wedstrijden.html. scorer/
+// assist/eigen_doelpunt toegevoegd 2026-09-13 (gevraagd door gebruiker).
+async function ltAfrondenDoelpuntEigen(scorerId, assistId) {
+  ltDoelpuntSheetsSluiten();
+  const sp = spelers();
+  const scorer = scorerId ? sp.find(p => p.id === scorerId) : null;
+  const assist = assistId ? sp.find(p => p.id === assistId) : null;
+  let tekst = '⚽ ' + teamNaamV2() + ' scoort';
+  if (scorer) tekst += ' — ' + scorer.naam.split(' ')[0];
+  if (assist) tekst += ' (assist: ' + assist.naam.split(' ')[0] + ')';
+  const doelpuntNotitie = { id: Date.now(), tekst, minuut: liveState.minuut, gedeeld: false, spelerIds: [scorerId, assistId].filter(Boolean) };
+  liveState.notities.unshift(doelpuntNotitie);
+  renderLiveTrainer();
+  await ltSyncNotities();
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    registreerDoelpunt(liveState.wedstrijdId, 'eigen', liveState.status.includes('1e') ? '1e' : '2e', liveState.minuut, scorerId || null, assistId || null, false);
+    // Scorer/assist ook publiek — een doelpunt (en wie 'm maakte) is normaal
+    // gewoon zichtbaar voor iedereen die meekijkt, dus geen reden om dit
+    // privé te houden zoals bij een wisselreden.
+    const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', tekst, liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+    if (liveUpdateId) {
+      doelpuntNotitie.gedeeld = true;
+      doelpuntNotitie.liveUpdateId = liveUpdateId;
+      doelpuntNotitie.publiekeTekst = tekst;
+      renderLiveTrainer();
+      await ltSyncNotities();
+    }
+  }
+}
+async function ltAfrondenDoelpuntTegen(eigenDoelpuntSpelerId) {
+  ltDoelpuntSheetsSluiten();
+  // Bij een eigen doelpunt bewust geen naam publiek noemen — dat is een fout
+  // van een van onze eigen (jeugd)spelers, geen prestatie om te vieren zoals
+  // een gewoon doelpunt. Wie het was blijft wél privé vastgelegd (notitie +
+  // doelpunten-tabel) voor de trainer.
+  const speler = eigenDoelpuntSpelerId ? spelers().find(p => p.id === eigenDoelpuntSpelerId) : null;
+  const privéTekst = speler ? ('⚽ Eigen doelpunt — ' + speler.naam.split(' ')[0]) : '⚽ Tegenstander scoort';
+  const publiekeTekst = '⚽ Tegenstander scoort';
+  const doelpuntNotitie = { id: Date.now(), tekst: privéTekst, minuut: liveState.minuut, gedeeld: false, spelerIds: speler ? [speler.id] : [] };
+  liveState.notities.unshift(doelpuntNotitie);
+  renderLiveTrainer();
+  await ltSyncNotities();
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    registreerDoelpunt(liveState.wedstrijdId, 'tegen', liveState.status.includes('1e') ? '1e' : '2e', liveState.minuut, eigenDoelpuntSpelerId || null, null, !!eigenDoelpuntSpelerId);
+    const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', publiekeTekst, liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+    if (liveUpdateId) {
+      doelpuntNotitie.gedeeld = true;
+      doelpuntNotitie.liveUpdateId = liveUpdateId;
+      doelpuntNotitie.publiekeTekst = publiekeTekst;
+      renderLiveTrainer();
+      await ltSyncNotities();
     }
   }
 }

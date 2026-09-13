@@ -416,9 +416,15 @@ async function haalAlleWissels() {
 // het desktop-dashboard). Los van de vrije-tekst-notities in live_updates: elke +1-tik
 // tijdens Live (scoreWijzig() in wedstrijden.html) schrijft hier direct een eigen rij
 // weg, i.p.v. alleen lokaal in liveNotities te blijven hangen tot iemand 'm apart deelt. ───
-async function registreerDoelpunt(wedstrijdId, kant, helft, minuut) {
+// spelerId/assistSpelerId/eigenDoelpunt toegevoegd (2026-09-13, optioneel —
+// bestaande aanroepen zonder deze argumenten blijven werken) voor de
+// doelpunt-pop-up in index.html: wie scoort/assist bij een eigen doelpunt,
+// of welke eigen speler een eigen doelpunt (own goal) veroorzaakte bij een
+// doelpunt vóór ons.
+async function registreerDoelpunt(wedstrijdId, kant, helft, minuut, spelerId, assistSpelerId, eigenDoelpunt) {
   const res = await sbWrite('doelpunten', 'POST', {
     id: genId(), wedstrijd_id: wedstrijdId, kant, helft, wedstrijd_minuut: minuut,
+    speler_id: spelerId || null, assist_speler_id: assistSpelerId || null, eigen_doelpunt: !!eigenDoelpunt,
   });
   return (res && res._error) ? null : res;
 }

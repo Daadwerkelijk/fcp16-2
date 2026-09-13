@@ -3044,61 +3044,75 @@ function ltUpdateMicKnop() {
   btn.setAttribute('aria-label', ltSpraakActief ? 'Stop opname' : 'Inspreken');
   btn.title = ltSpraakActief ? 'Stop opname' : 'Spraakinvoer';
 }
-// continuous:true bleek op Android Chrome onbetrouwbaar — gemeld door
-// gebruiker 2026-09-13: herhaalde dezelfde woorden meerdere keren achter
-// elkaar (bekend Android-euvel: de engine herstart zichzelf intern en
-// stuurt dan overlappende/verse resultaten die niet meer bij de vorige
-// sessie passen). Nu losse zinnen (continuous:false, dat IS betrouwbaar) die
-// bij het einde van elke zin automatisch opnieuw starten zolang de trainer
-// niet zelf op stop heeft getikt — zelfde ervaring (blijft luisteren), maar
-// zonder de dubbele-tekst-bug.
-let ltSpraakGewenstActief = false;
+// Mijn eerste versie (continuous:false met een "final+interim vanaf index 0
+// herbouwen"-aanpak) bleek in de praktijk alsnog stukken tekst te herhalen
+// (gemeld door gebruiker 2026-09-13). wedstrijden.html (klassieke app) heeft
+// al een langer bewezen werkende implementatie van exact dezelfde knop —
+// 1-op-1 overgenomen i.p.v. zelf opnieuw uit te vinden. Kernverschil: alleen
+// een écht afgeronde (isFinal) zin wordt ooit aan de notitie toegevoegd, en
+// dat gebeurt met een simpele +=, nooit door de hele tekst opnieuw op te
+// bouwen uit e.results — dat laatste bleek de bron van de herhaling
+// (Android geeft soms al afgeronde stukken opnieuw terug in latere
+// interim-updates). Tussentijdse (interim) tekst wordt alleen getoond in een
+// apart statusregeltje, nooit in het notitieveld zelf geschreven.
 function ltToggleSpraak() {
-  if (ltSpraakActief || ltSpraakGewenstActief) {
-    ltSpraakGewenstActief = false;
-    if (ltRecognition) ltRecognition.stop();
-    return;
-  }
-  ltSpraakGewenstActief = true;
-  const inp = document.getElementById('lt-notitie-input');
-  inp.dataset.spraakBasis = inp.value.trim();
+  if (ltSpraakActief) { ltStopSpraak(); return; }
   ltStartSpraak();
 }
 function ltStartSpraak() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return;
+  if (!SR) { showToast('Spraakherkenning niet beschikbaar op deze browser'); return; }
   const inp = document.getElementById('lt-notitie-input');
-  ltRecognition = new SR();
-  ltRecognition.lang = 'nl-NL';
-  ltRecognition.interimResults = true;
-  ltRecognition.continuous = false;
-  ltRecognition.onstart = () => { ltSpraakActief = true; ltUpdateMicKnop(); };
-  ltRecognition.onresult = (e) => {
-    let final = '', interim = '';
-    for (let i = 0; i < e.results.length; i++) {
-      const tekst = e.results[i][0].transcript;
-      if (e.results[i].isFinal) final += tekst; else interim += tekst;
-    }
-    const basis = inp.dataset.spraakBasis || '';
-    inp.value = (basis ? basis + ' ' : '') + final + interim;
-    ltToonNaamSuggesties();
-  };
-  ltRecognition.onerror = (e) => {
-    if (e.error === 'no-speech' || e.error === 'aborted') return;
-    showToast('⚠️ Spraakherkenning mislukt: ' + e.error);
-  };
-  ltRecognition.onend = () => {
-    inp.dataset.spraakBasis = inp.value.trim();
-    if (ltSpraakGewenstActief) { setTimeout(ltStartSpraak, 50); return; }
-    ltSpraakActief = false;
-    ltRecognition = null;
-    ltUpdateMicKnop();
-    ltToonNaamSuggesties();
-  };
-  try { ltRecognition.start(); } catch (e) {
-    showToast('⚠️ Spraakherkenning kon niet starten');
-    ltSpraakGewenstActief = false; ltSpraakActief = false; ltUpdateMicKnop();
+  const status = document.getElementById('lt-spraak-status');
+  if (ltRecognition) { try { ltRecognition.abort(); } catch(e) {} ltRecognition = null; }
+  ltSpraakActief = true;
+  ltUpdateMicKnop();
+  if (status) status.textContent = 'Luisteren...';
+  function maakNieuweSessie() {
+    const s = new SR();
+    s.lang = 'nl-NL';
+    s.continuous = false; // false is stabieler: één zin, auto-herstart via onend
+    s.interimResults = true;
+    s.maxAlternatives = 1;
+    s.onresult = (e) => {
+      let interimTekst = '';
+      for (let i = 0; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) {
+          const tekst = r[0].transcript.trim();
+          if (tekst) { inp.value = (inp.value + ' ' + tekst).trim(); ltToonNaamSuggesties(); }
+        } else {
+          interimTekst += r[0].transcript;
+        }
+      }
+      if (status) status.textContent = interimTekst ? '🎤 ' + interimTekst : (ltSpraakActief ? 'Luisteren...' : '');
+    };
+    s.onerror = (e) => {
+      if (e.error === 'no-speech' || e.error === 'aborted') return;
+      if (status) status.textContent = e.error === 'not-allowed' ? '⚠️ Microfoon niet toegestaan' : '⚠️ ' + e.error;
+      ltStopSpraak();
+    };
+    s.onend = () => {
+      // Auto-herstart zolang de mic actief is — een nieuwe instantie
+      // voorkomt resultaat-herhaling (in tegenstelling tot dezelfde
+      // instantie hergebruiken of te snel herstarten).
+      if (ltSpraakActief) {
+        ltRecognition = null;
+        setTimeout(() => { if (ltSpraakActief) ltRecognition = maakNieuweSessie(); }, 150);
+      }
+    };
+    try { s.start(); } catch (e) { ltStopSpraak(); return null; }
+    return s;
   }
+  ltRecognition = maakNieuweSessie();
+}
+function ltStopSpraak() {
+  ltSpraakActief = false;
+  if (ltRecognition) { try { ltRecognition.stop(); } catch(e) {} ltRecognition = null; }
+  ltUpdateMicKnop();
+  const status = document.getElementById('lt-spraak-status');
+  if (status) status.textContent = '';
+  ltToonNaamSuggesties();
 }
 // Herkent gesproken (nog niet getagde) spelersnamen in de notitietekst en
 // toont ze als aantikbare suggestie — hetzelfde idee als @tag tijdens
@@ -3273,6 +3287,7 @@ function renderLiveTrainer() {
         : '<button class="btn btn--secondary btn--icon" aria-label="Inspreken" title="Spraakinvoer wordt niet ondersteund door deze browser" disabled style="opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button>') + '</div>'
     + '<div id="lt-mention-dropdown" style="display:none;position:absolute;left:0;right:44px;top:100%;margin-top:4px;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-ctl);box-shadow:var(--sh2);z-index:10;overflow:hidden"></div>'
     + '</div>'
+    + '<div id="lt-spraak-status" style="font-size:11.5px;color:var(--ink3);min-height:14px;margin:-6px 0 6px"></div>'
     + '<div id="lt-naam-suggesties" style="display:none;margin:-4px 0 10px"></div>'
     + '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn--secondary btn--sm" style="flex:1" onclick="ltVoegNotitieToe(false)">Privé opslaan</button><button class="btn btn--primary btn--sm" style="flex:1" onclick="ltVoegNotitieToe(true)">Delen &amp; opslaan</button></div>'
     + (liveState.notities.length ? liveState.notities.map(n =>

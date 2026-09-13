@@ -234,6 +234,28 @@ async function deleteWedstrijdRemote(id) {
 // bewust openbaar wordt (score, tegenstander, datum, namen uit de opstelling).
 // Een lopende live-tracking (status/klok, gezet via de push-knoppen) wordt hier bewust
 // nooit overschreven — deze functie raakt alleen de "rustende" gepland/ft-toestand.
+// Actuele live-opstelling bijwerken op live_wedstrijden — los van
+// syncLiveWedstrijd() hieronder (die status/score behandelt en alleen bij
+// openen/hervatten van Live draait). Nodig na élke wissel of formatiewissel
+// tijdens een lopende wedstrijd, zodat een 2e telefoon en de publieke pagina
+// de actuele stand zien — zonder wedstrijden.wed_lineup/formatie aan te
+// raken, want dat blijft bewust de vaste aftrap-opstelling (gebruiker
+// 2026-09-13: "basisopstelling... alleen belangrijk bij aanvang, hoe dat
+// gedurende de wedstrijd gaat maakt niet uit in basis"). lineup_ids is de
+// machine-leesbare vorm (pos_id -> speler_id, voor het hervatten op een
+// ander apparaat); opstelling blijft de al bestaande naam+positie-vorm voor
+// weergave (live.html leest die al langer, ongewijzigd bewaard).
+async function syncActueleLiveOpstelling(wedstrijdId, formatieId, lineup, players) {
+  const opstelling = [];
+  Object.entries(lineup || {}).forEach(([posId, playerId]) => {
+    if (!playerId) return;
+    const speler = players.find(p => p.id === playerId);
+    if (speler) opstelling.push({ pos: posId.replace(/_/g, '-'), naam: speler.naam });
+  });
+  return await sbFetch('live_wedstrijden?id=eq.' + wedstrijdId, 'PATCH', {
+    formatie: formatieId || '', opstelling, lineup_ids: lineup || {},
+  });
+}
 async function syncLiveWedstrijd(w, players) {
   const opstelling = [];
   if (w.wed_lineup && players) {
@@ -306,8 +328,11 @@ async function haalLiveStatus(id) {
   // écht actuele bron tijdens Live (pushLiveScore schrijft elke wijziging hier
   // meteen naartoe), nodig om de stand goed over te nemen bij het hervatten
   // van een live wedstrijd op een ander apparaat, zie openLiveTrainer() in
-  // index.html.
-  const res = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset,score_eigen,score_tegen&id=eq.' + id);
+  // index.html. formatie/lineup_ids toegevoegd (2026-09-13) — de actuele
+  // opstelling/formatie tijdens de wedstrijd (bijgewerkt bij elke wissel of
+  // formatiewissel), los van wedstrijden.wed_lineup/formatie die de vaste
+  // aftrap-opstelling blijven.
+  const res = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset,score_eigen,score_tegen,formatie,lineup_ids&id=eq.' + id);
   return (res && res[0]) || null;
 }
 // Is er ergens (op welk apparaat/trainer dan ook) een wedstrijd live? Gebruikt

@@ -320,6 +320,39 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   </div></div>
 </div>
 
+<!-- ═══ SHEET: formatie wijzigen tijdens Live — stap 1: nieuwe formatie kiezen ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-formatie-kies" onclick="if(event.target===this)closeFormatieWijzigenSheets()">
+  <div class="sheet-wrap"><div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">Formatie wijzigen</div>
+    <div id="fw-opties" class="bench" style="max-height:320px;overflow-y:auto"></div>
+    <button class="btn btn--ghost btn--block" style="margin-top:14px" onclick="closeFormatieWijzigenSheets()">Annuleren</button>
+  </div></div>
+</div>
+
+<!-- ═══ SHEET: formatie wijzigen — stap 2: spelers herindelen ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-formatie-remap" onclick="if(event.target===this)closeFormatieWijzigenSheets()">
+  <div class="sheet-wrap"><div class="sheet" style="max-height:88vh">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">Spelers herindelen — <span id="fw-nieuwe-naam"></span></div>
+    <div class="sheet-sub">Posities die hetzelfde blijven staan er al; tik de rest om in te vullen.</div>
+    <div class="pitch-wrap" style="height:300px;margin-top:10px"><div class="pitch" id="fw-veld" style="position:absolute;inset:0"></div></div>
+    <div style="font-size:12.5px;color:var(--ink3);text-align:center;margin:10px 0" id="fw-voortgang"></div>
+    <button class="btn btn--primary btn--block" id="fw-bevestig-btn" disabled onclick="bevestigFormatiewissel()">Bevestig formatiewissel</button>
+    <button class="btn btn--ghost btn--block" style="margin-top:8px" onclick="closeFormatieWijzigenSheets()">Annuleren</button>
+  </div></div>
+</div>
+
+<!-- ═══ SHEET: formatie wijzigen — sub-stap: wie staat op deze positie ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-formatie-speler" onclick="if(event.target===this)document.getElementById('sheet-formatie-speler').classList.add('verborgen')">
+  <div class="sheet-wrap"><div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">Wie staat op <span id="fw-pos-label"></span>?</div>
+    <div id="fw-spelerkeuze" class="bench" style="max-height:320px;overflow-y:auto"></div>
+    <button class="btn btn--ghost btn--block" style="margin-top:14px" onclick="document.getElementById('sheet-formatie-speler').classList.add('verborgen')">Annuleren</button>
+  </div></div>
+</div>
+
 <!-- ═══ SHEET: oefening toevoegen aan trainingsblok — categorie-gefilterd,
      zelfde als de echte oefening-picker in trainen.html, incl. snel-nieuw ═══ -->
 <div class="sheet-overlay verborgen" id="sheet-blok-kies" onclick="if(event.target===this)closeBlokKiezer()">
@@ -2751,7 +2784,8 @@ async function openLiveTrainer(id) {
   if (!w) return;
   ltStopTick();
   const startLineup = w.startLineup || w.wed_lineup || ls('fcp_lineup', '{}');
-  liveState = { wedstrijdId: id, status: 'gepland', minsPerHelft: w.minsPerHelft || 40, minuut: 0, helftStartTs: null, scoreEigen: w.score_eigen||0, scoreTegen: w.score_tegen||0, notities: [], lineup: { ...startLineup } };
+  const startFormatieId = w.formatie || w.startFormatie || localStorage.getItem('fcp_formatie') || '4222';
+  liveState = { wedstrijdId: id, status: 'gepland', minsPerHelft: w.minsPerHelft || 40, minuut: 0, helftStartTs: null, scoreEigen: w.score_eigen||0, scoreTegen: w.score_tegen||0, notities: [], lineup: { ...startLineup }, formatieId: startFormatieId };
   // Live-status van elders overnemen i.p.v. altijd blanco beginnen — anders kon
   // dit apparaat de voortgang van een ander apparaat/trainer overschrijven
   // zodra er iets bediend werd, zonder enige waarschuwing (gemeld door
@@ -2774,16 +2808,18 @@ async function openLiveTrainer(id) {
     if (remote) {
       if (remote.score_eigen != null) liveState.scoreEigen = remote.score_eigen;
       if (remote.score_tegen != null) liveState.scoreTegen = remote.score_tegen;
-      // Actuele wed_lineup rechtstreeks ophalen i.p.v. te vertrouwen op wat dit
-      // apparaat toevallig lokaal al had — ltStartHelft(1) schrijft de
-      // definitieve aftrap-opstelling hier ook naartoe, juist voor dit geval
-      // (tweede telefoon die een al lopende wedstrijd erbij pakt).
-      const wedRes = await sbFetch('wedstrijden?select=wed_lineup&id=eq.' + id);
-      const wedLineupRemote = wedRes && wedRes[0] && wedRes[0].wed_lineup;
-      if (wedLineupRemote && (typeof wedLineupRemote !== 'string' || wedLineupRemote !== '{}')) {
-        try {
-          liveState.lineup = typeof wedLineupRemote === 'string' ? JSON.parse(wedLineupRemote) : wedLineupRemote;
-        } catch(e) {}
+      // Actuele opstelling/formatie rechtstreeks uit live_wedstrijden.lineup_ids
+      // ophalen i.p.v. te vertrouwen op wat dit apparaat toevallig lokaal al
+      // had — bijgewerkt bij elke wissel/formatiewissel (zie bevestigWissel()/
+      // bevestigFormatiewissel()), juist voor dit geval (tweede telefoon die
+      // een al lopende wedstrijd erbij pakt, of een formatiewissel gemist
+      // heeft). wedstrijden.wed_lineup/formatie blijven bewust de vaste
+      // aftrap-opstelling (gebruiker 2026-09-13) — lineup_ids is er sinds
+      // 2026-09-13 en kan bij een oudere/net-gestarte wedstrijd nog leeg zijn,
+      // vandaar de fallback op de aftrap-opstelling hierboven.
+      if (remote.lineup_ids && Object.keys(remote.lineup_ids).length) {
+        liveState.lineup = remote.lineup_ids;
+        if (remote.formatie) liveState.formatieId = remote.formatie;
       }
       if (remote.status === 'ft') {
         liveState.status = 'ft';
@@ -2845,6 +2881,12 @@ async function ltStartHelft(helft) {
     if (typeof supabaseReady !== 'undefined' && supabaseReady) {
       const res = await updateWedstrijd(liveState.wedstrijdId, { wed_lineup: JSON.stringify(liveState.lineup) });
       if (res && res._error) showToast('⚠️ Opstelling niet gesynchroniseerd: ' + (res.message || res.status));
+      // wed_lineup hierboven is en blijft de vaste aftrap-opstelling (wordt na
+      // dit moment nooit meer overschreven, ook niet door een wissel of
+      // formatiewissel — gebruiker 2026-09-13). live_wedstrijden.lineup_ids
+      // hieronder is de aparte, wél live-bijgewerkte "actuele stand", hier
+      // voor het eerst gevuld met exact dezelfde aftrap-opstelling.
+      await syncActueleLiveOpstelling(liveState.wedstrijdId, liveState.formatieId, liveState.lineup, spelers());
     }
   }
   ltStartTick();
@@ -3069,12 +3111,13 @@ function renderLiveTrainer() {
   document.getElementById('lt-dot').style.display = LT_LOPEND.includes(liveState.status) ? 'inline-block' : 'none';
 
   const alle = alleFormatiesV2();
-  // Formatie van de wedstrijd zelf gebruiken (waarmee de opstelling ook echt
-  // is vastgelegd), niet het lokale fcp_formatie van dit apparaat — anders
+  // liveState.formatieId gebruiken (de actuele formatie van déze wedstrijd,
+  // kan door een formatiewissel tijdens de wedstrijd afwijken van
+  // w.formatie), niet het lokale fcp_formatie van dit apparaat — anders
   // toont een 2e telefoon met een andere actieve formatie lokaal alleen de
   // posities die toevallig dezelfde pos.id hebben (vaak enkel de
   // verdediging), de rest lijkt dan "leeg". Gemeld door gebruiker 2026-09-12.
-  let actief = w.formatie || w.startFormatie || localStorage.getItem('fcp_formatie') || '4222';
+  let actief = liveState.formatieId || w.formatie || w.startFormatie || localStorage.getItem('fcp_formatie') || '4222';
   if (!alle[actief]) actief = Object.keys(alle)[0];
   const f = alle[actief];
   const slots = f.pos.map(pos => {
@@ -3109,7 +3152,9 @@ function renderLiveTrainer() {
     + '</div>'
     + '<div style="margin-top:14px">' + fases + '</div>'
     + '</div>'
-    + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="height:320px"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div></div>'
+    + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="height:320px"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div>'
+    + (liveState.status !== 'gepland' ? '<button class="btn btn--secondary btn--block" style="margin-top:12px" onclick="openFormatieWijzigenSheet()">Formatie wijzigen</button>' : '')
+    + '</div>'
     + '<div class="card" style="margin-top:10px"><div class="sec">Notities</div>'
     + '<div style="position:relative;margin-bottom:12px">'
     + '<div style="display:flex;gap:8px"><input class="input" id="lt-notitie-input" placeholder="Typ een notitie... @naam om te taggen" style="flex:1" oninput="ltNotitieInput()" onkeyup="ltNotitieKeyup(event)" onblur="ltNotitieBlur()"><button class="btn btn--secondary btn--icon" aria-label="Inspreken" title="Spraakinvoer (nog niet beschikbaar)" disabled style="opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button></div>'
@@ -3187,7 +3232,10 @@ async function bevestigWissel(reden) {
   const w = lijst.find(x => x.id === liveState.wedstrijdId);
   w.wissels = w.wissels || [];
   w.wissels.push({ id: 'i' + Date.now() + Math.random().toString(36).slice(2,6), positie: posId, spelerUit: uitSpelerId, spelerIn: inSpelerId, minuut: liveState.minuut, reden });
-  w.wed_lineup = { ...liveState.lineup };
+  // w.wed_lineup wordt hier bewust NIET meer bijgewerkt (was tot 2026-09-13
+  // wel zo) — dat veld is de vaste aftrap-opstelling en mag niet meer
+  // veranderen door een wissel. De actuele stand na deze wissel gaat naar
+  // live_wedstrijden.lineup_ids via syncActueleLiveOpstelling() hieronder.
   localStorage.setItem('fcp_wed', JSON.stringify(lijst));
   closeWisselSheet();
   renderLiveTrainer();
@@ -3200,10 +3248,12 @@ async function bevestigWissel(reden) {
       registreerWissel(liveState.wedstrijdId, uitSpelerId, 'eruit', liveState.minuut, reden),
       registreerWissel(liveState.wedstrijdId, inSpelerId, 'erin', liveState.minuut, ''),
     ]);
-    // wed_lineup ook na een wissel bijwerken — anders toont een 2e telefoon
-    // (of dit apparaat na een refresh) na een wissel nog de basisopstelling
-    // van vóór de wissel. Gemeld door gebruiker 2026-09-12.
-    const res = await updateWedstrijd(liveState.wedstrijdId, { wed_lineup: JSON.stringify(liveState.lineup) });
+    // Actuele opstelling na deze wissel bijwerken — anders toont een 2e
+    // telefoon (of dit apparaat na een refresh) na een wissel nog de
+    // basisopstelling van vóór de wissel. Gemeld door gebruiker 2026-09-12.
+    // Gaat sinds 2026-09-13 naar live_wedstrijden.lineup_ids, niet meer naar
+    // wedstrijden.wed_lineup (die blijft de vaste aftrap-opstelling).
+    const res = await syncActueleLiveOpstelling(liveState.wedstrijdId, liveState.formatieId, liveState.lineup, spelers());
     if (res && res._error) showToast('⚠️ Opstelling niet gesynchroniseerd: ' + (res.message || res.status));
     // Wissel ook automatisch naar de publieke live-pagina pushen — gevraagd
     // door gebruiker 2026-09-12, zelfde principe als de "Delen & opslaan"-fix
@@ -3230,6 +3280,96 @@ async function bevestigWissel(reden) {
       renderLiveTrainer();
       await ltSyncNotities();
     }
+  }
+}
+
+// ─── Formatie wijzigen tijdens Live — gevraagd door gebruiker 2026-09-13.
+// Mockup eerst getest (mockup-formatie-wijzigen.html): posities die in de
+// oude én nieuwe formatie dezelfde positie-ID hebben (bv. GK/LB/CB_L/CB_R/RB
+// bij 4-2-3-1 → 4-4-2 vlak) worden automatisch overgenomen — "ik ga nooit
+// het hele team leeg gooien", een formatiewissel is meestal dezelfde elf
+// spelers, alleen een deel schuift naar een andere rol. Net als bij een
+// wissel is w.formatie de vaste aftrap-formatie en blijft die ongemoeid;
+// liveState.formatieId + live_wedstrijden.lineup_ids/formatie zijn de
+// actuele, live-bijgewerkte stand. De notitie blijft bewust privé (gedeeld:
+// false) — anders dan wissel/doelpunt, expliciet zo gevraagd. ───
+let fwNieuweFormatieId = null;
+let fwNieuweLineup = {};
+let fwPosInBewerking = null;
+function closeFormatieWijzigenSheets() {
+  document.getElementById('sheet-formatie-kies').classList.add('verborgen');
+  document.getElementById('sheet-formatie-remap').classList.add('verborgen');
+  document.getElementById('sheet-formatie-speler').classList.add('verborgen');
+}
+function openFormatieWijzigenSheet() {
+  const alle = alleFormatiesV2();
+  const huidig = alle[liveState.formatieId];
+  const huidigAantal = huidig ? huidig.pos.length : Object.keys(liveState.lineup).length;
+  // Alleen formaties met hetzelfde aantal posities aanbieden — een
+  // formatiewissel mid-match verandert het aantal spelers op het veld niet.
+  const opties = Object.entries(alle).filter(([, f]) => f.pos.length === huidigAantal);
+  document.getElementById('fw-opties').innerHTML = opties.map(([id, f]) =>
+    '<div class="bench-row"' + (id === liveState.formatieId ? ' style="border-color:var(--accent);background:var(--accent-soft)"' : '') + ' onclick="kiesNieuweFormatieWissel(\'' + id + '\')"><div class="bench-nm">' + esc(f.label) + '</div>' + (id === liveState.formatieId ? '<div class="bench-pos">Huidig</div>' : '') + '</div>'
+  ).join('');
+  document.getElementById('sheet-formatie-kies').classList.remove('verborgen');
+}
+function kiesNieuweFormatieWissel(id) {
+  if (id === liveState.formatieId) { closeFormatieWijzigenSheets(); return; }
+  fwNieuweFormatieId = id;
+  const nieuwePosIds = new Set(alleFormatiesV2()[id].pos.map(p => p.id));
+  fwNieuweLineup = {};
+  Object.entries(liveState.lineup).forEach(([posId, spelerId]) => {
+    if (nieuwePosIds.has(posId)) fwNieuweLineup[posId] = spelerId;
+  });
+  document.getElementById('sheet-formatie-kies').classList.add('verborgen');
+  document.getElementById('fw-nieuwe-naam').textContent = alleFormatiesV2()[id].label;
+  renderFormatieRemapVeld();
+  document.getElementById('sheet-formatie-remap').classList.remove('verborgen');
+}
+function renderFormatieRemapVeld() {
+  const f = alleFormatiesV2()[fwNieuweFormatieId];
+  const sp = spelers();
+  document.getElementById('fw-veld').innerHTML = f.pos.map(pos => {
+    const naam = sp.find(p => p.id === fwNieuweLineup[pos.id]);
+    return '<div class="fslot" style="left:' + pos.x + '%;top:' + pos.y + '%" onclick="fwKiesSpelerVoorPositie(\'' + pos.id + '\')">'
+      + '<div class="ppill' + (naam ? '' : ' ppill--leeg') + '"><span class="ppill-rol ' + ppillRolClassV2(pos.label) + '">' + pos.label + '</span><span class="ppill-nm">' + (naam ? esc(naam.naam.split(' ')[0]) : 'Kies') + '</span></div></div>';
+  }).join('');
+  const n = Object.keys(fwNieuweLineup).length;
+  document.getElementById('fw-voortgang').textContent = n + '/' + f.pos.length + ' geplaatst';
+  document.getElementById('fw-bevestig-btn').disabled = n < f.pos.length;
+}
+function fwKiesSpelerVoorPositie(posId) {
+  fwPosInBewerking = posId;
+  const sp = spelers();
+  const bezet = new Set(Object.values(fwNieuweLineup));
+  const beschikbaar = sp.filter(p => !bezet.has(p.id) || fwNieuweLineup[posId] === p.id);
+  const label = alleFormatiesV2()[fwNieuweFormatieId].pos.find(p => p.id === posId).label;
+  document.getElementById('fw-pos-label').textContent = label;
+  document.getElementById('fw-spelerkeuze').innerHTML = beschikbaar.length
+    ? beschikbaar.map(p => '<div class="bench-row" onclick="fwPlaatsSpeler(\'' + p.id + '\')"><div class="bench-nm">' + esc(p.naam) + '</div></div>').join('')
+    : '<div style="font-size:13px;color:var(--ink3)">Iedereen al geplaatst.</div>';
+  document.getElementById('sheet-formatie-speler').classList.remove('verborgen');
+}
+function fwPlaatsSpeler(spelerId) {
+  // Speler kan maar op 1 positie tegelijk staan — als 'ie al ergens anders in
+  // de nieuwe opstelling stond, daar weghalen (verplaatsen, niet dupliceren).
+  Object.keys(fwNieuweLineup).forEach(pid => { if (fwNieuweLineup[pid] === spelerId) delete fwNieuweLineup[pid]; });
+  fwNieuweLineup[fwPosInBewerking] = spelerId;
+  document.getElementById('sheet-formatie-speler').classList.add('verborgen');
+  renderFormatieRemapVeld();
+}
+async function bevestigFormatiewissel() {
+  const oudeLabel = (alleFormatiesV2()[liveState.formatieId] || {}).label || liveState.formatieId;
+  const nieuweLabel = alleFormatiesV2()[fwNieuweFormatieId].label;
+  liveState.formatieId = fwNieuweFormatieId;
+  liveState.lineup = { ...fwNieuweLineup };
+  liveState.notities.unshift({ id: Date.now(), tekst: '🔁 Formatiewissel: ' + oudeLabel + ' → ' + nieuweLabel, minuut: liveState.minuut, gedeeld: false });
+  closeFormatieWijzigenSheets();
+  renderLiveTrainer();
+  await ltSyncNotities();
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const res = await syncActueleLiveOpstelling(liveState.wedstrijdId, liveState.formatieId, liveState.lineup, spelers());
+    if (res && res._error) showToast('⚠️ Opstelling niet gesynchroniseerd: ' + (res.message || res.status));
   }
 }
 

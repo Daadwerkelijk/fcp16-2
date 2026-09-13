@@ -3152,9 +3152,8 @@ function renderLiveTrainer() {
     + '</div>'
     + '<div style="margin-top:14px">' + fases + '</div>'
     + '</div>'
-    + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="height:320px"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div>'
-    + (liveState.status !== 'gepland' ? '<button class="btn btn--secondary btn--block" style="margin-top:12px" onclick="openFormatieWijzigenSheet()">Formatie wijzigen</button>' : '')
-    + '</div>'
+    + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="height:320px"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div></div>'
+    + (liveState.status !== 'gepland' ? '<div class="card" style="margin-top:10px"><button class="btn btn--secondary btn--block" onclick="openFormatieWijzigenSheet()">Formatie wijzigen</button></div>' : '')
     + '<div class="card" style="margin-top:10px"><div class="sec">Notities</div>'
     + '<div style="position:relative;margin-bottom:12px">'
     + '<div style="display:flex;gap:8px"><input class="input" id="lt-notitie-input" placeholder="Typ een notitie... @naam om te taggen" style="flex:1" oninput="ltNotitieInput()" onkeyup="ltNotitieKeyup(event)" onblur="ltNotitieBlur()"><button class="btn btn--secondary btn--icon" aria-label="Inspreken" title="Spraakinvoer (nog niet beschikbaar)" disabled style="opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button></div>'
@@ -3317,9 +3316,14 @@ function kiesNieuweFormatieWissel(id) {
   if (id === liveState.formatieId) { closeFormatieWijzigenSheets(); return; }
   fwNieuweFormatieId = id;
   const nieuwePosIds = new Set(alleFormatiesV2()[id].pos.map(p => p.id));
+  // Alleen echt bezette posities overnemen (spelerId moet waar zijn) — een
+  // toevallig lege/onbezette positie in de huidige opstelling zou anders als
+  // "geplaatst" meetellen zonder dat er echt iemand staat, waardoor je kon
+  // bevestigen met een gat. Gemeld door gebruiker 2026-09-13: "1 speler niet
+  // meer gevuld" na een formatiewissel.
   fwNieuweLineup = {};
   Object.entries(liveState.lineup).forEach(([posId, spelerId]) => {
-    if (nieuwePosIds.has(posId)) fwNieuweLineup[posId] = spelerId;
+    if (spelerId && nieuwePosIds.has(posId)) fwNieuweLineup[posId] = spelerId;
   });
   document.getElementById('sheet-formatie-kies').classList.add('verborgen');
   document.getElementById('fw-nieuwe-naam').textContent = alleFormatiesV2()[id].label;
@@ -3334,7 +3338,11 @@ function renderFormatieRemapVeld() {
     return '<div class="fslot" style="left:' + pos.x + '%;top:' + pos.y + '%" onclick="fwKiesSpelerVoorPositie(\'' + pos.id + '\')">'
       + '<div class="ppill' + (naam ? '' : ' ppill--leeg') + '"><span class="ppill-rol ' + ppillRolClassV2(pos.label) + '">' + pos.label + '</span><span class="ppill-nm">' + (naam ? esc(naam.naam.split(' ')[0]) : 'Kies') + '</span></div></div>';
   }).join('');
-  const n = Object.keys(fwNieuweLineup).length;
+  // Per positie van dít systeem tellen (niet Object.keys(fwNieuweLineup).length)
+  // — een robuustere telling die niet kan worden opgeblazen door een
+  // toevallige loze sleutel, en die precies aansluit op wat er echt op het
+  // veld te zien is.
+  const n = f.pos.filter(pos => !!fwNieuweLineup[pos.id]).length;
   document.getElementById('fw-voortgang').textContent = n + '/' + f.pos.length + ' geplaatst';
   document.getElementById('fw-bevestig-btn').disabled = n < f.pos.length;
 }

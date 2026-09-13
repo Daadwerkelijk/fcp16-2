@@ -265,7 +265,7 @@ async function syncLiveWedstrijd(w, players) {
       if (speler) opstelling.push({ pos: posId.replace(/_/g, '-'), naam: speler.naam });
     });
   }
-  const bestaandArr = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset,score_eigen,score_tegen&id=eq.' + w.id);
+  const bestaandArr = await sbFetch('live_wedstrijden?select=status,helft_start,minuut_offset,score_eigen,score_tegen,formatie,opstelling,lineup_ids&id=eq.' + w.id);
   const bestaand = (bestaandArr && bestaandArr[0]) || null;
   // pauze_1e/pauze_2e stonden hier niet bij (bug, gevonden 2026-09-11 tijdens
   // het multi-device-live-onderzoek): een gepauzeerde wedstrijd werd bij élke
@@ -282,10 +282,21 @@ async function syncLiveWedstrijd(w, players) {
     starttijd: w.starttijd || '', thuis_uit: w.thuis_uit, status,
     score_eigen: isLopend ? bestaand.score_eigen : (w.score_eigen || 0),
     score_tegen: isLopend ? bestaand.score_tegen : (w.score_tegen || 0),
-    formatie: w.formatie || '', opstelling,
+    // formatie/opstelling niet klakkeloos overschrijven met de statische
+    // w.formatie/w.wed_lineup zodra de wedstrijd al loopt — dat zijn de
+    // bevroren aftrap-waarden, terwijl syncActueleLiveOpstelling() (bij een
+    // wissel/formatiewissel/positiewissel) hier al de écht actuele stand in
+    // lineup_ids/formatie/opstelling heeft gezet. Deze functie draait bij
+    // élke openLiveTrainer(), dus zonder deze guard overschreef een simpele
+    // her-opening steeds weer de actuele opstelling met de aftrap-opstelling
+    // — pas zichtbaar bij de éérstvolgende hervatting, niet meteen. Gemeld
+    // door gebruiker 2026-09-13: "halve team weer leeg qua spelers".
+    formatie: isLopend ? (bestaand.formatie || w.formatie || '') : (w.formatie || ''),
+    opstelling: isLopend && bestaand.opstelling && bestaand.opstelling.length ? bestaand.opstelling : opstelling,
     helft_start: bestaand ? bestaand.helft_start : null,
     minuut_offset: bestaand ? bestaand.minuut_offset : 0,
   };
+  if (isLopend && bestaand.lineup_ids && Object.keys(bestaand.lineup_ids).length) payload.lineup_ids = bestaand.lineup_ids;
   // BELANGRIJK: nooit DELETE+POST gebruiken om te verversen — live_updates verwijst naar
   // deze rij met ON DELETE CASCADE, dus een DELETE (ook al gevolgd door een nieuwe insert)
   // veegt de hele tijdlijn van deze wedstrijd weg. Daarom hier altijd PATCH als de rij al

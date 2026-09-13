@@ -353,6 +353,17 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   </div></div>
 </div>
 
+<!-- ═══ SHEET: 2 spelers van positie laten wisselen (geen bank/wissel) ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-positie-swap" onclick="if(event.target===this)closePositieSwapSheet()">
+  <div class="sheet-wrap"><div class="sheet" style="max-height:88vh">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">Posities wisselen</div>
+    <div class="sheet-sub" id="ps-sub">Tik de eerste speler.</div>
+    <div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;max-width:420px;margin:10px auto"><div class="pitch" id="ps-veld" style="position:absolute;inset:0"></div></div>
+    <button class="btn btn--ghost btn--block" onclick="closePositieSwapSheet()">Annuleren</button>
+  </div></div>
+</div>
+
 <!-- ═══ SHEET: oefening toevoegen aan trainingsblok — categorie-gefilterd,
      zelfde als de echte oefening-picker in trainen.html, incl. snel-nieuw ═══ -->
 <div class="sheet-overlay verborgen" id="sheet-blok-kies" onclick="if(event.target===this)closeBlokKiezer()">
@@ -3153,7 +3164,7 @@ function renderLiveTrainer() {
     + '<div style="margin-top:14px">' + fases + '</div>'
     + '</div>'
     + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;max-width:420px;margin:0 auto"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div></div>'
-    + (liveState.status !== 'gepland' ? '<div class="card" style="margin-top:10px"><button class="btn btn--secondary btn--block" onclick="openFormatieWijzigenSheet()">Formatie wijzigen</button></div>' : '')
+    + (liveState.status !== 'gepland' ? '<div class="card" style="margin-top:10px;display:flex;gap:8px"><button class="btn btn--secondary" style="flex:1" onclick="openFormatieWijzigenSheet()">Formatie wijzigen</button><button class="btn btn--secondary" style="flex:1" onclick="openPositieSwapSheet()">Posities wisselen</button></div>' : '')
     + '<div class="card" style="margin-top:10px"><div class="sec">Notities</div>'
     + '<div style="position:relative;margin-bottom:12px">'
     + '<div style="display:flex;gap:8px"><input class="input" id="lt-notitie-input" placeholder="Typ een notitie... @naam om te taggen" style="flex:1" oninput="ltNotitieInput()" onkeyup="ltNotitieKeyup(event)" onblur="ltNotitieBlur()"><button class="btn btn--secondary btn--icon" aria-label="Inspreken" title="Spraakinvoer (nog niet beschikbaar)" disabled style="opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button></div>'
@@ -3390,6 +3401,70 @@ async function bevestigFormatiewissel() {
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     const res = await syncActueleLiveOpstelling(liveState.wedstrijdId, liveState.formatieId, liveState.lineup, spelers());
     if (res && res._error) showToast('⚠️ Opstelling niet gesynchroniseerd: ' + (res.message || res.status));
+  }
+}
+
+// ─── Posities wisselen tijdens Live — 2 spelers die al op het veld staan
+// ruilen van positie (geen bank, geen wissels-tabel, niemand gaat er echt
+// uit). Gevraagd door gebruiker 2026-09-13 (punt 2 na formatiewissel,
+// "moeilijkste eerst"). Zelfde formatie/positieset blijft gewoon staan —
+// alleen liveState.lineup[posA]/[posB] wisselen om. Geen notitie (bewust,
+// zie tikPositieSwap) — wel stil vastgelegd in positie_wissels voor
+// eventuele latere analyse. ───
+let psEerstePosId = null;
+function closePositieSwapSheet() {
+  document.getElementById('sheet-positie-swap').classList.add('verborgen');
+  psEerstePosId = null;
+}
+function openPositieSwapSheet() {
+  psEerstePosId = null;
+  document.getElementById('ps-sub').textContent = 'Tik de eerste speler.';
+  renderPositieSwapVeld();
+  document.getElementById('sheet-positie-swap').classList.remove('verborgen');
+}
+function renderPositieSwapVeld() {
+  const alle = alleFormatiesV2();
+  const f = alle[liveState.formatieId] || alle[Object.keys(alle)[0]];
+  const sp = spelers();
+  document.getElementById('ps-veld').innerHTML = f.pos.map(pos => {
+    const naam = sp.find(p => p.id === liveState.lineup[pos.id]);
+    const geselecteerd = pos.id === psEerstePosId;
+    return '<div class="fslot" style="left:' + pos.x + '%;top:' + pos.y + '%" onclick="tikPositieSwap(\'' + pos.id + '\')">'
+      + '<div class="ppill' + (naam ? '' : ' ppill--leeg') + '"' + (geselecteerd ? ' style="box-shadow:0 0 0 3px var(--accent)"' : '') + '><span class="ppill-rol ' + ppillRolClassV2(pos.label) + '">' + pos.label + '</span><span class="ppill-nm">' + (naam ? esc(naam.naam.split(' ')[0]) : 'Leeg') + '</span></div></div>';
+  }).join('');
+}
+async function tikPositieSwap(posId) {
+  if (!liveState.lineup[posId]) return; // lege positie, niets om te wisselen
+  if (psEerstePosId === null) {
+    psEerstePosId = posId;
+    document.getElementById('ps-sub').textContent = 'Tik nu de tweede speler om te wisselen.';
+    renderPositieSwapVeld();
+    return;
+  }
+  if (psEerstePosId === posId) {
+    // Zelfde speler nogmaals aangetikt: selectie opheffen.
+    psEerstePosId = null;
+    document.getElementById('ps-sub').textContent = 'Tik de eerste speler.';
+    renderPositieSwapVeld();
+    return;
+  }
+  // Bewust geen notitie — gevraagd door gebruiker 2026-09-13: een
+  // positiewissel hoeft nergens vermeld te worden, niet privé voor de
+  // trainer en al helemaal niet publiek voor ouders. Wel stil vastgelegd in
+  // positie_wissels (geen notitie/UI) voor eventuele latere analyse, bv.
+  // speeltijd per positie — expliciet zo gevraagd.
+  const spelerA = liveState.lineup[psEerstePosId];
+  const spelerB = liveState.lineup[posId];
+  const positieA = psEerstePosId;
+  const positieB = posId;
+  liveState.lineup[positieA] = spelerB;
+  liveState.lineup[positieB] = spelerA;
+  closePositieSwapSheet();
+  renderLiveTrainer();
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const res = await syncActueleLiveOpstelling(liveState.wedstrijdId, liveState.formatieId, liveState.lineup, spelers());
+    if (res && res._error) showToast('⚠️ Opstelling niet gesynchroniseerd: ' + (res.message || res.status));
+    await registreerPositieWissel(liveState.wedstrijdId, spelerA, positieA, spelerB, positieB, liveState.minuut);
   }
 }
 

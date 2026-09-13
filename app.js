@@ -363,6 +363,20 @@ async function registreerWissel(wedstrijdId, spelerId, moment, minuut, reden) {
   });
   return (res && res._error) ? null : id;
 }
+// ─── Datalaag: Positiewissels (2 spelers die al op het veld staan ruilen
+// van positie — geen bank, niemand gaat er echt uit). Bewust géén notitie of
+// publieke vermelding (gebruiker 2026-09-13: "hoeft niet als notitie mee te
+// worden gegeven"), stil vastgelegd puur voor eventuele latere analyse
+// (bv. speeltijd per positie). Zelfde privé/trainer-only opzet als
+// wissels hierboven. ───
+async function registreerPositieWissel(wedstrijdId, spelerA, positieA, spelerB, positieB, minuut) {
+  const id = genId();
+  const res = await sbWrite('positie_wissels', 'POST', {
+    id, wedstrijd_id: wedstrijdId, speler_a: spelerA, positie_a: positieA,
+    speler_b: spelerB, positie_b: positieB, wedstrijd_minuut: minuut,
+  });
+  return (res && res._error) ? null : id;
+}
 async function updateWisselReden(id, reden) {
   return await sbWrite('wissels?id=eq.' + id, 'PATCH', { reden: reden || '' });
 }

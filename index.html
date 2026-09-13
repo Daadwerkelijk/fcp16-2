@@ -335,7 +335,7 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   <div class="sheet-wrap"><div class="sheet" style="max-height:88vh">
     <div class="sheet-grip"></div>
     <div class="sheet-title">Spelers herindelen — <span id="fw-nieuwe-naam"></span></div>
-    <div class="sheet-sub">Posities die hetzelfde blijven staan er al; tik de rest om in te vullen.</div>
+    <div class="sheet-sub">Iedereen staat al ergens — tik een positie om te wisselen wie waar staat.</div>
     <div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;margin-top:10px"><div class="pitch" id="fw-veld" style="position:absolute;inset:0"></div></div>
     <div style="font-size:12.5px;color:var(--ink3);text-align:center;margin:10px 0" id="fw-voortgang"></div>
     <button class="btn btn--primary btn--block" id="fw-bevestig-btn" disabled onclick="bevestigFormatiewissel()">Bevestig formatiewissel</button>
@@ -3315,7 +3315,8 @@ function openFormatieWijzigenSheet() {
 function kiesNieuweFormatieWissel(id) {
   if (id === liveState.formatieId) { closeFormatieWijzigenSheets(); return; }
   fwNieuweFormatieId = id;
-  const nieuwePosIds = new Set(alleFormatiesV2()[id].pos.map(p => p.id));
+  const nieuweFormatie = alleFormatiesV2()[id];
+  const nieuwePosIds = new Set(nieuweFormatie.pos.map(p => p.id));
   // Alleen echt bezette posities overnemen (spelerId moet waar zijn) — een
   // toevallig lege/onbezette positie in de huidige opstelling zou anders als
   // "geplaatst" meetellen zonder dat er echt iemand staat, waardoor je kon
@@ -3325,6 +3326,17 @@ function kiesNieuweFormatieWissel(id) {
   Object.entries(liveState.lineup).forEach(([posId, spelerId]) => {
     if (spelerId && nieuwePosIds.has(posId)) fwNieuweLineup[posId] = spelerId;
   });
+  // Overgebleven spelers automatisch in de overgebleven lege posities zetten
+  // — gevraagd door gebruiker 2026-09-13: "de 11 in de formatie zijn de 11
+  // die een plek in de nieuwe formatie moeten hebben", dus nooit verplicht
+  // om elke niet-overeenkomende positie zelf te moeten aantikken vóór
+  // bevestigen kan. Volgorde is simpelweg lijst-volgorde, niet op rol
+  // gematcht — de trainer kan daarna nog gewoon posities omwisselen door op
+  // het veld te tikken, exact zoals bij de eerste (matchende) posities.
+  const geplaatsteSpelers = new Set(Object.values(fwNieuweLineup));
+  const overSpelers = Object.values(liveState.lineup).filter(sid => sid && !geplaatsteSpelers.has(sid));
+  const legePosities = nieuweFormatie.pos.filter(p => !fwNieuweLineup[p.id]);
+  legePosities.forEach((pos, i) => { if (overSpelers[i]) fwNieuweLineup[pos.id] = overSpelers[i]; });
   document.getElementById('sheet-formatie-kies').classList.add('verborgen');
   document.getElementById('fw-nieuwe-naam').textContent = alleFormatiesV2()[id].label;
   renderFormatieRemapVeld();

@@ -4031,7 +4031,16 @@ async function renderInzichtDesktop() {
   // t.o.v. mobiel (gemeld 2026-09-08). Filtert Punten/Doelsaldo/Vorm/Doelpunten;
   // Opkomst/Spelers/Afwezigheid/Speeltijd/Skills blijven ongefilterd, zoals ook
   // op mobiel (die tabbladen hebben zelf geen type-filter).
-  const gespeeld = wedstrijden().filter(w => w.gespeeld && (inzRankingType === 'alle' || (w.wed_type || 'oefenwedstrijd') === inzRankingType));
+  let gespeeld = wedstrijden().filter(w => w.gespeeld && (inzRankingType === 'alle' || (w.wed_type || 'oefenwedstrijd') === inzRankingType));
+  // Fase-filter (competitie werkt met fases, bv. "Fase 1"/"Fase 2") — bestond
+  // alleen op het mobiele Ranking-tabblad, miste hier nog op desktop
+  // (gemeld door gebruiker 2026-09-14). Zelfde inzRankingFases-state, dus
+  // een keuze op mobiel/desktop blijft ook bij het wisselen van schermgrootte
+  // staan.
+  const faseOpties = inzRankingType === 'competitie' ? [...new Set(gespeeld.map(w => w.wed_fase).filter(Boolean))] : [];
+  if (inzRankingType === 'competitie' && inzRankingFases.size > 0) {
+    gespeeld = gespeeld.filter(w => inzRankingFases.has(w.wed_fase || ''));
+  }
   const wins = gespeeld.filter(w => w.score_eigen > w.score_tegen).length;
   const gelijk = gespeeld.filter(w => w.score_eigen === w.score_tegen).length;
   const verloren = gespeeld.filter(w => w.score_eigen < w.score_tegen).length;
@@ -4081,6 +4090,7 @@ async function renderInzichtDesktop() {
       + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + sp.length + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Spelers</div></div>'
       + '</div></div>'
       + '<div class="seg" role="tablist" style="margin-top:14px;max-width:420px">' + ['alle', 'competitie', 'beker', 'oefenwedstrijd'].map(t => '<button type="button" class="seg-opt" aria-selected="' + (t === inzRankingType) + '" onclick="inzZetRankingType(\'' + t + '\')">' + (t === 'alle' ? 'Alle' : t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen') + '</button>').join('') + '</div>'
+      + (faseOpties.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' + faseOpties.map(f => '<button type="button" class="chip" aria-pressed="' + inzRankingFases.has(f) + '" onclick="inzToggleRankingFase(\'' + esc(f) + '\')">' + esc(f) + '</button>').join('') + '</div>' : '')
 
       + '<div class="inzd-row" style="margin-top:14px">'
       + '<div class="card inzd-vorm">'
@@ -4319,9 +4329,12 @@ function cijfersKaartHtml(wed, sp) {
           + cijfers.map(x => '<div style="' + kolom + ';font-size:13.5px;padding:6px 0"><span>' + esc(x.p.naam) + '</span><span class="num" style="text-align:right;color:var(--ink3)">' + x.n + '×</span><span class="num" style="text-align:right;font-weight:700">' + x.gem.toFixed(1) + '</span></div>').join('')
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen cijfers ingevuld.</div>');
 }
+// Herdispatcht via renderInzicht() (zelfde reden als inzZetRankingType/
+// inzZetRankingSort hierboven) — miste dit nog, waardoor de nieuwe
+// fase-chips op desktop niet zouden reageren (gemeld 2026-09-14).
 function inzToggleRankingFase(f) {
   if (inzRankingFases.has(f)) inzRankingFases.delete(f); else inzRankingFases.add(f);
-  renderInzRanking();
+  renderInzicht();
 }
 // Doelpunten per fase — leest de structurele doelpuntregistratie (app.js,
 // registreerDoelpunt() tijdens Live) voor de meegegeven (al gefilterde) wedstrijden.

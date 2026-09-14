@@ -155,7 +155,8 @@ function renderTijdlijnItem(u) {
 // bestand niet laadt — zie de kop van dit bestand voor waarom).
 function fieldRoleClass(label) {
   if (label === 'GK') return 'rol-keeper';
-  if (/^(LB|RB|CB|LWB|RWB|DEF|ACHT)/.test(label)) return 'rol-verdediger';
+  // CV/VV toegevoegd (nieuwe Nederlandse verdediger-labels, 2026-09-14).
+  if (/^(LB|RB|CB|LWB|RWB|DEF|ACHT|CV|VV)/.test(label)) return 'rol-verdediger';
   if (/^(ST|CF|LW|RW|AANV|VOOR)/.test(label)) return 'rol-aanval';
   return 'rol-midden';
 }

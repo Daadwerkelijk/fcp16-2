@@ -678,7 +678,11 @@ function getISOWeekV2(d) {
 // scherm "nog geen beoordelingen", exact zoals de echte app zich gedraagt
 // zonder koppeling. Caching-aanpak (één call per speler, leeggegooid na een
 // schrijfactie) is dezelfde als beoordelingCache in selectie.html. ───
-const ALL_POS_OPTS_V2 = ['Keeper','LB','RB','CB-L','CB-R','VM-L','VM-R','AM-L','AM-R','ST-L','ST-R','DM-L','DM-R','LAM','CAM','RAM','CF','LM','CM-L','CM-R','RM'];
+// Uniform naar 6 Nederlandse rollen getrokken (2026-09-14) — was een platte
+// lijst van alléén de 11-tegen-11-labels, dekte de kleinere spelvormen
+// (DEF/MID/AANV-vocabulaire) niet. Zie FORMATIES_BUILTIN (app.js) voor de
+// volledige toelichting.
+const ALL_POS_OPTS_V2 = ['Keeper','CV','CV-L','CV-C','CV-R','VV-L','VV-R','MID','MID-L','MID-C','MID-R','MID-CL','MID-CR','AM','AM-L','AM-C','AM-R','AANV','AANV-L','AANV-C','AANV-R'];
 const FORM_SKILLS_V2 = {
   Techniek: ['Balcontrole','Dribbel','Passen van de bal','Schieten op doel'],
   Tactiek: ['Positiespel','Inzicht','Teamplayer'],
@@ -725,7 +729,9 @@ function alleFormatiesV2() {
 }
 function fieldRoleClassV2(label) {
   if (label === 'GK') return 'rol-keeper';
-  if (/^(LB|RB|CB|LWB|RWB|DEF|ACHT)/.test(label)) return 'rol-verdediger';
+  // CV/VV toegevoegd (nieuwe Nederlandse verdediger-labels, 2026-09-14) —
+  // oude codes blijven ook herkend voor eventuele niet-hertaalde data.
+  if (/^(LB|RB|CB|LWB|RWB|DEF|ACHT|CV|VV)/.test(label)) return 'rol-verdediger';
   if (/^(ST|CF|LW|RW|AANV|VOOR)/.test(label)) return 'rol-aanval';
   return 'rol-midden';
 }

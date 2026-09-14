@@ -1099,6 +1099,19 @@ async function toonWedstrijd(id) {
   const LT_LOPEND_STATUS = ['live_1e', 'pauze_1e', 'rust', 'live_2e', 'pauze_2e'];
   const liveInfo = (typeof supabaseReady !== 'undefined' && supabaseReady) ? await haalLiveStatus(id) : null;
   const isLiveElders = !!(liveInfo && LT_LOPEND_STATUS.includes(liveInfo.status));
+  // Wedstrijdverloop (notities) — gevraagd door gebruiker 2026-09-13: na het
+  // sluiten van een wedstrijd was de enige manier om de notities/wissel-
+  // geschiedenis terug te zien "Ga verder met Live", wat "raar" aanvoelde
+  // voor een al afgelopen wedstrijd. Elk belangrijk live-moment (wissel,
+  // doelpunt, formatiewissel) staat al als notitie in session_notes — dus
+  // gewoon diezelfde bron alleen-lezen tonen, geen aparte wissels-tabel
+  // nodig.
+  let wedVerloopNotities = [];
+  if (w.gespeeld && typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const notitiesRes = await sbFetch('session_notes?select=content&note_key=eq.live_notities_' + id);
+    const notitiesRaw = notitiesRes && notitiesRes[0] && notitiesRes[0].content;
+    if (notitiesRaw) { try { wedVerloopNotities = JSON.parse(notitiesRaw); } catch(e) {} }
+  }
   const sp = spelers();
   const afw = (w.afwezig || []).length;
   const aanwTal = sp.length - afw;
@@ -1146,6 +1159,16 @@ async function toonWedstrijd(id) {
       if (cijfers.length > 2) html += '<button class="btn btn--ghost btn--block btn--sm" style="margin-top:12px" onclick="openWedstrijdBewerken(\'' + w.id + '\')">Alle ' + cijfers.length + ' cijfers</button>';
     }
     html += '</div>';
+
+    html += '<div class="card" style="margin-top:10px"><div class="sec">Wedstrijdverloop</div>'
+      + (wedVerloopNotities.length
+          ? wedVerloopNotities.map(n =>
+              '<div class="note' + (n.gedeeld ? ' note--gedeeld' : '') + '" style="margin-bottom:7px"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(ltStripAtTekens(n.tekst)) + (n.gedeeld ? ' <span style="color:var(--accent);font-weight:700">· gedeeld</span>' : '') + '</div>'
+              + (n.spelerIds && n.spelerIds.length ? '<div style="font-size:11.5px;color:var(--ink3);margin-top:2px">Getagd: ' + n.spelerIds.map(pid => { const p = sp.find(x => x.id === pid); return p ? esc(p.naam.split(' ')[0]) : null; }).filter(Boolean).join(', ') + '</div>' : '')
+              + '</div>'
+            ).join('')
+          : '<div style="color:var(--ink3);font-size:13px">Geen notities vastgelegd tijdens deze wedstrijd.</div>')
+      + '</div>';
   }
 
   document.getElementById('w-content').innerHTML = html;

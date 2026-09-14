@@ -682,7 +682,10 @@ function getISOWeekV2(d) {
 // lijst van alléén de 11-tegen-11-labels, dekte de kleinere spelvormen
 // (DEF/MID/AANV-vocabulaire) niet. Zie FORMATIES_BUILTIN (app.js) voor de
 // volledige toelichting.
-const ALL_POS_OPTS_V2 = ['Keeper','CV','CV-L','CV-C','CV-R','VV-L','VV-R','MID','MID-L','MID-C','MID-R','MID-CL','MID-CR','AM','AM-L','AM-C','AM-R','AANV','AANV-L','AANV-C','AANV-R'];
+// Losse CV/MID/AM/AANV (zonder streepje) zijn vervallen — "-C" betekent nu
+// altijd "middelste/enige op deze lijn", ook als er geen soortgenoot is om
+// van te onderscheiden (afgestemd met gebruiker 2026-09-14).
+const ALL_POS_OPTS_V2 = ['Keeper','CV-L','CV-C','CV-R','VV-L','VV-R','MID-L','MID-C','MID-R','MID-CL','MID-CR','AM-L','AM-C','AM-R','AANV-L','AANV-C','AANV-R'];
 const FORM_SKILLS_V2 = {
   Techniek: ['Balcontrole','Dribbel','Passen van de bal','Schieten op doel'],
   Tactiek: ['Positiespel','Inzicht','Teamplayer'],

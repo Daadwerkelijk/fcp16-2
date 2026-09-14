@@ -180,8 +180,12 @@ function rolClassVan(pos) {
 // Label van elke positie wordt herberekend op basis van de HUIDIGE linie +
 // plek daarop — een gesleepte positie heet dus altijd naar waar hij nu
 // staat, niet naar zijn startpunt.
+// Bij precies 1 speler op een lijn krijgt die nu ook "-C" (i.p.v. geen
+// streepje) — consistenter: "-C" betekent altijd "middelste/enige op deze
+// lijn", ongeacht of er soortgenoten zijn om van te onderscheiden
+// (afgestemd met gebruiker 2026-09-14, gold eerst alleen voor CV).
 function zijSuffix(index, totaal) {
-  if (totaal <= 1) return '';
+  if (totaal <= 1) return 'C';
   if (totaal === 2) return index === 0 ? 'L' : 'R';
   if (totaal === 3) return ['L','C','R'][index];
   if (totaal === 4) return ['L','CL','CR','R'][index];
@@ -197,7 +201,7 @@ function zijSuffix(index, totaal) {
 // een beetje raar aanvoelt (afgestemd met gebruiker 2026-09-14).
 function verdeelAchterLinie(lijst) {
   const sorted = lijst.slice().sort((a, b) => a.x - b.x);
-  if (sorted.length <= 1) { sorted.forEach(p => { p.label = 'CV'; }); return; }
+  if (sorted.length <= 1) { sorted.forEach(p => { p.label = 'CV-C'; }); return; }
   if (sorted.length === 2) { sorted.forEach((p, i) => { p.label = 'VV-' + (i === 0 ? 'L' : 'R'); }); return; }
   if (sorted.length === 3) { sorted.forEach((p, i) => { p.label = 'CV-' + ['L','C','R'][i]; }); return; }
   const binnen = sorted.slice(1, -1);

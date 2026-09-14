@@ -919,7 +919,11 @@ function rijHtml(item, toonMaand) {
 function renderAgenda() {
   const alle = alleAgendaItems().filter(i => agendaFilterV2 === 'alle' || i.type === agendaFilterV2);
   const aankomend = alle.filter(i => !i.afgerond);
-  const afgerond = alle.filter(i => i.afgerond).sort((a, b) => b.isoDate.localeCompare(a.isoDate)).slice(0, 8);
+  // Voorheen slice(0,8) — verborg oudere/foutieve wedstrijden waardoor ze
+  // nooit opgemerkt (en dus nooit opgeruimd) konden worden. Gemeld door
+  // gebruiker 2026-09-14: wil alles zien om onterechte wedstrijden zelf te
+  // kunnen verwijderen.
+  const afgerond = alle.filter(i => i.afgerond).sort((a, b) => b.isoDate.localeCompare(a.isoDate));
   document.getElementById('a-sub').textContent = aankomend.length + ' aankomend · ' + afgerond.length + ' afgerond';
 
   let html = '';
@@ -4244,7 +4248,7 @@ function cijfersKaartHtml(wed, sp) {
     + '<button type="button" class="seg-opt" aria-selected="' + (inzRankingSort === 'alfa') + '" onclick="inzZetRankingSort(\'alfa\')">Alfabetisch</button>'
     + '<button type="button" class="seg-opt" aria-selected="' + (inzRankingSort === 'cijfer') + '" onclick="inzZetRankingSort(\'cijfer\')">Hoogste cijfer</button>'
     + '</div>'
-    + (cijfers.length ? cijfers.map((x, i) => '<div style="display:flex;align-items:center;gap:10px;padding:6px 0">' + (inzRankingSort === 'cijfer' ? '<span style="font-size:12px;font-weight:700;color:var(--ink3);min-width:16px">' + (i + 1) + '</span>' : '') + '<div style="flex:1;font-size:13.5px">' + esc(x.p.naam) + '</div><div class="bar" style="width:70px"><div class="bar-fill" style="width:' + (x.gem / 10 * 100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700;width:32px;text-align:right">' + x.gem.toFixed(1) + '</div></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen cijfers ingevuld.</div>');
+    + (cijfers.length ? cijfers.map((x, i) => '<div style="display:flex;align-items:center;gap:10px;padding:6px 0">' + (inzRankingSort === 'cijfer' ? '<span style="font-size:12px;font-weight:700;color:var(--ink3);min-width:16px">' + (i + 1) + '</span>' : '') + '<div style="flex:1;font-size:13.5px">' + esc(x.p.naam) + '</div><span class="num" style="font-size:11.5px;color:var(--ink3);width:20px;text-align:right" title="Aantal wedstrijden">' + x.n + '×</span><div class="bar" style="width:70px"><div class="bar-fill" style="width:' + (x.gem / 10 * 100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700;width:32px;text-align:right">' + x.gem.toFixed(1) + '</div></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen cijfers ingevuld.</div>');
 }
 function inzToggleRankingFase(f) {
   if (inzRankingFases.has(f)) inzRankingFases.delete(f); else inzRankingFases.add(f);
@@ -4281,9 +4285,7 @@ async function doelpuntenKaartHtml(wed) {
 async function topscorersKaartHtml(wed, sp) {
   if (typeof supabaseReady === 'undefined' || !supabaseReady) return '';
   const wedIds = new Set(wed.map(w => w.id));
-  const [alleDoelpunten, alleWissels, eindeMomenten] = await Promise.all([
-    haalAlleDoelpunten(), haalAlleWissels(), haalAlleEindeMomenten(),
-  ]);
+  const alleDoelpunten = await haalAlleDoelpunten();
   const dp = alleDoelpunten.filter(d => wedIds.has(d.wedstrijd_id) && d.kant === 'eigen');
   const perSpeler = {};
   sp.forEach(p => { perSpeler[p.id] = { p, wedstrijden: 0, goals: 0, assists: 0 }; });
@@ -4291,16 +4293,15 @@ async function topscorersKaartHtml(wed, sp) {
     if (d.speler_id && perSpeler[d.speler_id]) perSpeler[d.speler_id].goals++;
     if (d.assist_speler_id && perSpeler[d.assist_speler_id]) perSpeler[d.assist_speler_id].assists++;
   });
-  // Aantal wedstrijden = daadwerkelijk gespeeld (speeltijd > 0), zelfde bron
-  // als Inzicht → Speelminuten — geeft de goals/assists context (2 goals in
-  // 2 wedstrijden zegt iets anders dan 2 in 8).
+  // Aantal wedstrijden = niet afwezig gemeld (w.afwezig, dezelfde bron als
+  // wedAfwezigChipsHtml) — dit is voor élke wedstrijd ingevuld, in
+  // tegenstelling tot de live-wissel/lineup-registratie die alleen bestaat
+  // voor wedstrijden die via Live gespeeld zijn. Was eerst op
+  // berekenSpeeltijd() gebaseerd, wat oudere/niet-Live-wedstrijden ten
+  // onrechte als "niet gespeeld" telde (gemeld door gebruiker 2026-09-14).
   wed.forEach(w => {
-    if (!w.wed_lineup || !Object.keys(w.wed_lineup).length) return;
-    const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
-    const eindMinuut = eindeMomenten[w.id];
-    sp.forEach(p => {
-      if (berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindMinuut) > 0) perSpeler[p.id].wedstrijden++;
-    });
+    const afwezigIds = new Set((w.afwezig || []).map(a => (a && a.pid) ? a.pid : a));
+    sp.forEach(p => { if (!afwezigIds.has(p.id)) perSpeler[p.id].wedstrijden++; });
   });
   const lijst = Object.values(perSpeler).filter(x => x.goals || x.assists).sort((a, b) => (b.goals - a.goals) || (b.assists - a.assists));
   const kolom = 'display:grid;grid-template-columns:1fr 30px 26px 26px;align-items:center;gap:6px';

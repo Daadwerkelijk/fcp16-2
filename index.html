@@ -4423,6 +4423,13 @@ async function renderInzSpeelminuten() {
 
 // ─── Navigatie ───
 const ALLE_SCHERMEN_V2 = ['inlog','vandaag','agenda','team','inzicht','wedstrijd','wedstrijd-bewerk','wedstrijd-opstelling','oefening-bewerk','speler-bewerk','training','training-bewerk','training-week-nieuw','formatie-editor','live-trainer','live-publiek','instellingen'];
+// Schermen die zonder extra context (geen specifieke wedstrijd/speler-id nodig)
+// zichzelf opnieuw kunnen opbouwen — dus veilig te onthouden voor een refresh.
+// Detail-/bewerkschermen staan hier bewust niet in: die context is na een
+// refresh toch weg, dus daar valt terug op Vandaag (of Live, zie
+// gaNaarVandaagOfLiveV2()). Gemeld door gebruiker 2026-09-14: "waarom niet
+// naar de pagina waar ik de refresh doe" — landde altijd op Vandaag.
+const HERSTELBARE_SCHERMEN_V2 = ['vandaag','agenda','team','inzicht','instellingen'];
 function toonScherm(naam) {
   ALLE_SCHERMEN_V2.forEach(s => {
     document.getElementById('screen-' + s).classList.toggle('actief', s === naam);
@@ -4438,6 +4445,7 @@ function toonScherm(naam) {
   if (naam === 'inzicht') renderInzicht();
   if (naam === 'live-publiek') renderLivePubliek();
   if (naam === 'instellingen') renderInstellingen();
+  if (HERSTELBARE_SCHERMEN_V2.includes(naam)) localStorage.setItem('fcp_laatste_scherm', naam);
   const chromeVerbergen = (naam === 'live-trainer' || naam === 'live-publiek' || naam === 'inlog');
   document.querySelector('.tabbar').style.display = chromeVerbergen ? 'none' : 'flex';
   document.querySelector('.side').style.display = chromeVerbergen ? 'none' : '';
@@ -4605,7 +4613,11 @@ async function gaNaarVandaagOfLiveV2() {
     const actief = await haalActieveLiveWedstrijd();
     if (actief) { await openLiveTrainer(actief.id); return; }
   }
-  toonScherm('vandaag');
+  // Herstel het scherm waar de trainer was vóór de refresh (Agenda/Team/
+  // Inzicht/Instellingen) i.p.v. altijd terugvallen op Vandaag — zelfde
+  // toonScherm() handelt de bijbehorende render() al af (zie hierboven).
+  const laatste = localStorage.getItem('fcp_laatste_scherm');
+  toonScherm(HERSTELBARE_SCHERMEN_V2.includes(laatste) ? laatste : 'vandaag');
 }
 async function initAuthGateV2() {
   const nu = Math.floor(Date.now() / 1000);

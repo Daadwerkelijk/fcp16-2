@@ -915,14 +915,11 @@ function setAgendaFilter(f) {
 function rijHtml(item, toonMaand) {
   const d = new Date(item.isoDate);
   const klik = item.type === 'wedstrijd' ? "toonWedstrijd('" + item.wedId + "')" : "openTrainingSessie(" + item.wi + "," + item.si + ")";
-  // Wedstrijden op 1 regel (titel+sub samengevoegd, afgekapt met ellipsis i.p.v.
-  // twee gestapelde regels) — trainingen blijven 2 regels, die tonen relevantere
-  // detail (aanwezig-teller) waar minder op gescand hoeft te worden.
-  const isWed = item.type === 'wedstrijd';
-  const body = isWed
-    ? '<div class="row-body" style="min-width:0"><div class="row-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(item.titel) + ' <span style="font-weight:400;color:var(--ink3)">· ' + item.sub + '</span></div></div>'
-    : '<div class="row-body"><div class="row-title">' + esc(item.titel) + '</div><div class="row-sub">' + item.sub + '</div></div>';
-  return '<a class="row' + (isWed ? ' row--compact' : '') + '" href="#" onclick="' + klik + ';return false">'
+  // Wedstrijden en trainingen altijd hetzelfde tweeregelige patroon — stond
+  // eerst verschillend (wedstrijd op 1 samengevoegde regel, training op 2),
+  // gemeld door gebruiker 2026-09-14: aanwezigheid hoort altijd op de 2e regel.
+  const body = '<div class="row-body"><div class="row-title">' + esc(item.titel) + '</div><div class="row-sub">' + item.sub + '</div></div>';
+  return '<a class="row" href="#" onclick="' + klik + ';return false">'
     + '<div class="row-lead datebox"><div class="datebox-d num">' + d.getDate() + '</div><div class="datebox-m">' + (toonMaand ? MAAND_KORT[d.getMonth()] : DAG_KORT[d.getDay()]) + '</div></div>'
     + body
     + '<span class="tag ' + item.tagClass + (item.tagNum ? ' num' : '') + '">' + item.tagTekst + '</span></a>';

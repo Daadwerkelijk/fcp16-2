@@ -4281,18 +4281,40 @@ async function doelpuntenKaartHtml(wed) {
 async function topscorersKaartHtml(wed, sp) {
   if (typeof supabaseReady === 'undefined' || !supabaseReady) return '';
   const wedIds = new Set(wed.map(w => w.id));
-  const alleDoelpunten = await haalAlleDoelpunten();
+  const [alleDoelpunten, alleWissels, eindeMomenten] = await Promise.all([
+    haalAlleDoelpunten(), haalAlleWissels(), haalAlleEindeMomenten(),
+  ]);
   const dp = alleDoelpunten.filter(d => wedIds.has(d.wedstrijd_id) && d.kant === 'eigen');
   const perSpeler = {};
-  sp.forEach(p => { perSpeler[p.id] = { p, goals: 0, assists: 0 }; });
+  sp.forEach(p => { perSpeler[p.id] = { p, wedstrijden: 0, goals: 0, assists: 0 }; });
   dp.forEach(d => {
     if (d.speler_id && perSpeler[d.speler_id]) perSpeler[d.speler_id].goals++;
     if (d.assist_speler_id && perSpeler[d.assist_speler_id]) perSpeler[d.assist_speler_id].assists++;
   });
+  // Aantal wedstrijden = daadwerkelijk gespeeld (speeltijd > 0), zelfde bron
+  // als Inzicht → Speelminuten — geeft de goals/assists context (2 goals in
+  // 2 wedstrijden zegt iets anders dan 2 in 8).
+  wed.forEach(w => {
+    if (!w.wed_lineup || !Object.keys(w.wed_lineup).length) return;
+    const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
+    const eindMinuut = eindeMomenten[w.id];
+    sp.forEach(p => {
+      if (berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindMinuut) > 0) perSpeler[p.id].wedstrijden++;
+    });
+  });
   const lijst = Object.values(perSpeler).filter(x => x.goals || x.assists).sort((a, b) => (b.goals - a.goals) || (b.assists - a.assists));
+  const kolom = 'display:grid;grid-template-columns:1fr 30px 26px 26px;align-items:center;gap:6px';
+  const header = '<div style="' + kolom + ';font-size:9.5px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.02em;padding-bottom:5px;margin-bottom:5px;border-bottom:1px solid var(--line)">'
+    + '<span>Speler</span><span style="text-align:right" title="Wedstrijden gespeeld">Wed</span><span style="text-align:right" title="Doelpunten">⚽</span><span style="text-align:right" title="Assists">A</span></div>';
+  const rij = x => '<div style="' + kolom + ';font-size:13.5px;padding:5px 0">'
+    + '<span>' + esc(x.p.naam) + '</span>'
+    + '<span class="num" style="text-align:right;color:var(--ink3)">' + x.wedstrijden + '</span>'
+    + '<span class="num" style="text-align:right;font-weight:600">' + x.goals + '</span>'
+    + '<span class="num" style="text-align:right;color:var(--ink3)">' + x.assists + '</span>'
+    + '</div>';
   return '<div class="sec">Topscorers &amp; assists</div>'
     + (lijst.length
-        ? '<div style="display:flex;flex-direction:column;gap:9px">' + lijst.map(x => '<div style="display:flex;justify-content:space-between;font-size:13.5px"><span>' + esc(x.p.naam) + '</span><span style="color:var(--ink3)">' + (x.goals ? x.goals + ' ⚽' : '') + (x.goals && x.assists ? ' · ' : '') + (x.assists ? x.assists + ' assist' + (x.assists === 1 ? '' : 's') : '') + '</span></div>').join('') + '</div>'
+        ? header + lijst.map(rij).join('')
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter.</div>');
 }
 async function renderInzRanking() {

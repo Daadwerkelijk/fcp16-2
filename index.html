@@ -26,6 +26,17 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stat-n{font-size:22px;font-weight:700;letter-spacing:-.03em}
 .stat-l{font-size:11px;color:var(--ink3);font-weight:600;margin-top:1px}
+/* Inzicht-desktop: content-brede kaarten i.p.v. vaste 300px/1fr-kolommen —
+   elke kaart pakt alleen de breedte die 'm nodig heeft (afgestemd met
+   gebruiker 2026-09-14, mockup design/inzicht-desktop/). */
+.inzd-row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+.inzd-vorm{flex:1 1 260px;max-width:320px}
+.inzd-dp{flex:1 1 220px;max-width:260px}
+.inzd-top{flex:1 1 260px;max-width:320px}
+.inzd-cijfer{flex:1 1 300px}
+.inzd-min{flex:1 1 220px}
+.inzd-afw{flex:1 1 320px}
+.inzd-motm{flex:0 1 200px}
 .sheet-overlay{position:fixed;inset:0;background:rgba(20,17,14,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet-overlay.verborgen{display:none}
 .sheet-wrap{width:100%;max-width:480px}
@@ -3932,15 +3943,20 @@ function afwezigheidAandachtHtml() {
   const alle = Object.entries(perSpeler)
     .map(([id, x]) => ({ naam: naamVan(id), n: x.n, redenen: [...x.redenen].join(', ') }))
     .sort((a, b) => b.n - a.n);
-  return '<div class="sec">Afwezigheid</div>'
+  return '<div class="sec">Afwezigheid <span style="font-weight:600;color:var(--ink3);text-transform:none;letter-spacing:0">' + alle.length + ' spelers</span></div>'
     + (alle.length
-        ? '<div style="display:flex;flex-direction:column;gap:9px">' + alle.map(x => '<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px"><span style="font-weight:600;flex-shrink:0">' + esc(x.naam) + '</span><span style="color:var(--ink3);text-align:right">' + x.n + '×' + (x.redenen ? ' · ' + esc(x.redenen) : '') + '</span></div>').join('') + '</div>'
+        // white-space:nowrap + ellipsis (i.p.v. wrappen) zodat een lange
+        // redenenlijst (bv. 4 redenen) altijd op 1 regel blijft — volledige
+        // tekst staat in de title-tooltip. Gemeld door gebruiker 2026-09-14.
+        ? '<div style="display:flex;flex-direction:column">' + alle.map(x => '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:6px 0;font-size:13px" title="' + esc(x.n + '× · ' + x.redenen) + '"><span style="font-weight:600;flex-shrink:0">' + esc(x.naam) + '</span><span style="color:var(--ink3);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">' + x.n + '×' + (x.redenen ? ' · ' + esc(x.redenen) : '') + '</span></div>').join('') + '</div>'
         : '<div style="font-size:12.5px;color:var(--ink3)">Geen afwezigheid geregistreerd.</div>');
 }
-// Top-speeltijd — dezelfde berekenSpeeltijd()-databron als Inzicht → Minuten
-// (mobiel), samengevat tot de 4 spelers met de meeste minuten.
-async function speeltijdAandachtHtml() {
-  const sp = spelers();
+// Speeltijd — volledige lijst i.p.v. top 4 (gemeld door gebruiker 2026-09-14:
+// "ik wil alle spelers zien"), zelfde berekenSpeeltijd()-databron als
+// Inzicht → Minuten (mobiel). Staat nu naast Gemiddeld cijfer/Afwezigheid,
+// die daar al langere lijsten tonen — past qua vorm beter dan tussen de
+// korte samenvattingskaarten (Vorm/Doelpunten/Topscorers).
+async function speeltijdKaartHtml(sp) {
   const wed = wedstrijden().filter(w => w.gespeeld && w.wed_lineup && Object.keys(w.wed_lineup).length);
   const totaal = {}; sp.forEach(p => { totaal[p.id] = 0; });
   if (typeof supabaseReady !== 'undefined' && supabaseReady && wed.length) {
@@ -3951,10 +3967,12 @@ async function speeltijdAandachtHtml() {
       sp.forEach(p => { totaal[p.id] += berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindMinuut); });
     });
   }
-  const top = sp.map(p => ({ naam: p.naam, min: totaal[p.id] })).filter(x => x.min > 0).sort((a, b) => b.min - a.min).slice(0, 4);
-  return '<div class="sec">Speeltijd</div>'
-    + (top.length
-        ? '<div style="display:flex;flex-direction:column;gap:9px">' + top.map(x => '<div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:600">' + esc(x.naam) + '</span><span style="color:var(--ink3)">' + x.min + ' min</span></div>').join('') + '</div>'
+  const rijen = sp.map(p => ({ naam: p.naam, min: totaal[p.id] })).filter(x => x.min > 0).sort((a, b) => b.min - a.min);
+  const kolom = 'display:grid;grid-template-columns:1fr 46px;align-items:center;gap:16px';
+  return '<div class="sec">Speeltijd <span style="font-weight:600;color:var(--ink3);text-transform:none;letter-spacing:0">' + rijen.length + ' spelers</span></div>'
+    + (rijen.length
+        ? '<div style="' + kolom + ';font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px"><span>Speler</span><span style="text-align:right">Min</span></div>'
+          + rijen.map(x => '<div style="' + kolom + ';font-size:13.5px;padding:6px 0"><span>' + esc(x.naam) + '</span><span class="num" style="text-align:right;color:var(--ink3)">' + x.min + '</span></div>').join('')
         : '<div style="font-size:12.5px;color:var(--ink3)">Nog geen speelminuten dit seizoen.</div>');
 }
 // Desktop-dashboard voor Inzicht: donkere kop met Punten/Doelsaldo/Opkomst/Kader,
@@ -3994,12 +4012,20 @@ async function renderInzichtDesktop() {
     skillsVergelijkingData(),
     doelpuntenKaartHtml(gespeeld),
     topscorersKaartHtml(gespeeld, sp),
-    speeltijdAandachtHtml(),
+    speeltijdKaartHtml(sp),
   ]);
   VD_SKILLS_RAW = skillsData;
   const metSkillData = skillsData.rijen.filter(r => r.sGem != null || r.tGem != null);
   const afwezigheidHtml = afwezigheidAandachtHtml();
 
+  // Lay-out herzien 2026-09-14 (mockup design/inzicht-desktop/, met gebruiker
+  // doorlopen): vaste 300px/1fr-tweekoloms-grid gaf elke kaart evenveel
+  // ruimte ongeacht inhoud — veel lege ruimte bij korte kaarten (MOTM), te
+  // krap bij lange (Gemiddeld cijfer/Afwezigheid). Nu content-brede kaarten
+  // in flex-wrap-rijen (.inzd-row/.inzd-*, zie <style> bovenaan dit bestand):
+  // rij 1 = korte samenvattingskaarten, Vaardigheden krijgt de volle breedte
+  // op een eigen rij, rij 2 = de langere per-speler-lijsten (Cijfer/
+  // Speeltijd/Afwezigheid) + MOTM (bewust smal, weinig inhoud).
   document.getElementById('i-content').innerHTML =
       // Hero: seizoenskop + de 4 kerncijfers in één donkere band i.p.v. losse
       // witte vlakken — zelfde .card--accent-patroon als "Eerstvolgend" op
@@ -4014,39 +4040,33 @@ async function renderInzichtDesktop() {
       + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + sp.length + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Spelers</div></div>'
       + '</div></div>'
       + '<div class="seg" role="tablist" style="margin-top:14px;max-width:420px">' + ['alle', 'competitie', 'beker', 'oefenwedstrijd'].map(t => '<button type="button" class="seg-opt" aria-selected="' + (t === inzRankingType) + '" onclick="inzZetRankingType(\'' + t + '\')">' + (t === 'alle' ? 'Alle' : t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen') + '</button>').join('') + '</div>'
-      // Smalle datakolom links (vast, 300px) / brede vaardighedenkolom rechts —
-      // 1-op-1 op de schets die de gebruiker aanleverde (2026-09-07).
-      + '<div style="display:grid;grid-template-columns:300px 1fr;grid-template-rows:auto auto;gap:14px;align-items:start;margin-top:14px;grid-template-areas:\'links1 rechts\' \'links2 rechts\'">'
-      + '<div class="card" style="grid-area:links1">'
-        + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><div class="sec" style="margin:0">Vorm — ' + gespeeld.length + ' wedstrijden</div><span class="tag tag--line">' + wins + 'W · ' + gelijk + 'G · ' + verloren + 'V</span></div>'
-        + '<div style="display:flex;height:10px;border-radius:6px;overflow:hidden;margin-bottom:14px;background:var(--surface3)">'
-          + '<div style="flex:' + wins + ';background:var(--win)"></div><div style="flex:' + gelijk + ';background:var(--neutral)"></div><div style="flex:' + verloren + ';background:var(--loss)"></div>'
+
+      + '<div class="inzd-row" style="margin-top:14px">'
+      + '<div class="card inzd-vorm">'
+        + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><div class="sec" style="margin:0">Vorm</div><span class="tag tag--line">' + wins + 'W · ' + gelijk + 'G · ' + verloren + 'V</span></div>'
+        + '<div style="display:flex;height:9px;border-radius:5px;overflow:hidden;margin-bottom:12px;background:var(--surface3)">'
+          + '<div style="flex:' + (wins || 0.0001) + ';background:var(--win)"></div><div style="flex:' + (gelijk || 0.0001) + ';background:var(--neutral)"></div><div style="flex:' + (verloren || 0.0001) + ';background:var(--loss)"></div>'
         + '</div>'
-        + (laatsteAcht.length ? '<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--ink3);font-weight:600;margin-bottom:5px"><span>oudste</span><span>nieuwste</span></div><div class="formstrip">' + laatsteAcht.map(w => {
+        + (laatsteAcht.length ? '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px"><span>oudste</span><span>nieuwste</span></div><div class="formstrip">' + laatsteAcht.map(w => {
             const u = w.score_eigen > w.score_tegen ? 'win' : w.score_eigen < w.score_tegen ? 'loss' : 'neutral';
             const letter = u === 'win' ? 'W' : u === 'loss' ? 'V' : 'G';
             return '<span style="background:var(--' + u + '-soft);color:var(--' + u + ')">' + letter + '</span>';
-          }).join('') + '</div>' : '')
-        + '<div style="height:1px;background:var(--line);margin:18px 0 14px"></div>'
-        + doelpuntenHtml
-        + (topscorersHtml ? '<div style="height:1px;background:var(--line);margin:16px 0 14px"></div>' + topscorersHtml : '')
+          }).join('') + '</div>' : '<div style="font-size:12.5px;color:var(--ink3)">Geen wedstrijden voor dit filter.</div>')
       + '</div>'
-      + '<div class="card" style="grid-area:links2">'
-        + afwezigheidHtml
-        + '<div style="height:1px;background:var(--line);margin:16px 0 14px"></div>'
-        + speeltijdHtml
+      + '<div class="card inzd-dp">' + doelpuntenHtml + '</div>'
+      + '<div class="card inzd-top">' + (topscorersHtml || '<div class="sec">Topscorers &amp; assists</div><div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter.</div>') + '</div>'
       + '</div>'
-      + '<div style="grid-area:rechts">'
-        + (metSkillData.length ? skillsVerdelingLijstHtml(skillsData.rijen) : '<div class="card"><div class="sec">Verdeling per vaardigheid</div><div style="font-size:13px;color:var(--ink3)">Nog geen speler- en trainerbeoordelingen om te vergelijken.</div></div>')
+
+      + '<div style="margin-top:16px">'
+      + (metSkillData.length ? skillsVerdelingLijstHtml(skillsData.rijen) : '<div class="card"><div class="sec">Vaardigheden</div><div style="font-size:13px;color:var(--ink3)">Nog geen speler- en trainerbeoordelingen om te vergelijken.</div></div>')
       + '</div>'
-    + '</div>'
-    // MOTM + Gemiddeld cijfer misten hier nog (gemeld 2026-09-08) — mobiel had
-    // dit al op het Ranking-tabblad, zelfde herbruikte kaarten, gefilterd op
-    // hetzelfde wedstrijdtype-filter hierboven.
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">'
-      + '<div class="card">' + motmKaartHtml(gespeeld, sp) + '</div>'
-      + '<div class="card">' + cijfersKaartHtml(gespeeld, sp) + '</div>'
-    + '</div>';
+
+      + '<div class="inzd-row" style="margin-top:16px">'
+      + '<div class="card inzd-cijfer">' + cijfersKaartHtml(gespeeld, sp) + '</div>'
+      + '<div class="card inzd-min">' + speeltijdHtml + '</div>'
+      + '<div class="card inzd-afw">' + afwezigheidHtml + '</div>'
+      + '<div class="card inzd-motm">' + motmKaartHtml(gespeeld, sp) + '</div>'
+      + '</div>';
 }
 function inzToggle(headerEl) {
   const d = headerEl.parentElement.querySelector('.inz-detail');
@@ -4138,7 +4158,7 @@ let VD_SKILLS_RAW = null;
 function skillsVerdelingLijstHtml(rijen) {
   const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
   return '<div class="card">'
-    + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px"><div class="sec" style="margin:0">Verdeling per vaardigheid</div>'
+    + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px"><div class="sec" style="margin:0">Vaardigheden</div>'
     + '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3)"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div></div>'
     + '<div style="display:flex;gap:8px;margin:14px 0 8px"><div style="width:170px;flex-shrink:0"></div><div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:10px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div><div style="width:15px;flex-shrink:0"></div></div>'
     + rijen.map(r => '<div class="skillrow" onclick="openVaardigheidSheet(\'' + esc(r.sk) + '\')">'
@@ -4243,12 +4263,20 @@ function cijfersKaartHtml(wed, sp) {
     return { p, gem: vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null, n: vals.length };
   }).filter(x => x.gem != null);
   if (inzRankingSort === 'cijfer') cijfers.sort((a, b) => b.gem - a.gem); else cijfers.sort((a, b) => a.p.naam.localeCompare(b.p.naam));
+  // Kolomlabels "Wedstrijden"/"Cijfer" boven de lijst i.p.v. alleen een
+  // title-tooltip op de "×" — stonden te dicht op elkaar toen de kolommen
+  // nog 34px/60px/34px waren, nu breder + meer tussenruimte (gemeld
+  // 2026-09-14). Balkje liet ik vervallen (niet in het goedgekeurde ontwerp).
+  const kolom = 'display:grid;grid-template-columns:1fr 88px 46px;align-items:center;gap:16px';
   return '<div class="sec" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span>Gemiddeld cijfer</span></div>'
     + '<div class="seg" role="tablist" style="margin-bottom:10px">'
     + '<button type="button" class="seg-opt" aria-selected="' + (inzRankingSort === 'alfa') + '" onclick="inzZetRankingSort(\'alfa\')">Alfabetisch</button>'
     + '<button type="button" class="seg-opt" aria-selected="' + (inzRankingSort === 'cijfer') + '" onclick="inzZetRankingSort(\'cijfer\')">Hoogste cijfer</button>'
     + '</div>'
-    + (cijfers.length ? cijfers.map((x, i) => '<div style="display:flex;align-items:center;gap:10px;padding:6px 0">' + (inzRankingSort === 'cijfer' ? '<span style="font-size:12px;font-weight:700;color:var(--ink3);min-width:16px">' + (i + 1) + '</span>' : '') + '<div style="flex:1;font-size:13.5px">' + esc(x.p.naam) + '</div><span class="num" style="font-size:11.5px;color:var(--ink3);width:20px;text-align:right" title="Aantal wedstrijden">' + x.n + '×</span><div class="bar" style="width:70px"><div class="bar-fill" style="width:' + (x.gem / 10 * 100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700;width:32px;text-align:right">' + x.gem.toFixed(1) + '</div></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen cijfers ingevuld.</div>');
+    + (cijfers.length
+        ? '<div style="' + kolom + ';font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px"><span>Speler</span><span style="text-align:right">Wedstrijden</span><span style="text-align:right">Cijfer</span></div>'
+          + cijfers.map(x => '<div style="' + kolom + ';font-size:13.5px;padding:6px 0"><span>' + esc(x.p.naam) + '</span><span class="num" style="text-align:right;color:var(--ink3)">' + x.n + '×</span><span class="num" style="text-align:right;font-weight:700">' + x.gem.toFixed(1) + '</span></div>').join('')
+        : '<div style="font-size:13px;color:var(--ink3)">Nog geen cijfers ingevuld.</div>');
 }
 function inzToggleRankingFase(f) {
   if (inzRankingFases.has(f)) inzRankingFases.delete(f); else inzRankingFases.add(f);

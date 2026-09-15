@@ -1266,7 +1266,19 @@ async function kiesOpstSlot(spelerId) {
   const { posId, ctx } = opstAssignCtx;
   const lineup = ctx.getLineup();
   const geraakt = [posId];
-  if (spelerId) { Object.keys(lineup).forEach(k => { if (lineup[k] === spelerId && k !== posId) { lineup[k] = null; geraakt.push(k); } }); }
+  // "1 speler, 1 plek"-check alleen binnen de posities van de HUIDIGE
+  // formatie — anders werd bij het omschakelen tussen formaties (bv.
+  // hoofd- naar fallback-formatie) een speler die in de andere, niet-actieve
+  // formatie ook ergens stond, daar automatisch weggehaald zodra je 'm hier
+  // opnieuw neerzette. Die andere formatie deelt dezelfde opgeslagen lineup
+  // (alleen positie-ID's die toevallig overeenkomen worden getoond), dus zo'n
+  // positie was voor de huidige formatie sowieso niet zichtbaar/relevant.
+  // Gemeld door gebruiker 2026-09-15: "spelers uit de basisformatie
+  // verwijderd" na wisselen tussen formaties.
+  if (spelerId) {
+    const geldigePosIds = new Set(ctx.formatie().pos.map(p => p.id));
+    Object.keys(lineup).forEach(k => { if (lineup[k] === spelerId && k !== posId && geldigePosIds.has(k)) { lineup[k] = null; geraakt.push(k); } });
+  }
   lineup[posId] = spelerId;
   ctx.setLineup(lineup);
   closeOpstSlotKiezer();
@@ -1352,7 +1364,8 @@ function renderTeamOpstelling() {
   const select = '<div class="rij-label" style="font-size:12.5px;font-weight:600;color:var(--ink3);margin-bottom:6px">Hoofdformatie</div>'
     + '<select class="input" style="margin-bottom:12px" onchange="saveFormatie(this.value);renderTeamOpstelling()">' + maakOpties(actief, actiefFallback) + '</select>'
     + '<div class="rij-label" style="font-size:12.5px;font-weight:600;color:var(--ink3);margin-bottom:6px">Fallback-formatie <span style="font-weight:400">— snel wisselen tijdens Live</span></div>'
-    + '<select class="input" style="margin-bottom:12px" onchange="saveFormatieFallback(this.value);renderTeamOpstelling()">' + (actiefFallback ? maakOpties(actiefFallback, actief) : '<option value="" selected>Geen andere formatie beschikbaar</option>') + '</select>';
+    + '<select class="input" style="margin-bottom:8px" onchange="saveFormatieFallback(this.value);renderTeamOpstelling()">' + (actiefFallback ? maakOpties(actiefFallback, actief) : '<option value="" selected>Geen andere formatie beschikbaar</option>') + '</select>'
+    + (actiefFallback ? '<button class="btn btn--ghost btn--sm btn--block" style="margin-bottom:12px" onclick="wisselHoofdEnFallback()">⇄ Hoofd- en fallback-formatie omwisselen</button>' : '');
   cont.innerHTML = '<div class="pad" style="margin-top:14px">'
     + select
     + (f.eigen ? '<div class="actionbar" style="margin-top:-4px;margin-bottom:14px"><button class="btn btn--ghost btn--sm" style="flex:1" onclick="openFormatieEditor(\'' + actief + '\',{type:\'team\'})">Bewerken</button><button class="btn btn--ghost btn--sm" style="flex:1" onclick="teamOpstVerwijderFormatie(this,\'' + actief + '\')">Verwijderen</button></div>' : '')

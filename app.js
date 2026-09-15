@@ -1341,6 +1341,19 @@ function saveFormatieFallback(id) {
   return id;
 }
 
+// Hoofd- en fallback-formatie in 1 tik omwisselen — gevraagd door gebruiker
+// 2026-09-15, vanuit Team/opstelling. Gewoon de twee ids omdraaien via de
+// bestaande save-functies (zelfde sync naar session_notes), geen aparte
+// code-path nodig.
+function wisselHoofdEnFallback() {
+  const hoofd = localStorage.getItem('fcp_formatie') || '';
+  const fallback = localStorage.getItem('fcp_formatie_fallback') || '';
+  if (!hoofd || !fallback) return;
+  saveFormatie(fallback);
+  saveFormatieFallback(hoofd);
+  if (typeof renderTeamOpstelling === 'function') renderTeamOpstelling();
+}
+
 // ─── SCHEMA DATA ───
 const SCHEMA_DATES  = {1:'2026-08-03',2:'2026-08-10',3:'2026-08-17',4:'2026-08-24',5:'2026-08-31',6:'2026-09-07',7:'2026-09-14',8:'2026-09-21',9:'2026-09-28',10:'2026-10-05',11:'2026-10-12',12:'2026-10-19'};
 const SCHEMA_WEEKNR = {1:32,2:33,3:34,4:35,5:36,6:37,7:38,8:39,9:40,10:41,11:42,12:43};

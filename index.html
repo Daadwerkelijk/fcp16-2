@@ -1337,11 +1337,22 @@ function renderTeamOpstelling() {
   const alle = formatiesVoorSpelvorm(alleFormatiesV2(), loadSpelvorm());
   let actief = localStorage.getItem('fcp_formatie') || '4222';
   if (!alle[actief]) actief = Object.keys(alle)[0];
+  // Fallback-formatie — team-brede tweede formatie naast de hoofdformatie
+  // hierboven, alleen gebruikt door de snelwissel-knop tijdens Live (zie
+  // renderFormatieSnelwisselKaart()). Valt terug op de eerste andere optie
+  // in de lijst als er nog niets gekozen is, of als de eerder gekozen
+  // fallback niet meer bestaat / gelijk is aan de hoofdformatie.
+  let actiefFallback = localStorage.getItem('fcp_formatie_fallback') || '';
+  if (!alle[actiefFallback] || actiefFallback === actief) actiefFallback = Object.keys(alle).find(k => k !== actief) || '';
   const lineup = teamOpstCtx.getLineup();
   const f = alle[actief];
-  const select = '<select class="input" style="margin-bottom:12px" onchange="saveFormatie(this.value);renderTeamOpstelling()">'
-    + Object.entries(alle).map(([k, ff]) => '<option value="' + k + '" ' + (k === actief ? 'selected' : '') + '>' + esc(ff.label) + (ff.eigen ? ' (aangepast)' : '') + '</option>').join('')
-    + '</select>';
+  const maakOpties = (huidig, uitgesloten) => Object.entries(alle).map(([k, ff]) =>
+    '<option value="' + k + '" ' + (k === huidig ? 'selected' : '') + (k === uitgesloten ? ' disabled' : '') + '>' + esc(ff.label) + (ff.eigen ? ' (aangepast)' : '') + (k === uitgesloten ? ' — al gekozen als andere' : '') + '</option>'
+  ).join('');
+  const select = '<div class="rij-label" style="font-size:12.5px;font-weight:600;color:var(--ink3);margin-bottom:6px">Hoofdformatie</div>'
+    + '<select class="input" style="margin-bottom:12px" onchange="saveFormatie(this.value);renderTeamOpstelling()">' + maakOpties(actief, actiefFallback) + '</select>'
+    + '<div class="rij-label" style="font-size:12.5px;font-weight:600;color:var(--ink3);margin-bottom:6px">Fallback-formatie <span style="font-weight:400">— snel wisselen tijdens Live</span></div>'
+    + '<select class="input" style="margin-bottom:12px" onchange="saveFormatieFallback(this.value);renderTeamOpstelling()">' + (actiefFallback ? maakOpties(actiefFallback, actief) : '<option value="" selected>Geen andere formatie beschikbaar</option>') + '</select>';
   cont.innerHTML = '<div class="pad" style="margin-top:14px">'
     + select
     + (f.eigen ? '<div class="actionbar" style="margin-top:-4px;margin-bottom:14px"><button class="btn btn--ghost btn--sm" style="flex:1" onclick="openFormatieEditor(\'' + actief + '\',{type:\'team\'})">Bewerken</button><button class="btn btn--ghost btn--sm" style="flex:1" onclick="teamOpstVerwijderFormatie(this,\'' + actief + '\')">Verwijderen</button></div>' : '')
@@ -3451,6 +3462,7 @@ function renderLiveTrainer() {
     + '<div style="margin-top:14px">' + fases + '</div>'
     + '</div>'
     + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;max-width:420px;margin:0 auto"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div></div>'
+    + (liveState.status !== 'gepland' ? formatieSnelwisselHtml(actief) : '')
     + (liveState.status !== 'gepland' ? '<div class="card" style="margin-top:10px;display:flex;gap:8px"><button class="btn btn--secondary" style="flex:1" onclick="openPositieSwapSheet()">Posities wisselen</button><button class="btn btn--secondary" style="flex:1" onclick="openFormatieWijzigenSheet()">Formatie wijzigen</button></div>' : '')
     + '<div class="card" style="margin-top:10px"><div class="sec">Notities</div>'
     + '<div style="position:relative;margin-bottom:12px">'
@@ -3601,6 +3613,36 @@ function closeFormatieWijzigenSheets() {
   document.getElementById('sheet-formatie-kies').classList.add('verborgen');
   document.getElementById('sheet-formatie-remap').classList.add('verborgen');
   document.getElementById('sheet-formatie-speler').classList.add('verborgen');
+}
+
+// ─── Snel wisselen tussen hoofd- en fallback-formatie tijdens Live —
+// gevraagd door gebruiker 2026-09-15. Hoofd/fallback worden team-breed
+// ingesteld op het Team-tabblad (saveFormatie()/saveFormatieFallback() in
+// app.js, fcp_formatie/fcp_formatie_fallback). Slaat alleen de "kies uit de
+// lijst"-stap van Formatie wijzigen hierboven over — landt op dezelfde
+// herindeel-sheet (mét bevestigstap, bewust niet automatisch doorschieten,
+// zie mockup-hoofd-fallback-formatie.html) via kiesNieuweFormatieWissel().
+// Staat de huidige formatie op geen van beide (bv. handmatig een derde
+// systeem gekozen via de volledige lijst), dan tonen we beide als losse
+// knop in plaats van één wisselknop.
+function formatieSnelwisselHtml(actief) {
+  const hoofdId = localStorage.getItem('fcp_formatie') || '';
+  const fallbackId = localStorage.getItem('fcp_formatie_fallback') || '';
+  const alle = alleFormatiesV2();
+  if (!hoofdId || !fallbackId || hoofdId === fallbackId || !alle[hoofdId] || !alle[fallbackId]) return '';
+  const huidig = liveState.formatieId || actief;
+  let knoppen;
+  if (huidig === hoofdId) {
+    knoppen = '<button class="btn btn--primary btn--block" onclick="kiesNieuweFormatieWissel(\'' + fallbackId + '\')">🔁 Snel naar fallback — ' + esc(alle[fallbackId].label) + '</button>';
+  } else if (huidig === fallbackId) {
+    knoppen = '<button class="btn btn--primary btn--block" onclick="kiesNieuweFormatieWissel(\'' + hoofdId + '\')">🔁 Terug naar hoofdformatie — ' + esc(alle[hoofdId].label) + '</button>';
+  } else {
+    knoppen = '<div style="display:flex;gap:8px">'
+      + '<button class="btn btn--secondary" style="flex:1" onclick="kiesNieuweFormatieWissel(\'' + hoofdId + '\')">↩ Hoofd — ' + esc(alle[hoofdId].label) + '</button>'
+      + '<button class="btn btn--secondary" style="flex:1" onclick="kiesNieuweFormatieWissel(\'' + fallbackId + '\')">↪ Fallback — ' + esc(alle[fallbackId].label) + '</button>'
+      + '</div>';
+  }
+  return '<div class="card" style="margin-top:10px">' + knoppen + '</div>';
 }
 function openFormatieWijzigenSheet() {
   const alle = alleFormatiesV2();

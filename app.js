@@ -746,6 +746,9 @@ async function loadFromSupabase() {
     if (notes['actieve_formatie']) {
       result.formatie = notes['actieve_formatie']; localStorage.setItem('fcp_formatie', notes['actieve_formatie']);
     }
+    if (notes['fallback_formatie']) {
+      result.formatieFallback = notes['fallback_formatie']; localStorage.setItem('fcp_formatie_fallback', notes['fallback_formatie']);
+    }
   }
   if (oe && !oe._error) {
     const oef = oe.map(o => ({
@@ -1319,6 +1322,20 @@ function saveFormatie(id) {
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     sbFetch('session_notes?note_key=eq.actieve_formatie', 'DELETE').then(() =>
       sbFetch('session_notes', 'POST', { note_key:'actieve_formatie', content:id })
+    );
+  }
+  return id;
+}
+
+// Fallback-formatie — team-brede tweede formatie naast de hoofdformatie
+// hierboven, zodat er tijdens Live in 1 tik tussen die twee gewisseld kan
+// worden zonder de volledige lijst te hoeven doorlopen. Zelfde
+// session_notes-patroon als saveFormatie().
+function saveFormatieFallback(id) {
+  localStorage.setItem('fcp_formatie_fallback', id);
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    sbFetch('session_notes?note_key=eq.fallback_formatie', 'DELETE').then(() =>
+      sbFetch('session_notes', 'POST', { note_key:'fallback_formatie', content:id })
     );
   }
   return id;

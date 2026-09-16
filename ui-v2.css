@@ -203,6 +203,12 @@
 .bench-nm{flex:1;font-size:13.5px;font-weight:600}
 .bench-pos{font-size:11px;font-weight:700;color:var(--ink3)}
 
+/* Oefening-rij met los info-knopje (bekijken vóór toevoegen) */
+.oef-rij{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.oef-rij .bench-row{flex:1;margin-bottom:0}
+.oef-info-btn{flex-shrink:0;width:38px;height:38px;border-radius:var(--r-ctl);border:1.5px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--ink3);cursor:pointer}
+.oef-info-btn:hover{background:var(--accent-soft);color:var(--accent-press);border-color:var(--accent)}
+
 /* Stappen — herhaalbare rij */
 .stap-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
 .stap-n{width:22px;height:22px;flex-shrink:0;border-radius:50%;background:var(--surface2);color:var(--ink3);font:700 11px/1 var(--font);display:flex;align-items:center;justify-content:center}

@@ -414,6 +414,7 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   <div class="sheet-wrap"><div class="sheet" style="max-height:85vh;display:flex;flex-direction:column">
     <div class="sheet-grip"></div>
     <div class="sheet-title">Oefening toevoegen</div>
+    <div class="sheet-sub">Tik op een naam om direct toe te voegen, of op het info-knopje om 'm eerst te bekijken.</div>
     <div style="display:flex;gap:8px;margin-bottom:4px">
       <select class="input" id="bk-cat" style="flex:1;min-width:0" onchange="renderBlokKiesLijst()"></select>
       <select class="input" id="bk-systeem" style="flex:1;min-width:0" onchange="renderBlokKiesLijst()"></select>
@@ -422,6 +423,20 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
     <div id="bk-lijst" style="overflow-y:auto;flex:1"></div>
     <button class="btn btn--ghost btn--block" style="margin-top:12px" onclick="openBlokNieuweOef()">+ Nieuwe oefening</button>
     <button class="btn btn--ghost btn--block" style="margin-top:8px" onclick="closeBlokKiezer()">Annuleren</button>
+  </div></div>
+</div>
+
+<!-- ═══ SHEET: oefening bekijken vóór toevoegen — hergebruikt dezelfde
+     opmaak als sheet-blok-detail (zie renderOefeningDetailHtml), nu ook
+     bereikbaar VOORDAT je 'm toevoegt. Gevraagd door gebruiker 2026-09-16:
+     "welke oefening het ook alweer is" moest je eerst toevoegen+opslaan
+     om te kunnen zien — dit slaat die omweg over. ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-oef-preview" onclick="if(event.target===this)closeOefPreview()">
+  <div class="sheet-wrap"><div class="sheet" style="max-height:88vh;display:flex;flex-direction:column">
+    <div class="sheet-grip"></div>
+    <div id="pv-content" style="overflow-y:auto;flex:1"></div>
+    <button class="btn btn--primary btn--block" style="margin-top:14px" id="pv-toevoegen-btn">Deze toevoegen</button>
+    <button class="btn btn--ghost btn--block" style="margin-top:8px" onclick="closeOefPreview()">Terug naar lijst</button>
   </div></div>
 </div>
 
@@ -2472,15 +2487,12 @@ function openBlokDetail(bi) {
   const b = s?.blokken?.[bi];
   if (!b) return;
   const volledig = oefeningenLijst().find(o => o.title === b.n);
-  let html = '<div class="sheet-title">' + esc(b.n) + '</div>';
-  if (b.cat) html += '<span class="chip" aria-pressed="true" style="margin-bottom:10px">' + esc(b.cat) + '</span>';
-  if (b.tip) html += '<div style="font-size:13.5px;color:var(--ink2);margin:10px 0">' + esc(b.tip) + '</div>';
-  const desc = volledig && (volledig.desc || volledig.beschrijving);
-  if (desc) html += '<div class="sec" style="margin-top:10px">Omschrijving</div><div style="font-size:13.5px">' + esc(desc) + '</div>';
-  if (volledig && volledig.spelers) html += '<div class="sec" style="margin-top:10px">Aantal spelers</div><div style="font-size:13.5px">' + esc(volledig.spelers) + '</div>';
-  if (volledig && volledig.stappen && volledig.stappen.length) html += '<div class="sec" style="margin-top:10px">Stappen</div><ol style="margin:0;padding-left:18px;font-size:13.5px">' + volledig.stappen.filter(Boolean).map(st => '<li>' + esc(st) + '</li>').join('') + '</ol>';
-  if (b.url) html += '<a class="btn btn--primary btn--block" style="margin-top:14px" href="' + esc(b.url) + '" target="_blank" rel="noopener">▶ Uitleg openen</a>';
-  document.getElementById('bd-content').innerHTML = html;
+  document.getElementById('bd-content').innerHTML = renderOefeningDetailHtml({
+    title: b.n, cat: b.cat, tip: b.tip, url: b.url,
+    desc: volledig && (volledig.desc || volledig.beschrijving),
+    spelers: volledig && volledig.spelers,
+    stappen: volledig && volledig.stappen,
+  });
   document.getElementById('sheet-blok-detail').classList.remove('verborgen');
 }
 function closeBlokDetail() { document.getElementById('sheet-blok-detail').classList.add('verborgen'); }
@@ -2678,12 +2690,42 @@ function renderBlokKiesLijst() {
   // zonder elke rij open te hoeven klikken.
   const videoIcoon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--ink3)"><path d="m10 8 6 4-6 4V8Z"/><rect x="2" y="4" width="20" height="16" rx="3"/></svg>';
   document.getElementById('bk-telling').textContent = lijst.length + ' van ' + alle.length + ' oefeningen';
-  document.getElementById('bk-lijst').innerHTML = lijst.length ? lijst.map(o => '<div class="bench-row" style="margin-bottom:6px" onclick="kiesBlok(\'' + o.id + '\')"><div class="bench-nm">' + esc(o.title) + '</div><div class="bench-pos" style="display:flex;align-items:center;gap:6px">' + (o.url ? videoIcoon : '') + esc(o.cat || '') + '</div></div>').join('') : '<div style="font-size:13px;color:var(--ink3);padding:10px 0">Geen oefeningen voor dit filter.</div>';
+  document.getElementById('bk-lijst').innerHTML = lijst.length ? lijst.map(o =>
+    '<div class="oef-rij">'
+    + '<div class="bench-row" onclick="kiesBlok(\'' + o.id + '\')"><div class="bench-nm">' + esc(o.title) + '</div><div class="bench-pos" style="display:flex;align-items:center;gap:6px">' + (o.url ? videoIcoon : '') + esc(o.cat || '') + '</div></div>'
+    + '<div class="oef-info-btn" aria-label="Bekijk oefening" onclick="event.stopPropagation();openOefPreview(\'' + o.id + '\')">' + oefInfoIcoon + '</div>'
+    + '</div>'
+  ).join('') : '<div style="font-size:13px;color:var(--ink3);padding:10px 0">Geen oefeningen voor dit filter.</div>';
 }
+const oefInfoIcoon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="8" r="0.5" fill="currentColor" stroke-width="1.5"/></svg>';
+// Gedeelde opmaak voor de oefening-detailweergave — gebruikt door zowel
+// het bekijken vóór toevoegen (openOefPreview, direct op een bibliotheek-
+// object) als het bekijken van een al toegevoegd blok (openBlokDetail, dat
+// eerst het bevroren blok en de actuele bibliotheekversie samenvoegt).
+function renderOefeningDetailHtml(o, videoBtnClass) {
+  let html = '<div class="sheet-title">' + esc(o.title) + '</div>';
+  if (o.cat) html += '<span class="chip" aria-pressed="true" style="margin-bottom:10px">' + esc(o.cat) + '</span>';
+  if (o.tip) html += '<div style="font-size:13.5px;color:var(--ink2);margin:10px 0">' + esc(o.tip) + '</div>';
+  const desc = o.desc || o.beschrijving;
+  if (desc) html += '<div class="sec" style="margin-top:10px">Omschrijving</div><div style="font-size:13.5px">' + esc(desc) + '</div>';
+  if (o.spelers) html += '<div class="sec" style="margin-top:10px">Aantal spelers</div><div style="font-size:13.5px">' + esc(o.spelers) + '</div>';
+  if (o.stappen && o.stappen.length) html += '<div class="sec" style="margin-top:10px">Stappen</div><ol style="margin:0;padding-left:18px;font-size:13.5px">' + o.stappen.filter(Boolean).map(st => '<li>' + esc(st) + '</li>').join('') + '</ol>';
+  if (o.url) html += '<a class="btn ' + (videoBtnClass || 'btn--primary') + ' btn--block" style="margin-top:14px" href="' + esc(o.url) + '" target="_blank" rel="noopener">▶ Uitleg openen</a>';
+  return html;
+}
+function openOefPreview(oefId) {
+  const o = oefeningenLijst().find(x => x.id === oefId);
+  if (!o) return;
+  document.getElementById('pv-content').innerHTML = renderOefeningDetailHtml(o, 'btn--secondary');
+  document.getElementById('pv-toevoegen-btn').onclick = () => kiesBlok(oefId);
+  document.getElementById('sheet-oef-preview').classList.remove('verborgen');
+}
+function closeOefPreview() { document.getElementById('sheet-oef-preview').classList.add('verborgen'); }
 function kiesBlok(oefId) {
   const o = oefeningenLijst().find(x => x.id === oefId);
   if (!o) return;
   blokKiesCtx.voegToe({ t: '', cat: o.cat || '', n: o.title, tip: o.tip || '', url: o.url || '' });
+  closeOefPreview();
   closeBlokKiezer();
 }
 function openBlokNieuweOef() {

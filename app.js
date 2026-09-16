@@ -3,8 +3,20 @@
 // ═══════════════════════════════════════════════
 
 // ─── SUPABASE ───
-let SB_URL = localStorage.getItem('sb_url') || '';
-let SB_KEY  = localStorage.getItem('sb_key')  || '';
+// Standaard-koppeling voor de echte, gedeployde app — dezelfde publieke
+// anon-key die live.html ook al hardgecodeerd gebruikt (geen wachtwoord,
+// beschermd door RLS, dus veilig om mee te leveren). Zonder dit landde een
+// trainer die een uitnodigingslink op een nieuw apparaat/browser opende
+// altijd eerst op het "Supabase koppelen"-scherm i.p.v. wachtwoord
+// instellen, omdat er dan nog niets in localStorage stond. Gemeld door
+// gebruiker 2026-09-16 (trainer kon niet inloggen op een nieuw apparaat).
+// localStorage blijft een override mogelijk maken (zie "Andere Supabase-
+// koppeling gebruiken" in index.html, en .claude/lokale-testconfig.md
+// voor lokaal testen tegen een andere instantie).
+const SB_URL_DEFAULT = 'https://yjlvjteiaszvqtpyhwwn.supabase.co';
+const SB_KEY_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqbHZqdGVpYXN6dnF0cHlod3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMDY4NDMsImV4cCI6MjA5NTg4Mjg0M30.71xXmtGD9qP5-4p2BkRwtVm95SOn5AaVq21bxVr6Jrc';
+let SB_URL = localStorage.getItem('sb_url') || SB_URL_DEFAULT;
+let SB_KEY  = localStorage.getItem('sb_key')  || SB_KEY_DEFAULT;
 let supabaseReady = false;
 
 // ─── AUTH (trainer-login) ───
@@ -545,8 +557,8 @@ function sbVerbindingsfout(test) {
 }
 
 async function initSupabase(statusElId) {
-  SB_URL = localStorage.getItem('sb_url') || '';
-  SB_KEY  = localStorage.getItem('sb_key')  || '';
+  SB_URL = localStorage.getItem('sb_url') || SB_URL_DEFAULT;
+  SB_KEY  = localStorage.getItem('sb_key')  || SB_KEY_DEFAULT;
   const banner  = document.getElementById('config-banner');
   const syncBar = document.getElementById('sync-bar');
   const msgEl   = document.getElementById('sync-msg');

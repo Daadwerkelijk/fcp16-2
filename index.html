@@ -4081,11 +4081,16 @@ function afwezigheidAandachtHtml() {
   const sp = spelers();
   const aanw = aanwAlles();
   const perSpeler = {};
+  const perRedenTotaal = {};
+  let totaalAfwezig = 0;
   Object.values(aanw).forEach(perTraining => {
     Object.entries(perTraining).forEach(([spelerId, rec]) => {
       if (rec && rec.afwezig) {
         if (!perSpeler[spelerId]) perSpeler[spelerId] = { n: 0, redenen: new Set() };
         perSpeler[spelerId].n++;
+        totaalAfwezig++;
+        const reden = rec.reden || 'onbekend';
+        perRedenTotaal[reden] = (perRedenTotaal[reden] || 0) + 1;
         if (rec.reden) perSpeler[spelerId].redenen.add(rec.reden);
       }
     });
@@ -4094,10 +4099,13 @@ function afwezigheidAandachtHtml() {
   // Volledige lijst i.p.v. top 4 — dit is op desktop de enige plek om afwezigheid
   // te zien (geen apart "Afwezig"-tabblad meer zoals op mobiel), dus een
   // afgekapte lijst liet het totaal onvindbaar. Gemeld 2026-09-08.
-  const alle = Object.entries(perSpeler)
-    .map(([id, x]) => ({ naam: naamVan(id), n: x.n, redenen: [...x.redenen].join(', ') }))
-    .sort((a, b) => b.n - a.n);
-  return '<div class="sec">Afwezigheid <span style="font-weight:600;color:var(--ink3);text-transform:none;letter-spacing:0">' + alle.length + ' spelers</span></div>'
+  const alle = rangschikkingSorteer('afwezigheid', Object.entries(perSpeler)
+    .map(([id, x]) => ({ naam: naamVan(id), n: x.n, redenen: [...x.redenen].join(', ') })), 'n');
+  // Team-breed totaal + uitsplitsing per reden — gevraagd door gebruiker
+  // 2026-09-16, naast de al bestaande per-speler-uitsplitsing hieronder.
+  const redenTekst = Object.entries(perRedenTotaal).sort((a, b) => b[1] - a[1]).map(([r, n]) => esc(r) + ' ' + n + 'x').join(' · ');
+  const totaalHtml = totaalAfwezig ? '<div style="font-size:12.5px;color:var(--ink3);margin:-2px 0 10px">' + totaalAfwezig + 'x totaal' + (redenTekst ? ' — ' + redenTekst : '') + '</div>' : '';
+  return rangschikkingKopHtml('afwezigheid', 'Afwezigheid', alle.length + ' spelers', 'Meeste eerst', totaalHtml)
     + (alle.length
         // white-space:nowrap + ellipsis (i.p.v. wrappen) zodat een lange
         // redenenlijst (bv. 4 redenen) altijd op 1 regel blijft — volledige
@@ -4121,9 +4129,9 @@ async function speeltijdKaartHtml(sp) {
       sp.forEach(p => { totaal[p.id] += berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindMinuut); });
     });
   }
-  const rijen = sp.map(p => ({ naam: p.naam, min: totaal[p.id] })).filter(x => x.min > 0).sort((a, b) => b.min - a.min);
+  const rijen = rangschikkingSorteer('speeltijd', sp.map(p => ({ naam: p.naam, min: totaal[p.id] })).filter(x => x.min > 0), 'min');
   const kolom = 'display:grid;grid-template-columns:1fr 46px;align-items:center;gap:16px';
-  return '<div class="sec">Speeltijd <span style="font-weight:600;color:var(--ink3);text-transform:none;letter-spacing:0">' + rijen.length + ' spelers</span></div>'
+  return rangschikkingKopHtml('speeltijd', 'Speeltijd', rijen.length + ' spelers', 'Meeste eerst')
     + (rijen.length
         ? '<div style="' + kolom + ';font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px"><span>Speler</span><span style="text-align:right">Min</span></div>'
           + rijen.map(x => '<div style="' + kolom + ';font-size:13.5px;padding:6px 0"><span>' + esc(x.naam) + '</span><span class="num" style="text-align:right;color:var(--ink3)">' + x.min + '</span></div>').join('')
@@ -4403,7 +4411,6 @@ async function renderInzSkills() {
 
 // ─── Inzicht → Ranking ───
 let inzRankingType = 'alle';
-let inzRankingSort = 'alfa';
 let inzRankingFases = new Set();
 // Herdispatcht via renderInzicht() i.p.v. rechtstreeks renderInzRanking() aan te
 // roepen — zo werkt dit filter correct vanaf zowel het mobiele Ranking-tabblad
@@ -4411,35 +4418,52 @@ let inzRankingFases = new Set();
 // 2026-09-08 — mobiel had dit al, desktop miste het nog, een echte
 // functionaliteitsregressie).
 function inzZetRankingType(t) { inzRankingType = t; inzRankingFases = new Set(); renderInzicht(); }
-// Herdispatcht via renderInzicht() zoals inzZetRankingType() al deed — zelfde
-// reden: moet ook op desktop werken, niet alleen op het mobiele tabblad.
-function inzZetRankingSort(m) { inzRankingSort = m; renderInzicht(); }
+
+// Gedeelde sorteerstate + -opmaak voor de rangschikkingskaarten (Gemiddeld
+// cijfer/Speeltijd/Afwezigheid/Man of the match) — was tot 2026-09-16 alleen
+// voor cijfer (inzRankingSort/inzZetRankingSort), nu één generieke versie
+// zodat elke kaart dezelfde twee knoppen (Alfabetisch/hoogste-of-meeste
+// eerst) krijgt i.p.v. een eigen sorteer-implementatie per kaart. Elke
+// aanroeper sorteert zijn eigen rijen met rangschikkingSorteer() en bouwt
+// zelf de rijen-HTML (kolomindeling verschilt per kaart), alleen kop +
+// knoppen zijn gedeeld.
+let inzRangschikkingSort = { cijfer: 'waarde', speeltijd: 'waarde', afwezigheid: 'waarde', motm: 'waarde' };
+function inzZetRangschikkingSort(kaart, sort) { inzRangschikkingSort[kaart] = sort; renderInzicht(); }
+function rangschikkingSorteer(kaart, rijen, waardeVeld) {
+  const sort = inzRangschikkingSort[kaart];
+  return [...rijen].sort((a, b) => sort === 'alfa' ? a.naam.localeCompare(b.naam, 'nl') : b[waardeVeld] - a[waardeVeld]);
+}
+function rangschikkingKopHtml(kaart, titel, aantalLabel, waardeLabel, extraHtml) {
+  const sort = inzRangschikkingSort[kaart];
+  return '<div class="sec">' + esc(titel) + (aantalLabel ? ' <span style="font-weight:600;color:var(--ink3);text-transform:none;letter-spacing:0">' + esc(aantalLabel) + '</span>' : '') + '</div>'
+    + (extraHtml || '')
+    + '<div class="seg" role="tablist" style="margin-bottom:10px">'
+    + '<button type="button" class="seg-opt" aria-selected="' + (sort === 'alfa') + '" onclick="inzZetRangschikkingSort(\'' + kaart + '\',\'alfa\')">Alfabetisch</button>'
+    + '<button type="button" class="seg-opt" aria-selected="' + (sort === 'waarde') + '" onclick="inzZetRangschikkingSort(\'' + kaart + '\',\'waarde\')">' + esc(waardeLabel) + '</button>'
+    + '</div>';
+}
 // Man of the match + Gemiddeld cijfer — herbruikbaar door zowel renderInzRanking()
 // (mobiel/tabblad) als de desktop-dashboardcompositie. Misten daar nog (gemeld
 // 2026-09-08) — dezelfde databron/logica, geen aparte berekening.
 function motmKaartHtml(wed, sp) {
-  const motm = sp.map(p => ({ p, n: wed.filter(w => w.motm === p.id).length })).filter(x => x.n).sort((a, b) => b.n - a.n);
-  return '<div class="sec">Man of the match</div>' + (motm.length ? motm.map(x => '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px"><span>' + esc(x.p.naam) + '</span><span style="color:var(--ink3)">' + x.n + '× ⭐</span></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen MOTM toegekend.</div>');
+  const motm = rangschikkingSorteer('motm', sp.map(p => ({ naam: p.naam, n: wed.filter(w => w.motm === p.id).length })).filter(x => x.n), 'n');
+  return rangschikkingKopHtml('motm', 'Man of the match', null, 'Meeste eerst')
+    + (motm.length ? motm.map(x => '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px"><span>' + esc(x.naam) + '</span><span style="color:var(--ink3)">' + x.n + '× ⭐</span></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen MOTM toegekend.</div>');
 }
 function cijfersKaartHtml(wed, sp) {
-  const cijfers = sp.map(p => {
+  const cijfers = rangschikkingSorteer('cijfer', sp.map(p => {
     const vals = wed.map(w => (w.ratings || {})[p.id]).filter(v => v != null);
-    return { p, gem: vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null, n: vals.length };
-  }).filter(x => x.gem != null);
-  if (inzRankingSort === 'cijfer') cijfers.sort((a, b) => b.gem - a.gem); else cijfers.sort((a, b) => a.p.naam.localeCompare(b.p.naam));
+    return { naam: p.naam, gem: vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null, n: vals.length };
+  }).filter(x => x.gem != null), 'gem');
   // Kolomlabels "Wedstrijden"/"Cijfer" boven de lijst i.p.v. alleen een
   // title-tooltip op de "×" — stonden te dicht op elkaar toen de kolommen
   // nog 34px/60px/34px waren, nu breder + meer tussenruimte (gemeld
   // 2026-09-14). Balkje liet ik vervallen (niet in het goedgekeurde ontwerp).
   const kolom = 'display:grid;grid-template-columns:1fr 88px 46px;align-items:center;gap:16px';
-  return '<div class="sec" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span>Gemiddeld cijfer</span></div>'
-    + '<div class="seg" role="tablist" style="margin-bottom:10px">'
-    + '<button type="button" class="seg-opt" aria-selected="' + (inzRankingSort === 'alfa') + '" onclick="inzZetRankingSort(\'alfa\')">Alfabetisch</button>'
-    + '<button type="button" class="seg-opt" aria-selected="' + (inzRankingSort === 'cijfer') + '" onclick="inzZetRankingSort(\'cijfer\')">Hoogste cijfer</button>'
-    + '</div>'
+  return rangschikkingKopHtml('cijfer', 'Gemiddeld cijfer', null, 'Hoogste eerst')
     + (cijfers.length
         ? '<div style="' + kolom + ';font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px"><span>Speler</span><span style="text-align:right">Wedstrijden</span><span style="text-align:right">Cijfer</span></div>'
-          + cijfers.map(x => '<div style="' + kolom + ';font-size:13.5px;padding:6px 0"><span>' + esc(x.p.naam) + '</span><span class="num" style="text-align:right;color:var(--ink3)">' + x.n + '×</span><span class="num" style="text-align:right;font-weight:700">' + x.gem.toFixed(1) + '</span></div>').join('')
+          + cijfers.map(x => '<div style="' + kolom + ';font-size:13.5px;padding:6px 0"><span>' + esc(x.naam) + '</span><span class="num" style="text-align:right;color:var(--ink3)">' + x.n + '×</span><span class="num" style="text-align:right;font-weight:700">' + x.gem.toFixed(1) + '</span></div>').join('')
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen cijfers ingevuld.</div>');
 }
 // Herdispatcht via renderInzicht() (zelfde reden als inzZetRankingType/
@@ -4462,15 +4486,25 @@ async function doelpuntenKaartHtml(wed) {
   const dp = alleDoelpunten.filter(d => wedIds.has(d.wedstrijd_id));
   const e1 = dp.filter(d => d.kant === 'eigen' && d.helft === '1e').length;
   const e2 = dp.filter(d => d.kant === 'eigen' && d.helft === '2e').length;
-  const teg = dp.filter(d => d.kant === 'tegen').length;
-  const max = Math.max(e1, e2, teg, 1);
-  const balkRij = (label, n, kleur) => '<div style="display:flex;align-items:center;gap:12px"><span style="width:64px;font-size:12.5px;color:var(--ink2);font-weight:500">' + label + '</span><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + (n / max * 100) + '%;background:' + kleur + '"></div></div><span class="num" style="width:20px;text-align:right;font-size:13px;font-weight:700">' + n + '</span></div>';
-  // Geeft alleen de inhoud terug (geen omhullende .card) — de aanroeper bepaalt
-  // of dit een eigen kaart wordt (mobiel) of in een bestaande kaart past
-  // (desktop-dashboard, onder Vorm na een scheidingslijn).
-  return '<div class="sec">Doelpunten per fase</div>'
+  const t1 = dp.filter(d => d.kant === 'tegen' && d.helft === '1e').length;
+  const t2 = dp.filter(d => d.kant === 'tegen' && d.helft === '2e').length;
+  // Hernoemd van "Doelpunten per fase" naar "Doelpunten per helft" en van
+  // een staafdiagram (1e/2e helft/Tegen samengevoegd) naar een Wij/
+  // Tegenstander × 1e/2e-helft-tabel — gevraagd door gebruiker 2026-09-16:
+  // "Tegen" als aparte staaf maakte niet duidelijk hoe dat zich per helft
+  // verhield tot de eigen doelpunten. "Tegenstander" bewust generiek (niet
+  // de naam van de tegenstander), dit is een optelling over alle gefilterde
+  // wedstrijden, niet per wedstrijd.
+  const kolom = 'display:grid;grid-template-columns:1fr 64px 64px;gap:2px;font-size:13px';
+  const kop = (label) => '<div style="padding:8px 6px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;text-align:right">' + label + '</div>';
+  const rij = (label, wij, tegen, totaalRij) => '<div style="padding:8px 6px' + (totaalRij ? ';border-top:1.5px solid var(--line);font-weight:700' : '') + ';color:var(--ink2);font-weight:' + (totaalRij ? '700' : '500') + '">' + label + '</div>'
+    + '<div style="padding:8px 6px' + (totaalRij ? ';border-top:1.5px solid var(--line)' : '') + ';text-align:right;font-variant-numeric:tabular-nums;font-weight:700">' + wij + '</div>'
+    + '<div style="padding:8px 6px' + (totaalRij ? ';border-top:1.5px solid var(--line)' : '') + ';text-align:right;font-variant-numeric:tabular-nums;font-weight:700">' + tegen + '</div>';
+  return '<div class="sec">Doelpunten per helft</div>'
     + (dp.length
-        ? '<div style="display:flex;flex-direction:column;gap:9px">' + balkRij('1e helft', e1, 'var(--ink)') + balkRij('2e helft', e2, 'var(--ink)') + balkRij('Tegen', teg, 'var(--ink3)') + '</div>'
+        ? '<div style="' + kolom + '"><div></div>' + kop('Wij') + kop('Tegenstander')
+          + rij('1e helft', e1, t1) + rij('2e helft', e2, t2) + rij('Totaal', e1 + e2, t1 + t2, true)
+          + '</div>'
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter — begin een live wedstrijd om ze hier te zien verschijnen.</div>');
 }
 // Topscorers & assists — dezelfde doelpunten-tabel als "Doelpunten per fase"

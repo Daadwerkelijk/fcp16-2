@@ -2470,7 +2470,7 @@ function renderTrainingSessie() {
 
   html += '<div class="card" style="margin-top:10px"><div class="sec">Oefeningen</div>'
     + (s.blokken && s.blokken.length ? s.blokken.map((b, bi) => '<a class="row" href="#" style="padding-left:0" onclick="openBlokDetail(' + bi + ');return false"><div class="row-body"><div class="row-title">' + esc(b.n) + '</div><div class="row-sub">' + esc(b.cat || '') + (b.tip ? ' · ' + esc(b.tip) : '') + '</div></div>'
-        + (b.url ? '<button type="button" onclick="event.stopPropagation();event.preventDefault();window.open(\'' + esc(b.url) + '\',\'_blank\',\'noopener\')" style="font-size:18px;background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0" aria-label="Uitleg openen">▶️</button>' : '')
+        + (b.url ? '<button type="button" onclick="event.stopPropagation();event.preventDefault();window.open(\'' + esc(b.url) + '\',\'_blank\',\'noopener\')" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;display:flex" aria-label="Uitleg openen">' + videoIcoonGroot + '</button>' : '')
         + '<svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen oefeningen gepland.</div>')
     + '</div>';
 
@@ -2710,6 +2710,10 @@ const oefInfoIcoon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none
 // Oefeningen-overzicht (renderTeamOefeningen), i.p.v. per plek een eigen
 // icoon te verzinnen (was inconsistent: eerst alleen in de kiezer).
 const videoIcoon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--ink3)"><path d="m10 8 6 4-6 4V8Z"/><rect x="2" y="4" width="20" height="16" rx="3"/></svg>';
+// Zelfde icoon, iets groter — voor plekken waar het een echte tik-knop is
+// (bv. het open-knopje bij een blok in een trainingssessie) i.p.v. een
+// passieve indicator in een rij.
+const videoIcoonGroot = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--ink3)"><path d="m10 8 6 4-6 4V8Z"/><rect x="2" y="4" width="20" height="16" rx="3"/></svg>';
 // Gedeelde opmaak voor de oefening-detailweergave — gebruikt door zowel
 // het bekijken vóór toevoegen (openOefPreview, direct op een bibliotheek-
 // object) als het bekijken van een al toegevoegd blok (openBlokDetail, dat

@@ -1704,7 +1704,7 @@ function renderTeamOefeningen() {
     + '<div class="pad"><div class="rows">'
     + (lijst.length ? lijst.map(o => '<a class="row" href="#" onclick="openOefeningBewerken(\'' + o.id + '\');return false">'
         + '<div class="row-lead"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="margin:0 auto;display:block;color:var(--ink3)"><path d="M8 21L10.5 6h3L16 21H8z"/><line x1="7" y1="13" x2="17" y2="13"/></svg></div>'
-        + '<div class="row-body"><div class="row-title">' + esc(o.title) + '</div><div class="row-sub">' + esc(o.cat||'—') + (o.duur ? ' · ' + esc(o.duur) : '') + '</div></div>'
+        + '<div class="row-body"><div class="row-title">' + esc(o.title) + '</div><div class="row-sub" style="display:flex;align-items:center;gap:6px">' + esc(o.cat||'—') + (o.duur ? ' · ' + esc(o.duur) : '') + (o.url ? videoIcoon : '') + '</div></div>'
         + '<svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>').join('')
         : '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">' + (alle.length ? 'Geen oefeningen bij deze filters.' : 'Nog geen eigen oefeningen.') + '</div>')
     + '</div></div>';
@@ -2695,9 +2695,6 @@ function renderBlokKiesLijst() {
   const systeem = document.getElementById('bk-systeem').value;
   const alle = oefeningenLijst();
   const lijst = alle.filter(o => (!cat || o.cat === cat) && (!systeem || (o.formaties || []).includes(systeem)));
-  // Video-icoon: geeft in één oogopslag aan welke oefeningen een URL hebben,
-  // zonder elke rij open te hoeven klikken.
-  const videoIcoon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--ink3)"><path d="m10 8 6 4-6 4V8Z"/><rect x="2" y="4" width="20" height="16" rx="3"/></svg>';
   document.getElementById('bk-telling').textContent = lijst.length + ' van ' + alle.length + ' oefeningen';
   document.getElementById('bk-lijst').innerHTML = lijst.length ? lijst.map(o =>
     '<div class="oef-rij">'
@@ -2707,6 +2704,12 @@ function renderBlokKiesLijst() {
   ).join('') : '<div style="font-size:13px;color:var(--ink3);padding:10px 0">Geen oefeningen voor dit filter.</div>';
 }
 const oefInfoIcoon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="8" r="0.5" fill="currentColor" stroke-width="1.5"/></svg>';
+// Video-icoon: geeft in één oogopslag aan welke oefeningen een URL hebben,
+// zonder elke rij open te hoeven klikken. Eén gedeelde constante — gebruikt
+// door zowel de oefening-kiezer (renderBlokKiesLijst) als het Team →
+// Oefeningen-overzicht (renderTeamOefeningen), i.p.v. per plek een eigen
+// icoon te verzinnen (was inconsistent: eerst alleen in de kiezer).
+const videoIcoon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--ink3)"><path d="m10 8 6 4-6 4V8Z"/><rect x="2" y="4" width="20" height="16" rx="3"/></svg>';
 // Gedeelde opmaak voor de oefening-detailweergave — gebruikt door zowel
 // het bekijken vóór toevoegen (openOefPreview, direct op een bibliotheek-
 // object) als het bekijken van een al toegevoegd blok (openBlokDetail, dat

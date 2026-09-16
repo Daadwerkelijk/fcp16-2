@@ -4102,16 +4102,20 @@ function afwezigheidAandachtHtml() {
   const alle = rangschikkingSorteer('afwezigheid', Object.entries(perSpeler)
     .map(([id, x]) => ({ naam: naamVan(id), n: x.n, redenen: [...x.redenen].join(', ') })), 'n');
   // Team-breed totaal + uitsplitsing per reden — gevraagd door gebruiker
-  // 2026-09-16, naast de al bestaande per-speler-uitsplitsing hieronder.
+  // 2026-09-16, naast de al bestaande per-speler-uitsplitsing hierboven.
+  // Onderaan i.p.v. tussen titel en sorteerknoppen (was eerst zo) — anders
+  // stond de sorteerknoppenrij niet meer op dezelfde hoogte als bij de
+  // andere rangschikkingskaarten (Cijfer/Speeltijd/MOTM). Gemeld 2026-09-16.
   const redenTekst = Object.entries(perRedenTotaal).sort((a, b) => b[1] - a[1]).map(([r, n]) => esc(r) + ' ' + n + 'x').join(' · ');
-  const totaalHtml = totaalAfwezig ? '<div style="font-size:12.5px;color:var(--ink3);margin:-2px 0 10px">' + totaalAfwezig + 'x totaal' + (redenTekst ? ' — ' + redenTekst : '') + '</div>' : '';
-  return rangschikkingKopHtml('afwezigheid', 'Afwezigheid', alle.length + ' spelers', 'Meeste eerst', totaalHtml)
+  const totaalHtml = totaalAfwezig ? '<div style="font-size:12.5px;color:var(--ink3);margin-top:10px">' + totaalAfwezig + 'x totaal' + (redenTekst ? ' — ' + redenTekst : '') + '</div>' : '';
+  return rangschikkingKopHtml('afwezigheid', 'Afwezigheid', alle.length + ' spelers', 'Meeste eerst')
     + (alle.length
         // white-space:nowrap + ellipsis (i.p.v. wrappen) zodat een lange
         // redenenlijst (bv. 4 redenen) altijd op 1 regel blijft — volledige
         // tekst staat in de title-tooltip. Gemeld door gebruiker 2026-09-14.
         ? '<div style="display:flex;flex-direction:column">' + alle.map(x => '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:6px 0;font-size:13px" title="' + esc(x.n + '× · ' + x.redenen) + '"><span style="font-weight:600;flex-shrink:0">' + esc(x.naam) + '</span><span style="color:var(--ink3);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">' + x.n + '×' + (x.redenen ? ' · ' + esc(x.redenen) : '') + '</span></div>').join('') + '</div>'
-        : '<div style="font-size:12.5px;color:var(--ink3)">Geen afwezigheid geregistreerd.</div>');
+        : '<div style="font-size:12.5px;color:var(--ink3)">Geen afwezigheid geregistreerd.</div>')
+    + totaalHtml;
 }
 // Speeltijd — volledige lijst i.p.v. top 4 (gemeld door gebruiker 2026-09-14:
 // "ik wil alle spelers zien"), zelfde berekenSpeeltijd()-databron als
@@ -4489,12 +4493,13 @@ async function doelpuntenKaartHtml(wed) {
   const t1 = dp.filter(d => d.kant === 'tegen' && d.helft === '1e').length;
   const t2 = dp.filter(d => d.kant === 'tegen' && d.helft === '2e').length;
   // Hernoemd van "Doelpunten per fase" naar "Doelpunten per helft" en van
-  // een staafdiagram (1e/2e helft/Tegen samengevoegd) naar een Wij/
-  // Tegenstander × 1e/2e-helft-tabel — gevraagd door gebruiker 2026-09-16:
-  // "Tegen" als aparte staaf maakte niet duidelijk hoe dat zich per helft
-  // verhield tot de eigen doelpunten. "Tegenstander" bewust generiek (niet
-  // de naam van de tegenstander), dit is een optelling over alle gefilterde
-  // wedstrijden, niet per wedstrijd.
+  // een staafdiagram (1e/2e helft/Tegen samengevoegd) naar een Voor/Tegen ×
+  // 1e/2e-helft-tabel — gevraagd door gebruiker 2026-09-16: "Tegen" als
+  // aparte staaf maakte niet duidelijk hoe dat zich per helft verhield tot
+  // de eigen doelpunten. Kolomlabel was eerst "Tegenstander" (bewust
+  // generiek, geen teamnaam — dit is een optelling over alle gefilterde
+  // wedstrijden, niet per wedstrijd), maar liep buiten de kaart; "Tegen"
+  // is korter en blijft even generiek.
   const kolom = 'display:grid;grid-template-columns:1fr 64px 64px;gap:2px;font-size:13px';
   const kop = (label) => '<div style="padding:8px 6px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;text-align:right">' + label + '</div>';
   const rij = (label, wij, tegen, totaalRij) => '<div style="padding:8px 6px' + (totaalRij ? ';border-top:1.5px solid var(--line);font-weight:700' : '') + ';color:var(--ink2);font-weight:' + (totaalRij ? '700' : '500') + '">' + label + '</div>'
@@ -4502,7 +4507,7 @@ async function doelpuntenKaartHtml(wed) {
     + '<div style="padding:8px 6px' + (totaalRij ? ';border-top:1.5px solid var(--line)' : '') + ';text-align:right;font-variant-numeric:tabular-nums;font-weight:700">' + tegen + '</div>';
   return '<div class="sec">Doelpunten per helft</div>'
     + (dp.length
-        ? '<div style="' + kolom + '"><div></div>' + kop('Wij') + kop('Tegenstander')
+        ? '<div style="' + kolom + '"><div></div>' + kop('Voor') + kop('Tegen')
           + rij('1e helft', e1, t1) + rij('2e helft', e2, t2) + rij('Totaal', e1 + e2, t1 + t2, true)
           + '</div>'
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter — begin een live wedstrijd om ze hier te zien verschijnen.</div>');

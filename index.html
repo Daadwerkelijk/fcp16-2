@@ -448,7 +448,7 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
     <div class="field"><span class="label">Naam</span><input class="input" id="bn-naam"></div>
     <div class="field"><span class="label">Categorie</span><select class="input" id="bn-cat"></select></div>
     <div class="field"><span class="label">Tip / coachpunt</span><input class="input" id="bn-tip"></div>
-    <div class="field"><span class="label">URL / YouTube</span><input class="input" id="bn-url"></div>
+    <div class="field"><span class="label">URL / YouTube</span><div style="display:flex;gap:8px"><input class="input" id="bn-url" style="flex:1;min-width:0"><button type="button" class="btn btn--secondary btn--icon" aria-label="Link testen" onclick="testOefUrl('bn-url')">▶</button></div></div>
     <div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeBlokNieuweOef()">Annuleren</button><button class="btn btn--primary" onclick="slaBlokNieuweOefOp()">Toevoegen</button></div>
   </div></div>
 </div>
@@ -1933,6 +1933,15 @@ function verplaatsFormatie(id, dir) {
 }
 
 // ─── Oefening aanmaken/bewerken ───
+// Test de link zoals 'm op dat moment in het veld staat (nog niet per se
+// opgeslagen) — gevraagd door gebruiker 2026-09-16: bij het aanmaken kon je
+// de link pas testen na opslaan. Zelfde open-in-nieuw-tabblad als de
+// "Uitleg openen"-knop in de detailweergave.
+function testOefUrl(inputId) {
+  const url = document.getElementById(inputId).value.trim();
+  if (!url) { showToast('⚠️ Nog geen URL ingevuld'); return; }
+  window.open(url, '_blank', 'noopener');
+}
 let bewerkOefId = null;
 function openOefeningBewerken(id) {
   bewerkOefId = id;
@@ -1950,7 +1959,7 @@ function openOefeningBewerken(id) {
     + '<div class="field"><span class="label">Aantal spelers</span><input class="input" id="ob-spelers" placeholder="bijv. 8–12" value="' + (o ? esc(o.spelers||'') : '') + '"></div>'
     + '<div class="field"><span class="label">Omschrijving</span><input class="input" id="ob-desc" value="' + (o ? esc(o.desc||o.beschrijving||'') : '') + '"></div>'
     + '<div class="field"><span class="label">Tip / coachpunt</span><input class="input" id="ob-tip" value="' + (o ? esc(o.tip||'') : '') + '"></div>'
-    + '<div class="field"><span class="label">URL / YouTube</span><input class="input" id="ob-url" value="' + (o ? esc(o.url||'') : '') + '"></div>'
+    + '<div class="field"><span class="label">URL / YouTube</span><div style="display:flex;gap:8px"><input class="input" id="ob-url" style="flex:1;min-width:0" value="' + (o ? esc(o.url||'') : '') + '"><button type="button" class="btn btn--secondary btn--icon" aria-label="Link testen" onclick="testOefUrl(\'ob-url\')">▶</button></div></div>'
     + '<div class="field"><span class="label">Stappen</span><div id="ob-stappen"></div><button type="button" class="btn btn--ghost btn--sm" onclick="voegOefStapToe()">+ Stap</button></div>'
     + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="setTeamTab(\'oefeningen\');toonScherm(\'team\')">Annuleren</button><button class="btn btn--primary" onclick="slaOefeningOp()">Opslaan</button></div>'
     + (o ? '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderOefening(this)">Oefening verwijderen</button></div>' : '');

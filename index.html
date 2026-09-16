@@ -447,7 +447,7 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
     <div class="sheet-title">Nieuwe oefening</div>
     <div class="field"><span class="label">Naam</span><input class="input" id="bn-naam"></div>
     <div class="field"><span class="label">Categorie</span><select class="input" id="bn-cat"></select></div>
-    <div class="field"><span class="label">Tip / coachpunt</span><input class="input" id="bn-tip"></div>
+    <div class="field"><span class="label">Tip / coachpunt</span><textarea class="input" id="bn-tip" rows="3" style="resize:vertical"></textarea></div>
     <div class="field"><span class="label">URL / YouTube</span><div style="display:flex;gap:8px"><input class="input" id="bn-url" style="flex:1;min-width:0"><button type="button" class="btn btn--secondary btn--icon" aria-label="Link testen" onclick="testOefUrl('bn-url')">▶</button></div></div>
     <div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeBlokNieuweOef()">Annuleren</button><button class="btn btn--primary" onclick="slaBlokNieuweOefOp()">Toevoegen</button></div>
   </div></div>
@@ -1958,7 +1958,7 @@ function openOefeningBewerken(id) {
       + '</div></div>'
     + '<div class="field"><span class="label">Aantal spelers</span><input class="input" id="ob-spelers" placeholder="bijv. 8–12" value="' + (o ? esc(o.spelers||'') : '') + '"></div>'
     + '<div class="field"><span class="label">Omschrijving</span><input class="input" id="ob-desc" value="' + (o ? esc(o.desc||o.beschrijving||'') : '') + '"></div>'
-    + '<div class="field"><span class="label">Tip / coachpunt</span><input class="input" id="ob-tip" value="' + (o ? esc(o.tip||'') : '') + '"></div>'
+    + '<div class="field"><span class="label">Tip / coachpunt</span><textarea class="input" id="ob-tip" rows="3" style="resize:vertical">' + (o ? esc(o.tip||'') : '') + '</textarea></div>'
     + '<div class="field"><span class="label">URL / YouTube</span><div style="display:flex;gap:8px"><input class="input" id="ob-url" style="flex:1;min-width:0" value="' + (o ? esc(o.url||'') : '') + '"><button type="button" class="btn btn--secondary btn--icon" aria-label="Link testen" onclick="testOefUrl(\'ob-url\')">▶</button></div></div>'
     + '<div class="field"><span class="label">Stappen</span><div id="ob-stappen"></div><button type="button" class="btn btn--ghost btn--sm" onclick="voegOefStapToe()">+ Stap</button></div>'
     + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="setTeamTab(\'oefeningen\');toonScherm(\'team\')">Annuleren</button><button class="btn btn--primary" onclick="slaOefeningOp()">Opslaan</button></div>'
@@ -2721,7 +2721,7 @@ const videoIcoonGroot = '<svg width="20" height="20" viewBox="0 0 24 24" fill="n
 function renderOefeningDetailHtml(o, videoBtnClass) {
   let html = '<div class="sheet-title">' + esc(o.title) + '</div>';
   if (o.cat) html += '<span class="chip" aria-pressed="true" style="margin-bottom:10px">' + esc(o.cat) + '</span>';
-  if (o.tip) html += '<div style="font-size:13.5px;color:var(--ink2);margin:10px 0">' + esc(o.tip) + '</div>';
+  if (o.tip) html += '<div style="font-size:13.5px;color:var(--ink2);margin:10px 0;white-space:pre-line">' + esc(o.tip) + '</div>';
   const desc = o.desc || o.beschrijving;
   if (desc) html += '<div class="sec" style="margin-top:10px">Omschrijving</div><div style="font-size:13.5px">' + esc(desc) + '</div>';
   if (o.spelers) html += '<div class="sec" style="margin-top:10px">Aantal spelers</div><div style="font-size:13.5px">' + esc(o.spelers) + '</div>';

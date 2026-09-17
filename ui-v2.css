@@ -110,6 +110,7 @@
 .row{display:flex;align-items:center;gap:13px;min-height:64px;padding:11px 16px;background:var(--surface);cursor:pointer;text-decoration:none;color:inherit;transition:background .14s}
 .row:hover{background:var(--surface2)}
 .row--compact{min-height:auto;padding-top:10px;padding-bottom:10px}
+.row--gearchiveerd{opacity:.6}
 .row+.row{box-shadow:inset 0 1px 0 var(--line)}
 .row-lead{width:44px;flex-shrink:0;text-align:center}
 .row-body{flex:1;min-width:0}

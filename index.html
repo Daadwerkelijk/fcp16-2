@@ -533,6 +533,18 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   </div></div>
 </div>
 
+<!-- ═══ SHEET: speler archiveren / weer actief maken — datum + (alleen bij
+     archiveren) reden. Zie statusRijHtml()/openStatusSheet() in index.html. ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-status" onclick="if(event.target===this)closeStatusSheet()">
+  <div class="sheet-wrap"><div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title" id="ss-titel">Archiveren</div>
+    <div class="field"><span class="label" id="ss-datum-label">Datum uit team</span><input class="input" type="date" id="ss-datum"></div>
+    <div class="field" id="ss-reden-veld"><span class="label">Reden</span><input class="input" id="ss-reden" placeholder="bijv. gestopt met voetballen, overgestapt naar ander team"></div>
+    <div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeStatusSheet()">Annuleren</button><button class="btn btn--primary" id="ss-bevestig" onclick="bevestigStatus()">Bevestigen</button></div>
+  </div></div>
+</div>
+
 <!-- ═══ SHEET: klik-door per vaardigheid (Inzicht-desktopdashboard) — wie
      scoorde welk niveau, gegroepeerd i.p.v. alfabetisch. Zie mockup,
      afgestemd met gebruiker 2026-09-07. ═══ -->
@@ -664,6 +676,18 @@ const DAG_VOL = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','
 // blijft die groepering intact, alleen de volgorde erbínnen wordt alfabetisch.
 function spelers() {
   return ls('fcp_players', '[]').slice().sort((a, b) => (a.naam || '').localeCompare(b.naam || '', 'nl', { sensitivity: 'base' }));
+}
+// Alleen spelers die nog echt in het team zitten — voor plekken waar een
+// NIEUWE keuze gemaakt wordt (opstelling samenstellen, wisselspelers,
+// aanwezigheid voor een nieuwe training): een gearchiveerde speler (status
+// 'gearchiveerd', zie openStatusSheet()) hoort daar niet meer tussen te
+// staan. Historische weergaves (Inzicht-statistieken, wedstrijdgeschiedenis,
+// live-doelpuntregistratie tijdens een lopende wedstrijd, naam-opzoeken bij
+// bestaande data) blijven bewust gewoon spelers() gebruiken — die mogen een
+// gearchiveerde speler nog tonen, dat is precies de bedoeling (geschiedenis
+// blijft staan). Gevraagd door gebruiker 2026-09-17.
+function actieveSpelers() {
+  return spelers().filter(p => (p.status || 'actief') !== 'gearchiveerd');
 }
 // Eigen teamnaam/-crest — nu overal afgeleid van de echte teaminstelling
 // (loadTeamInstellingen() uit app.js) i.p.v. hardcoded 'FCP'/'FCP 16-2',
@@ -1082,7 +1106,7 @@ function openWedAfwezigSheet(modus) {
     if (!w) return;
     afwezigeIds = new Set((w.afwezig || []).map(a => (a && a.pid) ? a.pid : a));
   }
-  const sp = spelers().filter(p => !afwezigeIds.has(p.id));
+  const sp = actieveSpelers().filter(p => !afwezigeIds.has(p.id));
   document.getElementById('waf-speler').innerHTML = sp.map(p => '<option value="' + p.id + '">' + esc(p.naam) + '</option>').join('');
   document.getElementById('waf-reden').innerHTML = absRedenen().map(r => '<option>' + r + '</option>').join('');
   document.getElementById('sheet-wed-afwezig-toevoegen').classList.remove('verborgen');
@@ -1234,13 +1258,28 @@ function renderTeam() {
   else if (teamTabV2 === 'opstelling') renderTeamOpstelling();
   else renderTeamOefeningen();
 }
+// Rij-opmaak gedeeld door beide secties hieronder — gearchiveerd krijgt een
+// gedimde stijl + "uit team sinds"-onderschrift i.p.v. de posities.
+function spelerRijHtml(p) {
+  const gearchiveerd = (p.status || 'actief') === 'gearchiveerd';
+  const sub = gearchiveerd
+    ? 'Uit team sinds ' + (formatDatumShort(p.status_datum) || '?') + (p.status_reden ? ' · ' + esc(p.status_reden) : '')
+    : esc((p.posities || []).join(', ') || 'Geen posities ingesteld');
+  return '<a class="row' + (gearchiveerd ? ' row--gearchiveerd' : '') + '" href="#" onclick="openSpelerBewerken(\'' + p.id + '\');return false"><div class="row-lead"><div class="crest" style="margin:0 auto">' + esc(p.naam.slice(0,2).toUpperCase()) + '</div></div><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div><div class="row-sub">' + sub + '</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>';
+}
 function renderTeamSpelers() {
   const cont = document.getElementById('t-content');
-  const sp = [...spelers()].sort((a, b) => a.naam.localeCompare(b.naam));
+  const alle = [...spelers()].sort((a, b) => a.naam.localeCompare(b.naam));
+  const sp = alle.filter(p => (p.status || 'actief') !== 'gearchiveerd');
+  const gearchiveerd = alle.filter(p => (p.status || 'actief') === 'gearchiveerd');
   cont.innerHTML = '<div class="pad" style="margin-top:14px"><div class="rows">'
-    + (sp.length ? sp.map(p => '<a class="row" href="#" onclick="openSpelerBewerken(\'' + p.id + '\');return false"><div class="row-lead"><div class="crest" style="margin:0 auto">' + esc(p.naam.slice(0,2).toUpperCase()) + '</div></div><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div><div class="row-sub">' + esc((p.posities||[]).join(', ') || 'Geen posities ingesteld') + '</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>').join('')
+    + (sp.length ? sp.map(spelerRijHtml).join('')
         : '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">Nog geen spelers.</div>')
-    + '</div></div>';
+    + '</div>'
+    + (gearchiveerd.length
+        ? '<div class="sec" style="margin-top:20px">Gearchiveerd · ' + gearchiveerd.length + '</div><div class="rows">' + gearchiveerd.map(spelerRijHtml).join('') + '</div>'
+        : '')
+    + '</div>';
   toonTeamFab();
 }
 
@@ -1257,7 +1296,7 @@ function openOpstSlotKiezer(posId, ctx) {
   opstAssignCtx = { posId, ctx };
   const pos = ctx.formatie().pos.find(p => p.id === posId);
   const lineup = ctx.getLineup();
-  const sp = spelers();
+  const sp = actieveSpelers();
   document.getElementById('os-titel').textContent = pos.label;
   document.getElementById('os-sub').textContent = 'Kies een speler';
   const matcht = (p) => (p.posities || []).includes(pos.label) || (pos.label === 'GK' && (p.posities || []).includes('Keeper'));
@@ -1350,7 +1389,7 @@ function rolBadgeKleurenV2(pos) {
 }
 function benchHtmlV2(lineup) {
   const opgesteld = new Set(Object.values(lineup).filter(Boolean));
-  const bank = spelers().filter(p => !opgesteld.has(p.id));
+  const bank = actieveSpelers().filter(p => !opgesteld.has(p.id));
   const inhoud = !bank.length
     ? '<div style="font-size:13px;color:var(--ink3)">Alle spelers zijn opgesteld.</div>'
     : bank.map(p => {
@@ -2096,6 +2135,56 @@ async function renderVergelijkingV2(spelerId) {
   });
   return html;
 }
+// ─── Speler archiveren — status/status_datum/status_reden op players.
+// Omkeerbaar (geen "Zeker weten?"-dubbeltik zoals bij verwijderen), want
+// dit is geen destructieve actie: geschiedenis (cijfers, doelpunten,
+// beoordelingen) blijft altijd staan, ongeacht status. Zie
+// mockup-speler-archiveren.html — eerst verkend en akkoord bevonden
+// voordat dit gebouwd is. Gevraagd door gebruiker 2026-09-17: een speler
+// die stopt moet uit opstellingen/wisselspelers/nieuwe trainingen kunnen
+// verdwijnen zonder verwijderd te worden.
+function statusRijHtml(p) {
+  const gearchiveerd = (p.status || 'actief') === 'gearchiveerd';
+  return '<div class="status-rij" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1.5px solid ' + (gearchiveerd ? 'var(--loss)' : 'var(--line)') + ';border-radius:var(--r-ctl);margin-bottom:14px' + (gearchiveerd ? ';background:var(--loss-soft)' : '') + '">'
+    + '<div><div style="font-size:13.5px;font-weight:600">' + (gearchiveerd ? 'Gearchiveerd' : 'Actief in het team') + '</div>'
+    + '<div style="font-size:12px;color:var(--ink3);margin-top:1px">' + (gearchiveerd
+        ? 'Sinds ' + (formatDatumShort(p.status_datum) || '?') + (p.status_reden ? ' · ' + esc(p.status_reden) : '') + '. Verdwenen uit opstellingen/wisselspelers/nieuwe trainingen. Geschiedenis blijft staan.'
+        : 'Staat in opstellingen, wisselspelerslijst en nieuwe trainingen.') + '</div></div>'
+    + '<button class="btn btn--secondary btn--sm" onclick="openStatusSheet(\'' + p.id + '\')">' + (gearchiveerd ? 'Weer actief maken' : 'Archiveren') + '</button>'
+    + '</div>';
+}
+let statusSheetSpelerId = null;
+function openStatusSheet(spelerId) {
+  statusSheetSpelerId = spelerId;
+  const p = spelers().find(x => x.id === spelerId);
+  if (!p) return;
+  const wordtArchiveren = (p.status || 'actief') !== 'gearchiveerd';
+  document.getElementById('ss-titel').textContent = wordtArchiveren ? 'Archiveren' : 'Weer actief maken';
+  document.getElementById('ss-datum-label').textContent = wordtArchiveren ? 'Datum uit team' : 'Datum weer actief';
+  document.getElementById('ss-datum').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('ss-reden').value = '';
+  document.getElementById('ss-reden-veld').style.display = wordtArchiveren ? '' : 'none';
+  document.getElementById('ss-bevestig').textContent = wordtArchiveren ? 'Archiveren' : 'Weer actief maken';
+  document.getElementById('sheet-status').classList.remove('verborgen');
+}
+function closeStatusSheet() { document.getElementById('sheet-status').classList.add('verborgen'); }
+async function bevestigStatus() {
+  const p = spelers().find(x => x.id === statusSheetSpelerId);
+  if (!p) { closeStatusSheet(); return; }
+  const wordtArchiveren = (p.status || 'actief') !== 'gearchiveerd';
+  const datum = document.getElementById('ss-datum').value || new Date().toISOString().slice(0, 10);
+  const reden = wordtArchiveren ? document.getElementById('ss-reden').value.trim() : '';
+  p.status = wordtArchiveren ? 'gearchiveerd' : 'actief';
+  p.status_datum = datum;
+  p.status_reden = reden;
+  localStorage.setItem('fcp_players', JSON.stringify(spelers().map(x => x.id === p.id ? p : x)));
+  closeStatusSheet();
+  if (supabaseReady) {
+    const res = await updatePlayer(p.id, { status: p.status, status_datum: p.status_datum, status_reden: p.status_reden });
+    if (res && res._error) showToast('⚠️ Niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
+  openSpelerBewerken(p.id);
+}
 function openSpelerBewerken(id) {
   bewerkSpelerId = id;
   const p = id ? spelers().find(x => x.id === id) : null;
@@ -2104,7 +2193,8 @@ function openSpelerBewerken(id) {
   document.getElementById('sb-content').innerHTML =
       '<div class="field"><span class="label">Naam</span><input class="input" id="sb-naam" maxlength="30" value="' + (p ? esc(p.naam) : '') + '"></div>'
     + (p ? (
-        '<div id="sb-contact"></div>'
+        statusRijHtml(p)
+      + '<div id="sb-contact"></div>'
       + '<div class="field"><span class="label">Omschrijving</span><input class="input" id="sb-omschrijving" value="' + esc(p.omschrijving||'') + '"></div>'
       + '<div class="field"><span class="label">Posities</span><div style="display:flex;flex-wrap:wrap;gap:7px" id="sb-posities">' + ALL_POS_OPTS_V2.map(pos => '<button type="button" class="chip" aria-pressed="' + posities.includes(pos) + '" onclick="this.setAttribute(\'aria-pressed\', this.getAttribute(\'aria-pressed\')!==\'true\')">' + pos + '</button>').join('') + '</div></div>'
       + '<div class="field"><span class="label">Opmerkingen</span><textarea class="input" id="sb-opmerkingen" style="min-height:70px;resize:vertical">' + esc(p.opmerkingen||'') + '</textarea></div>'
@@ -2452,17 +2542,22 @@ function renderTrainingSessie() {
   const wk = weken[huidigTrainingWi];
   const s = wk.sessies[huidigTrainingSi];
   const nk = nkVan(huidigTrainingWi, huidigTrainingSi);
+  // sp blijft de volledige lijst (nodig om namen van al-afgemelde spelers te
+  // herkennen, ook als die inmiddels gearchiveerd zijn) — alleen de teller
+  // ("X/Y aanwezig") gebruikt actieveSpelers(), zodat een gearchiveerde
+  // speler niet blijft meetellen in het team-totaal voor nieuwe trainingen.
   const sp = spelers();
+  const spActief = actieveSpelers();
   const aanw = aanwAlles();
   const afwPids = Object.entries(aanw[nk] || {}).filter(([, v]) => v && v.afwezig).map(([pid]) => pid);
-  const aanwTal = sp.length - afwPids.length;
+  const aanwTal = spActief.length - afwPids.length;
   const d = sessieDatum(wk.isoDate, s, huidigTrainingSi);
   const notitie = sessionNotes()[nk] || '';
 
   let html = '<div style="font-size:13px;color:var(--ink3);margin-bottom:2px">' + esc(wk.focus || 'Training') + ' · week ' + (wk.weekNr || getISOWeekV2(new Date(wk.isoDate)))+ '</div>'
     + '<div class="appbar-h1" style="font-size:22px;margin-bottom:14px">' + esc(s.dag) + ' ' + DAG_KORT[d.getDay()] + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + '</div>';
 
-  html += '<div class="card"><div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px"><div class="sec" style="margin:0">Aanwezigheid</div><span class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + sp.length + '</span></div>';
+  html += '<div class="card"><div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px"><div class="sec" style="margin:0">Aanwezigheid</div><span class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + spActief.length + '</span></div>';
   html += afwPids.length
     ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + afwPids.map(pid => { const p = sp.find(x => x.id === pid); const reden = (aanw[nk][pid] || {}).reden || ''; return '<span class="chip" aria-pressed="true" style="cursor:pointer" onclick="verwijderAfwezig(\'' + pid + '\')">' + esc(p ? p.naam : '?') + (reden ? ' · ' + esc(reden) : '') + ' ✕</span>'; }).join('') + '</div>'
     : '<div style="font-size:13px;color:var(--ink3);margin-bottom:10px">Iedereen aanwezig.</div>';
@@ -2520,7 +2615,7 @@ function openAfwezigSheet() {
   const nk = nkVan(huidigTrainingWi, huidigTrainingSi);
   const aanw = aanwAlles();
   const afwezigeIds = new Set(Object.entries(aanw[nk] || {}).filter(([, v]) => v && v.afwezig).map(([pid]) => pid));
-  const sp = spelers().filter(p => !afwezigeIds.has(p.id));
+  const sp = actieveSpelers().filter(p => !afwezigeIds.has(p.id));
   document.getElementById('af-speler').innerHTML = sp.map(p => '<option value="' + p.id + '">' + esc(p.naam) + '</option>').join('');
   document.getElementById('af-reden').innerHTML = absRedenen().map(r => '<option>' + r + '</option>').join('');
   document.getElementById('sheet-afwezig-toevoegen').classList.remove('verborgen');

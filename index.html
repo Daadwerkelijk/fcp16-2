@@ -1265,7 +1265,11 @@ function spelerRijHtml(p) {
   const sub = gearchiveerd
     ? 'Uit team sinds ' + (formatDatumShort(p.status_datum) || '?') + (p.status_reden ? ' · ' + esc(p.status_reden) : '')
     : esc((p.posities || []).join(', ') || 'Geen posities ingesteld');
-  return '<a class="row' + (gearchiveerd ? ' row--gearchiveerd' : '') + '" href="#" onclick="openSpelerBewerken(\'' + p.id + '\');return false"><div class="row-lead"><div class="crest" style="margin:0 auto">' + esc(p.naam.slice(0,2).toUpperCase()) + '</div></div><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div><div class="row-sub">' + sub + '</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>';
+  // (p.naam || '?') — gevonden tijdens monkey-testing 2026-09-17: een speler
+  // zonder naam (corrupte data; via de UI onbereikbaar, slaSpelerOp() eist al
+  // een naam) liet dit crashen op .slice() van null.
+  const naam = p.naam || '?';
+  return '<a class="row' + (gearchiveerd ? ' row--gearchiveerd' : '') + '" href="#" onclick="openSpelerBewerken(\'' + p.id + '\');return false"><div class="row-lead"><div class="crest" style="margin:0 auto">' + esc(naam.slice(0,2).toUpperCase()) + '</div></div><div class="row-body"><div class="row-title">' + esc(naam) + '</div><div class="row-sub">' + sub + '</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>';
 }
 function renderTeamSpelers() {
   const cont = document.getElementById('t-content');

@@ -51,39 +51,39 @@
 
     <div class="card">
       <div class="sec">Persoonlijke gegevens</div>
-      <div class="field"><span class="label">Naam</span><input class="input" id="f-naam" placeholder="Volledige naam"></div>
-      <div class="field"><span class="label">Geboortedatum</span><input class="input" id="f-geboortedatum" type="date"></div>
-      <div class="field"><span class="label">Voorkeurspositie</span><select class="input" id="f-positie">
+      <div class="field"><label class="label" for="f-naam">Naam</label><input class="input" id="f-naam" placeholder="Volledige naam"></div>
+      <div class="field"><label class="label" for="f-geboortedatum">Geboortedatum</label><input class="input" id="f-geboortedatum" type="date"></div>
+      <div class="field"><label class="label" for="f-positie">Voorkeurspositie</label><select class="input" id="f-positie">
         <option value="">Kies positie...</option>
         <option>Keeper</option>
         <option>Verdediger</option>
         <option>Middenvelder</option>
         <option>Aanvaller</option>
       </select></div>
-      <div class="field"><span class="label">Mobielnummer</span><input class="input" id="f-mobiel" type="tel" placeholder="06-..."></div>
-      <div class="field"><span class="label">Ga je op vakantie?</span><select class="input" id="f-vakantie">
+      <div class="field"><label class="label" for="f-mobiel">Mobielnummer</label><input class="input" id="f-mobiel" type="tel" placeholder="06-..."></div>
+      <div class="field"><label class="label" for="f-vakantie">Ga je op vakantie?</label><select class="input" id="f-vakantie">
         <option value="">Kies...</option>
         <option value="ja">Ja</option>
         <option value="nee">Nee</option>
       </select></div>
       <div id="vakantie-details" style="display:none">
         <div class="field" style="display:flex;gap:10px">
-          <div style="flex:1"><span class="label">Van</span><input class="input" id="f-vakantie-van" type="date"></div>
-          <div style="flex:1"><span class="label">Tot</span><input class="input" id="f-vakantie-tot" type="date"></div>
+          <div style="flex:1"><label class="label" for="f-vakantie-van">Van</label><input class="input" id="f-vakantie-van" type="date"></div>
+          <div style="flex:1"><label class="label" for="f-vakantie-tot">Tot</label><input class="input" id="f-vakantie-tot" type="date"></div>
         </div>
       </div>
     </div>
 
     <div class="card" style="margin-top:10px">
       <div class="sec">Leiderschap</div>
-      <div class="field"><span class="label">Wil je aanvoerder zijn?</span><select class="input" id="f-aanvoerder" onchange="toggleAanvoerder()">
+      <div class="field"><label class="label" for="f-aanvoerder">Wil je aanvoerder zijn?</label><select class="input" id="f-aanvoerder" onchange="toggleAanvoerder()">
         <option value="">Kies...</option>
         <option value="ja">Ja</option>
         <option value="nee">Nee</option>
       </select></div>
-      <div id="aanvoerder-ja" style="display:none" class="field"><span class="label">Zo ja, waarom?</span><textarea class="input" id="f-aanvoerder-waarom" style="min-height:70px;resize:vertical" placeholder="Leg uit..."></textarea></div>
-      <div id="aanvoerder-nee" style="display:none" class="field"><span class="label">Zo nee, wie dan?</span><input class="input" id="f-aanvoerder-wie" placeholder="Naam van ploeggenoot"></div>
-      <div class="field"><span class="label">Waarom deze speler?</span><textarea class="input" id="f-aanvoerder-waarom2" style="min-height:70px;resize:vertical" placeholder="Leg uit..."></textarea></div>
+      <div id="aanvoerder-ja" style="display:none" class="field"><label class="label" for="f-aanvoerder-waarom">Zo ja, waarom?</label><textarea class="input" id="f-aanvoerder-waarom" style="min-height:70px;resize:vertical" placeholder="Leg uit..."></textarea></div>
+      <div id="aanvoerder-nee" style="display:none" class="field"><label class="label" for="f-aanvoerder-wie">Zo nee, wie dan?</label><input class="input" id="f-aanvoerder-wie" placeholder="Naam van ploeggenoot"></div>
+      <div class="field"><label class="label" for="f-aanvoerder-waarom2">Waarom deze speler?</label><textarea class="input" id="f-aanvoerder-waarom2" style="min-height:70px;resize:vertical" placeholder="Leg uit..."></textarea></div>
     </div>
 
     <div class="card" style="margin-top:10px"><div class="sec">Techniek</div><div id="skill-techniek"></div></div>
@@ -93,12 +93,12 @@
 
     <div class="card" style="margin-top:10px">
       <div class="sec">Wens dit seizoen</div>
-      <div class="field"><span class="label">Waar wil je dit seizoen aan werken?</span><textarea class="input" id="f-wens" style="min-height:100px;resize:vertical" placeholder="Beschrijf je persoonlijke doel..."></textarea></div>
+      <div class="field"><label class="label" for="f-wens">Waar wil je dit seizoen aan werken?</label><textarea class="input" id="f-wens" style="min-height:100px;resize:vertical" placeholder="Beschrijf je persoonlijke doel..."></textarea></div>
     </div>
 
     <div class="card" style="margin-top:10px">
       <div class="sec">Bijzonderheden</div>
-      <textarea class="input" id="f-bijzonderheden" style="min-height:80px;resize:vertical" placeholder="Medische info, blessures, afspraken..."></textarea>
+      <textarea class="input" id="f-bijzonderheden" aria-label="Bijzonderheden" style="min-height:80px;resize:vertical" placeholder="Medische info, blessures, afspraken..."></textarea>
     </div>
 
     <button class="btn btn--primary btn--block" style="margin-top:16px" onclick="submitFormulier()">✓ Formulier insturen</button>

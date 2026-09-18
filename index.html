@@ -445,10 +445,10 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   <div class="sheet-wrap"><div class="sheet">
     <div class="sheet-grip"></div>
     <div class="sheet-title">Nieuwe oefening</div>
-    <div class="field"><span class="label">Naam</span><input class="input" id="bn-naam"></div>
-    <div class="field"><span class="label">Categorie</span><select class="input" id="bn-cat"></select></div>
-    <div class="field"><span class="label">Tip / coachpunt</span><textarea class="input" id="bn-tip" rows="3" style="resize:vertical"></textarea></div>
-    <div class="field"><span class="label">URL / YouTube</span><div style="display:flex;gap:8px"><input class="input" id="bn-url" style="flex:1;min-width:0"><button type="button" class="btn btn--secondary btn--icon" aria-label="Link testen" onclick="testOefUrl('bn-url')">▶</button></div></div>
+    <div class="field"><label class="label" for="bn-naam">Naam</label><input class="input" id="bn-naam"></div>
+    <div class="field"><label class="label" for="bn-cat">Categorie</label><select class="input" id="bn-cat"></select></div>
+    <div class="field"><label class="label" for="bn-tip">Tip / coachpunt</label><textarea class="input" id="bn-tip" rows="3" style="resize:vertical"></textarea></div>
+    <div class="field"><label class="label" for="bn-url">URL / YouTube</label><div style="display:flex;gap:8px"><input class="input" id="bn-url" style="flex:1;min-width:0"><button type="button" class="btn btn--secondary btn--icon" aria-label="Link testen" onclick="testOefUrl('bn-url')">▶</button></div></div>
     <div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeBlokNieuweOef()">Annuleren</button><button class="btn btn--primary" onclick="slaBlokNieuweOefOp()">Toevoegen</button></div>
   </div></div>
 </div>
@@ -458,8 +458,8 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   <div class="sheet-wrap"><div class="sheet">
     <div class="sheet-grip"></div>
     <div class="sheet-title">Afwezig toevoegen</div>
-    <div class="field"><span class="label">Speler</span><select class="input" id="af-speler"></select></div>
-    <div class="field"><span class="label">Reden</span><select class="input" id="af-reden"></select></div>
+    <div class="field"><label class="label" for="af-speler">Speler</label><select class="input" id="af-speler"></select></div>
+    <div class="field"><label class="label" for="af-reden">Reden</label><select class="input" id="af-reden"></select></div>
     <div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeAfwezigSheet()">Annuleren</button><button class="btn btn--primary" onclick="slaAfwezigOp()">Toevoegen</button></div>
   </div></div>
 </div>
@@ -469,8 +469,8 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   <div class="sheet-wrap"><div class="sheet">
     <div class="sheet-grip"></div>
     <div class="sheet-title">Afwezig toevoegen</div>
-    <div class="field"><span class="label">Speler</span><select class="input" id="waf-speler"></select></div>
-    <div class="field"><span class="label">Reden</span><select class="input" id="waf-reden"></select></div>
+    <div class="field"><label class="label" for="waf-speler">Speler</label><select class="input" id="waf-speler"></select></div>
+    <div class="field"><label class="label" for="waf-reden">Reden</label><select class="input" id="waf-reden"></select></div>
     <div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeWedAfwezigSheet()">Annuleren</button><button class="btn btn--primary" onclick="slaWedAfwezigOp()">Toevoegen</button></div>
   </div></div>
 </div>
@@ -525,9 +525,9 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
     <div class="sheet-grip"></div>
     <div class="sheet-title">Afwezigheidsperiode toevoegen</div>
     <div class="sheet-sub">Trainingen en wedstrijden in deze periode worden automatisch op afwezig gezet.</div>
-    <div class="field"><span class="label">Van</span><input class="input" id="ap-van" type="date"></div>
-    <div class="field"><span class="label">Tot en met</span><input class="input" id="ap-tot" type="date"></div>
-    <div class="field"><span class="label">Reden</span><select class="input" id="ap-reden"></select></div>
+    <div class="field"><label class="label" for="ap-van">Van</label><input class="input" id="ap-van" type="date"></div>
+    <div class="field"><label class="label" for="ap-tot">Tot en met</label><input class="input" id="ap-tot" type="date"></div>
+    <div class="field"><label class="label" for="ap-reden">Reden</label><select class="input" id="ap-reden"></select></div>
     <div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="closePeriodeSheet()">Annuleren</button><button class="btn btn--primary" style="flex:1" onclick="slaPeriodeOp()">Toevoegen</button></div>
     <div id="ap-fout" style="font-size:12.5px;color:var(--loss);margin-top:8px;min-height:16px"></div>
   </div></div>
@@ -539,8 +539,8 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   <div class="sheet-wrap"><div class="sheet">
     <div class="sheet-grip"></div>
     <div class="sheet-title" id="ss-titel">Archiveren</div>
-    <div class="field"><span class="label" id="ss-datum-label">Datum uit team</span><input class="input" type="date" id="ss-datum"></div>
-    <div class="field" id="ss-reden-veld"><span class="label">Reden</span><input class="input" id="ss-reden" placeholder="bijv. gestopt met voetballen, overgestapt naar ander team"></div>
+    <div class="field"><label class="label" id="ss-datum-label" for="ss-datum">Datum uit team</label><input class="input" type="date" id="ss-datum"></div>
+    <div class="field" id="ss-reden-veld"><label class="label" for="ss-reden">Reden</label><input class="input" id="ss-reden" placeholder="bijv. gestopt met voetballen, overgestapt naar ander team"></div>
     <div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeStatusSheet()">Annuleren</button><button class="btn btn--primary" id="ss-bevestig" onclick="bevestigStatus()">Bevestigen</button></div>
   </div></div>
 </div>
@@ -1543,11 +1543,11 @@ function openFormatieEditor(bewerkId, terugCtx) {
   if (bewerkId && !alle[bewerkId] && volledig[bewerkId]) alle = { ...alle, [bewerkId]: volledig[bewerkId] };
   const standaard = bewerkId || (foTerugCtx.type === 'wed' ? (wedstrijden().find(x => x.id === foTerugCtx.wedId).formatie) : localStorage.getItem('fcp_formatie')) || Object.keys(alle)[0];
   document.getElementById('fo-content').innerHTML =
-      '<div class="field"><span class="label">Start vanuit</span><select class="input" id="fo-start" onchange="foStartVanuit(this.value)">' + Object.entries(alle).map(([k, f]) => '<option value="' + k + '" ' + (k === standaard ? 'selected' : '') + '>' + esc(f.label) + (f.eigen ? ' (aangepast)' : '') + '</option>').join('') + '</select></div>'
+      '<div class="field"><label class="label" for="fo-start">Start vanuit</label><select class="input" id="fo-start" onchange="foStartVanuit(this.value)">' + Object.entries(alle).map(([k, f]) => '<option value="' + k + '" ' + (k === standaard ? 'selected' : '') + '>' + esc(f.label) + (f.eigen ? ' (aangepast)' : '') + '</option>').join('') + '</select></div>'
     + '<div class="pitch-wrap" style="height:380px;margin-bottom:14px"><div class="pitch" style="position:absolute;inset:0" id="fo-pitch"></div></div>'
     + '<div style="text-align:center;font-size:22px;font-weight:700;letter-spacing:-.02em" id="fo-titel-live">—</div>'
     + '<div style="text-align:center;font-size:11.5px;color:var(--ink3);margin-bottom:14px" id="fo-titel-sub">voorgestelde naam — verandert mee tijdens het slepen</div>'
-    + '<div class="field"><span class="label">Naam systeem</span><input class="input" id="fo-naam-input" oninput="foTitelHandmatig=true"></div>'
+    + '<div class="field"><label class="label" for="fo-naam-input">Naam systeem</label><input class="input" id="fo-naam-input" oninput="foTitelHandmatig=true"></div>'
     + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="foAnnuleer()">Annuleren</button><button class="btn btn--primary" id="fo-opslaan-btn" onclick="foOpslaan()">Opslaan als nieuw systeem</button></div>';
   if (bewerkId) document.getElementById('fo-opslaan-btn').textContent = 'Wijzigingen opslaan';
   foStartVanuit(document.getElementById('fo-start').value);
@@ -1976,15 +1976,15 @@ function openOefeningBewerken(id) {
   const alle = alleFormatiesV2();
   const gekozenSystemen = new Set((o && o.formaties) || []);
   document.getElementById('ob-content').innerHTML =
-      '<div class="field"><span class="label">Naam</span><input class="input" id="ob-naam" value="' + (o ? esc(o.title) : '') + '"></div>'
-    + '<div class="field"><span class="label">Categorie</span><select class="input" id="ob-cat">' + cats.map(c => '<option ' + (o && o.cat === c ? 'selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></div>'
+      '<div class="field"><label class="label" for="ob-naam">Naam</label><input class="input" id="ob-naam" value="' + (o ? esc(o.title) : '') + '"></div>'
+    + '<div class="field"><label class="label" for="ob-cat">Categorie</label><select class="input" id="ob-cat">' + cats.map(c => '<option ' + (o && o.cat === c ? 'selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></div>'
     + '<div class="field"><span class="label">Systeem (meervoudig)</span><div style="display:flex;flex-wrap:wrap;gap:7px" id="ob-systemen">'
       + Object.entries(alle).map(([k, f]) => '<button type="button" class="chip" data-k="' + k + '" aria-pressed="' + gekozenSystemen.has(k) + '" onclick="this.setAttribute(\'aria-pressed\', this.getAttribute(\'aria-pressed\')!==\'true\')">' + esc(f.label) + '</button>').join('')
       + '</div></div>'
-    + '<div class="field"><span class="label">Aantal spelers</span><input class="input" id="ob-spelers" placeholder="bijv. 8–12" value="' + (o ? esc(o.spelers||'') : '') + '"></div>'
-    + '<div class="field"><span class="label">Omschrijving</span><input class="input" id="ob-desc" value="' + (o ? esc(o.desc||o.beschrijving||'') : '') + '"></div>'
-    + '<div class="field"><span class="label">Tip / coachpunt</span><textarea class="input" id="ob-tip" rows="3" style="resize:vertical">' + (o ? esc(o.tip||'') : '') + '</textarea></div>'
-    + '<div class="field"><span class="label">URL / YouTube</span><div style="display:flex;gap:8px"><input class="input" id="ob-url" style="flex:1;min-width:0" value="' + (o ? esc(o.url||'') : '') + '"><button type="button" class="btn btn--secondary btn--icon" aria-label="Link testen" onclick="testOefUrl(\'ob-url\')">▶</button></div></div>'
+    + '<div class="field"><label class="label" for="ob-spelers">Aantal spelers</label><input class="input" id="ob-spelers" placeholder="bijv. 8–12" value="' + (o ? esc(o.spelers||'') : '') + '"></div>'
+    + '<div class="field"><label class="label" for="ob-desc">Omschrijving</label><input class="input" id="ob-desc" value="' + (o ? esc(o.desc||o.beschrijving||'') : '') + '"></div>'
+    + '<div class="field"><label class="label" for="ob-tip">Tip / coachpunt</label><textarea class="input" id="ob-tip" rows="3" style="resize:vertical">' + (o ? esc(o.tip||'') : '') + '</textarea></div>'
+    + '<div class="field"><label class="label" for="ob-url">URL / YouTube</label><div style="display:flex;gap:8px"><input class="input" id="ob-url" style="flex:1;min-width:0" value="' + (o ? esc(o.url||'') : '') + '"><button type="button" class="btn btn--secondary btn--icon" aria-label="Link testen" onclick="testOefUrl(\'ob-url\')">▶</button></div></div>'
     + '<div class="field"><span class="label">Stappen</span><div id="ob-stappen"></div><button type="button" class="btn btn--ghost btn--sm" onclick="voegOefStapToe()">+ Stap</button></div>'
     + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="setTeamTab(\'oefeningen\');toonScherm(\'team\')">Annuleren</button><button class="btn btn--primary" onclick="slaOefeningOp()">Opslaan</button></div>'
     + (o ? '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderOefening(this)">Oefening verwijderen</button></div>' : '');
@@ -2177,14 +2177,14 @@ function openSpelerBewerken(id) {
   document.getElementById('sb-titel').textContent = p ? 'Speler bewerken' : 'Speler toevoegen';
   const posities = (p && p.posities) || [];
   document.getElementById('sb-content').innerHTML =
-      '<div class="field"><span class="label">Naam</span><input class="input" id="sb-naam" maxlength="30" value="' + (p ? esc(p.naam) : '') + '"></div>'
+      '<div class="field"><label class="label" for="sb-naam">Naam</label><input class="input" id="sb-naam" maxlength="30" value="' + (p ? esc(p.naam) : '') + '"></div>'
     + (p ? (
         statusRijHtml(p)
       + '<div id="sb-contact"></div>'
-      + '<div class="field"><span class="label">Omschrijving</span><input class="input" id="sb-omschrijving" value="' + esc(p.omschrijving||'') + '"></div>'
+      + '<div class="field"><label class="label" for="sb-omschrijving">Omschrijving</label><input class="input" id="sb-omschrijving" value="' + esc(p.omschrijving||'') + '"></div>'
       + '<div class="field"><span class="label">Posities</span><div style="display:flex;flex-wrap:wrap;gap:7px" id="sb-posities">' + ALL_POS_OPTS_V2.map(pos => '<button type="button" class="chip" aria-pressed="' + posities.includes(pos) + '" onclick="this.setAttribute(\'aria-pressed\', this.getAttribute(\'aria-pressed\')!==\'true\')">' + pos + '</button>').join('') + '</div></div>'
-      + '<div class="field"><span class="label">Opmerkingen</span><textarea class="input" id="sb-opmerkingen" style="min-height:70px;resize:vertical">' + esc(p.opmerkingen||'') + '</textarea></div>'
-      + '<div class="field"><span class="label">Ontwikkeling</span><textarea class="input" id="sb-ontwikkeling" style="min-height:70px;resize:vertical">' + esc(p.ontwikkeling||'') + '</textarea></div>'
+      + '<div class="field"><label class="label" for="sb-opmerkingen">Opmerkingen</label><textarea class="input" id="sb-opmerkingen" style="min-height:70px;resize:vertical">' + esc(p.opmerkingen||'') + '</textarea></div>'
+      + '<div class="field"><label class="label" for="sb-ontwikkeling">Ontwikkeling</label><textarea class="input" id="sb-ontwikkeling" style="min-height:70px;resize:vertical">' + esc(p.ontwikkeling||'') + '</textarea></div>'
       + '<div class="divide"></div>'
       + '<div class="sec">Afwezigheidsperiodes</div>'
       + '<div id="sb-periodes" style="margin-bottom:10px">Laden…</div>'
@@ -2344,7 +2344,7 @@ async function deelFormulierV2(spelerId) {
   const historieHtml = periodes.length
     ? '<div style="font-size:12px;color:var(--ink3);margin-top:10px">Bekende eerdere afwezigheid: ' + periodes.map(pd => fmt(pd.van) + '–' + fmt(pd.tot) + (pd.reden ? ' (' + esc(pd.reden) + ')' : '')).join(', ') + '</div>'
     : '';
-  veld.innerHTML = '<div class="field" style="margin-top:10px"><span class="label">Link om te delen</span><div style="display:flex;gap:8px"><input class="input" id="sb-link-input" readonly style="flex:1;font-size:12px"><button class="btn btn--secondary btn--sm" id="sb-link-kopieer">Kopieer</button></div>' + historieHtml + '</div>';
+  veld.innerHTML = '<div class="field" style="margin-top:10px"><label class="label" for="sb-link-input">Link om te delen</label><div style="display:flex;gap:8px"><input class="input" id="sb-link-input" readonly style="flex:1;font-size:12px"><button class="btn btn--secondary btn--sm" id="sb-link-kopieer">Kopieer</button></div>' + historieHtml + '</div>';
   document.getElementById('sb-link-input').value = link;
   document.getElementById('sb-link-kopieer').onclick = function () {
     const btn = this;
@@ -2637,7 +2637,7 @@ function deelTrainingWhatsapp() {
   window.open('https://wa.me/?text=' + encodeURIComponent(tekst), '_blank');
 }
 function toonExtraTrainingVeld() {
-  document.getElementById('tr-extra-veld').innerHTML = '<div class="field" style="margin-top:10px"><span class="label">Naam nieuwe training</span><div style="display:flex;gap:8px"><input class="input" id="tr-extra-naam" placeholder="bijv. Zaterdagtraining" style="flex:1"><button class="btn btn--primary btn--sm" onclick="voegExtraTrainingToe()">Toevoegen</button></div></div>';
+  document.getElementById('tr-extra-veld').innerHTML = '<div class="field" style="margin-top:10px"><label class="label" for="tr-extra-naam">Naam nieuwe training</label><div style="display:flex;gap:8px"><input class="input" id="tr-extra-naam" placeholder="bijv. Zaterdagtraining" style="flex:1"><button class="btn btn--primary btn--sm" onclick="voegExtraTrainingToe()">Toevoegen</button></div></div>';
 }
 async function voegExtraTrainingToe() {
   const naam = document.getElementById('tr-extra-naam').value.trim();
@@ -2693,11 +2693,11 @@ function openTrainingBewerk() {
   const s = wk.sessies[huidigTrainingSi];
   trbBlokken = JSON.parse(JSON.stringify(s.blokken || []));
   document.getElementById('trb-content').innerHTML =
-      '<div class="field"><span class="label">Naam</span><input class="input" id="trb-dag" value="' + esc(s.dag) + '"></div>'
+      '<div class="field"><label class="label" for="trb-dag">Naam</label><input class="input" id="trb-dag" value="' + esc(s.dag) + '"></div>'
     + '<div class="sec">Oefeningen</div>'
     + '<div id="trb-blokken"></div>'
     + '<button class="btn btn--ghost btn--sm" style="margin-top:8px" onclick="openBlokKiezer(trbCtx)">+ Oefening toevoegen</button>'
-    + '<div class="field" style="margin-top:16px"><span class="label">Notities</span><textarea class="input" id="trb-notitie" style="min-height:80px;resize:vertical">' + esc(sessionNotes()[nkVan(huidigTrainingWi, huidigTrainingSi)] || '') + '</textarea></div>'
+    + '<div class="field" style="margin-top:16px"><label class="label" for="trb-notitie">Notities</label><textarea class="input" id="trb-notitie" style="min-height:80px;resize:vertical">' + esc(sessionNotes()[nkVan(huidigTrainingWi, huidigTrainingSi)] || '') + '</textarea></div>'
     + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="hervatTrainingSessie()">Annuleren</button><button class="btn btn--primary" onclick="slaTrainingBewerkOp()">Opslaan</button></div>'
     + '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderTrainingSessie(this)">Training verwijderen</button></div>';
   renderTrbBlokken();
@@ -2869,13 +2869,13 @@ function openTrainingWeekNieuw() {
   twnBlokken1 = []; twnBlokken2 = [];
   const vandaag = isoVan(new Date());
   document.getElementById('twn-content').innerHTML =
-      '<div class="field"><span class="label">Focus</span><input class="input" id="twn-focus" placeholder="bijv. Positiespel &amp; afwerken"></div>'
-    + '<div class="field"><span class="label">Weekdatum</span><input class="input" type="date" id="twn-datum" value="' + vandaag + '" oninput="twnToonWeeknr()"><div style="font-size:12px;color:var(--ink3);margin-top:4px" id="twn-weeknr"></div></div>'
+      '<div class="field"><label class="label" for="twn-focus">Focus</label><input class="input" id="twn-focus" placeholder="bijv. Positiespel &amp; afwerken"></div>'
+    + '<div class="field"><label class="label" for="twn-datum">Weekdatum</label><input class="input" type="date" id="twn-datum" value="' + vandaag + '" oninput="twnToonWeeknr()"><div style="font-size:12px;color:var(--ink3);margin-top:4px" id="twn-weeknr"></div></div>'
     + '<div class="divide"></div>'
-    + '<div class="field"><span class="label">Training 1</span><input class="input" id="twn-naam1" value="Training 1"></div>'
+    + '<div class="field"><label class="label" for="twn-naam1">Training 1</label><input class="input" id="twn-naam1" value="Training 1"></div>'
     + '<div id="twn-blokken1"></div>'
     + '<button class="btn btn--ghost btn--sm" style="margin-bottom:16px" onclick="openBlokKiezer(twnCtx1)">+ Oefening toevoegen</button>'
-    + '<div class="field"><span class="label">Training 2</span><input class="input" id="twn-naam2" value="Training 2"></div>'
+    + '<div class="field"><label class="label" for="twn-naam2">Training 2</label><input class="input" id="twn-naam2" value="Training 2"></div>'
     + '<div id="twn-blokken2"></div>'
     + '<button class="btn btn--ghost btn--sm" style="margin-bottom:16px" onclick="openBlokKiezer(twnCtx2)">+ Oefening toevoegen</button>'
     + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeAanmaakSheet();toonScherm(\'agenda\')">Annuleren</button><button class="btn btn--primary" onclick="slaTrainingWeekNieuwOp()">Opslaan</button></div>';
@@ -2924,15 +2924,15 @@ function openWedstrijdBewerken(id) {
   const sp = spelers();
   const ratings = (w && w.ratings) || {};
   document.getElementById('wb-content').innerHTML =
-      '<div class="field"><span class="label">Tegenstander</span><input class="input" id="wb-tegenstander" value="' + (w ? esc(w.tegenstander) : '') + '"></div>'
-    + '<div class="field" style="display:flex;gap:10px"><div style="flex:1"><span class="label">Datum</span><input class="input" type="date" id="wb-datum" value="' + (w ? w.isoDate : '') + '"></div><div style="flex:1"><span class="label">Tijd</span><input class="input" type="time" id="wb-tijd" value="' + (w ? w.starttijd||'' : '') + '"></div></div>'
+      '<div class="field"><label class="label" for="wb-tegenstander">Tegenstander</label><input class="input" id="wb-tegenstander" value="' + (w ? esc(w.tegenstander) : '') + '"></div>'
+    + '<div class="field" style="display:flex;gap:10px"><div style="flex:1"><label class="label" for="wb-datum">Datum</label><input class="input" type="date" id="wb-datum" value="' + (w ? w.isoDate : '') + '"></div><div style="flex:1"><label class="label" for="wb-tijd">Tijd</label><input class="input" type="time" id="wb-tijd" value="' + (w ? w.starttijd||'' : '') + '"></div></div>'
     + '<div class="field"><span class="label">Thuis/uit</span><div class="seg" role="tablist"><button type="button" class="seg-opt" id="wb-thuis" aria-selected="' + (!w || w.thuis_uit==='thuis') + '" onclick="wbZetThuisUit(true)">Thuis</button><button type="button" class="seg-opt" id="wb-uit" aria-selected="' + (w && w.thuis_uit==='uit') + '" onclick="wbZetThuisUit(false)">Uit</button></div></div>'
-    + '<div class="field"><span class="label">Type</span><select class="input" id="wb-type" onchange="wbToggleFaseSectie()"><option value="competitie" ' + (!w||w.wed_type==='competitie'?'selected':'') + '>Competitie</option><option value="beker" ' + (w&&w.wed_type==='beker'?'selected':'') + '>Beker</option><option value="oefenwedstrijd" ' + (w&&w.wed_type==='oefenwedstrijd'?'selected':'') + '>Oefenwedstrijd</option></select></div>'
+    + '<div class="field"><label class="label" for="wb-type">Type</label><select class="input" id="wb-type" onchange="wbToggleFaseSectie()"><option value="competitie" ' + (!w||w.wed_type==='competitie'?'selected':'') + '>Competitie</option><option value="beker" ' + (w&&w.wed_type==='beker'?'selected':'') + '>Beker</option><option value="oefenwedstrijd" ' + (w&&w.wed_type==='oefenwedstrijd'?'selected':'') + '>Oefenwedstrijd</option></select></div>'
     + '<div class="field" id="wb-fase-sectie" style="display:' + ((!w || w.wed_type==='competitie') ? 'block' : 'none') + '"><span class="label">Fase</span><div style="display:flex;flex-wrap:wrap;gap:7px" id="wb-fase-chips">' + WED_FASES_V2.map(f => '<button type="button" class="chip" aria-pressed="' + (w && w.wed_fase===f) + '" onclick="wbKiesFase(this,\'' + f + '\')">' + f + '</button>').join('') + '</div></div>'
     + '<div class="divide"></div>'
-    + '<div class="field" style="display:flex;gap:10px;align-items:flex-end"><div><span class="label">Eindstand</span><div style="display:flex;align-items:center;gap:8px"><input class="input score-in" id="wb-score-eigen" type="number" min="0" value="' + (w?w.score_eigen:0) + '"><span style="font-size:20px;font-weight:700;color:var(--ink3)">–</span><input class="input score-in" id="wb-score-tegen" type="number" min="0" value="' + (w?w.score_tegen:0) + '"></div></div>'
+    + '<div class="field" style="display:flex;gap:10px;align-items:flex-end"><div><span class="label">Eindstand</span><div style="display:flex;align-items:center;gap:8px"><input class="input score-in" id="wb-score-eigen" aria-label="Eigen score" type="number" min="0" value="' + (w?w.score_eigen:0) + '"><span style="font-size:20px;font-weight:700;color:var(--ink3)">–</span><input class="input score-in" id="wb-score-tegen" aria-label="Score tegenstander" type="number" min="0" value="' + (w?w.score_tegen:0) + '"></div></div>'
     + '<label style="display:flex;align-items:center;gap:8px;margin-left:12px"><button type="button" class="switch" id="wb-gespeeld-switch" role="switch" aria-checked="' + (w?w.gespeeld:false) + '" onclick="wbToggleGespeeld()"><span class="knob"></span></button><span style="font-size:13px;font-weight:600">Gespeeld</span></label></div>'
-    + '<div class="field"><span class="label">Man of the match</span><select class="input" id="wb-motm"><option value="">— geen —</option>' + sp.map(p => '<option value="' + p.id + '" ' + (w && w.motm===p.id ? 'selected' : '') + '>' + esc(p.naam) + '</option>').join('') + '</select></div>'
+    + '<div class="field"><label class="label" for="wb-motm">Man of the match</label><select class="input" id="wb-motm"><option value="">— geen —</option>' + sp.map(p => '<option value="' + p.id + '" ' + (w && w.motm===p.id ? 'selected' : '') + '>' + esc(p.naam) + '</option>').join('') + '</select></div>'
     + '<div class="divide"></div>'
     + '<div class="sec">Afwezig</div>'
     // Zelfde chips+"+ Afwezig"-sheet als het detailscherm, ook voor een nog
@@ -2946,8 +2946,8 @@ function openWedstrijdBewerken(id) {
     // zodat score/opmerkingen/cijfers niet verloren gaan bij het wegnavigeren.
     + (w ? '<button class="btn btn--ghost btn--sm" style="margin-bottom:16px" onclick="slaWedstrijdOp(renderWedOpstelling)">Opstelling voor deze wedstrijd →</button>' : '')
     + '<div class="sec">Cijfers per speler (1–10)</div>'
-    + '<div class="rows" style="margin-bottom:16px">' + sp.map(p => '<div class="row" style="cursor:default"><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div></div><input class="input" data-pid="' + p.id + '" type="number" min="1" max="10" step="0.5" placeholder="—" value="' + (ratings[p.id] != null ? ratings[p.id] : '') + '" style="width:64px;min-height:36px;padding:6px;text-align:center;font-weight:700"></div>').join('') + '</div>'
-    + '<div class="field"><span class="label">Opmerkingen</span><textarea class="input" id="wb-opmerkingen" style="min-height:80px;resize:vertical">' + esc((w && w.opmerkingen) || '') + '</textarea></div>'
+    + '<div class="rows" style="margin-bottom:16px">' + sp.map(p => '<div class="row" style="cursor:default"><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div></div><input class="input" data-pid="' + p.id + '" aria-label="Cijfer voor ' + esc(p.naam) + '" type="number" min="1" max="10" step="0.5" placeholder="—" value="' + (ratings[p.id] != null ? ratings[p.id] : '') + '" style="width:64px;min-height:36px;padding:6px;text-align:center;font-weight:700"></div>').join('') + '</div>'
+    + '<div class="field"><label class="label" for="wb-opmerkingen">Opmerkingen</label><textarea class="input" id="wb-opmerkingen" style="min-height:80px;resize:vertical">' + esc((w && w.opmerkingen) || '') + '</textarea></div>'
     + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="' + (w ? "toonWedstrijd('"+w.id+"')" : "toonScherm('agenda')") + '">Annuleren</button><button class="btn btn--primary" onclick="slaWedstrijdOp()">Opslaan</button></div>'
     + (w ? '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderWedstrijd(this)">Wedstrijd verwijderen</button></div>' : '');
   toonScherm('wedstrijd-bewerk');
@@ -3596,7 +3596,7 @@ function renderLiveTrainer() {
   let voorStartVeld = '';
   let fases = '';
   if (liveState.status === 'gepland') {
-    voorStartVeld = '<div class="field" style="max-width:200px;margin:0 auto 12px"><span class="label">Speeltijd per helft (min)</span><input class="input" type="number" min="1" value="' + liveState.minsPerHelft + '" oninput="ltZetMinsPerHelft(this.value)" style="text-align:center"></div>';
+    voorStartVeld = '<div class="field" style="max-width:200px;margin:0 auto 12px"><label class="label" for="lt-mins-per-helft">Speeltijd per helft (min)</label><input class="input" id="lt-mins-per-helft" type="number" min="1" value="' + liveState.minsPerHelft + '" oninput="ltZetMinsPerHelft(this.value)" style="text-align:center"></div>';
     fases = '<button class="btn btn--primary btn--block" onclick="ltStartHelft(1)">Start 1e helft</button>';
   } else if (liveState.status === 'live_1e' || liveState.status === 'pauze_1e') {
     fases = '<div style="display:flex;gap:8px"><button class="btn btn--secondary" style="flex:1" onclick="ltTogglePauze()">' + (liveState.status === 'pauze_1e' ? 'Verder' : 'Pauze') + '</button><button class="btn btn--primary" style="flex:1" onclick="ltZetRust()">Rust</button></div>';
@@ -4014,8 +4014,8 @@ function renderInstellingen() {
     + '<div style="font-size:11.5px;color:var(--ink3);margin-bottom:14px">Bepaalt welke formaties beschikbaar zijn bij Opstelling.</div>'
 
     + '<div class="sec">Team</div>'
-    + '<div class="field"><span class="label">Teamnaam</span><input class="input" id="inst-naam" value="' + esc(cfg.naam||'') + '" placeholder="Teamnaam"></div>'
-    + '<div class="field"><span class="label">Seizoen</span><input class="input" id="inst-subtitel" value="' + esc(cfg.subtitel||'') + '" placeholder="Bijv. 2026/2027"></div>'
+    + '<div class="field"><label class="label" for="inst-naam">Teamnaam</label><input class="input" id="inst-naam" value="' + esc(cfg.naam||'') + '" placeholder="Teamnaam"></div>'
+    + '<div class="field"><label class="label" for="inst-subtitel">Seizoen</label><input class="input" id="inst-subtitel" value="' + esc(cfg.subtitel||'') + '" placeholder="Bijv. 2026/2027"></div>'
     + '<button class="btn btn--primary btn--block" onclick="instOpslaanTeam(this)">Opslaan</button>'
     + '<div class="divide"></div>'
 
@@ -4037,8 +4037,8 @@ function renderInstellingen() {
     + '<div class="divide"></div>'
 
     + '<div class="sec">Supabase koppeling</div>'
-    + '<div class="field"><span class="label">Project URL</span><input class="input" id="inst-sb-url" value="' + esc(sbUrl) + '" placeholder="https://xxxx.supabase.co"></div>'
-    + '<div class="field"><span class="label">Anon key</span><input class="input" id="inst-sb-key" value="' + esc(sbKey) + '" placeholder="eyJ..."></div>'
+    + '<div class="field"><label class="label" for="inst-sb-url">Project URL</label><input class="input" id="inst-sb-url" value="' + esc(sbUrl) + '" placeholder="https://xxxx.supabase.co"></div>'
+    + '<div class="field"><label class="label" for="inst-sb-key">Anon key</label><input class="input" id="inst-sb-key" value="' + esc(sbKey) + '" placeholder="eyJ..."></div>'
     + '<div style="font-size:11.5px;color:' + (sbUrl ? 'var(--win)' : 'var(--ink3)') + ';margin-bottom:10px">' + (sbUrl ? '✓ Gekoppeld aan ' + esc(sbUrl.replace('https://','').split('.')[0]) : 'Niet gekoppeld') + ' — test met Health check hieronder.</div>'
     + '<button class="btn btn--secondary btn--block" onclick="instOpslaanSupabase(this)">Opslaan</button>'
     + (sbUrl ? '<button class="btn btn--danger btn--block" style="margin-top:8px" onclick="instVerwijderSupabase(this)">Verbinding verwijderen</button>' : '');
@@ -4070,8 +4070,8 @@ async function renderTrainersV2() {
           + '</div>';
       }).join('')
     + (magUitnodigen
-        ? '<div class="field"><span class="label">Naam collega</span><input class="input" id="inst-tr-naam"></div>'
-          + '<div class="field"><span class="label">E-mailadres</span><input class="input" id="inst-tr-email" type="email"></div>'
+        ? '<div class="field"><label class="label" for="inst-tr-naam">Naam collega</label><input class="input" id="inst-tr-naam"></div>'
+          + '<div class="field"><label class="label" for="inst-tr-email">E-mailadres</label><input class="input" id="inst-tr-email" type="email"></div>'
           + '<button class="btn btn--secondary btn--block" onclick="instUitnodigenTrainer(this)">✉️ Uitnodigen</button>'
           + '<div id="inst-tr-fout" style="font-size:12.5px;color:var(--loss);margin-top:8px;min-height:16px"></div>'
         : '')
@@ -4772,16 +4772,16 @@ function renderInlogScreen() {
     ? '<div class="card">'
       + '<div class="sec">Supabase koppelen</div>'
       + '<div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Voordat je kunt inloggen, moet deze app weten met welke Supabase-database hij moet praten.</div>'
-      + '<div class="field"><span class="label">Project URL</span><input class="input" id="inlog-sb-url" placeholder="https://xxxx.supabase.co"></div>'
-      + '<div class="field"><span class="label">Anon key</span><input class="input" id="inlog-sb-key" placeholder="eyJ..."></div>'
+      + '<div class="field"><label class="label" for="inlog-sb-url">Project URL</label><input class="input" id="inlog-sb-url" placeholder="https://xxxx.supabase.co"></div>'
+      + '<div class="field"><label class="label" for="inlog-sb-key">Anon key</label><input class="input" id="inlog-sb-key" placeholder="eyJ..."></div>'
       + '<button class="btn btn--primary btn--block" onclick="inlogKoppelSupabase(this)">Doorgaan</button>'
       + '<div id="inlog-fout" style="color:var(--loss);font-size:12.5px;margin-top:10px;min-height:16px"></div>'
       + '</div>'
     : '<div class="card">'
       + '<div class="sec">Inloggen</div>'
       + '<div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Alleen voor trainers.</div>'
-      + '<div class="field"><span class="label">E-mailadres</span><input class="input" id="inlog-email" type="email" autocomplete="username"></div>'
-      + '<div class="field"><span class="label">Wachtwoord</span><input class="input" id="inlog-wachtwoord" type="password" autocomplete="current-password"></div>'
+      + '<div class="field"><label class="label" for="inlog-email">E-mailadres</label><input class="input" id="inlog-email" type="email" autocomplete="username"></div>'
+      + '<div class="field"><label class="label" for="inlog-wachtwoord">Wachtwoord</label><input class="input" id="inlog-wachtwoord" type="password" autocomplete="current-password"></div>'
       + '<button class="btn btn--primary btn--block" id="inlog-submit" onclick="inlogInloggen(this)">Inloggen</button>'
       + '<div id="inlog-fout" style="color:var(--loss);font-size:12.5px;margin-top:10px;min-height:16px"></div>'
       + '<button class="btn btn--ghost btn--block" style="margin-top:8px" onclick="inlogAndereSupabase()">Andere Supabase-koppeling gebruiken</button>'
@@ -4850,8 +4850,8 @@ function renderWachtwoordInstellenV2() {
       '<div class="card">'
     + '<div class="sec">Wachtwoord instellen</div>'
     + '<div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Kies een wachtwoord om je account te activeren.</div>'
-    + '<div class="field"><span class="label">Nieuw wachtwoord</span><input class="input" id="wwi-nieuw-v2" type="password" autocomplete="new-password"></div>'
-    + '<div class="field"><span class="label">Herhaal wachtwoord</span><input class="input" id="wwi-herhaal-v2" type="password" autocomplete="new-password" style="margin-bottom:14px"></div>'
+    + '<div class="field"><label class="label" for="wwi-nieuw-v2">Nieuw wachtwoord</label><input class="input" id="wwi-nieuw-v2" type="password" autocomplete="new-password"></div>'
+    + '<div class="field"><label class="label" for="wwi-herhaal-v2">Herhaal wachtwoord</label><input class="input" id="wwi-herhaal-v2" type="password" autocomplete="new-password" style="margin-bottom:14px"></div>'
     + '<button class="btn btn--primary btn--block" id="wwi-submit-v2" onclick="wwiOpslaanV2(this)">Wachtwoord instellen</button>'
     + '<div id="wwi-fout-v2" style="color:var(--loss);font-size:12.5px;margin-top:10px;min-height:16px"></div>'
     + '</div>';

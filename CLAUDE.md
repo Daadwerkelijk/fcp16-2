@@ -56,6 +56,26 @@ historische referentie staat de branch `backup-voor-v2-2026-09-06` nog
 op GitHub (kosteloos om te bewaren) met de laatste stand van vóór de
 omwisseling naar Interface V2; deze wordt niet actief onderhouden.
 
+## Beveiliging — deel-token spelerformulier (2026-09-18)
+
+`speler_beoordelingen` (naam, mobiel, geboortedatum, medische bijzonderheden)
+stond volledig publiek open (SELECT + INSERT zonder identiteitscheck) — de
+su/sk-parameters in de deel-link zijn puur de Supabase-URL/anon-key, geen
+speler-geheim, en het `token`-parameter was alleen `base64(speler_id:naam)`,
+dus geen echt bewijs van identiteit. Gefixed met een echt willekeurig
+`players.deel_token` per speler (uuid, uniek), afgedwongen via RLS
+(`heeft_geldig_deel_token()`, een `SECURITY DEFINER`-functie — nodig omdat
+een gewone subquery op `players` blijft steken op RLS van die tabel zelf,
+ook binnen de policy-check van een andere tabel). De link bevat nu
+`speler_id:deel_token:naam`; `spelerformulier.html` stuurt het deel-token
+mee als `x-deel-token`-header bij elke aanroep. Live tegen de echte database
+geverifieerd (met/zonder/fout token) vóór het in de app is verwerkt.
+
+**Nog openstaand, bewust apart gehouden:** `live_wedstrijden`/`live_updates`
+zijn ook publiek leesbaar en tonen echte spelersnamen in de live-opstelling
+— dit vraagt een productbeslissing (moet het publieke scorebord namen
+tonen?), geen pure code-fix, dus niet meegenomen in deze ronde.
+
 ## Deploy
 
 De app wordt gehost op **GitHub Pages** en gedeployed via **GitHub Actions**:

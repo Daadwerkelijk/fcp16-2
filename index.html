@@ -2318,10 +2318,16 @@ async function verwijderSpeler(btn) {
 }
 async function deelFormulierV2(spelerId) {
   const p = spelers().find(x => x.id === spelerId);
-  const token = safeEncode(spelerId + ':' + p.naam);
-  // Zelfde su/sk-toevoeging als deelFormulier() in selectie.html: de speler die
-  // deze link opent heeft de app nog nooit gebruikt en dus geen eigen Supabase-
-  // koppeling — die geven we hier mee, anders kan het formulier niet opslaan.
+  // deel_token (kolom op players, per speler uniek/willekeurig gegenereerd) zit in de
+  // link en wordt door spelerformulier.html als x-deel-token-header meegestuurd — RLS
+  // op speler_beoordelingen laat lezen/schrijven alleen toe als dat token bij deze
+  // speler hoort (zie heeft_geldig_deel_token() in Supabase). Zonder dit was de tabel
+  // volledig publiek leesbaar/schrijfbaar (naam, mobiel, geboortedatum, medische
+  // bijzonderheden) — gemeld en gefixed 2026-09-18.
+  const token = safeEncode(spelerId + ':' + p.deel_token + ':' + p.naam);
+  // Zelfde su/sk-toevoeging als voorheen: de speler die deze link opent heeft de app
+  // nog nooit gebruikt en dus geen eigen Supabase-koppeling — die geven we hier mee,
+  // anders kan het formulier niet opslaan.
   const sbUrl = localStorage.getItem('sb_url') || '';
   const sbKey = localStorage.getItem('sb_key') || '';
   let link = location.origin + location.pathname.replace('index.html', '') + 'spelerformulier.html?token=' + encodeURIComponent(token);

@@ -52,7 +52,7 @@ async function huidigeAuthToken() {
   return SB_KEY; // geen (geldige) sessie meer — val terug op anon; het inlogscherm vangt dit verderop af
 }
 
-async function sbFetch(path, method = 'GET', body = null) {
+async function sbFetch(path, method = 'GET', body = null, extraHeaders = null) {
   if (!SB_URL || !SB_KEY) return null;
   const opts = {
     method,
@@ -66,7 +66,8 @@ async function sbFetch(path, method = 'GET', body = null) {
       // feitelijk niets is gewijzigd: dat zag er dan uit als een geslaagde opslag terwijl
       // de data nooit is aangepast. Precies dit kostte op 2026-09-05 een trainer een echte
       // wedstrijduitslag + coach-notities, stil, zonder foutmelding, tijdens een RLS-test.
-      'Prefer': (method === 'POST' || method === 'PATCH') ? 'return=representation' : ''
+      'Prefer': (method === 'POST' || method === 'PATCH') ? 'return=representation' : '',
+      ...extraHeaders,
     }
   };
   if (body) opts.body = JSON.stringify(body);

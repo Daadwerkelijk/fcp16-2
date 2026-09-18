@@ -5,8 +5,8 @@
   "start_url": "/fcp16-2/",
   "scope": "/fcp16-2/",
   "display": "standalone",
-  "background_color": "#080c14",
-  "theme_color": "#080c14",
+  "background_color": "#F7F5F2",
+  "theme_color": "#F7F5F2",
   "orientation": "any",
   "icons": [
     { "src": "icon192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },

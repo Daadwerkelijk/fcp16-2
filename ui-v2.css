@@ -4,10 +4,10 @@
 
 :root{
   --bg:#F7F5F2; --surface:#FFFFFF; --surface2:#F1EEE9; --surface3:#E9E4DC;
-  --ink:#1C1917; --ink2:#57534E; --ink3:#8B857E;
+  --ink:#1C1917; --ink2:#57534E; --ink3:#6E685F;
   --line:#E6E1DA;
   --accent:#E8481F; --accent-ink:#FFFFFF; --accent-soft:#FDEDE8; --accent-press:#C93A14;
-  --win:#157F4C; --win-soft:#E6F2EB; --neutral:#8B857E; --neutral-soft:#EFECE7; --loss:#8E2F26; --loss-soft:#F8EAE8;
+  --win:#137347; --win-soft:#E6F2EB; --neutral:#8B857E; --neutral-soft:#EFECE7; --loss:#8E2F26; --loss-soft:#F8EAE8;
   --focus:#E8481F;
   --r-card:16px; --r-ctl:12px; --r-pill:999px;
   --sh1:0 1px 2px rgba(28,25,23,.05),0 1px 3px rgba(28,25,23,.04);
@@ -54,8 +54,8 @@
 .btn[disabled]{opacity:.4;pointer-events:none}
 .btn svg{width:18px;height:18px;flex-shrink:0}
 
-.btn--primary{background:var(--accent);color:var(--accent-ink)}
-.btn--primary:hover{background:var(--accent-press)}
+.btn--primary{background:var(--accent-press);color:var(--accent-ink)}
+.btn--primary:hover{background:var(--accent)}
 .btn--secondary{background:var(--surface);color:var(--ink);border-color:var(--line)}
 .btn--secondary:hover{background:var(--surface2)}
 .btn--ghost{background:transparent;color:var(--ink2)}
@@ -78,7 +78,7 @@
 .danger-zone .btn{flex:1}
 
 /* Zwevende primaire actie — altijd rechtsonder, altijd dezelfde plek */
-.fab{position:fixed;right:16px;bottom:calc(72px + 16px);width:56px;height:56px;border-radius:var(--r-pill);background:var(--accent);color:var(--accent-ink);border:none;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh2);cursor:pointer;z-index:20}
+.fab{position:fixed;right:16px;bottom:calc(72px + 16px);width:56px;height:56px;border-radius:var(--r-pill);background:var(--accent-press);color:var(--accent-ink);border:none;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh2);cursor:pointer;z-index:20}
 .fab svg{width:24px;height:24px}
 .fab:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
 

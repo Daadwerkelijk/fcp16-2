@@ -6,64 +6,55 @@ gedeelde/realtime data tussen de trainers.
 
 ## Structuur
 
-**Sinds 2026-09-06 is Interface V2 de standaard-app op `index.html`** (was
-`prototype-v2.html`). De vorige/klassieke interface is hernoemd naar
-`index-classic.html` en blijft volledig intact als rollback-scenario — zie
-"Rollback" hieronder. Beide delen dezelfde Supabase-database, `app.js` en
-localStorage-sleutels; het is puur een andere schil.
+**Sinds 2026-09-18 is Interface V2 de enige interface.** De klassieke
+interface (voorheen `index-classic.html` + bijbehorende pagina's) is
+volledig verwijderd uit de repo — er is bewust geen rollback-pad meer
+naar een oude schil, alleen de app zoals die nu is.
 
-- `index.html` — **Interface V2** (start/agenda/team/inzicht/instellingen,
-  in één bestand, eigen `ui-v2.css`). Dit is nu de primaire app.
-- `index-classic.html` — de klassieke interface (start/kernprincipes),
-  bewaard als rollback-optie, niet meer de standaard-ingang.
-- `opstelling.html` — veldopstelling per formatie (klassiek)
-- `selectie.html` — spelersbeheer + skills inladen (Excel) (klassiek)
-- `trainen.html` — trainingsschema, oefeningen per sessie, aanwezigheid (klassiek)
-- `wedstrijden.html` — resultaten, cijfers, MOTM, ranking (klassiek)
-- `team.html` — teamoverzicht speler-skills (klassiek)
-- `oefeningen.html` — oefeningenbibliotheek (klassiek)
+- `index.html` — **Interface V2**: de volledige app
+  (start/agenda/team/inzicht/instellingen), in één bestand, met eigen
+  `ui-v2.css`. Bevat ook het formatie-editor-scherm als los intern
+  scherm (`openFormatieEditor()`), niet als apart bestand.
 - `live.html` — publieke live-scorebord/wedstrijdweergave; laadt bewust
   geen `app.js`, heeft een eigen (minimale) Supabase-config en een eigen
   kopie van `fieldRoleClass`. **Bevestigd bewust zo** (2026-08-28): dit is
   de publieke pagina en moet onafhankelijk van `app.js` blijven werken —
   het dubbele onderhoud (key/`fieldRoleClass` op 2 plekken) is een
   geaccepteerd nadeel, niet iets om te "fixen".
-- `instellingen.html` — app-instellingen (o.a. thema) (klassiek; V2 heeft
-  zijn eigen instellingen-scherm binnen `index.html`)
 - `spelerformulier.html` — invulformulier voor spelersbeoordeling (15
-  vaardigheden × 4 niveaus), gedeeld door beide interfaces via een
-  gedeelde link (token + su/sk-parameters). **Bevestigd** (2026-08-28): dit
-  wordt in de praktijk echt een paar keer per seizoen per speler
-  bijgehouden — geen administratie die blijft liggen, dus prima om hier
-  later op voort te bouwen (bijv. trendgrafieken).
-- `handleiding.html` — gebruikershandleiding (klassiek)
+  vaardigheden × 4 niveaus), gedeeld via een link (token + su/sk-
+  parameters). **Bevestigd** (2026-08-28): dit wordt in de praktijk echt
+  een paar keer per seizoen per speler bijgehouden — geen administratie
+  die blijft liggen, dus prima om hier later op voort te bouwen (bijv.
+  trendgrafieken).
 - `check.html` — health check / diagnosepagina (Supabase-verbinding e.d.),
   gestyled met V2-ontwerptaal (`ui-v2.css`)
 - `landscape-test.html` — devtool om landscape-layout te testen, geen
-  onderdeel van de trainersflow
-- `app.js` — gedeelde logica (auth, Supabase-datalaag, trainer_profielen,
-  klassieke desktop-sidebar/nav)
-- `style.css` — opmaak klassieke interface
-- `ui-v2.css` — opmaak Interface V2 (`index.html`, `check.html`)
-- `manifest.json`, `sw.js` — PWA-installatie en offline gebruik (`sw.js`
-  cachet zowel `index.html` als `index-classic.html`; versienummer ophogen
-  bij elke wijziging, zie hieronder)
+  onderdeel van de trainersflow. Bewaren: de geteste breakpoint-waarden
+  staan nergens anders. **Toekomstige eis:** functionele wijzigingen
+  moeten goed werken op mobiel (portrait én landscape), tablet (portrait
+  én landscape) en desktop (basis landscape, maar responsive).
+- `app.js` — gedeelde logica (auth, Supabase-datalaag, trainer_profielen)
+- `ui-v2.css` — opmaak voor `index.html` en `check.html`
+- `manifest.json`, `sw.js` — PWA-installatie en offline gebruik;
+  versienummer (CACHE-constante) ophogen bij elke wijziging aan `sw.js`,
+  zie hieronder
 
-## Rollback (Interface V2, 2026-09-06)
+## Verwijderde klassieke interface (2026-09-18)
 
-Mocht Interface V2 problemen geven: `index-classic.html` is de volledige,
-werkende vorige interface, nog steeds bereikbaar en functioneel — alleen
-niet meer de standaard-ingang op `/`. Voor een echte terugval naar de oude
-situatie staat er een branch `backup-voor-v2-2026-09-06` op GitHub die het
-laatste commit vóór deze omwisseling vastlegt; `main` daarnaartoe
-terugzetten (force-push, altijd eerst expliciet afstemmen) herstelt de
-oude `index.html`. De branch `v2-klaar-voor-main` bevat het volledige
-V2-werk zoals het gemerged is, voor referentie.
+De klassieke interface is definitief verwijderd: `index-classic.html`,
+`opstelling.html`, `selectie.html`, `trainen.html`, `wedstrijden.html`,
+`team.html`, `oefeningen.html`, `instellingen.html`, `schema.html`,
+`formatie-editor.html`, `handleiding.html` en `style.css`. Ook de
+bijbehorende klassiek-only functies in `app.js` (`ROL_STIJL`,
+`getRolBadges`, `fieldRoleClass`, `sortedPlayers`,
+`vindHuidigeToewijzing`, `splitSpelersVoorPositie`) zijn verwijderd, na
+controle dat er geen enkele aanroep meer naar over was.
 
-**Let op:** `schema.html` staat nog in de repo maar lijkt dode code —
-geen enkele pagina linkt er meer naartoe (alle nav-balken linken naar
-`trainen.html`, dat een nieuwere nav gebruikt). Voordat dit bestand
-verwijderd wordt: even bevestigen dat het echt niet meer gebruikt wordt.
+Er is geen actief rollback-plan meer naar deze oude schil. Voor
+historische referentie staat de branch `backup-voor-v2-2026-09-06` nog
+op GitHub (kosteloos om te bewaren) met de laatste stand van vóór de
+omwisseling naar Interface V2; deze wordt niet actief onderhouden.
 
 ## Deploy
 

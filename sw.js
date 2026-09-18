@@ -1,22 +1,11 @@
-const CACHE = 'fcp162-v196';
+const CACHE = 'fcp162-v197';
 const ASSETS = [
   '/fcp16-2/',
   '/fcp16-2/index.html',
-  '/fcp16-2/index-classic.html',
-  '/fcp16-2/opstelling.html',
-  '/fcp16-2/formatie-editor.html',
-  '/fcp16-2/selectie.html',
   '/fcp16-2/spelerformulier.html',
-  '/fcp16-2/trainen.html',
-  '/fcp16-2/wedstrijden.html',
-  '/fcp16-2/oefeningen.html',
-  '/fcp16-2/team.html',
-  '/fcp16-2/instellingen.html',
-  '/fcp16-2/handleiding.html',
   '/fcp16-2/check.html',
   '/fcp16-2/live.html',
   '/fcp16-2/app.js',
-  '/fcp16-2/style.css',
   '/fcp16-2/ui-v2.css',
   '/fcp16-2/manifest.json',
   '/fcp16-2/icon192.png',

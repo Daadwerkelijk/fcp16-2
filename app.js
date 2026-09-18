@@ -25,7 +25,7 @@ let supabaseReady = false;
 // geen toegang meer toe. AUTH_ACCESS_TOKEN wint dus van SB_KEY in de
 // Authorization-header zodra er een (nog geldige) sessie is; de apikey-
 // header blijft altijd de anon-sleutel, dat vereist Supabase's REST-API
-// sowieso naast de Authorization-header. Zie initAuthGate() verderop.
+// sowieso naast de Authorization-header. Zie initAuthGateV2() in index.html.
 let AUTH_ACCESS_TOKEN = localStorage.getItem('sb_access_token') || '';
 let AUTH_REFRESH_TOKEN = localStorage.getItem('sb_refresh_token') || '';
 let AUTH_EXPIRES_AT = parseInt(localStorage.getItem('sb_expires_at'), 10) || 0;
@@ -1374,56 +1374,6 @@ function isDarkThema() {
   const t = loadThema();
   return t === 'donker' || t === 'fcp';
 }
-const ROL_STIJL = {
-  licht: {
-    'K': 'background:#E6F1FB;color:#0C447C;border:1px solid #B5D4F4',
-    'V': 'background:#EAF3DE;color:#27500A;border:1px solid #C0DD97',
-    'M': 'background:#EEEDFE;color:#3C3489;border:1px solid #CECBF6',
-    'A': 'background:#FAECE7;color:#712B13;border:1px solid #F5C4B3',
-  },
-  donker: {
-    'K': 'background:#12283f;color:#7EC8F5;border:1px solid #1F3F5C',
-    'V': 'background:#16290d;color:#9EDC7A;border:1px solid #294A1C',
-    'M': 'background:#221c40;color:#B8A8F5;border:1px solid #392F66',
-    'A': 'background:#3a1c10;color:#F5A17E;border:1px solid #5C3220',
-  },
-};
-function getRolBadges(posities) {
-  if (!posities || !posities.length) return '';
-  // Moet elke optie uit ALL_POS_OPTS (app.js) dekken. 'Keeper' was hier eerder 'GK',
-  // waardoor elke speler met de (echte, selecteerbare) tag 'Keeper' nooit een badge kreeg.
-  const ROLE_MAP = {
-    'Keeper':'keeper',
-    'LB':'back','RB':'back','CB-L':'cb','CB-R':'cb',
-    'VM-L':'dm','VM-R':'dm','DM-L':'dm','DM-R':'dm',
-    'AM-L':'am','AM-R':'am','LAM':'am','CAM':'am','RAM':'am','LM':'am','RM':'am','CM-L':'am','CM-R':'am',
-    'ST-L':'st','ST-R':'st','CF':'st'
-  };
-  const rollen = new Set();
-  posities.forEach(p => {
-    const r = ROLE_MAP[p];
-    if (r === 'keeper') rollen.add('K');
-    else if (r === 'back' || r === 'cb') rollen.add('V');
-    else if (r === 'dm' || r === 'am') rollen.add('M');
-    else if (r === 'st') rollen.add('A');
-  });
-  const stijl = ROL_STIJL[isDarkThema() ? 'donker' : 'licht'];
-  return ['K','V','M','A'].filter(r => rollen.has(r))
-    .map(r => `<span style="${stijl[r]};font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px">${r}</span>`)
-    .join('');
-}
-// Rolkleur (K/V/M/A, zie getRolBadges hierboven) op basis van een veldpositie-label
-// (bv. 'CB-L', 'VM-R', 'ST-L'). Gebruikt voor het pil-label onder elke speler op het veld
-// in opstelling.html en wedstrijden.html (en, als losse kopie, in live.html dat app.js niet laadt).
-function fieldRoleClass(label) {
-  if (label === 'GK') return 'rol-keeper';
-  // CV/VV toegevoegd (nieuwe Nederlandse verdediger-labels, 2026-09-14) —
-  // de oude codes blijven ook herkend voor het geval een custom_formaties-
-  // rij nog een niet-hertaalde label bevat.
-  if (/^(LB|RB|CB|LWB|RWB|DEF|ACHT|CV|VV)/.test(label)) return 'rol-verdediger';
-  if (/^(ST|CF|LW|RW|AANV|VOOR)/.test(label)) return 'rol-aanval';
-  return 'rol-midden';
-}
 const SKILL_COLORS = {
   licht: {
     'Ontwikkel punt': { bg:'#FFEBEE', fg:'#C62828', label:'Ontwikkelpunt' },
@@ -1465,37 +1415,6 @@ function showToast(msg, duurMs = 2200) {
   t._hideTimer = setTimeout(() => t.classList.remove('show'), duurMs);
 }
 
-function sortedPlayers(players) {
-  return [...players].sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
-}
-
-// Deelt spelers in voor de positie-kies-modal (opstelling.html & wedstrijden.html):
-// 1. passend  — spelers wiens positievoorkeur bij deze plek past
-// 2. onbezet  — overige spelers die nog nergens in de huidige opstelling staan
-// 3. bezet    — overige spelers die elders al opgesteld staan
-// Zoekt de beste "elders al geplaatst"-regel voor een speler in lineup-data. Een speler kan
-// meerdere regels hebben (bv. restjes van eerder gebruikte, andere formaties die nooit zijn
-// opgeruimd) — geef voorrang aan een regel die bij de HUIDIGE formatie hoort, zodat zo'n
-// verouderd restje niet de juiste, actuele toewijzing verdringt.
-function vindHuidigeToewijzing(playerId, lineup, geldigePosIds, uitgeslotenPosId) {
-  const alleTreffers = Object.entries(lineup || {}).filter(([k, v]) => v === playerId && k !== uitgeslotenPosId);
-  return (geldigePosIds ? alleTreffers.find(([k]) => geldigePosIds.includes(k)) : null) || alleTreffers[0];
-}
-
-function splitSpelersVoorPositie(players, pos, lineup, geldigePosIds) {
-  const posLabel = pos.label.replace('-', '').toLowerCase();
-  const matched = [], onbezet = [], bezet = [];
-  sortedPlayers(players).forEach(p => {
-    const posities = (p.posities || []).map(x => x.toLowerCase().replace('-', ''));
-    const isMatch = posities.includes(posLabel) || posities.includes(pos.label.toLowerCase());
-    const elders = vindHuidigeToewijzing(p.id, lineup, geldigePosIds, pos.id);
-    if (isMatch) matched.push(p);
-    else if (elders) bezet.push(p);
-    else onbezet.push(p);
-  });
-  return { matched, onbezet, bezet };
-}
-
 function formatDatumShort(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -1521,82 +1440,7 @@ function getISOWeek(dateStr) {
   return 'Week ' + weekNr + ' (' + year + ')';
 }
 
-// ─── NAV: markeer actieve pagina ───
-// ─── SCROLL TOP ───
-function initScrollTop() {
-  window.addEventListener('scroll', () => {
-    const el = document.getElementById('scrollTop');
-    if (el) el.classList.toggle('visible', window.scrollY > 300);
-  });
-}
-
-// ─── MANIFEST ───
-function initManifest() { /* manifest.json is statisch, geen actie nodig */ }
-
 const BUILTIN_OEF = []; // Ingebouwde oefeningen verwijderd — gebruik eigen oefeningen via + Nieuw
-
-// ─── DESKTOP SIDEBAR PANEL ───
-function initDesktopPanel() {
-  const existing = document.getElementById('desktop-panel');
-  if (existing) existing.remove();
-  // Dit paneel is gestyled voor de klassieke pagina's (donkere sidebar-achtergrond
-  // uit style.css) — index.html/Interface V2/live.html laden app.js ook, maar hebben geen
-  // sidebar-layout, waardoor dit paneel daar als een onleesbaar wit spookpaneel
-  // onderaan de pagina zou verschijnen. body.v2 is de marker van die andere shell.
-  if (document.body.classList.contains('v2')) return;
-  if (window.innerWidth < 1100) return;
-
-  const panel = document.createElement('div');
-  panel.id = 'desktop-panel';
-  panel.style.cssText = [
-    'width:220px',
-    'flex-shrink:0',
-    'padding:48px 0 0',
-    'font-family:\'DM Sans\',sans-serif',
-  ].join(';');
-
-  // Sinds de V2-omwisseling (2026-09-06, zie CLAUDE.md) is index.html V2 en heet
-  // de klassieke start-pagina index-classic.html — dit paneel bestaat alleen op
-  // klassieke pagina's (v2-guard hierboven), dus "Start" wijst hier naar die naam.
-  const page = window.location.pathname.split('/').pop();
-  const links = [
-    ['index-classic.html','Start'],
-    ['opstelling.html','Opstelling'],
-    ['selectie.html','Selectie'],
-    ['wedstrijden.html','Wedstrijden'],
-    ['trainen.html','Trainingen'],
-    ['oefeningen.html','Oefeningen'],
-    ['team.html','Dashboard'],
-    ['instellingen.html','Instellingen'],
-  ];
-
-  // Teamnaam/subtitel uit dezelfde instelling als de topbar (applyTeamConfig)
-  // lezen i.p.v. hardcoded — zodat een naamswijziging via Instellingen hier ook
-  // meteen meekomt, i.p.v. hier los van te raken.
-  const cfg = loadTeamInstellingen();
-  const cfgDelen = cfg.naam.split(' ');
-  const naamHtml = cfgDelen.length > 1
-    ? cfgDelen.slice(0, -1).join(' ') + ' <span style="opacity:.4">' + cfgDelen[cfgDelen.length - 1] + '</span>'
-    : cfg.naam;
-
-  panel.innerHTML = `
-    <div style="font-size:26px;font-weight:800;color:#fff;margin-bottom:2px">${naamHtml}</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:28px">${cfg.subtitel || ''}</div>
-    <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Navigatie</div>
-    ${links.map(([href, label]) => {
-      const active = page === href;
-      return `<a href="${href}" style="display:block;padding:7px 12px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:${active?'600':'400'};color:${active?'#fff':'rgba(255,255,255,.45)'};background:${active?'rgba(255,255,255,.1)':'transparent'};margin-bottom:2px;transition:background .15s"
-        onmouseover="this.style.background=this.style.background||'rgba(255,255,255,.05)'"
-        onmouseout="this.style.background='${active?'rgba(255,255,255,.1)':'transparent'}'"
-      >${label}</a>`;
-    }).join('')}
-    <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.25);line-height:1.7">
-      Draai je telefoon<br>voor landscape modus.
-    </div>
-  `;
-
-  document.body.appendChild(panel);
-}
 
 // ─── LANDSCAPE RESPONSIVE ───
 function isLandscape() {
@@ -1731,129 +1575,10 @@ function verwerkAuthHashIndienAanwezig() {
   history.replaceState(null, '', location.pathname + location.search);
   return true;
 }
-// ─── Auth-gate — blokkeert de pagina met een inlogscherm totdat er een
-// geldige trainerssessie is. Draait vanuit dezelfde DOMContentLoaded-
-// listener als initDesktopPanel() (geen wijziging per pagina nodig). Niet
-// actief op body.v2 (nu index.html/Interface V2 — heeft een eigen auth-gate,
-// initAuthGateV2(), die dezelfde sessiefuncties hergebruikt) en sowieso niet
-// op live.html/spelerformulier.html (laden app.js niet resp. blijven bewust
-// zonder login, zie het fix-plan van 2026-09-04). ───
-async function initAuthGate() {
-  if (document.body.classList.contains('v2')) return;
-  if (!SB_URL || !SB_KEY) return; // geen koppeling ingesteld — config-banner vangt dit al af
-  if (verwerkAuthHashIndienAanwezig()) { renderWachtwoordInstellen(); return; }
-  const nu = Math.floor(Date.now() / 1000);
-  if (AUTH_ACCESS_TOKEN && AUTH_EXPIRES_AT - nu > 60) { renderAuthGate(false); return; }
-  if (AUTH_REFRESH_TOKEN && await refreshAuthSession()) { renderAuthGate(false); return; }
-  renderAuthGate(true);
-}
-// Toont een wachtwoord-instelscherm i.p.v. het normale inlogscherm — de sessie
-// van het invite/recovery-token staat al klaar (verwerkAuthHashIndienAanwezig),
-// er hoeft alleen nog een wachtwoord gezet te worden. Na succes: als dit een
-// invite was, de eigen trainer_profielen-rij op 'actief' zetten (mag van RLS
-// alleen als zelf-activering vanuit 'uitgenodigd', zie trainer_profielen_zelf_
-// activeren) zodat de nieuwe trainer meteen ook zelf kan uitnodigen/intrekken.
-function renderWachtwoordInstellen() {
-  const bestaand = document.getElementById('auth-gate');
-  if (bestaand) bestaand.remove();
-  const overlay = document.createElement('div');
-  overlay.id = 'auth-gate';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;font-family:var(--font-ui)';
-  overlay.innerHTML = `
-    <div style="width:100%;max-width:320px">
-      <div style="font-size:22px;font-weight:800;color:var(--text)">Wachtwoord instellen</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Kies een wachtwoord om je account te activeren.</div>
-      <div class="bmodal-label" style="margin-top:0">Nieuw wachtwoord</div>
-      <input class="bmodal-input" id="wwi-nieuw" type="password" autocomplete="new-password">
-      <div class="bmodal-label">Herhaal wachtwoord</div>
-      <input class="bmodal-input" id="wwi-herhaal" type="password" autocomplete="new-password" style="margin-bottom:14px">
-      <button id="wwi-submit" class="btn btn-primary">Wachtwoord instellen</button>
-      <div id="wwi-fout" style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px"></div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  const nieuwEl = document.getElementById('wwi-nieuw');
-  const herhaalEl = document.getElementById('wwi-herhaal');
-  const foutEl = document.getElementById('wwi-fout');
-  const submitEl = document.getElementById('wwi-submit');
-  const doOpslaan = async () => {
-    const ww = nieuwEl.value;
-    if (ww.length < 6) { foutEl.textContent = 'Minstens 6 tekens.'; return; }
-    if (ww !== herhaalEl.value) { foutEl.textContent = 'Wachtwoorden komen niet overeen.'; return; }
-    submitEl.disabled = true; submitEl.textContent = 'Bezig...';
-    try {
-      const r = await fetch(SB_URL + '/auth/v1/user', {
-        method: 'PUT',
-        headers: { apikey: SB_KEY, Authorization: 'Bearer ' + AUTH_ACCESS_TOKEN, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: ww }),
-      });
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        foutEl.textContent = j.msg || j.error_description || 'Opslaan mislukt';
-        submitEl.disabled = false; submitEl.textContent = 'Wachtwoord instellen';
-        return;
-      }
-      const mij = await haalHuidigeGebruiker();
-      if (mij) await sbFetch('trainer_profielen?user_id=eq.' + mij.id, 'PATCH', { status: 'actief' });
-    } catch(e) {
-      foutEl.textContent = e.message;
-      submitEl.disabled = false; submitEl.textContent = 'Wachtwoord instellen';
-      return;
-    }
-    location.reload();
-  };
-  submitEl.onclick = doOpslaan;
-  herhaalEl.addEventListener('keydown', e => { if (e.key === 'Enter') doOpslaan(); });
-  nieuwEl.focus();
-}
-function renderAuthGate(tonen) {
-  const bestaand = document.getElementById('auth-gate');
-  if (bestaand) bestaand.remove();
-  if (!tonen) return;
-  // Gebruikt de bestaande stijl-classes uit style.css (.bmodal-label/.bmodal-input/
-  // .btn.btn-primary) i.p.v. eigen kleuren te verzinnen — volgt zo automatisch het
-  // thema dat de trainer al gekozen had (licht/donker/fcp/licht_groen/licht_blauw),
-  // want applyThema() heeft de --custom-properties allang gezet vóór dit overlay
-  // verschijnt.
-  const overlay = document.createElement('div');
-  overlay.id = 'auth-gate';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;font-family:var(--font-ui)';
-  overlay.innerHTML = `
-    <div style="width:100%;max-width:320px">
-      <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px">Inloggen</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Alleen voor trainers — vul je inloggegevens in.</div>
-      <div class="bmodal-label" style="margin-top:0">E-mailadres</div>
-      <input class="bmodal-input" id="auth-email" type="email" autocomplete="username">
-      <div class="bmodal-label">Wachtwoord</div>
-      <input class="bmodal-input" id="auth-wachtwoord" type="password" autocomplete="current-password" style="margin-bottom:14px">
-      <button id="auth-submit" class="btn btn-primary">Inloggen</button>
-      <div id="auth-fout" style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px"></div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  const emailEl = document.getElementById('auth-email');
-  const wwEl = document.getElementById('auth-wachtwoord');
-  const foutEl = document.getElementById('auth-fout');
-  const submitEl = document.getElementById('auth-submit');
-  const doLogin = async () => {
-    submitEl.disabled = true; submitEl.textContent = 'Bezig...';
-    const res = await signIn(emailEl.value.trim(), wwEl.value);
-    if (res && res.ok) { location.reload(); return; }
-    foutEl.textContent = (res && res.message) || 'Inloggen mislukt';
-    submitEl.disabled = false; submitEl.textContent = 'Inloggen';
-  };
-  submitEl.onclick = doLogin;
-  wwEl.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-  emailEl.focus();
-}
-
 window.addEventListener('DOMContentLoaded', () => {
-  initDesktopPanel();
   applyLandscape();
-  initAuthGate();
 });
 window.addEventListener('resize', () => {
-  initDesktopPanel();
   applyLandscape();
 });
 window.addEventListener('orientationchange', () => { setTimeout(applyLandscape, 150); });

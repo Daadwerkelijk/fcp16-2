@@ -1858,79 +1858,61 @@ function verplaatsCategorie(i, dir) {
   }
 }
 
-// ─── Afwezigheidsredenen-sheet ───
-function openAfwRedenSheet() { renderAfwRedenSheet(); document.getElementById('sheet-afw-redenen').classList.remove('verborgen'); }
-function closeAfwRedenSheet() { document.getElementById('sheet-afw-redenen').classList.add('verborgen'); if (document.getElementById('screen-instellingen').classList.contains('actief')) renderInstellingen(); }
-function renderAfwRedenSheet() {
-  const redenen = absRedenen();
-  document.getElementById('afw-reden-lijst-v2').innerHTML = redenen.map((r, i) =>
+// ─── Redenenlijsten (afwezigheid + wissel) — twee byte-voor-byte identieke
+// functiesets (alleen localStorage-sleutel/DOM-id's verschilden) nu gedeeld
+// via 4 generieke helpers. Categorieën (renderCatSheet hierboven) blijft
+// een eigen implementatie — heeft ook inline hernoemen, past niet in dit
+// simpele lijst-patroon. Bestaande functienamen blijven ongewijzigd bestaan
+// (aangeroepen vanuit de statische sheet-HTML via onclick), alleen de body
+// is nu gedeeld — geen andere plek in de code hoeft aangepast te worden.
+function redenenLijstRender(redenen, lijstElId, verplaatsFnNaam, verwijderFnNaam) {
+  document.getElementById(lijstElId).innerHTML = redenen.map((r, i) =>
     '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl)"><div class="row-body"><div class="row-title" style="font-size:14px">' + esc(r) + '</div></div>'
-    + verplaatsKnoppen(i > 0, i < redenen.length - 1, 'verplaatsAfwReden(' + i + ',-1)', 'verplaatsAfwReden(' + i + ',1)')
-    + '<button class="btn btn--ghost btn--icon btn--sm" onclick="verwijderAfwReden(' + i + ')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button></div>'
+    + verplaatsKnoppen(i > 0, i < redenen.length - 1, verplaatsFnNaam + '(' + i + ',-1)', verplaatsFnNaam + '(' + i + ',1)')
+    + '<button class="btn btn--ghost btn--icon btn--sm" onclick="' + verwijderFnNaam + '(' + i + ')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button></div>'
   ).join('');
 }
-function voegAfwRedenToe() {
-  const inp = document.getElementById('afw-reden-nieuw-input');
+function redenenLijstToevoegen(ophalenFn, key, inputElId, renderFn) {
+  const inp = document.getElementById(inputElId);
   const val = inp.value.trim();
   if (!val) return;
-  const redenen = absRedenen();
+  const redenen = ophalenFn();
   if (redenen.includes(val)) { inp.value = ''; return; }
   redenen.push(val);
-  localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen));
+  localStorage.setItem(key, JSON.stringify(redenen));
   inp.value = '';
-  renderAfwRedenSheet();
+  renderFn();
 }
-function verwijderAfwReden(i) {
-  const redenen = absRedenen();
+function redenenLijstVerwijderen(ophalenFn, key, i, renderFn) {
+  const redenen = ophalenFn();
   redenen.splice(i, 1);
-  localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen));
-  renderAfwRedenSheet();
+  localStorage.setItem(key, JSON.stringify(redenen));
+  renderFn();
 }
-function verplaatsAfwReden(i, dir) {
-  const redenen = absRedenen();
+function redenenLijstVerplaatsen(ophalenFn, key, i, dir, renderFn) {
+  const redenen = ophalenFn();
   const j = i + dir;
   if (j < 0 || j >= redenen.length) return;
   [redenen[i], redenen[j]] = [redenen[j], redenen[i]];
-  localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen));
-  renderAfwRedenSheet();
+  localStorage.setItem(key, JSON.stringify(redenen));
+  renderFn();
 }
+
+// ─── Afwezigheidsredenen-sheet ───
+function openAfwRedenSheet() { renderAfwRedenSheet(); document.getElementById('sheet-afw-redenen').classList.remove('verborgen'); }
+function closeAfwRedenSheet() { document.getElementById('sheet-afw-redenen').classList.add('verborgen'); if (document.getElementById('screen-instellingen').classList.contains('actief')) renderInstellingen(); }
+function renderAfwRedenSheet() { redenenLijstRender(absRedenen(), 'afw-reden-lijst-v2', 'verplaatsAfwReden', 'verwijderAfwReden'); }
+function voegAfwRedenToe() { redenenLijstToevoegen(absRedenen, 'fcp_abs_redenen', 'afw-reden-nieuw-input', renderAfwRedenSheet); }
+function verwijderAfwReden(i) { redenenLijstVerwijderen(absRedenen, 'fcp_abs_redenen', i, renderAfwRedenSheet); }
+function verplaatsAfwReden(i, dir) { redenenLijstVerplaatsen(absRedenen, 'fcp_abs_redenen', i, dir, renderAfwRedenSheet); }
 
 // ─── Wisselredenen-sheet ───
 function openWisselRedenSheet() { renderWisselRedenSheet(); document.getElementById('sheet-wissel-redenen').classList.remove('verborgen'); }
 function closeWisselRedenSheet() { document.getElementById('sheet-wissel-redenen').classList.add('verborgen'); if (document.getElementById('screen-instellingen').classList.contains('actief')) renderInstellingen(); }
-function renderWisselRedenSheet() {
-  const redenen = wisselRedenen();
-  document.getElementById('wissel-reden-lijst-v2').innerHTML = redenen.map((r, i) =>
-    '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl)"><div class="row-body"><div class="row-title" style="font-size:14px">' + esc(r) + '</div></div>'
-    + verplaatsKnoppen(i > 0, i < redenen.length - 1, 'verplaatsWisselReden(' + i + ',-1)', 'verplaatsWisselReden(' + i + ',1)')
-    + '<button class="btn btn--ghost btn--icon btn--sm" onclick="verwijderWisselReden(' + i + ')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button></div>'
-  ).join('');
-}
-function voegWisselRedenToe() {
-  const inp = document.getElementById('wissel-reden-nieuw-input');
-  const val = inp.value.trim();
-  if (!val) return;
-  const redenen = wisselRedenen();
-  if (redenen.includes(val)) { inp.value = ''; return; }
-  redenen.push(val);
-  localStorage.setItem('fcp_wissel_redenen', JSON.stringify(redenen));
-  inp.value = '';
-  renderWisselRedenSheet();
-}
-function verwijderWisselReden(i) {
-  const redenen = wisselRedenen();
-  redenen.splice(i, 1);
-  localStorage.setItem('fcp_wissel_redenen', JSON.stringify(redenen));
-  renderWisselRedenSheet();
-}
-function verplaatsWisselReden(i, dir) {
-  const redenen = wisselRedenen();
-  const j = i + dir;
-  if (j < 0 || j >= redenen.length) return;
-  [redenen[i], redenen[j]] = [redenen[j], redenen[i]];
-  localStorage.setItem('fcp_wissel_redenen', JSON.stringify(redenen));
-  renderWisselRedenSheet();
-}
+function renderWisselRedenSheet() { redenenLijstRender(wisselRedenen(), 'wissel-reden-lijst-v2', 'verplaatsWisselReden', 'verwijderWisselReden'); }
+function voegWisselRedenToe() { redenenLijstToevoegen(wisselRedenen, 'fcp_wissel_redenen', 'wissel-reden-nieuw-input', renderWisselRedenSheet); }
+function verwijderWisselReden(i) { redenenLijstVerwijderen(wisselRedenen, 'fcp_wissel_redenen', i, renderWisselRedenSheet); }
+function verplaatsWisselReden(i, dir) { redenenLijstVerplaatsen(wisselRedenen, 'fcp_wissel_redenen', i, dir, renderWisselRedenSheet); }
 
 // ─── Formaties-sheet — zelfde ingebouwd+eigen-lijst als de "Formaties
 // library" in de echte instellingen.html, hier bereikbaar vanuit Beheer
@@ -4318,10 +4300,8 @@ async function renderInzichtDesktop() {
 
       + '<div class="inzd-row" style="margin-top:14px">'
       + '<div class="card inzd-vorm">'
-        // Marges opgehoogd (12/12/5 -> 18/18/11px, + 2px boven de formstrip)
-        // om qua hoogte aan te sluiten bij de compactere Doelpunten-per-helft-
-        // tabel ernaast (gemeten met de echte kaarten naast elkaar, gemeld
-        // 2026-09-16).
+        // Marges getuned voor hoogte-uitlijning met de Doelpunten-per-helft-
+        // tabel ernaast.
         + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px"><div class="sec" style="margin:0">Vorm</div><span class="tag tag--line">' + wins + 'W · ' + gelijk + 'G · ' + verloren + 'V</span></div>'
         + '<div style="display:flex;height:9px;border-radius:5px;overflow:hidden;margin-bottom:18px;background:var(--surface3)">'
           + '<div style="flex:' + (wins || 0.0001) + ';background:var(--win)"></div><div style="flex:' + (gelijk || 0.0001) + ';background:var(--neutral)"></div><div style="flex:' + (verloren || 0.0001) + ';background:var(--loss)"></div>'
@@ -4595,18 +4575,12 @@ async function doelpuntenKaartHtml(wed) {
   const e2 = dp.filter(d => d.kant === 'eigen' && d.helft === '2e').length;
   const t1 = dp.filter(d => d.kant === 'tegen' && d.helft === '1e').length;
   const t2 = dp.filter(d => d.kant === 'tegen' && d.helft === '2e').length;
-  // Hernoemd van "Doelpunten per fase" naar "Doelpunten per helft" en van
-  // een staafdiagram (1e/2e helft/Tegen samengevoegd) naar een Voor/Tegen ×
-  // 1e/2e-helft-tabel — gevraagd door gebruiker 2026-09-16: "Tegen" als
-  // aparte staaf maakte niet duidelijk hoe dat zich per helft verhield tot
-  // de eigen doelpunten. Kolomlabel was eerst "Tegenstander" (bewust
-  // generiek, geen teamnaam — dit is een optelling over alle gefilterde
-  // wedstrijden, niet per wedstrijd), maar liep buiten de kaart; "Tegen"
-  // is korter en blijft even generiek.
-  // Padding 8px->4px (gemeld 2026-09-16: te hoog t.o.v. de Vorm-kaart
-  // ernaast, die geen vaste hoogte heeft — align-items:flex-start op
-  // .inzd-row, zie hierboven). Gemeten met de echte kaarten naast elkaar
-  // (getBoundingClientRect) i.p.v. op het oog geschat.
+  // "Doelpunten per helft"-tabel i.p.v. een staafdiagram: liet niet zien
+  // hoe voor/tegen zich per helft tot elkaar verhielden. Kolomlabel
+  // "Tegen" i.p.v. de tegenstandernaam — dit telt op over alle gefilterde
+  // wedstrijden, niet per wedstrijd.
+  // Padding 4px: getuned voor visuele hoogte-uitlijning met de Vorm-kaart
+  // ernaast (.inzd-row heeft geen vaste hoogtes, zie hierboven).
   const kolom = 'display:grid;grid-template-columns:1fr 64px 64px;gap:2px;font-size:13px';
   const kop = (label) => '<div style="padding:4px 6px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;text-align:right">' + label + '</div>';
   const rij = (label, wij, tegen, totaalRij) => '<div style="padding:4px 6px' + (totaalRij ? ';border-top:1.5px solid var(--line);font-weight:700' : '') + ';color:var(--ink2);font-weight:' + (totaalRij ? '700' : '500') + '">' + label + '</div>'

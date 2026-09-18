@@ -451,10 +451,6 @@ async function registreerDoelpunt(wedstrijdId, kant, helft, minuut, spelerId, as
   });
   return (res && res._error) ? null : res;
 }
-async function haalDoelpuntenVoorWedstrijd(wedstrijdId) {
-  const res = await sbFetch('doelpunten?select=*&wedstrijd_id=eq.' + wedstrijdId + '&order=wedstrijd_minuut.asc,created_at.asc');
-  return res && !res._error ? res : [];
-}
 async function haalAlleDoelpunten() {
   const res = await sbFetch('doelpunten?select=*&order=created_at.asc');
   return res && !res._error ? res : [];
@@ -510,17 +506,9 @@ const SKILL_OPTIES = ['Ontwikkel punt','Voldoende','Goed','Zeer goed'];
 const SKILL_NIVEAU_PCT = {'Ontwikkel punt':2, 'Voldoende':34, 'Goed':66, 'Zeer goed':98};
 
 // ─── Datalaag: Spelerontwikkeling ───
-async function haalLaatsteSpelerBeoordeling(spelerId) {
-  const res = await sbFetch('speler_beoordelingen?select=*&speler_id=eq.' + spelerId + '&order=created_at.desc&limit=1');
-  return (res && res[0]) || null;
-}
 async function haalSpelerBeoordelingenGeschiedenis(spelerId) {
   const res = await sbFetch('speler_beoordelingen?select=*&speler_id=eq.' + spelerId + '&order=created_at.asc');
   return res && !res._error ? res : [];
-}
-async function haalLaatsteTrainerBeoordeling(spelerId) {
-  const res = await sbFetch('trainer_beoordelingen?select=*&speler_id=eq.' + spelerId + '&order=created_at.desc&limit=1');
-  return (res && res[0]) || null;
 }
 async function haalTrainerBeoordelingenGeschiedenis(spelerId) {
   const res = await sbFetch('trainer_beoordelingen?select=*&speler_id=eq.' + spelerId + '&order=created_at.asc');
@@ -587,16 +575,6 @@ async function initSupabase(statusElId) {
   if (msgEl)   msgEl.textContent = '✓ Verbonden met Supabase';
   supabaseReady = true;
   return true;
-}
-
-function saveSupabaseConfig() {
-  const url = document.getElementById('sb-url').value.trim();
-  const key = document.getElementById('sb-key').value.trim();
-  if (!url || !key) { showToast('Vul URL en key in'); return; }
-  SB_URL = url; SB_KEY = key;
-  localStorage.setItem('sb_url', url);
-  localStorage.setItem('sb_key', key);
-  initSupabase().then(ok => { if (ok && typeof onSupabaseReady === 'function') onSupabaseReady(); });
 }
 
 function resetSupabaseConfig() {
@@ -1544,13 +1522,6 @@ function getISOWeek(dateStr) {
 }
 
 // ─── NAV: markeer actieve pagina ───
-function markActiveNav() {
-  const page = window.location.pathname.split('/').pop() || 'index-classic.html';
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('href') === page || btn.getAttribute('data-page') === page);
-  });
-}
-
 // ─── SCROLL TOP ───
 function initScrollTop() {
   window.addEventListener('scroll', () => {

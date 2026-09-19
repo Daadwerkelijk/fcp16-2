@@ -3694,7 +3694,16 @@ function renderWisselSheet() {
     document.getElementById('wis-titel').textContent = 'Wie komt erin?';
     document.getElementById('wis-sub').textContent = 'Kies een speler van de bank';
     document.getElementById('wis-reden-blok').style.display = 'none';
-    const bank = sp.filter(p => !bezet.has(p.id) || p.id === wisselStap.uitSpelerId).filter(p => p.id !== wisselStap.uitSpelerId);
+    // Bank mag ALLEEN actieve, niet-gearchiveerde spelers bevatten die niet
+    // afwezig zijn gemeld voor déze wedstrijd — voorheen kwam hier gewoon
+    // spelers() (incl. gearchiveerd) zonder afwezigheidscheck uit, waardoor
+    // een gearchiveerde en een afwezig/geblesseerd gemelde speler allebei
+    // daadwerkelijk ingewisseld konden worden tijdens een echte wedstrijd
+    // (gemeld door gebruiker 2026-09-19, met harde data teruggevonden:
+    // Roan (gearchiveerd) op 28', Milox (afwezig/geblesseerd) op 51').
+    const wActief = wedstrijden().find(x => x.id === liveState.wedstrijdId);
+    const afwezigeIds = new Set(((wActief && wActief.afwezig) || []).map(a => (a && a.pid) ? a.pid : a));
+    const bank = actieveSpelers().filter(p => !bezet.has(p.id) && p.id !== wisselStap.uitSpelerId && !afwezigeIds.has(p.id));
     document.getElementById('wis-lijst').innerHTML = bank.length
       ? bank.map(p => '<div class="bench-row" onclick="wisselStap.inSpelerId=\'' + p.id + '\';wisselStap.stap=3;renderWisselSheet()"><div class="bench-nm">' + esc(p.naam) + '</div></div>').join('')
       : '<div style="font-size:13px;color:var(--ink3)">Niemand meer op de bank.</div>';

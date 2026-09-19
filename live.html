@@ -175,7 +175,7 @@ function renderMiniField(w) {
   }).join('');
   return `<div class="card" style="margin-top:10px">
     <div class="sec">Basisopstelling${w.formatie ? ' · ' + (FORMATIE_LABELS[w.formatie] || w.formatie) : ''}</div>
-    <div class="pitch" style="height:320px">${slots}</div>
+    <div class="pitch" style="height:auto;aspect-ratio:1.3">${slots}</div>
   </div>`;
 }
 

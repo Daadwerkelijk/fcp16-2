@@ -1216,9 +1216,11 @@ function applyThema(key) {
   // Veld altijd groen
   r.setProperty('--field-bg',     '#1B5E20');
   r.setProperty('--field-border', '#2E7D32');
-  // Status bar kleur mee veranderen met thema
-  const metaTheme = document.querySelector('meta[name="theme-color"]');
-  if (metaTheme) metaTheme.setAttribute('content', t.topbar);
+  // Bewust GEEN meta[name="theme-color"] meer zetten: t.topbar is een kleur uit
+  // de verwijderde klassieke interface (licht = #2B1FA0, indigo). Elke
+  // overgebleven pagina zet zelf een statische theme-color die bij V2 past, en
+  // die werd hier stilletjes overschreven — de statusbalk van de PWA kleurde
+  // daardoor indigo i.p.v. het V2-palet (gemeld door gebruiker 2026-09-19).
 
   // Dynamische accentkleuren passend bij het thema
   const isDark = ['donker','fcp'].includes(key);

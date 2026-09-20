@@ -4271,7 +4271,10 @@ async function speeltijdKaartHtml(sp) {
   }
   const rijen = rangschikkingSorteer('speeltijd', sp.map(p => ({ naam: p.naam, min: totaal[p.id] })).filter(x => x.min > 0), 'min');
   const kolom = 'display:grid;grid-template-columns:1fr 46px;align-items:center;gap:16px';
-  return rangschikkingKopHtml('speeltijd', 'Speeltijd', rijen.length + ' spelers', 'Meeste eerst')
+  // "· N wedstrijden" naast de titel — hoeveel wedstrijden dit totaal meet
+  // (gemeld door gebruiker 2026-09-20, ontbrak hier nog).
+  const aantalLabel = rijen.length + ' spelers · ' + wed.length + ' wedstrijd' + (wed.length === 1 ? '' : 'en');
+  return rangschikkingKopHtml('speeltijd', 'Speeltijd', aantalLabel, 'Meeste eerst')
     + (rijen.length
         ? '<div style="' + kolom + ';font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px"><span>Speler</span><span style="text-align:right">Min</span></div>'
           + rijen.map(x => '<div style="' + kolom + ';font-size:13.5px;padding:6px 0"><span>' + esc(x.naam) + '</span><span class="num" style="text-align:right;color:var(--ink3)">' + x.min + '</span></div>').join('')
@@ -4377,9 +4380,9 @@ async function renderInzichtDesktop() {
 
       + '<div class="inzd-row" style="margin-top:16px">'
       + '<div class="card inzd-cijfer">' + cijfersKaartHtml(gespeeld, sp) + '</div>'
+      + '<div class="card inzd-motm">' + motmKaartHtml(gespeeld, sp) + '</div>'
       + '<div class="card inzd-min">' + speeltijdHtml + '</div>'
       + '<div class="card inzd-afw">' + afwezigheidHtml + '</div>'
-      + '<div class="card inzd-motm">' + motmKaartHtml(gespeeld, sp) + '</div>'
       + '</div>';
 }
 function inzToggle(headerEl) {
@@ -4589,7 +4592,8 @@ function rangschikkingKopHtml(kaart, titel, aantalLabel, waardeLabel, extraHtml)
 // 2026-09-08) — dezelfde databron/logica, geen aparte berekening.
 function motmKaartHtml(wed, sp) {
   const motm = rangschikkingSorteer('motm', sp.map(p => ({ naam: p.naam, n: wed.filter(w => w.motm === p.id).length })).filter(x => x.n), 'n');
-  return rangschikkingKopHtml('motm', 'Man of the match', null, 'Meeste eerst')
+  const aantalLabel = '· ' + wed.length + ' wedstrijd' + (wed.length === 1 ? '' : 'en');
+  return rangschikkingKopHtml('motm', 'Man of the match', aantalLabel, 'Meeste eerst')
     + (motm.length ? motm.map(x => '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px"><span>' + esc(x.naam) + '</span><span style="color:var(--ink3)">' + x.n + '× ⭐</span></div>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen MOTM toegekend.</div>');
 }
 function cijfersKaartHtml(wed, sp) {
@@ -4755,12 +4759,19 @@ async function renderInzSpeelminuten() {
     });
   }
   const lijst = sp.map(p => ({ p, ...perSpeler[p.id] })).filter(x => x.totaal > 0).sort((a, b) => b.totaal - a.totaal);
-  document.getElementById('i-content').innerHTML = lijst.length ? lijst.map(x =>
-    '<div class="card" style="margin-top:10px">'
-    + '<div style="cursor:pointer" onclick="inzToggle(this)"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:600">' + esc(x.p.naam) + '</div><span class="tag tag--line">' + x.totaal + ' min</span></div></div>'
-    + '<div class="inz-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">' + x.wedstrijden.map(m => '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span>vs ' + esc(m.tegenstander) + '</span><span style="color:var(--ink3)">' + m.minuten + ' min' + (m.wissels ? ' · ' + esc(m.wissels) : '') + '</span></div>').join('') + '</div>'
-    + '</div>'
-  ).join('') : '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Nog geen speelminuten — start een wedstrijd via Live om ze hier te zien verschijnen.</div>';
+  // Aantal wedstrijden waarover gemeten is — zowel totaal (boven de lijst) als per
+  // speler (hoeveel van die wedstrijden hij zelf speelde), zelfde soort context als
+  // de "Wedstrijden"-kolom bij Gemiddeld cijfer. Gemeld door gebruiker 2026-09-20.
+  const aantalWedTekst = wed.length + ' gespeelde wedstrijd' + (wed.length === 1 ? '' : 'en') + ' met opstelling';
+  document.getElementById('i-content').innerHTML = (lijst.length
+    ? '<div style="font-size:12.5px;color:var(--ink3);margin-top:14px">Gemeten over ' + aantalWedTekst + '.</div>'
+      + lijst.map(x =>
+        '<div class="card" style="margin-top:10px">'
+        + '<div style="cursor:pointer" onclick="inzToggle(this)"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:600">' + esc(x.p.naam) + '</div><span class="tag tag--line">' + x.totaal + ' min · ' + x.wedstrijden.length + ' wedstrijd' + (x.wedstrijden.length === 1 ? '' : 'en') + '</span></div></div>'
+        + '<div class="inz-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">' + x.wedstrijden.map(m => '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span>vs ' + esc(m.tegenstander) + '</span><span style="color:var(--ink3)">' + m.minuten + ' min' + (m.wissels ? ' · ' + esc(m.wissels) : '') + '</span></div>').join('') + '</div>'
+        + '</div>'
+      ).join('')
+    : '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Nog geen speelminuten — start een wedstrijd via Live om ze hier te zien verschijnen.</div>');
 }
 
 // ─── Navigatie ───

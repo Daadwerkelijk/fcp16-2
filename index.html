@@ -2197,10 +2197,15 @@ async function renderSpelerWedstrijdenV2(spelerId) {
     const speeltijdBetrouwbaar = !afwezig && speeltijdBetrouwbaarVoorSpeler(spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]);
     const minuten = speeltijdBetrouwbaar ? berekenSpeeltijd(w.id, spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]) : null;
     const posities = speeltijdBetrouwbaar ? spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd) : [];
-    // Aanwezig-kolom: afwezig gemeld → ✕; niet bijgehouden (geen data, kan geen
-    // uitspraak over doen) → —; anders (echt aanwezig/opgesteld) → ✓.
+    // Aanwezig-kolom: afwezig gemeld → ✕. Een cijfer of MOTM-toekenning is op
+    // zichzelf al bewijs van aanwezigheid (je geeft nooit een cijfer aan iemand
+    // die er niet was) — telt dus altijd als ✓, ook als de wedstrijd verder niet
+    // via Live is bijgehouden. Zonder dat bewijs: bijgehouden → ✓, anders (geen
+    // enkel signaal) → — (onbekend). Gemeld door gebruiker 2026-09-20: een
+    // speler met een cijfer toonde ten onrechte — i.p.v. ✓.
     const aanwCel = afwezig
       ? '<span style="color:var(--loss);font-weight:700">✕</span>'
+      : (cijfer != null || motm) ? '<span style="color:var(--win);font-weight:700">✓</span>'
       : !bijgehouden ? '<span style="color:var(--ink3)">—</span>' : '<span style="color:var(--win);font-weight:700">✓</span>';
     const minCel = speeltijdBetrouwbaar ? String(minuten) : '—';
     const posCel = (!speeltijdBetrouwbaar || !posities.length) ? '—' : esc(posities.join(', '));

@@ -4265,22 +4265,30 @@ async function speeltijdKaartHtml(wed, sp) {
   // 2026-09-20.) — hier alleen nog aanvullend filteren op wedstrijden mét
   // opstelling (zonder wed_lineup is er sowieso niets te meten).
   const wedMetOpstelling = wed.filter(w => w.wed_lineup && Object.keys(w.wed_lineup).length);
-  const totaal = {}; sp.forEach(p => { totaal[p.id] = 0; });
+  const totaal = {}; const minutenPerWed = {};
+  sp.forEach(p => { totaal[p.id] = 0; minutenPerWed[p.id] = {}; });
   if (typeof supabaseReady !== 'undefined' && supabaseReady && wedMetOpstelling.length) {
     const [alleWissels, eindeMomenten] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten()]);
     wedMetOpstelling.forEach(w => {
       const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
       const eindMinuut = eindeMomenten[w.id];
-      sp.forEach(p => { totaal[p.id] += berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindMinuut); });
+      sp.forEach(p => {
+        const min = berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindMinuut);
+        totaal[p.id] += min;
+        minutenPerWed[p.id][w.id] = min;
+      });
     });
   }
-  // Aantal wedstrijden per speler = niet afwezig gemeld (wedstrijdAfwezigeIds),
-  // net als bij de mobiele Speelminuten-tab — zie toelichting daar.
+  // Aantal wedstrijden per speler — zie aantalWedstrijdenVoorSpeler() hierboven
+  // (afwezigheid-bewust voor actieve spelers, gemeten-minuten voor gearchiveerde).
   const aantalWed = {};
-  sp.forEach(p => { aantalWed[p.id] = wedMetOpstelling.filter(w => !wedstrijdAfwezigeIds(w).has(p.id)).length; });
+  sp.forEach(p => { aantalWed[p.id] = aantalWedstrijdenVoorSpeler(p, wedMetOpstelling, minutenPerWed[p.id]); });
   const rijen = rangschikkingSorteer('speeltijd', sp.map(p => ({ naam: p.naam, min: totaal[p.id], n: aantalWed[p.id] })).filter(x => x.min > 0), 'min');
   const kolom = 'display:grid;grid-template-columns:1fr 88px 46px;align-items:center;gap:16px';
-  const aantalLabel = rijen.length + ' spelers · ' + wedMetOpstelling.length + ' wedstrijd' + (wedMetOpstelling.length === 1 ? '' : 'en');
+  // Totaal gespeeld (binnen het filter) als hoofdcijfer, "bijgehouden" als
+  // aanvulling wanneer dat afwijkt — zie toelichting bij renderInzSpeelminuten().
+  const bijgehoudenNote = wedMetOpstelling.length < wed.length ? ' (' + wedMetOpstelling.length + ' bijgehouden)' : '';
+  const aantalLabel = rijen.length + ' spelers · ' + wed.length + ' wedstrijd' + (wed.length === 1 ? '' : 'en') + bijgehoudenNote;
   return rangschikkingKopHtml('speeltijd', 'Speeltijd', aantalLabel, 'Meeste eerst')
     + (rijen.length
         ? '<div style="' + kolom + ';font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px"><span>Speler</span><span style="text-align:right">Wedstrijden</span><span style="text-align:right">Min</span></div>'
@@ -4360,7 +4368,12 @@ async function renderInzichtDesktop() {
       + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + punten + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Punten</div></div>'
       + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + (saldo > 0 ? '+' : '') + saldo + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Doelsaldo</div></div>'
       + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + (opkomstPct != null ? opkomstPct + '%' : '–') + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Opkomst training</div></div>'
-      + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + sp.length + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Spelers</div></div>'
+      // Actief team-aantal (niet sp.length/18, want dat telt ook gearchiveerde
+      // spelers mee) — dit kopcijfer beantwoordt "hoe groot is mijn team nu",
+      // een andere vraag dan de kaarten eronder (Cijfer/Speeltijd/MOTM/
+      // Afwezigheid) die bewust WEL historisch alle spelers meenemen, incl.
+      // gearchiveerd. Gemeld door gebruiker 2026-09-20.
+      + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + actieveSpelers().length + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Spelers</div></div>'
       + '</div></div>'
       + '<div class="seg" role="tablist" style="margin-top:14px;max-width:420px">' + ['alle', 'competitie', 'beker', 'oefenwedstrijd'].map(t => '<button type="button" class="seg-opt" aria-selected="' + (t === inzRankingType) + '" onclick="inzZetRankingType(\'' + t + '\')">' + (t === 'alle' ? 'Alle' : t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen') + '</button>').join('') + '</div>'
       + (faseOpties.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' + faseOpties.map(f => '<button type="button" class="chip" aria-pressed="' + inzRankingFases.has(f) + '" onclick="inzToggleRankingFase(\'' + esc(f) + '\')">' + esc(f) + '</button>').join('') + '</div>' : '')
@@ -4744,6 +4757,22 @@ async function renderInzRanking() {
 function wedstrijdAfwezigeIds(w) {
   return new Set(((w && w.afwezig) || []).map(a => (a && a.pid) ? a.pid : a));
 }
+// Aantal wedstrijden (binnen de meegegeven, al-bijgehouden lijst) voor één
+// speler. Voor een ACTIEVE speler: hoeveel hij niet als afwezig had gemeld
+// (wedstrijdAfwezigeIds) — telt ook een ongebruikte wissel (0 min, wél
+// beschikbaar) mee. Voor een GEARCHIVEERDE speler werkt die aanname niet:
+// er wordt allang geen afwezigheid meer voor 'm bijgehouden (staat niet meer
+// in de keuzelijsten), dus "niet afwezig gemeld" is geen betrouwbaar signaal
+// — hij zou dan ten onrechte "beschikbaar" lijken voor elke wedstrijd die ná
+// zijn archivering is gespeeld. Daarom voor hem terugvallen op écht gemeten
+// speeltijd. Gemeld door gebruiker 2026-09-20 (Roan, gearchiveerd, telde
+// foutief mee als "3× beschikbaar").
+function aantalWedstrijdenVoorSpeler(p, wedMetOpstelling, minutenPerWed) {
+  if ((p.status || 'actief') === 'gearchiveerd') {
+    return wedMetOpstelling.filter(w => (minutenPerWed[w.id] || 0) > 0).length;
+  }
+  return wedMetOpstelling.filter(w => !wedstrijdAfwezigeIds(w).has(p.id)).length;
+}
 // ─── Inzicht → Speelminuten — nu de echte berekenSpeeltijd() (app.js) op
 // echte Supabase-wisselregistraties, i.p.v. de eigen lokale
 // startLineup/w.wissels-simulatie. Een wedstrijd zonder wed_lineup (nooit
@@ -4758,9 +4787,16 @@ function wisselDetailTekstV2(spelerId, wisselsVoorWedstrijd) {
 async function renderInzSpeelminuten() {
   document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
   const sp = spelers();
-  const wed = wedstrijden().filter(w => w.gespeeld && w.wed_lineup && Object.keys(w.wed_lineup).length);
+  // alleGespeeld = écht alle gespeelde wedstrijden; wedMetOpstelling is de subset
+  // die ook echt bijgehouden is (heeft een opstelling). Een wedstrijd zonder
+  // opstelling kan sowieso niets over speeltijd zeggen, maar telde voorheen niet
+  // mee in "aantal gespeelde wedstrijden" — daardoor leek het bv. alsof er maar 2
+  // wedstrijden gespeeld waren terwijl het er 3 waren (gemeld door gebruiker
+  // 2026-09-20). Beide aantallen nu apart zichtbaar.
+  const alleGespeeld = wedstrijden().filter(w => w.gespeeld);
+  const wed = alleGespeeld.filter(w => w.wed_lineup && Object.keys(w.wed_lineup).length);
   const perSpeler = {};
-  sp.forEach(p => { perSpeler[p.id] = { totaal: 0, wedstrijden: [] }; });
+  sp.forEach(p => { perSpeler[p.id] = { totaal: 0, wedstrijden: [], minutenPerWed: {} }; });
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     const [alleWissels, eindeMomenten] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten()]);
     wed.forEach(w => {
@@ -4768,6 +4804,7 @@ async function renderInzSpeelminuten() {
       const eindMinuut = eindeMomenten[w.id];
       sp.forEach(p => {
         const min = berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindMinuut);
+        perSpeler[p.id].minutenPerWed[w.id] = min;
         if (min > 0) {
           perSpeler[p.id].totaal += min;
           perSpeler[p.id].wedstrijden.push({ tegenstander: w.tegenstander, isoDate: w.isoDate, minuten: min, wissels: wisselDetailTekstV2(p.id, wisselsVoorWedstrijd) });
@@ -4776,17 +4813,12 @@ async function renderInzSpeelminuten() {
     });
   }
   const lijst = sp.map(p => ({ p, ...perSpeler[p.id] })).filter(x => x.totaal > 0).sort((a, b) => b.totaal - a.totaal);
-  // Aantal wedstrijden waarover gemeten is — totaal boven de lijst. Per speler het
-  // aantal wedstrijden waarvoor hij NIET afwezig was gemeld (wedstrijdAfwezigeIds),
-  // i.p.v. alleen wedstrijden met gemeten minuten — een wedstrijd waarin hij wél
-  // beschikbaar was maar (nog) geen speeltijd kreeg (bv. ongebruikte wissel) telt
-  // zo toch mee als "beschikbaar voor". Zelfde soort context als de
-  // "Wedstrijden"-kolom bij Gemiddeld cijfer. Gemeld door gebruiker 2026-09-20.
-  const aantalWedTekst = wed.length + ' gespeelde wedstrijd' + (wed.length === 1 ? '' : 'en') + ' met opstelling';
+  const bijgehoudenNote = wed.length < alleGespeeld.length ? ' (waarvan ' + wed.length + ' bijgehouden)' : '';
+  const aantalWedTekst = alleGespeeld.length + ' gespeelde wedstrijd' + (alleGespeeld.length === 1 ? '' : 'en') + bijgehoudenNote;
   document.getElementById('i-content').innerHTML = (lijst.length
-    ? '<div style="font-size:12.5px;color:var(--ink3);margin-top:14px">Gemeten over ' + aantalWedTekst + '.</div>'
+    ? '<div style="font-size:12.5px;color:var(--ink3);margin-top:14px">' + aantalWedTekst + '.</div>'
       + lijst.map(x => {
-        const beschikbaarVoor = wed.filter(w => !wedstrijdAfwezigeIds(w).has(x.p.id)).length;
+        const beschikbaarVoor = aantalWedstrijdenVoorSpeler(x.p, wed, x.minutenPerWed);
         return '<div class="card" style="margin-top:10px">'
         + '<div style="cursor:pointer" onclick="inzToggle(this)"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:600">' + esc(x.p.naam) + '</div><span class="tag tag--line">' + x.totaal + ' min · ' + beschikbaarVoor + ' wedstrijd' + (beschikbaarVoor === 1 ? '' : 'en') + '</span></div></div>'
         + '<div class="inz-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">' + x.wedstrijden.map(m => '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span>vs ' + esc(m.tegenstander) + '</span><span style="color:var(--ink3)">' + m.minuten + ' min' + (m.wissels ? ' · ' + esc(m.wissels) : '') + '</span></div>').join('') + '</div>'

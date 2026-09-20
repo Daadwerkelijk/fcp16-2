@@ -2097,30 +2097,85 @@ function skillTrendPijlHtml(trainerHist, sk) {
   const label = verschil > 0 ? 'Vooruitgang t.o.v. vorige trainersbeoordeling' : verschil < 0 ? 'Achteruitgang t.o.v. vorige trainersbeoordeling' : 'Gelijk t.o.v. vorige trainersbeoordeling';
   return '<span aria-label="' + label + '" title="' + label + '" style="color:var(--' + kleur + ');font-weight:700;font-size:13px">' + pijl + '</span>';
 }
-// Wedstrijden — cijfer en MOTM per wedstrijd voor déze speler, nieuwste
-// eerst. Zelfde databron (wedstrijden().ratings/motm) als de Cijfer-/MOTM-
-// kaarten op Inzicht, hier al gefilterd op één speler. Miste naast de
-// vaardighedenbeoordeling (gemeld door gebruiker 2026-09-14, mockup
-// design/speler-overzicht/). Synchroon (geen Supabase-fetch nodig, de data
-// zit al in wedstrijden()).
-function spelerWedstrijdenKaartHtml(spelerId) {
+// Wedstrijden — per wedstrijd aanwezig/afwezig, minuten, cijfer, MOTM en
+// gespeelde positie(s) voor déze speler, nieuwste eerst. Cijfer/MOTM/
+// aanwezigheid komen synchroon uit wedstrijden() (ratings/motm/afwezig staan
+// al lokaal); minuten vereisen de echte wisselregistraties uit Supabase, dus
+// de kaart rendert eerst een skelet en vult de rest async — zelfde patroon
+// als renderVergelijkingV2()/renderSpelerContactV2() hierboven. Uitgebreid
+// van cijfer/MOTM-only (2026-09-14) met aanwezigheid/minuten/positie,
+// gevraagd door gebruiker 2026-09-20.
+//
+// Positie-reconstructie is best-effort: de wissels-tabel legt alleen wie
+// erin/eruit ging vast, niet op welke positie. Voor de basisopstelling is de
+// positie zeker (wed_lineup); voor een invaller wordt de positie afgeleid
+// door hem te koppelen aan wie op hetzelfde moment (dezelfde minuut) het
+// veld verliet, en diens (start)positie over te nemen — correct voor het
+// gebruikelijke geval (1-op-1 wissel), maar niet gegarandeerd bij een speler
+// die zelf al eerder van positie wisselde vóór hij weer werd gewisseld.
+function spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd) {
+  const alle = alleFormatiesV2();
+  const formatie = alle[w.formatie];
+  const lineup = w.wed_lineup || {};
+  const labelVan = posId => {
+    const p = formatie && formatie.pos.find(x => x.id === posId);
+    return p ? p.label : posId;
+  };
+  const posities = [];
+  const startPosId = Object.keys(lineup).find(k => lineup[k] === spelerId);
+  if (startPosId) posities.push(labelVan(startPosId));
+  const events = [...wisselsVoorWedstrijd].sort((a, b) => (a.wedstrijd_minuut || 0) - (b.wedstrijd_minuut || 0));
+  const gebruikteUit = new Set();
+  events.filter(e => e.moment === 'erin' && e.speler_id === spelerId).forEach(inEvent => {
+    const uitEvent = events.find(e => e.moment === 'eruit' && e.wedstrijd_minuut === inEvent.wedstrijd_minuut && !gebruikteUit.has(e.id));
+    if (!uitEvent) return;
+    gebruikteUit.add(uitEvent.id);
+    const uitPosId = Object.keys(lineup).find(k => lineup[k] === uitEvent.speler_id);
+    if (uitPosId) posities.push(labelVan(uitPosId));
+  });
+  return [...new Set(posities)];
+}
+async function renderSpelerWedstrijdenV2(spelerId) {
+  const el = document.getElementById('sb-wedstrijden');
+  if (!el) return;
   const gespeeld = wedstrijden().filter(w => w.gespeeld).sort((a, b) => (b.isoDate || '').localeCompare(a.isoDate || ''));
   if (!gespeeld.length) {
-    return '<div class="sec">Wedstrijden</div><div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Nog geen gespeelde wedstrijden.</div>';
+    el.innerHTML = '<div class="sec">Wedstrijden</div><div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Nog geen gespeelde wedstrijden.</div>';
+    return;
   }
   const typeLabel = t => t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen';
+  let alleWissels = [], eindeMomenten = {};
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    [alleWissels, eindeMomenten] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten()]);
+  }
   const rij = w => {
     const d = new Date(w.isoDate);
     const cijfer = (w.ratings || {})[spelerId];
     const motm = w.motm === spelerId;
+    const afwezig = wedstrijdAfwezigeIds(w).has(spelerId);
+    // "Bijgehouden" = heeft opstelling ÉN eindmoment (via Live afgerond) — zonder
+    // eindmoment geeft berekenSpeeltijd() altijd 0 terug voor wie niet gewisseld
+    // is, dat is dan geen "niet gespeeld" maar gewoon geen data. Zelfde
+    // onderscheid als bij Inzicht → Speeltijd (zie toelichting daar).
+    const bijgehouden = !!(w.wed_lineup && Object.keys(w.wed_lineup).length && eindeMomenten[w.id] != null);
+    const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
+    const minuten = (afwezig || !bijgehouden) ? null : berekenSpeeltijd(w.id, spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]);
+    const posities = (afwezig || !bijgehouden) ? [] : spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd);
+    const statusregel = afwezig
+      ? '<span style="color:var(--loss)">Afwezig</span>'
+      : !bijgehouden
+        ? 'Niet bijgehouden'
+        : (minuten > 0
+            ? minuten + ' min' + (posities.length ? ' · ' + esc(posities.join(', ')) : '')
+            : 'Niet gespeeld');
     return '<div class="wed-hist-row">'
-      + '<div><div style="font-size:13.5px;font-weight:600">vs ' + esc(w.tegenstander || '?') + '</div><div style="font-size:11.5px;color:var(--ink3);margin-top:1px">' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + ' · ' + typeLabel(w.wed_type || 'oefenwedstrijd') + '</div></div>'
+      + '<div><div style="font-size:13.5px;font-weight:600">vs ' + esc(w.tegenstander || '?') + '</div><div style="font-size:11.5px;color:var(--ink3);margin-top:1px">' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + ' · ' + typeLabel(w.wed_type || 'oefenwedstrijd') + '</div><div style="font-size:11.5px;color:var(--ink3);margin-top:2px">' + statusregel + '</div></div>'
       + '<div class="num" style="font-size:14px;text-align:right;' + (cijfer != null ? 'font-weight:700' : 'font-weight:500;color:var(--ink3)') + '">' + (cijfer != null ? Number(cijfer).toFixed(1) : '—') + '</div>'
       + '<div style="text-align:center;color:#f0c040">' + (motm ? '⭐' : '') + '</div>'
       + '</div>';
   };
   const motmCount = gespeeld.filter(w => w.motm === spelerId).length;
-  return '<div class="sec" style="display:flex;align-items:baseline;justify-content:space-between"><span>Wedstrijden</span><span style="font-size:11.5px;color:var(--ink3);text-transform:none;letter-spacing:0">' + gespeeld.length + ' wedstrijden · ' + motmCount + '× MOTM</span></div>'
+  el.innerHTML = '<div class="sec" style="display:flex;align-items:baseline;justify-content:space-between"><span>Wedstrijden</span><span style="font-size:11.5px;color:var(--ink3);text-transform:none;letter-spacing:0">' + gespeeld.length + ' wedstrijden · ' + motmCount + '× MOTM</span></div>'
     + '<div class="card" style="margin-bottom:14px">'
     + '<div style="display:grid;grid-template-columns:1fr 40px 24px;font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding-bottom:6px;border-bottom:1px solid var(--line)"><span>Wedstrijd</span><span style="text-align:right">Cijfer</span><span></span></div>'
     + gespeeld.map(rij).join('')
@@ -2230,7 +2285,7 @@ function openSpelerBewerken(id) {
       + '<div id="sb-periodes" style="margin-bottom:10px">Laden…</div>'
       + '<button class="btn btn--ghost btn--sm" onclick="openPeriodeSheet(\'' + p.id + '\')">+ Periode toevoegen</button>'
       + '<div class="divide"></div>'
-      + spelerWedstrijdenKaartHtml(p.id)
+      + '<div id="sb-wedstrijden"><div class="sec">Wedstrijden</div><div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Laden…</div></div>'
       + '<div class="divide"></div>'
       + '<div class="sec">Beoordeling — speler vs. trainer</div>'
       + '<div id="sb-vergelijking" style="font-size:13px;color:var(--ink3);margin-bottom:14px">Laden…</div>'
@@ -2253,6 +2308,7 @@ function openSpelerBewerken(id) {
       if (el) el.innerHTML = html;
     });
     renderSpelerPeriodesV2(p.id);
+    renderSpelerWedstrijdenV2(p.id);
   }
 }
 // Afwezigheidsperiodes — door de trainer zelf ingevoerd (niet via het
@@ -4262,13 +4318,21 @@ async function speeltijdKaartHtml(wed, sp) {
   // wed komt al gefilterd binnen (type/fase-filter, zelfde als Cijfer/MOTM —
   // voorheen las deze kaart zelf altijd ALLE gespeelde wedstrijden, dus een
   // filter op bv. "Competitie" had hier geen effect. Gemeld door gebruiker
-  // 2026-09-20.) — hier alleen nog aanvullend filteren op wedstrijden mét
-  // opstelling (zonder wed_lineup is er sowieso niets te meten).
-  const wedMetOpstelling = wed.filter(w => w.wed_lineup && Object.keys(w.wed_lineup).length);
+  // 2026-09-20.)
   const totaal = {}; const minutenPerWed = {};
   sp.forEach(p => { totaal[p.id] = 0; minutenPerWed[p.id] = {}; });
-  if (typeof supabaseReady !== 'undefined' && supabaseReady && wedMetOpstelling.length) {
+  // "Bijgehouden" = heeft een opstelling ÉN een eindmoment (via Live afgerond).
+  // Zonder eindMinuut geeft berekenSpeeltijd() voor een niet-gewisselde speler
+  // altijd 0 terug (de laatste periode sluit dan nooit af) — een wedstrijd met
+  // alleen een basisopstelling maar zonder Live-sessie telde voorheen toch mee
+  // als "bijgehouden", waardoor iedereen die er wél in stond een wedstrijd te
+  // veel kreeg toegerekend. Gemeld door gebruiker 2026-09-20 (Jamie: 3
+  // wedstrijden i.p.v. de verwachte 2, terwijl de 160 minuten wél klopten).
+  let wedMetOpstelling = [];
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const wedMogelijk = wed.filter(w => w.wed_lineup && Object.keys(w.wed_lineup).length);
     const [alleWissels, eindeMomenten] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten()]);
+    wedMetOpstelling = wedMogelijk.filter(w => eindeMomenten[w.id] != null);
     wedMetOpstelling.forEach(w => {
       const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
       const eindMinuut = eindeMomenten[w.id];
@@ -4787,19 +4851,22 @@ function wisselDetailTekstV2(spelerId, wisselsVoorWedstrijd) {
 async function renderInzSpeelminuten() {
   document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
   const sp = spelers();
-  // alleGespeeld = écht alle gespeelde wedstrijden; wedMetOpstelling is de subset
-  // die ook echt bijgehouden is (heeft een opstelling). Een wedstrijd zonder
-  // opstelling kan sowieso niets over speeltijd zeggen, maar telde voorheen niet
-  // mee in "aantal gespeelde wedstrijden" — daardoor leek het bv. alsof er maar 2
-  // wedstrijden gespeeld waren terwijl het er 3 waren (gemeld door gebruiker
-  // 2026-09-20). Beide aantallen nu apart zichtbaar.
+  // alleGespeeld = écht alle gespeelde wedstrijden. wedBijgehouden is de subset
+  // die ook echt volledig bijgehouden is: een opstelling ÉN een eindmoment (via
+  // Live afgerond) — zonder eindmoment geeft berekenSpeeltijd() voor een niet-
+  // gewisselde speler altijd 0 terug (de laatste periode sluit dan nooit af), dus
+  // "heeft alleen een opstelling" was niet genoeg om als "bijgehouden" te tellen
+  // (gemeld door gebruiker 2026-09-20: Jamie kreeg zo 3 wedstrijden toegerekend
+  // i.p.v. de verwachte 2, terwijl de 160 minuten daarbij wél klopten).
   const alleGespeeld = wedstrijden().filter(w => w.gespeeld);
-  const wed = alleGespeeld.filter(w => w.wed_lineup && Object.keys(w.wed_lineup).length);
+  const wedMogelijk = alleGespeeld.filter(w => w.wed_lineup && Object.keys(w.wed_lineup).length);
   const perSpeler = {};
   sp.forEach(p => { perSpeler[p.id] = { totaal: 0, wedstrijden: [], minutenPerWed: {} }; });
+  let wedBijgehouden = [];
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     const [alleWissels, eindeMomenten] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten()]);
-    wed.forEach(w => {
+    wedBijgehouden = wedMogelijk.filter(w => eindeMomenten[w.id] != null);
+    wedBijgehouden.forEach(w => {
       const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
       const eindMinuut = eindeMomenten[w.id];
       sp.forEach(p => {
@@ -4813,12 +4880,12 @@ async function renderInzSpeelminuten() {
     });
   }
   const lijst = sp.map(p => ({ p, ...perSpeler[p.id] })).filter(x => x.totaal > 0).sort((a, b) => b.totaal - a.totaal);
-  const bijgehoudenNote = wed.length < alleGespeeld.length ? ' (waarvan ' + wed.length + ' bijgehouden)' : '';
+  const bijgehoudenNote = wedBijgehouden.length < alleGespeeld.length ? ' (waarvan ' + wedBijgehouden.length + ' bijgehouden)' : '';
   const aantalWedTekst = alleGespeeld.length + ' gespeelde wedstrijd' + (alleGespeeld.length === 1 ? '' : 'en') + bijgehoudenNote;
   document.getElementById('i-content').innerHTML = (lijst.length
     ? '<div style="font-size:12.5px;color:var(--ink3);margin-top:14px">' + aantalWedTekst + '.</div>'
       + lijst.map(x => {
-        const beschikbaarVoor = aantalWedstrijdenVoorSpeler(x.p, wed, x.minutenPerWed);
+        const beschikbaarVoor = aantalWedstrijdenVoorSpeler(x.p, wedBijgehouden, x.minutenPerWed);
         return '<div class="card" style="margin-top:10px">'
         + '<div style="cursor:pointer" onclick="inzToggle(this)"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:600">' + esc(x.p.naam) + '</div><span class="tag tag--line">' + x.totaal + ' min · ' + beschikbaarVoor + ' wedstrijd' + (beschikbaarVoor === 1 ? '' : 'en') + '</span></div></div>'
         + '<div class="inz-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">' + x.wedstrijden.map(m => '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span>vs ' + esc(m.tegenstander) + '</span><span style="color:var(--ink3)">' + m.minuten + ' min' + (m.wissels ? ' · ' + esc(m.wissels) : '') + '</span></div>').join('') + '</div>'

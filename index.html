@@ -1305,7 +1305,8 @@ function openOpstSlotKiezer(posId, ctx) {
   opstAssignCtx = { posId, ctx };
   const pos = ctx.formatie().pos.find(p => p.id === posId);
   const lineup = ctx.getLineup();
-  const sp = actieveSpelers();
+  const afwezigeIds = ctx.afwezigeIds ? ctx.afwezigeIds() : new Set();
+  const sp = actieveSpelers().filter(p => !afwezigeIds.has(p.id));
   document.getElementById('os-titel').textContent = pos.label;
   document.getElementById('os-sub').textContent = 'Kies een speler';
   const matcht = (p) => (p.posities || []).includes(pos.label) || (pos.label === 'GK' && (p.posities || []).includes('Keeper'));
@@ -1366,6 +1367,8 @@ const teamOpstCtx = {
   getLineup() { return ls('fcp_lineup', '{}'); },
   setLineup(l) { localStorage.setItem('fcp_lineup', JSON.stringify(l)); },
   herrender() { renderTeamOpstelling(); },
+  // Team-brede hoofdopstelling heeft geen "afwezig voor déze wedstrijd"-concept.
+  afwezigeIds() { return new Set(); },
   async remoteSync(lineup, geraakt) {
     for (const pos of geraakt) {
       const res = await assignLineupPositie(pos, lineup[pos] || null);
@@ -1396,9 +1399,10 @@ function rolBadgeKleurenV2(pos) {
   if (r === 'rol-aanval') return 'background:var(--rol-att-s);color:var(--rol-att)';
   return 'background:var(--rol-mid-s);color:var(--rol-mid)';
 }
-function benchHtmlV2(lineup) {
+function benchHtmlV2(lineup, afwezigeIds) {
   const opgesteld = new Set(Object.values(lineup).filter(Boolean));
-  const bank = actieveSpelers().filter(p => !opgesteld.has(p.id));
+  const afwezig = afwezigeIds || new Set();
+  const bank = actieveSpelers().filter(p => !opgesteld.has(p.id) && !afwezig.has(p.id));
   const inhoud = !bank.length
     ? '<div style="font-size:13px;color:var(--ink3)">Alle spelers zijn opgesteld.</div>'
     : bank.map(p => {
@@ -1469,6 +1473,13 @@ function wedOpstCtx(wedId) {
     getLineup() { const w = wedstrijden().find(x => x.id === wedId); return w.wed_lineup || {}; },
     setLineup(l) { const lijst = wedstrijden(); const w = lijst.find(x => x.id === wedId); w.wed_lineup = l; localStorage.setItem('fcp_wed', JSON.stringify(lijst)); },
     herrender() { renderWedOpstelling(wedId); },
+    // Spelers die voor déze wedstrijd afwezig zijn gemeld horen niet in de
+    // basisopstelling-kiezer of wisselspelers-lijst te verschijnen — zelfde
+    // categorie fix als renderWisselSheet() tijdens Live (2026-09-19/20).
+    afwezigeIds() {
+      const w = wedstrijden().find(x => x.id === wedId);
+      return new Set(((w && w.afwezig) || []).map(a => (a && a.pid) ? a.pid : a));
+    },
     async remoteSync(lineup) {
       const res = await updateWedstrijd(wedId, { wed_lineup: JSON.stringify(lineup) });
       if (res && res._error) showToast('⚠️ Opstelling niet opgeslagen naar Supabase: ' + (res.message || res.status));
@@ -1529,7 +1540,7 @@ function renderWedOpstelling(wedId) {
     + select
     + (f.eigen ? '<div class="actionbar" style="margin-top:-4px;margin-bottom:14px"><button class="btn btn--ghost btn--sm" style="flex:1" onclick="openFormatieEditor(\'' + actief + '\',{type:\'wed\',wedId:\'' + wedId + '\'})">Bewerken</button><button class="btn btn--ghost btn--sm" style="flex:1" onclick="wedOpstVerwijderFormatie(this,\'' + wedId + '\',\'' + actief + '\')">Verwijderen</button></div>' : '')
     + '<div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;max-width:520px;margin:0 auto"><div class="pitch" style="position:absolute;inset:0">' + opstPitchHtml(f, lineup, "wedOpstCtx('" + wedId + "')") + '</div></div>'
-    + benchHtmlV2(lineup)
+    + benchHtmlV2(lineup, wedOpstCtx(wedId).afwezigeIds())
     + '<div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="wedOpstWissen(this,\'' + wedId + '\')">Wissen</button><button class="btn btn--primary" style="flex:1" onclick="wedOpstDelen(\'' + wedId + '\')">Delen via WhatsApp</button></div>'
     + '<button class="btn btn--ghost btn--block" style="margin-top:10px" onclick="openFormatieEditor(null,{type:\'wed\',wedId:\'' + wedId + '\'})">+ Eigen systeem maken</button>';
   toonScherm('wedstrijd-opstelling');

@@ -2148,7 +2148,13 @@ async function renderSpelerWedstrijdenV2(spelerId) {
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     [alleWissels, eindeMomenten] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten()]);
   }
-  const rij = w => {
+  // Echte tabel — elke waarde zijn eigen kolom met koptekst (net als Cijfer al
+  // had), i.p.v. alles samengevoegd in één statusregel. Kolombreedtes gekozen
+  // om op telefoonbreedte (~390px) zonder horizontale scroll te passen — Pos.
+  // is de enige kolom die kan wrappen (meerdere posities); de rest is één regel.
+  // Gevraagd door gebruiker 2026-09-20 ("een hele tabel, zoals bij cijfer").
+  const kolom = 'display:grid;grid-template-columns:1fr 28px 34px 38px 20px 58px;align-items:center;gap:6px';
+  const rij = (w, i) => {
     const d = new Date(w.isoDate);
     const cijfer = (w.ratings || {})[spelerId];
     const motm = w.motm === spelerId;
@@ -2161,25 +2167,29 @@ async function renderSpelerWedstrijdenV2(spelerId) {
     const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
     const minuten = (afwezig || !bijgehouden) ? null : berekenSpeeltijd(w.id, spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]);
     const posities = (afwezig || !bijgehouden) ? [] : spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd);
-    const statusregel = afwezig
-      ? '<span style="color:var(--loss)">Afwezig</span>'
-      : !bijgehouden
-        ? 'Niet bijgehouden'
-        : (minuten > 0
-            ? minuten + ' min' + (posities.length ? ' · ' + esc(posities.join(', ')) : '')
-            : 'Niet gespeeld');
-    return '<div class="wed-hist-row">'
-      + '<div><div style="font-size:13.5px;font-weight:600">vs ' + esc(w.tegenstander || '?') + '</div><div style="font-size:11.5px;color:var(--ink3);margin-top:1px">' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + ' · ' + typeLabel(w.wed_type || 'oefenwedstrijd') + '</div><div style="font-size:11.5px;color:var(--ink3);margin-top:2px">' + statusregel + '</div></div>'
-      + '<div class="num" style="font-size:14px;text-align:right;' + (cijfer != null ? 'font-weight:700' : 'font-weight:500;color:var(--ink3)') + '">' + (cijfer != null ? Number(cijfer).toFixed(1) : '—') + '</div>'
+    // Aanwezig-kolom: afwezig gemeld → ✕; niet bijgehouden (geen data, kan geen
+    // uitspraak over doen) → —; anders (echt aanwezig/opgesteld) → ✓.
+    const aanwCel = afwezig
+      ? '<span style="color:var(--loss);font-weight:700">✕</span>'
+      : !bijgehouden ? '<span style="color:var(--ink3)">—</span>' : '<span style="color:var(--win);font-weight:700">✓</span>';
+    const minCel = (afwezig || !bijgehouden) ? '—' : String(minuten);
+    const posCel = (afwezig || !bijgehouden || !posities.length) ? '—' : esc(posities.join(', '));
+    return '<div style="' + kolom + ';padding:8px 0;font-size:12.5px' + (i > 0 ? ';border-top:1px solid var(--line)' : '') + (afwezig ? ';opacity:.65' : '') + '">'
+      + '<div><div style="font-size:13.5px;font-weight:600">vs ' + esc(w.tegenstander || '?') + '</div><div style="font-size:11px;color:var(--ink3);margin-top:1px">' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + ' · ' + typeLabel(w.wed_type || 'oefenwedstrijd') + '</div></div>'
+      + '<div style="text-align:center">' + aanwCel + '</div>'
+      + '<div class="num" style="text-align:right;color:var(--ink3)">' + minCel + '</div>'
+      + '<div class="num" style="text-align:right;' + (cijfer != null ? 'font-weight:700' : 'color:var(--ink3)') + '">' + (cijfer != null ? Number(cijfer).toFixed(1) : '—') + '</div>'
       + '<div style="text-align:center;color:#f0c040">' + (motm ? '⭐' : '') + '</div>'
+      + '<div style="color:var(--ink3);line-height:1.3">' + posCel + '</div>'
       + '</div>';
   };
   const motmCount = gespeeld.filter(w => w.motm === spelerId).length;
   el.innerHTML = '<div class="sec" style="display:flex;align-items:baseline;justify-content:space-between"><span>Wedstrijden</span><span style="font-size:11.5px;color:var(--ink3);text-transform:none;letter-spacing:0">' + gespeeld.length + ' wedstrijden · ' + motmCount + '× MOTM</span></div>'
-    + '<div class="card" style="margin-bottom:14px">'
-    + '<div style="display:grid;grid-template-columns:1fr 40px 24px;font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding-bottom:6px;border-bottom:1px solid var(--line)"><span>Wedstrijd</span><span style="text-align:right">Cijfer</span><span></span></div>'
-    + gespeeld.map(rij).join('')
-    + '</div>';
+    + '<div class="card" style="margin-bottom:14px;overflow-x:auto">'
+    + '<div style="min-width:290px">'
+    + '<div style="' + kolom + ';font-size:9px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding-bottom:6px;border-bottom:1px solid var(--line)"><span>Wedstrijd</span><span style="text-align:center">Aanw</span><span style="text-align:right">Min</span><span style="text-align:right">Cijf.</span><span></span><span>Pos.</span></div>'
+    + gespeeld.map((w, i) => rij(w, i)).join('')
+    + '</div></div>';
 }
 async function renderVergelijkingV2(spelerId) {
   const { spelerHist, trainerHist } = await laadBeoordelingenV2(spelerId);

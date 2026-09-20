@@ -2097,6 +2097,21 @@ function skillTrendPijlHtml(trainerHist, sk) {
   const label = verschil > 0 ? 'Vooruitgang t.o.v. vorige trainersbeoordeling' : verschil < 0 ? 'Achteruitgang t.o.v. vorige trainersbeoordeling' : 'Gelijk t.o.v. vorige trainersbeoordeling';
   return '<span aria-label="' + label + '" title="' + label + '" style="color:var(--' + kleur + ');font-weight:700;font-size:13px">' + pijl + '</span>';
 }
+// Betrouwbaarheid van speeltijd-data (0 minuten ≠ "geen data") — een wedstrijd
+// kan een basisopstelling én een eindmoment hebben zonder dat de wissel-functie
+// ooit is gebruikt (bv. oude wedstrijden van vóór die feature bestond, waar
+// alleen doelpunten/rust/einde werden bijgehouden, geen wissels). Voor een
+// speler die IN de basisopstelling stond is "hele wedstrijd gespeeld" dan nog
+// een redelijke aanname. Voor een BANKspeler is dat niet zo: zonder één wissel-
+// registratie voor de hele wedstrijd weten we niets over hem, en moet 0 minuten
+// als "geen data" tonen, niet als "bevestigd niet gespeeld". Gemeld door
+// gebruiker 2026-09-20 (Wherevogels 22 aug: een bankspeler toonde 0 min i.p.v.
+// leeg, terwijl de wissel-functie toen nog niet bestond).
+function speeltijdBetrouwbaarVoorSpeler(spelerId, w, wisselsVoorWedstrijd, eindMinuut) {
+  if (!w.wed_lineup || !Object.keys(w.wed_lineup).length || eindMinuut == null) return false;
+  if (Object.values(w.wed_lineup).includes(spelerId)) return true;
+  return wisselsVoorWedstrijd.length > 0;
+}
 // Wedstrijden — per wedstrijd aanwezig/afwezig, minuten, cijfer, MOTM en
 // gespeelde positie(s) voor déze speler, nieuwste eerst. Cijfer/MOTM/
 // aanwezigheid komen synchroon uit wedstrijden() (ratings/motm/afwezig staan
@@ -2113,16 +2128,29 @@ function skillTrendPijlHtml(trainerHist, sk) {
 // veld verliet, en diens (start)positie over te nemen — correct voor het
 // gebruikelijke geval (1-op-1 wissel), maar niet gegarandeerd bij een speler
 // die zelf al eerder van positie wisselde vóór hij weer werd gewisseld.
+//
+// wed_lineup kan meerdere sleutels naar dezelfde speler hebben ("verweesde"
+// aliassen uit een oudere versie van de formatie-editor, bv. DM_L/CM_A naast
+// LM/CM_V voor "4-4-2 ruit" — de formatie-definitie zelf is op enig moment
+// vereenvoudigd, maar oude wed_lineup-snapshots hielden de bredere sleutel-
+// set). Alleen een sleutel gebruiken die ook echt in de HUIDIGE formatie
+// voorkomt, anders toont een niet meer bestaande interne code (bv. "DM_L",
+// geen echte positie meer in 4-4-2 ruit). Gemeld door gebruiker 2026-09-20.
 function spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd) {
   const alle = alleFormatiesV2();
   const formatie = alle[w.formatie];
+  const geldigePosIds = new Set(formatie ? formatie.pos.map(p => p.id) : []);
   const lineup = w.wed_lineup || {};
   const labelVan = posId => {
     const p = formatie && formatie.pos.find(x => x.id === posId);
-    return p ? p.label : posId;
+    return p ? p.label : null;
+  };
+  const posIdVoorSpeler = spId => {
+    const kandidaten = Object.keys(lineup).filter(k => lineup[k] === spId);
+    return kandidaten.find(k => geldigePosIds.has(k)) || null;
   };
   const posities = [];
-  const startPosId = Object.keys(lineup).find(k => lineup[k] === spelerId);
+  const startPosId = posIdVoorSpeler(spelerId);
   if (startPosId) posities.push(labelVan(startPosId));
   const events = [...wisselsVoorWedstrijd].sort((a, b) => (a.wedstrijd_minuut || 0) - (b.wedstrijd_minuut || 0));
   const gebruikteUit = new Set();
@@ -2130,10 +2158,10 @@ function spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd) {
     const uitEvent = events.find(e => e.moment === 'eruit' && e.wedstrijd_minuut === inEvent.wedstrijd_minuut && !gebruikteUit.has(e.id));
     if (!uitEvent) return;
     gebruikteUit.add(uitEvent.id);
-    const uitPosId = Object.keys(lineup).find(k => lineup[k] === uitEvent.speler_id);
+    const uitPosId = posIdVoorSpeler(uitEvent.speler_id);
     if (uitPosId) posities.push(labelVan(uitPosId));
   });
-  return [...new Set(posities)];
+  return [...new Set(posities.filter(Boolean))];
 }
 async function renderSpelerWedstrijdenV2(spelerId) {
   const el = document.getElementById('sb-wedstrijden');
@@ -2159,21 +2187,23 @@ async function renderSpelerWedstrijdenV2(spelerId) {
     const cijfer = (w.ratings || {})[spelerId];
     const motm = w.motm === spelerId;
     const afwezig = wedstrijdAfwezigeIds(w).has(spelerId);
-    // "Bijgehouden" = heeft opstelling ÉN eindmoment (via Live afgerond) — zonder
-    // eindmoment geeft berekenSpeeltijd() altijd 0 terug voor wie niet gewisseld
-    // is, dat is dan geen "niet gespeeld" maar gewoon geen data. Zelfde
-    // onderscheid als bij Inzicht → Speeltijd (zie toelichting daar).
+    // "Bijgehouden" (wedstrijd-breed) = heeft opstelling ÉN eindmoment — bepaalt
+    // de Aanwezig-kolom (die staat los van wissels). Voor Minuten/Positie is dat
+    // niet genoeg: zie speeltijdBetrouwbaarVoorSpeler() hierboven — een
+    // bankspeler bij een wedstrijd zonder één wisselregistratie krijgt daar
+    // terecht "geen data" i.p.v. "0 min".
     const bijgehouden = !!(w.wed_lineup && Object.keys(w.wed_lineup).length && eindeMomenten[w.id] != null);
     const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
-    const minuten = (afwezig || !bijgehouden) ? null : berekenSpeeltijd(w.id, spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]);
-    const posities = (afwezig || !bijgehouden) ? [] : spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd);
+    const speeltijdBetrouwbaar = !afwezig && speeltijdBetrouwbaarVoorSpeler(spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]);
+    const minuten = speeltijdBetrouwbaar ? berekenSpeeltijd(w.id, spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]) : null;
+    const posities = speeltijdBetrouwbaar ? spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd) : [];
     // Aanwezig-kolom: afwezig gemeld → ✕; niet bijgehouden (geen data, kan geen
     // uitspraak over doen) → —; anders (echt aanwezig/opgesteld) → ✓.
     const aanwCel = afwezig
       ? '<span style="color:var(--loss);font-weight:700">✕</span>'
       : !bijgehouden ? '<span style="color:var(--ink3)">—</span>' : '<span style="color:var(--win);font-weight:700">✓</span>';
-    const minCel = (afwezig || !bijgehouden) ? '—' : String(minuten);
-    const posCel = (afwezig || !bijgehouden || !posities.length) ? '—' : esc(posities.join(', '));
+    const minCel = speeltijdBetrouwbaar ? String(minuten) : '—';
+    const posCel = (!speeltijdBetrouwbaar || !posities.length) ? '—' : esc(posities.join(', '));
     return '<div style="' + kolom + ';padding:8px 0;font-size:12.5px' + (i > 0 ? ';border-top:1px solid var(--line)' : '') + (afwezig ? ';opacity:.65' : '') + '">'
       + '<div><div style="font-size:13.5px;font-weight:600">vs ' + esc(w.tegenstander || '?') + '</div><div style="font-size:11px;color:var(--ink3);margin-top:1px">' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + ' · ' + typeLabel(w.wed_type || 'oefenwedstrijd') + '</div></div>'
       + '<div style="text-align:center">' + aanwCel + '</div>'

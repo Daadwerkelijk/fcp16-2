@@ -2158,13 +2158,21 @@ function spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd, positieWis
   const gebeurtenissen = [
     ...(wisselsVoorWedstrijd || []).map(e => ({ soort: 'wissel', minuut: e.wedstrijd_minuut || 0, data: e })),
     ...(positieWisselsVoorWedstrijd || []).map(e => ({ soort: 'ruil', minuut: e.wedstrijd_minuut || 0, data: e })),
-  ];
-  const perMinuut = {};
-  gebeurtenissen.forEach(g => { (perMinuut[g.minuut] = perMinuut[g.minuut] || []).push(g); });
-  Object.keys(perMinuut).map(Number).sort((a, b) => a - b).forEach(minuut => {
-    const groep = perMinuut[minuut];
+  ].sort((a, b) => a.minuut - b.minuut);
+  // Groeperen op basis van tijdsnabijheid (max. 2 minuten tussen opeenvolgende
+  // gebeurtenissen), niet op exact dezelfde minuut — een wissel en de
+  // bijbehorende correctie via positiewissel worden in de praktijk niet altijd
+  // in exact dezelfde minuut geregistreerd.
+  const groepen = [];
+  gebeurtenissen.forEach(g => {
+    const laatste = groepen[groepen.length - 1];
+    if (laatste && g.minuut - laatste[laatste.length - 1].minuut <= 2) laatste.push(g);
+    else groepen.push([g]);
+  });
+  groepen.forEach(groep => {
+    const betrokken = new Set(); // spelers wiens plek in deze groep kan zijn veranderd
     // Wissels eerst: koppel elke 'erin' aan een nog niet gebruikte 'eruit' in
-    // dezelfde minuut, en werk de lineup bij naar diens (actuele) positie —
+    // dezelfde groep, en werk de lineup bij naar diens (actuele) positie —
     // "actueel" omdat een eerdere ruil zijn positie al gewijzigd kan hebben.
     const uitEvents = groep.filter(g => g.soort === 'wissel' && g.data.moment === 'eruit');
     const gebruikt = new Set();
@@ -2176,7 +2184,7 @@ function spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd, positieWis
       Object.keys(huidigeLineup).forEach(k => { if (huidigeLineup[k] === uitG.data.speler_id) delete huidigeLineup[k]; });
       if (posId) {
         huidigeLineup[posId] = inG.data.speler_id;
-        if (inG.data.speler_id === spelerId) noteer(posId);
+        betrokken.add(inG.data.speler_id);
       }
     });
     // Dan positiewissels: twee huidige bezetters ruilen van plek.
@@ -2185,9 +2193,20 @@ function spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd, positieWis
       if (!geldigePosIds.has(positie_a) || !geldigePosIds.has(positie_b)) return;
       const spA = huidigeLineup[positie_a], spB = huidigeLineup[positie_b];
       huidigeLineup[positie_a] = spB; huidigeLineup[positie_b] = spA;
-      if (spA === spelerId) noteer(positie_b);
-      if (spB === spelerId) noteer(positie_a);
+      if (spA) betrokken.add(spA);
+      if (spB) betrokken.add(spB);
     });
+    // Pas ná alle gebeurtenissen van déze groep noteren, en dan alleen de
+    // uiteindelijke plek — een tussenpositie binnen dezelfde groep (bv. een
+    // wissel meteen gevolgd door een correctie via positiewissel, ook als dat
+    // een minuut later is ingevoerd) is nooit echt gespeeld, ongeacht de
+    // volgorde waarin beide zijn ingevoerd. Gemeld door gebruiker 2026-09-21:
+    // Joshua kwam in op MID-R (gekoppeld aan wie er toen uitging) en werd kort
+    // daarna via een positiewissel naar MID-L gecorrigeerd — hij heeft MID-R
+    // nooit echt gespeeld.
+    if (betrokken.has(spelerId)) {
+      noteer(Object.keys(huidigeLineup).find(k => huidigeLineup[k] === spelerId));
+    }
   });
   return [...posities];
 }

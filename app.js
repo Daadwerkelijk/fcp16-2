@@ -436,6 +436,14 @@ async function haalAlleWissels() {
   const res = await sbFetch('wissels?select=*&order=wedstrijd_minuut.asc,created_at.asc');
   return res && !res._error ? res : [];
 }
+// Alle positiewissels (2 spelers die al op het veld staan ruilen van positie,
+// zie registreerPositieWissel) — nodig om spelerPositiesInWedstrijd() (index.html)
+// hiermee rekening te laten houden, anders mist die reconstructie precies dit
+// soort wissel. Gemeld door gebruiker 2026-09-21.
+async function haalAllePositieWissels() {
+  const res = await sbFetch('positie_wissels?select=*&order=wedstrijd_minuut.asc,created_at.asc');
+  return res && !res._error ? res : [];
+}
 // ─── Datalaag: Doelpunten (structureel, per helft — voor "Doelpunten per fase" op
 // het desktop-dashboard). Los van de vrije-tekst-notities in live_updates: elke +1-tik
 // tijdens Live (scoreWijzig() in wedstrijden.html) schrijft hier direct een eigen rij
@@ -473,7 +481,7 @@ async function haalAlleEindeMomenten() {
 // Een open periode zonder afsluitend moment telt NIET mee (zie eindMinuut hieronder) — beter een
 // gemiste minuut dan een gegokte.
 function berekenSpeeltijd(wedstrijdId, spelerId, wedstrijd, wisselsVoorWedstrijd, eindMinuut) {
-  const eigenWissels = wisselsVoorWedstrijd
+  const eigenWissels = (wisselsVoorWedstrijd || [])
     .filter(w => w.wedstrijd_id === wedstrijdId && w.speler_id === spelerId)
     .sort((a, b) => (a.wedstrijd_minuut||0) - (b.wedstrijd_minuut||0));
   const inBasisopstelling = wedstrijd && wedstrijd.wed_lineup &&

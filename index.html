@@ -2108,9 +2108,9 @@ function skillTrendPijlHtml(trainerHist, sk) {
 // gebruiker 2026-09-20 (Wherevogels 22 aug: een bankspeler toonde 0 min i.p.v.
 // leeg, terwijl de wissel-functie toen nog niet bestond).
 function speeltijdBetrouwbaarVoorSpeler(spelerId, w, wisselsVoorWedstrijd, eindMinuut) {
-  if (!w.wed_lineup || !Object.keys(w.wed_lineup).length || eindMinuut == null) return false;
+  if (!w || !w.wed_lineup || !Object.keys(w.wed_lineup).length || eindMinuut == null) return false;
   if (Object.values(w.wed_lineup).includes(spelerId)) return true;
-  return wisselsVoorWedstrijd.length > 0;
+  return (wisselsVoorWedstrijd || []).length > 0;
 }
 // Wedstrijden — per wedstrijd aanwezig/afwezig, minuten, cijfer, MOTM en
 // gespeelde positie(s) voor déze speler, nieuwste eerst. Cijfer/MOTM/
@@ -2121,13 +2121,13 @@ function speeltijdBetrouwbaarVoorSpeler(spelerId, w, wisselsVoorWedstrijd, eindM
 // van cijfer/MOTM-only (2026-09-14) met aanwezigheid/minuten/positie,
 // gevraagd door gebruiker 2026-09-20.
 //
-// Positie-reconstructie is best-effort: de wissels-tabel legt alleen wie
-// erin/eruit ging vast, niet op welke positie. Voor de basisopstelling is de
-// positie zeker (wed_lineup); voor een invaller wordt de positie afgeleid
-// door hem te koppelen aan wie op hetzelfde moment (dezelfde minuut) het
-// veld verliet, en diens (start)positie over te nemen — correct voor het
-// gebruikelijke geval (1-op-1 wissel), maar niet gegarandeerd bij een speler
-// die zelf al eerder van positie wisselde vóór hij weer werd gewisseld.
+// Positie-reconstructie: een chronologische simulatie van de veldopstelling,
+// vanaf wed_lineup, die per minuut zowel spelerswissels (wissels-tabel) als
+// positiewissels (positie_wissels-tabel — 2 spelers die al op het veld staan
+// ruilen van plek, registreert geen speler-in/eruit) verwerkt. Zonder de
+// laatste zou een speler die via zo'n ruil van positie wisselde zijn nieuwe
+// positie nooit tonen (gemeld door gebruiker 2026-09-21: Joshua stond echt op
+// MID-L, de reconstructie toonde nog zijn oorspronkelijke MID-R).
 //
 // wed_lineup kan meerdere sleutels naar dezelfde speler hebben ("verweesde"
 // aliassen uit een oudere versie van de formatie-editor, bv. DM_L/CM_A naast
@@ -2136,32 +2136,60 @@ function speeltijdBetrouwbaarVoorSpeler(spelerId, w, wisselsVoorWedstrijd, eindM
 // set). Alleen een sleutel gebruiken die ook echt in de HUIDIGE formatie
 // voorkomt, anders toont een niet meer bestaande interne code (bv. "DM_L",
 // geen echte positie meer in 4-4-2 ruit). Gemeld door gebruiker 2026-09-20.
-function spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd) {
+function spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd, positieWisselsVoorWedstrijd) {
+  if (!w) return [];
   const alle = alleFormatiesV2();
   const formatie = alle[w.formatie];
   const geldigePosIds = new Set(formatie ? formatie.pos.map(p => p.id) : []);
-  const lineup = w.wed_lineup || {};
   const labelVan = posId => {
     const p = formatie && formatie.pos.find(x => x.id === posId);
     return p ? p.label : null;
   };
-  const posIdVoorSpeler = spId => {
-    const kandidaten = Object.keys(lineup).filter(k => lineup[k] === spId);
-    return kandidaten.find(k => geldigePosIds.has(k)) || null;
-  };
-  const posities = [];
-  const startPosId = posIdVoorSpeler(spelerId);
-  if (startPosId) posities.push(labelVan(startPosId));
-  const events = [...wisselsVoorWedstrijd].sort((a, b) => (a.wedstrijd_minuut || 0) - (b.wedstrijd_minuut || 0));
-  const gebruikteUit = new Set();
-  events.filter(e => e.moment === 'erin' && e.speler_id === spelerId).forEach(inEvent => {
-    const uitEvent = events.find(e => e.moment === 'eruit' && e.wedstrijd_minuut === inEvent.wedstrijd_minuut && !gebruikteUit.has(e.id));
-    if (!uitEvent) return;
-    gebruikteUit.add(uitEvent.id);
-    const uitPosId = posIdVoorSpeler(uitEvent.speler_id);
-    if (uitPosId) posities.push(labelVan(uitPosId));
+  // Startopstelling: alleen geldige sleutels — een verweesde alias mag hier
+  // nooit als "huidige positie" fungeren.
+  const huidigeLineup = {}; // posId -> spelerId, wordt chronologisch bijgewerkt
+  Object.entries(w.wed_lineup || {}).forEach(([posId, spId]) => {
+    if (spId && geldigePosIds.has(posId)) huidigeLineup[posId] = spId;
   });
-  return [...new Set(posities.filter(Boolean))];
+  const posities = new Set();
+  const noteer = posId => { const l = posId && labelVan(posId); if (l) posities.add(l); };
+  noteer(Object.keys(huidigeLineup).find(k => huidigeLineup[k] === spelerId));
+
+  const gebeurtenissen = [
+    ...(wisselsVoorWedstrijd || []).map(e => ({ soort: 'wissel', minuut: e.wedstrijd_minuut || 0, data: e })),
+    ...(positieWisselsVoorWedstrijd || []).map(e => ({ soort: 'ruil', minuut: e.wedstrijd_minuut || 0, data: e })),
+  ];
+  const perMinuut = {};
+  gebeurtenissen.forEach(g => { (perMinuut[g.minuut] = perMinuut[g.minuut] || []).push(g); });
+  Object.keys(perMinuut).map(Number).sort((a, b) => a - b).forEach(minuut => {
+    const groep = perMinuut[minuut];
+    // Wissels eerst: koppel elke 'erin' aan een nog niet gebruikte 'eruit' in
+    // dezelfde minuut, en werk de lineup bij naar diens (actuele) positie —
+    // "actueel" omdat een eerdere ruil zijn positie al gewijzigd kan hebben.
+    const uitEvents = groep.filter(g => g.soort === 'wissel' && g.data.moment === 'eruit');
+    const gebruikt = new Set();
+    groep.filter(g => g.soort === 'wissel' && g.data.moment === 'erin').forEach(inG => {
+      const uitG = uitEvents.find(u => !gebruikt.has(u));
+      if (!uitG) return;
+      gebruikt.add(uitG);
+      const posId = Object.keys(huidigeLineup).find(k => huidigeLineup[k] === uitG.data.speler_id);
+      Object.keys(huidigeLineup).forEach(k => { if (huidigeLineup[k] === uitG.data.speler_id) delete huidigeLineup[k]; });
+      if (posId) {
+        huidigeLineup[posId] = inG.data.speler_id;
+        if (inG.data.speler_id === spelerId) noteer(posId);
+      }
+    });
+    // Dan positiewissels: twee huidige bezetters ruilen van plek.
+    groep.filter(g => g.soort === 'ruil').forEach(g => {
+      const { positie_a, positie_b } = g.data;
+      if (!geldigePosIds.has(positie_a) || !geldigePosIds.has(positie_b)) return;
+      const spA = huidigeLineup[positie_a], spB = huidigeLineup[positie_b];
+      huidigeLineup[positie_a] = spB; huidigeLineup[positie_b] = spA;
+      if (spA === spelerId) noteer(positie_b);
+      if (spB === spelerId) noteer(positie_a);
+    });
+  });
+  return [...posities];
 }
 async function renderSpelerWedstrijdenV2(spelerId) {
   const el = document.getElementById('sb-wedstrijden');
@@ -2172,9 +2200,9 @@ async function renderSpelerWedstrijdenV2(spelerId) {
     return;
   }
   const typeLabel = t => t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen';
-  let alleWissels = [], eindeMomenten = {};
+  let alleWissels = [], eindeMomenten = {}, allePositieWissels = [];
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
-    [alleWissels, eindeMomenten] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten()]);
+    [alleWissels, eindeMomenten, allePositieWissels] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten(), haalAllePositieWissels()]);
   }
   // Echte tabel — elke waarde zijn eigen kolom met koptekst (net als Cijfer al
   // had), i.p.v. alles samengevoegd in één statusregel. Kolombreedtes gekozen
@@ -2194,9 +2222,10 @@ async function renderSpelerWedstrijdenV2(spelerId) {
     // terecht "geen data" i.p.v. "0 min".
     const bijgehouden = !!(w.wed_lineup && Object.keys(w.wed_lineup).length && eindeMomenten[w.id] != null);
     const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
+    const positieWisselsVoorWedstrijd = allePositieWissels.filter(ps => ps.wedstrijd_id === w.id);
     const speeltijdBetrouwbaar = !afwezig && speeltijdBetrouwbaarVoorSpeler(spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]);
     const minuten = speeltijdBetrouwbaar ? berekenSpeeltijd(w.id, spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]) : null;
-    const posities = speeltijdBetrouwbaar ? spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd) : [];
+    const posities = speeltijdBetrouwbaar ? spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd, positieWisselsVoorWedstrijd) : [];
     // Aanwezig-kolom: afwezig gemeld → ✕. Een cijfer of MOTM-toekenning is op
     // zichzelf al bewijs van aanwezigheid (je geeft nooit een cijfer aan iemand
     // die er niet was) — telt dus altijd als ✓, ook als de wedstrijd verder niet

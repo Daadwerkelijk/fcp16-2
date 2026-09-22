@@ -18,25 +18,12 @@
 <style>
 /* Prototype-shell: geen Figma-canvas/telefoonkader meer, gewoon een echte
    mobiel-breedte pagina zoals de rest van de app (zie live.html). */
-body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
 .screen{display:none}
 .screen.actief{display:block}
 .vs{display:flex;align-items:center;gap:12px}
 .crest{width:36px;height:36px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ink3);flex-shrink:0}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stat-n{font-size:22px;font-weight:700;letter-spacing:-.03em}
 .stat-l{font-size:11px;color:var(--ink3);font-weight:600;margin-top:1px}
-/* Inzicht-desktop: content-brede kaarten i.p.v. vaste 300px/1fr-kolommen —
-   elke kaart pakt alleen de breedte die 'm nodig heeft (afgestemd met
-   gebruiker 2026-09-14, mockup design/inzicht-desktop/). */
-.inzd-row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
-.inzd-vorm{flex:1 1 260px;max-width:320px}
-.inzd-dp{flex:1 1 220px;max-width:260px}
-.inzd-top{flex:1 1 260px;max-width:320px}
-.inzd-cijfer{flex:1 1 300px}
-.inzd-min{flex:1 1 220px}
-.inzd-afw{flex:1 1 320px}
-.inzd-motm{flex:0 1 200px}
 /* Speler-bewerken: wedstrijdgeschiedenis (cijfer + MOTM per wedstrijd) —
    gemeld door gebruiker 2026-09-14, mockup design/speler-overzicht/. */
 .wed-hist-row{display:grid;grid-template-columns:1fr 40px 24px;align-items:center;gap:10px;padding:9px 0}
@@ -44,25 +31,22 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
 .sheet-overlay{position:fixed;inset:0;background:rgba(20,17,14,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet-overlay.verborgen{display:none}
 .sheet-wrap{width:100%;max-width:480px}
-.pitch-wrap{position:relative;height:420px}
 .fo-slot{position:absolute;transform:translate(-50%,-50%);z-index:2;touch-action:none;cursor:grab}
 .fo-slot.dragging{cursor:grabbing;z-index:50}
 .fo-slot.dragging .ppill{box-shadow:0 4px 14px rgba(0,0,0,.45)}
 .bg-fill{height:100%}
-/* Desktop (≥860px): tabbalk-onderin wordt zijbalk-links (zie <nav class="side">
-   hieronder + .side/.side-tab in ui-v2.css), en de schermkolom mag breder dan de
-   mobiele 480px — maar blijft één kolom; een echte meerkoloms dashboard-indeling
-   per scherm (zoals in de Inzicht-desktopmockup, 2026-09-07) is een latere stap. */
-@media (min-width:860px){
-  /* 720px was nog de mobiele-schermbreedte-erfenis van vóór de zijbalk — de
-     "brede rechterkolom" op Inzicht kreeg daardoor in de praktijk maar ~340px
-     i.p.v. het grootste deel van het scherm (gemeld 2026-09-08). 1400px geeft
-     écht ruimte, blijft ruim binnen een laptop/desktopscherm. */
-  body{max-width:1400px;margin-left:236px;margin-right:auto;padding-bottom:24px}
-  .tabbar{display:none!important}
-  .side{display:flex}
-}
+/* Shell (paginabreedte, tabbalk↔zijbalk, sheet-vorm per breedte/hoogte) komt nu
+   uit responsive-layer.css (4 grenzen i.p.v. dit ene 860px-punt) — zie die file
+   voor de onderbouwing. .pitch-wrap komt ook daaruit (aspect-ratio i.p.v. een
+   vaste hoogte, nodig voor de rotatie in liggende stand). */
 </style>
+<!-- Als laatste geladen: responsive-layer.css moet ná de <style>-blok hierboven
+     staan, anders wint bij gelijke CSS-specificiteit de broncode-volgorde en
+     verliest bv. de liggend-telefoon-sheetregel het altijd van de vaste
+     .sheet-overlay-basisstijl hierboven, media-query of niet. Gemeld tijdens
+     eigen testen 2026-09-22: een sheet bleef in liggende stand onderaan staan
+     i.p.v. als paneel van rechts te komen. -->
+<link rel="stylesheet" href="responsive-layer.css">
 </head>
 <body class="v2">
 
@@ -75,7 +59,7 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
      kleur van de app, geen misleidende "Inloggen"-titel. -->
 <div class="screen" id="screen-inlog">
   <div class="appbar"><div><div class="appbar-h1">Inloggen</div></div></div>
-  <div class="pad" id="inlog-content"></div>
+  <div class="pad"><div class="focus-kolom" id="inlog-content"></div></div>
 </div>
 
 <!-- ═══ VANDAAG ═══ -->
@@ -107,9 +91,9 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
     <button class="btn btn--ghost btn--icon" aria-label="Terug" onclick="toonScherm('agenda')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 19l-7-7 7-7"/></svg></button>
   </div>
   <div class="pad" id="w-content"></div>
-  <div style="padding:12px 16px;background:var(--bg);box-shadow:0 -1px 0 var(--line);margin-top:6px;display:flex;gap:10px">
+  <div class="detail-acties">
     <button class="btn btn--secondary" id="w-live-btn" onclick="openLiveTrainer(huidigWedstrijdId)">Live starten</button>
-    <button class="btn btn--primary" style="flex:1" onclick="openWedstrijdBewerken(huidigWedstrijdId)">Bewerken</button>
+    <button class="btn btn--primary" onclick="openWedstrijdBewerken(huidigWedstrijdId)">Bewerken</button>
   </div>
 </div>
 
@@ -131,13 +115,14 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
   <div class="appbar">
     <div><div class="appbar-h1">Inzicht</div></div>
   </div>
-  <div class="pad"><div class="seg" role="tablist" id="i-seg">
-    <button class="seg-opt" role="tab" aria-selected="true" data-t="afwezigheid" onclick="setInzichtTab('afwezigheid')">Afwezig</button>
-    <button class="seg-opt" role="tab" aria-selected="false" data-t="skills" onclick="setInzichtTab('skills')">Skills</button>
-    <button class="seg-opt" role="tab" aria-selected="false" data-t="ranking" onclick="setInzichtTab('ranking')">Ranking</button>
-    <button class="seg-opt" role="tab" aria-selected="false" data-t="speelminuten" onclick="setInzichtTab('speelminuten')">Minuten</button>
+  <div class="pad" id="i-hero"></div>
+  <div class="pad"><div class="seg groep-filter" role="tablist" id="i-seg">
+    <button class="seg-opt" role="tab" aria-selected="true" data-groep="ranking" onclick="setInzichtTab('ranking')">Ranking</button>
+    <button class="seg-opt" role="tab" aria-selected="false" data-groep="afwezigheid" onclick="setInzichtTab('afwezigheid')">Afwezig</button>
+    <button class="seg-opt" role="tab" aria-selected="false" data-groep="skills" onclick="setInzichtTab('skills')">Skills</button>
+    <button class="seg-opt" role="tab" aria-selected="false" data-groep="minuten" onclick="setInzichtTab('minuten')">Minuten</button>
   </div></div>
-  <div class="pad" id="i-content"></div>
+  <div class="pad" style="margin-top:14px"><div class="grid toon-groep" id="i-grid"></div></div>
 </div>
 
 <!-- ═══ WEDSTRIJD — BEWERKEN ═══ -->
@@ -351,7 +336,7 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
     <div class="sheet-grip"></div>
     <div class="sheet-title">Spelers herindelen — <span id="fw-nieuwe-naam"></span></div>
     <div class="sheet-sub">Iedereen staat al ergens — tik een positie om te wisselen wie waar staat.</div>
-    <div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;margin-top:10px"><div class="pitch" id="fw-veld" style="position:absolute;inset:0"></div></div>
+    <div class="pitch-wrap" style="margin-top:10px"><div class="pitch" id="fw-veld" style="position:absolute;inset:0"></div></div>
     <div style="font-size:12.5px;color:var(--ink3);text-align:center;margin:10px 0" id="fw-voortgang"></div>
     <button class="btn btn--primary btn--block" id="fw-bevestig-btn" disabled onclick="bevestigFormatiewissel()">Bevestig formatiewissel</button>
     <button class="btn btn--ghost btn--block" style="margin-top:8px" onclick="closeFormatieWijzigenSheets()">Annuleren</button>
@@ -374,7 +359,7 @@ body{max-width:480px;margin:0 auto;padding-bottom:88px;min-height:100dvh}
     <div class="sheet-grip"></div>
     <div class="sheet-title">Posities wisselen</div>
     <div class="sheet-sub" id="ps-sub">Tik de eerste speler.</div>
-    <div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;max-width:420px;margin:10px auto"><div class="pitch" id="ps-veld" style="position:absolute;inset:0"></div></div>
+    <div class="pitch-wrap" style="max-width:420px;margin:10px auto"><div class="pitch" id="ps-veld" style="position:absolute;inset:0"></div></div>
     <button class="btn btn--ghost btn--block" onclick="closePositieSwapSheet()">Annuleren</button>
   </div></div>
 </div>
@@ -865,7 +850,11 @@ function renderVandaag() {
   const items = alleAgendaItems().filter(i => !i.afgerond);
   const eerste = items[0];
   const eersteWed = items.find(i => i.type === 'wedstrijd');
-  let html = '<div id="v-live-banner"></div>';
+  // Dashboard-archetype (responsive-layer.css .grid): live-banner blijft
+  // buiten het raster (eigen volle breedte, meestal leeg), de kaarten erin
+  // krijgen w-half/w-full zodat ze vanaf 600px naast elkaar kunnen staan
+  // i.p.v. altijd één kolom.
+  let html = '<div id="v-live-banner"></div><div class="grid">';
 
   if (eerste) {
     const d = new Date(eerste.isoDate);
@@ -877,7 +866,7 @@ function renderVandaag() {
     // staan als duidelijke primaire actie, maar is nu geen enige ingang meer.
     const actie = eerste.type === 'wedstrijd' ? "toonWedstrijd('" + eerste.wedId + "')" : "openTrainingSessie(" + eerste.wi + "," + eerste.si + ")";
     const actieTxt = eerste.type === 'training' ? 'Training bekijken' : 'Wedstrijd bekijken';
-    html += '<div class="card card--accent" style="cursor:pointer" onclick="' + actie + '">'
+    html += '<div class="card card--accent w-half" style="cursor:pointer" onclick="' + actie + '">'
       + '<div class="eyebrow" style="color:rgba(255,255,255,.5)">Eerstvolgend</div>'
       + '<div style="font-size:23px;font-weight:700;letter-spacing:-.03em;margin-top:6px">' + esc(titelTxt) + '</div>'
       + '<div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:2px">' + datumTxt + '</div>';
@@ -890,13 +879,13 @@ function renderVandaag() {
     }
     html += '<button class="btn btn--primary btn--block" style="margin-top:14px" onclick="' + actie + '">' + actieTxt + '</button></div>';
   } else {
-    html += '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:28px 16px">Niets gepland — voeg iets toe via Agenda.</div>';
+    html += '<div class="card card--flat w-full" style="text-align:center;color:var(--ink3);padding:28px 16px">Niets gepland — voeg iets toe via Agenda.</div>';
   }
 
   if (eersteWed && eersteWed !== eerste) {
     const w = wedstrijden().find(x => x.id === eersteWed.wedId);
     const d = new Date(eersteWed.isoDate);
-    html += '<div class="card" style="margin-top:10px">'
+    html += '<div class="card w-half">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">'
       + '<span class="eyebrow">' + DAG_VOL[d.getDay()][0].toUpperCase() + DAG_VOL[d.getDay()].slice(1) + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + (w.starttijd ? ' · ' + w.starttijd : '') + '</span>'
       + '<span class="tag ' + eersteWed.tagClass + '">' + eersteWed.tagTekst + '</span></div>'
@@ -922,7 +911,7 @@ function renderVandaag() {
   // W/G/V-verhouding van alle gespeelde wedstrijden in één keer, incl. proportionele balk —
   // "Laatste 5" gaf geen duidelijke tijdsrichting en "Gewonnen" alleen zei te weinig (zie
   // mockup, voorstel B, met gebruiker afgestemd 2026-09-07).
-  html += '<div class="card" style="margin-top:10px">'
+  html += '<div class="card w-full">'
     + '<div style="display:flex;align-items:baseline;justify-content:space-between">'
     + '<div class="stat-l" style="margin:0">' + gespeeld.length + ' wedstrijden</div>'
     + '<div class="num" style="font-size:12.5px;font-weight:700">'
@@ -937,6 +926,7 @@ function renderVandaag() {
     + '<div><div class="stat-n num" style="font-size:19px">' + (saldo > 0 ? '+' : '') + saldo + '</div><div class="stat-l">Doelsaldo</div></div>'
     + '</div></div>';
 
+  html += '</div>';
   document.getElementById('v-content').innerHTML = html;
   checkLiveBannerV2();
 }
@@ -996,30 +986,37 @@ function renderAgenda() {
   const afgerond = alle.filter(i => i.afgerond).sort((a, b) => b.isoDate.localeCompare(a.isoDate));
   document.getElementById('a-sub').textContent = aankomend.length + ' aankomend · ' + afgerond.length + ' afgerond';
 
-  let html = '';
   if (!aankomend.length && !afgerond.length) {
-    html = '<div class="pad"><div class="card card--flat" style="text-align:center;color:var(--ink3);padding:28px">Niets gevonden voor dit filter.</div></div>';
+    document.getElementById('a-lijst').innerHTML = '<div class="pad"><div class="card card--flat" style="text-align:center;color:var(--ink3);padding:28px">Niets gevonden voor dit filter.</div></div>';
+    return;
   }
-  // Aankomend, gegroepeerd per maand
+  // Lijst-archetype: aankomend/afgerond als de twee kolommen van .lijst-2col
+  // (vanaf 600px naast elkaar) — de maand-groepering binnen "aankomend"
+  // blijft daarbinnen gewoon bestaan, dat is geen aparte kolom maar structuur
+  // binnen dezelfde kolom.
+  let aankomendHtml = '';
   let huidigeMaand = null;
-  aankomend.forEach((item, i) => {
+  aankomend.forEach(item => {
     const d = new Date(item.isoDate);
     const maandLbl = MAAND_VOL[d.getMonth()][0].toUpperCase() + MAAND_VOL[d.getMonth()].slice(1);
     if (maandLbl !== huidigeMaand) {
-      if (huidigeMaand !== null) html += '</div></div>';
-      html += '<div class="pad" style="margin-top:18px"><div class="sec">' + maandLbl + '</div></div><div class="pad"><div class="rows">';
+      if (huidigeMaand !== null) aankomendHtml += '</div>';
+      aankomendHtml += '<div class="sec" style="margin-top:18px">' + maandLbl + '</div><div class="rows">';
       huidigeMaand = maandLbl;
     }
-    html += rijHtml(item);
+    aankomendHtml += rijHtml(item);
   });
-  if (huidigeMaand !== null) html += '</div></div>';
+  if (huidigeMaand !== null) aankomendHtml += '</div>';
+  if (!aankomendHtml) aankomendHtml = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:28px">Niets aankomend voor dit filter.</div>';
 
+  let afgerondHtml = '';
   if (afgerond.length) {
-    html += '<div class="pad" style="margin-top:18px"><div class="sec">Afgerond</div></div><div class="pad"><div class="rows">';
-    afgerond.forEach(item => { html += rijHtml(item, true); });
-    html += '</div></div>';
+    afgerondHtml = '<div class="sec">Afgerond</div><div class="rows">' + afgerond.map(item => rijHtml(item, true)).join('') + '</div>';
+  } else {
+    afgerondHtml = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:28px">Niets afgerond voor dit filter.</div>';
   }
-  document.getElementById('a-lijst').innerHTML = html;
+
+  document.getElementById('a-lijst').innerHTML = '<div class="pad" style="margin-top:16px"><div class="lijst-2col"><div>' + aankomendHtml + '</div><div>' + afgerondHtml + '</div></div></div>';
 }
 
 // ─── Wedstrijd — kijken ───
@@ -1199,7 +1196,10 @@ async function toonWedstrijd(id) {
   const cijfers = Object.entries(w.ratings || {}).map(([pid, cijfer]) => ({ speler: sp.find(p => p.id === pid), cijfer })).filter(x => x.speler);
   cijfers.sort((a, b) => b.cijfer - a.cijfer);
 
-  let html = '<div class="card">'
+  // Detail-archetype: score+Selectie in de linkerkolom, Cijfers+Wedstrijdverloop
+  // in de rechterkolom (vanaf 1024px ernaast, responsive-layer.css .detail-2col).
+  let html = '<div class="detail-2col"><div>'
+    + '<div class="card">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'
     + '<span class="eyebrow" style="display:flex;align-items:center;gap:6px">' + (isLiveElders ? '<span class="livedot"></span><span style="color:var(--loss)">LIVE ·</span>' : '') + ' ' + DAG_KORT[d.getDay()] + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + (w.starttijd ? ' · ' + w.starttijd : '') + '</span>'
     + (w.gespeeld
@@ -1225,8 +1225,10 @@ async function toonWedstrijd(id) {
     + '<button class="btn btn--ghost btn--sm" style="margin-top:10px" onclick="renderWedOpstelling(\'' + w.id + '\')">Opstelling voor deze wedstrijd →</button>'
     + '</div>';
 
+  html += '</div><div>';
+
   if (w.gespeeld) {
-    html += '<div class="card" style="margin-top:10px"><div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><div class="sec" style="margin:0">Cijfers</div><span style="font-size:12px;color:var(--ink3)">' + cijfers.length + ' van ' + sp.length + ' ingevuld</span></div>';
+    html += '<div class="card"><div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><div class="sec" style="margin:0">Cijfers</div><span style="font-size:12px;color:var(--ink3)">' + cijfers.length + ' van ' + sp.length + ' ingevuld</span></div>';
     if (!cijfers.length) {
       html += '<div style="color:var(--ink3);font-size:13px">Nog geen cijfers ingevuld.</div>';
     } else {
@@ -1251,6 +1253,7 @@ async function toonWedstrijd(id) {
       + '</div>';
   }
 
+  html += '</div></div>';
   document.getElementById('w-content').innerHTML = html;
   huidigWedstrijdId = w.id;
   // w-live-btn zit in de vaste schermschil (buiten w-content), dus hier altijd
@@ -1292,14 +1295,20 @@ function renderTeamSpelers() {
   const alle = [...spelers()].sort((a, b) => a.naam.localeCompare(b.naam));
   const sp = alle.filter(p => (p.status || 'actief') !== 'gearchiveerd');
   const gearchiveerd = alle.filter(p => (p.status || 'actief') === 'gearchiveerd');
-  cont.innerHTML = '<div class="pad" style="margin-top:14px"><div class="rows">'
-    + (sp.length ? sp.map(spelerRijHtml).join('')
-        : '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">Nog geen spelers.</div>')
-    + '</div>'
+  // Lijst-archetype: de actieve-spelerslijst alfabetisch in twee kolommen
+  // (vanaf 600px naast elkaar) — anders is 16 spelers onder elkaar een lange
+  // streep op een breed scherm. Gearchiveerd blijft een eigen volle-breedte
+  // sectie eronder, geen kolom.
+  const helft = Math.ceil(sp.length / 2);
+  const kolomA = sp.slice(0, helft), kolomB = sp.slice(helft);
+  cont.innerHTML = '<div class="pad" style="margin-top:14px"><div class="lijst-2col">'
+    + '<div class="rows">' + (kolomA.length ? kolomA.map(spelerRijHtml).join('')
+        : '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">Nog geen spelers.</div>') + '</div>'
+    + (kolomB.length ? '<div class="rows">' + kolomB.map(spelerRijHtml).join('') + '</div>' : '')
+    + '</div></div>'
     + (gearchiveerd.length
-        ? '<div class="sec" style="margin-top:20px">Gearchiveerd · ' + gearchiveerd.length + '</div><div class="rows">' + gearchiveerd.map(spelerRijHtml).join('') + '</div>'
-        : '')
-    + '</div>';
+        ? '<div class="pad"><div class="sec" style="margin-top:20px">Gearchiveerd · ' + gearchiveerd.length + '</div><div class="rows">' + gearchiveerd.map(spelerRijHtml).join('') + '</div></div>'
+        : '');
   toonTeamFab();
 }
 
@@ -1360,10 +1369,31 @@ async function kiesOpstSlot(spelerId) {
   ctx.herrender();
   if (supabaseReady) await ctx.remoteSync(lineup, geraakt);
 }
+// Liggend telefoonscherm: het veld roteert mee i.p.v. te krimpen
+// (responsive-layer.css .pitch-wrap, max-height:540px+landscape) — dezelfde
+// posities, andere projectie. veldLiggend() bepaalt of die grens actief is;
+// veldProjecteer() rekent een logische x/y (zoals opgeslagen, altijd in de
+// staande oriëntatie) om naar waar 'm dan echt moet staan, veldProjecteer
+// Inverse() doet het omgekeerde (voor de sleeplogica in de formatie-editor,
+// die van een aanwijzer-positie terug moet naar de logische x/y om op te
+// slaan). Alle plekken die een positie op het veld tekenen — opstPitchHtml,
+// de formatie-editor, formatie-wijzigen/positiewissel-sheets tijdens Live,
+// het live-veld zelf — routen hier doorheen, anders staat een speler in
+// liggende stand op een willekeurige, niet-geroteerde plek.
+function veldLiggend() {
+  return window.matchMedia('(orientation:landscape) and (max-height:540px)').matches;
+}
+function veldProjecteer(x, y) {
+  return veldLiggend() ? { x: 100 - y, y: x } : { x, y };
+}
+function veldProjecteerInverse(x, y) {
+  return veldLiggend() ? { x: y, y: 100 - x } : { x, y };
+}
 function opstPitchHtml(f, lineup, ctx) {
   return f.pos.map(pos => {
     const naam = spelers().find(p => p.id === lineup[pos.id]);
-    return '<div class="fslot" style="left:' + pos.x + '%;top:' + pos.y + '%" onclick="openOpstSlotKiezer(\'' + pos.id + '\',' + ctx + ')">'
+    const proj = veldProjecteer(pos.x, pos.y);
+    return '<div class="fslot" style="left:' + proj.x + '%;top:' + proj.y + '%" onclick="openOpstSlotKiezer(\'' + pos.id + '\',' + ctx + ')">'
       + '<div class="ppill' + (naam ? '' : ' ppill--leeg') + '"><span class="ppill-rol ' + ppillRolClassV2(pos.label) + '">' + pos.label + '</span><span class="ppill-nm">' + (naam ? esc(naam.naam.split(' ')[0]) : 'Leeg') + '</span></div></div>';
   }).join('');
 }
@@ -1455,14 +1485,18 @@ function renderTeamOpstelling() {
     + '<div class="rij-label" style="font-size:12.5px;font-weight:600;color:var(--ink3);margin-bottom:6px">Fallback-formatie <span style="font-weight:400">— snel wisselen tijdens Live</span></div>'
     + '<select class="input" style="margin-bottom:8px" onchange="saveFormatieFallback(this.value);renderTeamOpstelling()">' + (actiefFallback ? maakOpties(actiefFallback, actief) : '<option value="" selected>Geen andere formatie beschikbaar</option>') + '</select>'
     + (actiefFallback ? '<button class="btn btn--ghost btn--sm btn--block" style="margin-bottom:12px" onclick="wisselHoofdEnFallback()">⇄ Hoofd- en fallback-formatie omwisselen</button>' : '');
-  cont.innerHTML = '<div class="pad" style="margin-top:14px">'
+  // Veld-archetype: pitch in de linkerkolom, systeemkeuze+bank+acties in de
+  // rechterkolom (vanaf 1024px naast elkaar, responsive-layer.css .veld-2col).
+  cont.innerHTML = '<div class="pad" style="margin-top:14px"><div class="veld-2col">'
+    + '<div><div class="pitch-wrap"><div class="pitch" style="position:absolute;inset:0">' + opstPitchHtml(f, lineup, 'teamOpstCtx') + '</div></div></div>'
+    + '<div><div class="card">'
     + select
     + (f.eigen ? '<div class="actionbar" style="margin-top:-4px;margin-bottom:14px"><button class="btn btn--ghost btn--sm" style="flex:1" onclick="openFormatieEditor(\'' + actief + '\',{type:\'team\'})">Bewerken</button><button class="btn btn--ghost btn--sm" style="flex:1" onclick="teamOpstVerwijderFormatie(this,\'' + actief + '\')">Verwijderen</button></div>' : '')
-    + '<div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;max-width:520px;margin:0 auto"><div class="pitch" style="position:absolute;inset:0">' + opstPitchHtml(f, lineup, 'teamOpstCtx') + '</div></div>'
     + benchHtmlV2(lineup)
     + '<div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="teamOpstWissen(this)">Wissen</button><button class="btn btn--primary" style="flex:1" onclick="teamOpstDelen()">Delen via WhatsApp</button></div>'
     + '<button class="btn btn--ghost btn--block" style="margin-top:10px" onclick="openFormatieEditor(null,{type:\'team\'})">+ Eigen systeem maken</button>'
-    + '</div>';
+    + '</div></div>'
+    + '</div></div>';
 }
 async function teamOpstVerwijderFormatie(btn, id) {
   if (btn.textContent !== 'Zeker weten? Nog een tik') { btn.textContent = 'Zeker weten? Nog een tik'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Verwijderen'; }, 3000); return; }
@@ -1547,13 +1581,17 @@ function renderWedOpstelling(wedId) {
       + (rest.length ? '<optgroup label="Alle systemen">' + rest.map(optie).join('') + '</optgroup>' : '')
     : Object.entries(alle).map(optie).join('');
   const select = '<select class="input" style="margin-bottom:12px" onchange="wedOpstZetFormatie(\'' + wedId + '\',this.value)">' + opties + '</select>';
-  document.getElementById('wo-content').innerHTML = '<div style="font-size:13px;color:var(--ink3);margin-bottom:10px">vs ' + esc(w.tegenstander || '?') + '</div>'
+  document.getElementById('wo-content').innerHTML = '<div class="veld-2col">'
+    + '<div><div style="font-size:13px;color:var(--ink3);margin-bottom:10px">vs ' + esc(w.tegenstander || '?') + '</div>'
+    + '<div class="pitch-wrap"><div class="pitch" style="position:absolute;inset:0">' + opstPitchHtml(f, lineup, "wedOpstCtx('" + wedId + "')") + '</div></div></div>'
+    + '<div><div class="card">'
     + select
     + (f.eigen ? '<div class="actionbar" style="margin-top:-4px;margin-bottom:14px"><button class="btn btn--ghost btn--sm" style="flex:1" onclick="openFormatieEditor(\'' + actief + '\',{type:\'wed\',wedId:\'' + wedId + '\'})">Bewerken</button><button class="btn btn--ghost btn--sm" style="flex:1" onclick="wedOpstVerwijderFormatie(this,\'' + wedId + '\',\'' + actief + '\')">Verwijderen</button></div>' : '')
-    + '<div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;max-width:520px;margin:0 auto"><div class="pitch" style="position:absolute;inset:0">' + opstPitchHtml(f, lineup, "wedOpstCtx('" + wedId + "')") + '</div></div>'
     + benchHtmlV2(lineup, wedOpstCtx(wedId).afwezigeIds())
     + '<div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="wedOpstWissen(this,\'' + wedId + '\')">Wissen</button><button class="btn btn--primary" style="flex:1" onclick="wedOpstDelen(\'' + wedId + '\')">Delen via WhatsApp</button></div>'
-    + '<button class="btn btn--ghost btn--block" style="margin-top:10px" onclick="openFormatieEditor(null,{type:\'wed\',wedId:\'' + wedId + '\'})">+ Eigen systeem maken</button>';
+    + '<button class="btn btn--ghost btn--block" style="margin-top:10px" onclick="openFormatieEditor(null,{type:\'wed\',wedId:\'' + wedId + '\'})">+ Eigen systeem maken</button>'
+    + '</div></div>'
+    + '</div>';
   toonScherm('wedstrijd-opstelling');
 }
 async function wedOpstVerwijderFormatie(btn, wedId, id) {
@@ -1593,13 +1631,18 @@ function openFormatieEditor(bewerkId, terugCtx) {
   let alle = formatiesVoorSpelvorm(volledig, loadSpelvorm());
   if (bewerkId && !alle[bewerkId] && volledig[bewerkId]) alle = { ...alle, [bewerkId]: volledig[bewerkId] };
   const standaard = bewerkId || (foTerugCtx.type === 'wed' ? (wedstrijden().find(x => x.id === foTerugCtx.wedId).formatie) : localStorage.getItem('fcp_formatie')) || Object.keys(alle)[0];
-  document.getElementById('fo-content').innerHTML =
-      '<div class="field"><label class="label" for="fo-start">Start vanuit</label><select class="input" id="fo-start" onchange="foStartVanuit(this.value)">' + Object.entries(alle).map(([k, f]) => '<option value="' + k + '" ' + (k === standaard ? 'selected' : '') + '>' + esc(f.label) + (f.eigen ? ' (aangepast)' : '') + '</option>').join('') + '</select></div>'
-    + '<div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;max-width:520px;margin:0 auto 14px"><div class="pitch" style="position:absolute;inset:0" id="fo-pitch"></div></div>'
+  // Veld-archetype: "Start vanuit"+pitch in de linkerkolom, naam+opslaan in
+  // de rechterkolom (vanaf 1024px naast elkaar, responsive-layer.css .veld-2col).
+  document.getElementById('fo-content').innerHTML = '<div class="veld-2col"><div>'
+      + '<div class="field"><label class="label" for="fo-start">Start vanuit</label><select class="input" id="fo-start" onchange="foStartVanuit(this.value)">' + Object.entries(alle).map(([k, f]) => '<option value="' + k + '" ' + (k === standaard ? 'selected' : '') + '>' + esc(f.label) + (f.eigen ? ' (aangepast)' : '') + '</option>').join('') + '</select></div>'
+    + '<div class="pitch-wrap"><div class="pitch" style="position:absolute;inset:0" id="fo-pitch"></div></div>'
+    + '</div><div><div class="card">'
     + '<div style="text-align:center;font-size:22px;font-weight:700;letter-spacing:-.02em" id="fo-titel-live">—</div>'
     + '<div style="text-align:center;font-size:11.5px;color:var(--ink3);margin-bottom:14px" id="fo-titel-sub">voorgestelde naam — verandert mee tijdens het slepen</div>'
     + '<div class="field"><label class="label" for="fo-naam-input">Naam systeem</label><input class="input" id="fo-naam-input" oninput="foTitelHandmatig=true"></div>'
-    + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="foAnnuleer()">Annuleren</button><button class="btn btn--primary" id="fo-opslaan-btn" onclick="foOpslaan()">Opslaan als nieuw systeem</button></div>';
+    + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="foAnnuleer()">Annuleren</button><button class="btn btn--primary" id="fo-opslaan-btn" onclick="foOpslaan()">Opslaan als nieuw systeem</button></div>'
+    + '</div></div>'
+    + '</div>';
   if (bewerkId) document.getElementById('fo-opslaan-btn').textContent = 'Wijzigingen opslaan';
   foStartVanuit(document.getElementById('fo-start').value);
   toonScherm('formatie-editor');
@@ -1674,7 +1717,8 @@ function foRenderField() {
   foPosities.forEach(pos => {
     const slot = document.createElement('div');
     slot.className = 'fo-slot'; slot.id = 'fo-slot-' + pos._key;
-    slot.style.left = pos.x + '%'; slot.style.top = pos.y + '%';
+    const proj = veldProjecteer(pos.x, pos.y);
+    slot.style.left = proj.x + '%'; slot.style.top = proj.y + '%';
     slot.innerHTML = '<div class="ppill"><span class="ppill-rol ' + foRolClass(pos) + '">' + pos.label + '</span></div>';
     slot.addEventListener('pointerdown', ev => foStartDrag(ev, pos._key, slot));
     cont.appendChild(slot);
@@ -1692,11 +1736,17 @@ function foStartDrag(ev, posKey, slot) {
 function foOnDragMove(ev) {
   if (!foDragging || ev.pointerId !== foDragging.pointerId) return;
   const rect = document.getElementById('fo-pitch').getBoundingClientRect();
+  // x/y hier zijn de aanwijzerpositie in de zichtbare (eventueel geroteerde)
+  // ruimte — precies wat je met je vinger/muis aanwijst, dus dat blijft de
+  // stijl van het sleepbolletje zelf. Voor de opslag (pos.x/y) moet dat terug
+  // naar de logische, altijd-staande projectie (veldProjecteerInverse),
+  // anders sleept een positie in liggende stand de verkeerde kant op.
   let x = ((ev.clientX - rect.left) / rect.width) * 100;
   let y = ((ev.clientY - rect.top) / rect.height) * 100;
   x = Math.max(4, Math.min(96, x)); y = Math.max(6, Math.min(92, y));
+  const logisch = veldProjecteerInverse(x, y);
   const pos = foPosities.find(p => p._key === foDragging.posKey);
-  pos.x = x; pos.y = y;
+  pos.x = logisch.x; pos.y = logisch.y;
   foDragging.slot.style.left = x + '%'; foDragging.slot.style.top = y + '%';
   foVerversLabelsEnRollen();
   foUpdateTitel();
@@ -1782,7 +1832,7 @@ function renderTeamOefeningen() {
     (!oefFilterCat || o.cat === oefFilterCat)
     && (!oefFilterSysteem || (o.formaties || []).includes(oefFilterSysteem))
   );
-  cont.innerHTML = '<div class="pad" style="margin-top:14px">'
+  let html = '<div class="pad" style="margin-top:14px">'
     + '<button class="btn btn--ghost btn--sm" onclick="openCatSheet()">Categorieën beheren</button>'
     + '<div style="display:flex;gap:8px;margin-top:10px">'
     + '<select class="input" style="flex:1;min-width:0" onchange="oefZetFilterCat(this.value)">'
@@ -1794,14 +1844,24 @@ function renderTeamOefeningen() {
       + systemenTonen.map(k => '<option value="' + k + '"' + (oefFilterSysteem === k ? ' selected' : '') + '>' + esc(alleFormaties[k].label) + '</option>').join('')
       + '</select>'
     + '</div>'
-    + '</div>'
-    + '<div class="pad"><div class="rows">'
-    + (lijst.length ? lijst.map(o => '<a class="row" href="#" onclick="openOefeningBewerken(\'' + o.id + '\');return false">'
-        + '<div class="row-lead"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="margin:0 auto;display:block;color:var(--ink3)"><path d="M8 21L10.5 6h3L16 21H8z"/><line x1="7" y1="13" x2="17" y2="13"/></svg></div>'
-        + '<div class="row-body"><div class="row-title">' + esc(o.title) + '</div><div class="row-sub" style="display:flex;align-items:center;gap:6px">' + esc(o.cat||'—') + (o.duur ? ' · ' + esc(o.duur) : '') + (o.url ? videoIcoon : '') + '</div></div>'
-        + '<svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>').join('')
-        : '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">' + (alle.length ? 'Geen oefeningen bij deze filters.' : 'Nog geen eigen oefeningen.') + '</div>')
-    + '</div></div>';
+    + '</div>';
+  // Lijst-archetype: zelfde alfabetisch-in-tweeën-splitsen als de spelerslijst
+  // hierboven, i.p.v. één lange streep op een breed scherm.
+  const oefRijHtml = o => '<a class="row" href="#" onclick="openOefeningBewerken(\'' + o.id + '\');return false">'
+    + '<div class="row-lead"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="margin:0 auto;display:block;color:var(--ink3)"><path d="M8 21L10.5 6h3L16 21H8z"/><line x1="7" y1="13" x2="17" y2="13"/></svg></div>'
+    + '<div class="row-body"><div class="row-title">' + esc(o.title) + '</div><div class="row-sub" style="display:flex;align-items:center;gap:6px">' + esc(o.cat||'—') + (o.duur ? ' · ' + esc(o.duur) : '') + (o.url ? videoIcoon : '') + '</div></div>'
+    + '<svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>';
+  if (!lijst.length) {
+    html += '<div class="pad"><div class="rows"><div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">' + (alle.length ? 'Geen oefeningen bij deze filters.' : 'Nog geen eigen oefeningen.') + '</div></div></div>';
+  } else {
+    const helft = Math.ceil(lijst.length / 2);
+    const kolomA = lijst.slice(0, helft), kolomB = lijst.slice(helft);
+    html += '<div class="pad"><div class="lijst-2col">'
+      + '<div class="rows">' + kolomA.map(oefRijHtml).join('') + '</div>'
+      + (kolomB.length ? '<div class="rows">' + kolomB.map(oefRijHtml).join('') + '</div>' : '')
+      + '</div></div>';
+  }
+  cont.innerHTML = html;
   toonTeamFab();
 }
 function toonTeamFab() {
@@ -2026,8 +2086,8 @@ function openOefeningBewerken(id) {
   const cats = categorieen();
   const alle = alleFormatiesV2();
   const gekozenSystemen = new Set((o && o.formaties) || []);
-  document.getElementById('ob-content').innerHTML =
-      '<div class="field"><label class="label" for="ob-naam">Naam</label><input class="input" id="ob-naam" value="' + (o ? esc(o.title) : '') + '"></div>'
+  document.getElementById('ob-content').innerHTML = '<div class="form-2col"><div class="form-kolom">'
+      + '<div class="field"><label class="label" for="ob-naam">Naam</label><input class="input" id="ob-naam" value="' + (o ? esc(o.title) : '') + '"></div>'
     + '<div class="field"><label class="label" for="ob-cat">Categorie</label><select class="input" id="ob-cat">' + cats.map(c => '<option ' + (o && o.cat === c ? 'selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></div>'
     + '<div class="field"><span class="label">Systeem (meervoudig)</span><div style="display:flex;flex-wrap:wrap;gap:7px" id="ob-systemen">'
       + Object.entries(alle).map(([k, f]) => '<button type="button" class="chip" data-k="' + k + '" aria-pressed="' + gekozenSystemen.has(k) + '" onclick="this.setAttribute(\'aria-pressed\', this.getAttribute(\'aria-pressed\')!==\'true\')">' + esc(f.label) + '</button>').join('')
@@ -2036,9 +2096,11 @@ function openOefeningBewerken(id) {
     + '<div class="field"><label class="label" for="ob-desc">Omschrijving</label><input class="input" id="ob-desc" value="' + (o ? esc(o.desc||o.beschrijving||'') : '') + '"></div>'
     + '<div class="field"><label class="label" for="ob-tip">Tip / coachpunt</label><textarea class="input" id="ob-tip" rows="3" style="resize:vertical">' + (o ? esc(o.tip||'') : '') + '</textarea></div>'
     + '<div class="field"><label class="label" for="ob-url">URL / YouTube</label><div style="display:flex;gap:8px"><input class="input" id="ob-url" style="flex:1;min-width:0" value="' + (o ? esc(o.url||'') : '') + '"><button type="button" class="btn btn--secondary btn--icon" aria-label="Link testen" onclick="testOefUrl(\'ob-url\')">▶</button></div></div>'
-    + '<div class="field"><span class="label">Stappen</span><div id="ob-stappen"></div><button type="button" class="btn btn--ghost btn--sm" onclick="voegOefStapToe()">+ Stap</button></div>'
     + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="setTeamTab(\'oefeningen\');toonScherm(\'team\')">Annuleren</button><button class="btn btn--primary" onclick="slaOefeningOp()">Opslaan</button></div>'
-    + (o ? '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderOefening(this)">Oefening verwijderen</button></div>' : '');
+    + (o ? '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderOefening(this)">Oefening verwijderen</button></div>' : '')
+    + '</div><div>'
+    + '<div class="sec">Stappen</div><div id="ob-stappen"></div><button type="button" class="btn btn--ghost btn--sm" onclick="voegOefStapToe()">+ Stap</button>'
+    + '</div></div>';
   const stappenCont = document.getElementById('ob-stappen');
   ((o && o.stappen) || ['']).forEach(s => voegOefStapToe(s));
   toonScherm('oefening-bewerk');
@@ -2296,10 +2358,10 @@ async function renderVergelijkingV2(spelerId) {
   // hier nog, gemeld 2026-09-08.
   const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
   // Klik-door naar de Geschiedenis-sheet (vooringesteld op die ene vaardigheid)
-  // alleen op desktop/laptop — zelfde breakpoint als Inzicht al gebruikt voor
-  // zijn mobiel/desktop-onderscheid. Op mobiel blijft de rij puur informatief,
-  // alleen het pijltje erbij, geen extra tik-doel (gebruiker 2026-09-11).
-  const desktop = window.matchMedia('(min-width:860px)').matches;
+  // alleen op desktop/laptop — zelfde grens als de zijbalk (responsive-layer.css,
+  // 1024px). Op mobiel blijft de rij puur informatief, alleen het pijltje erbij,
+  // geen extra tik-doel (gebruiker 2026-09-11).
+  const desktop = window.matchMedia('(min-width:1024px)').matches;
   let html = '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:6px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>'
     + '<div style="display:flex;gap:10px;margin-bottom:8px"><div style="width:112px;flex-shrink:0"></div>'
     + '<div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:9px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div>'
@@ -2375,8 +2437,12 @@ function openSpelerBewerken(id) {
   const p = id ? spelers().find(x => x.id === id) : null;
   document.getElementById('sb-titel').textContent = p ? 'Speler bewerken' : 'Speler toevoegen';
   const posities = (p && p.posities) || [];
-  document.getElementById('sb-content').innerHTML =
-      '<div class="field"><label class="label" for="sb-naam">Naam</label><input class="input" id="sb-naam" maxlength="30" value="' + (p ? esc(p.naam) : '') + '"></div>'
+  // Formulier-archetype: linkerkolom = identiteit/basisvelden, rechterkolom
+  // (vanaf 1024px ernaast, responsive-layer.css .form-2col) = de losse
+  // kaarten die niet bij het invullen zelf horen (beoordeling, wedstrijd-
+  // geschiedenis, afwezigheidsperiodes, spelerformulier-link).
+  document.getElementById('sb-content').innerHTML = '<div class="form-2col"><div class="form-kolom">'
+      + '<div class="field"><label class="label" for="sb-naam">Naam</label><input class="input" id="sb-naam" maxlength="30" value="' + (p ? esc(p.naam) : '') + '"></div>'
     + (p ? (
         statusRijHtml(p)
       + '<div id="sb-contact"></div>'
@@ -2384,23 +2450,26 @@ function openSpelerBewerken(id) {
       + '<div class="field"><span class="label">Posities</span><div style="display:flex;flex-wrap:wrap;gap:7px" id="sb-posities">' + ALL_POS_OPTS_V2.map(pos => '<button type="button" class="chip" aria-pressed="' + posities.includes(pos) + '" onclick="this.setAttribute(\'aria-pressed\', this.getAttribute(\'aria-pressed\')!==\'true\')">' + pos + '</button>').join('') + '</div></div>'
       + '<div class="field"><label class="label" for="sb-opmerkingen">Opmerkingen</label><textarea class="input" id="sb-opmerkingen" style="min-height:70px;resize:vertical">' + esc(p.opmerkingen||'') + '</textarea></div>'
       + '<div class="field"><label class="label" for="sb-ontwikkeling">Ontwikkeling</label><textarea class="input" id="sb-ontwikkeling" style="min-height:70px;resize:vertical">' + esc(p.ontwikkeling||'') + '</textarea></div>'
+      ) : '')
+    + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="setTeamTab(\'spelers\');toonScherm(\'team\')">Annuleren</button><button class="btn btn--primary" onclick="slaSpelerOp()">Opslaan</button></div>'
+    + (p ? '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderSpeler(this)">Speler verwijderen</button></div>' : '')
+    + '</div>'
+    + (p ? ('<div>'
+      + '<div class="sec">Beoordeling — speler vs. trainer</div>'
+      + '<div id="sb-vergelijking" style="font-size:13px;color:var(--ink3);margin-bottom:14px">Laden…</div>'
+      + '<div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="openGeschiedenisSheet(\'' + p.id + '\')">Geschiedenis</button><button class="btn btn--primary" style="flex:1" onclick="openTrainerBeoordelingSheet(\'' + p.id + '\')">Beoordelen</button></div>'
+      + '<div class="divide"></div>'
+      + '<div id="sb-wedstrijden"><div class="sec">Wedstrijden</div><div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Laden…</div></div>'
       + '<div class="divide"></div>'
       + '<div class="sec">Afwezigheidsperiodes</div>'
       + '<div id="sb-periodes" style="margin-bottom:10px">Laden…</div>'
       + '<button class="btn btn--ghost btn--sm" onclick="openPeriodeSheet(\'' + p.id + '\')">+ Periode toevoegen</button>'
       + '<div class="divide"></div>'
-      + '<div id="sb-wedstrijden"><div class="sec">Wedstrijden</div><div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Laden…</div></div>'
-      + '<div class="divide"></div>'
-      + '<div class="sec">Beoordeling — speler vs. trainer</div>'
-      + '<div id="sb-vergelijking" style="font-size:13px;color:var(--ink3);margin-bottom:14px">Laden…</div>'
-      + '<div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="openGeschiedenisSheet(\'' + p.id + '\')">Geschiedenis</button><button class="btn btn--primary" style="flex:1" onclick="openTrainerBeoordelingSheet(\'' + p.id + '\')">Beoordelen</button></div>'
-      + '<div class="divide"></div>'
       + '<div class="sec">Spelerformulier</div>'
       + '<div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="deelFormulierV2(\'' + p.id + '\')">Deel link</button><button class="btn btn--secondary" style="flex:1" onclick="wisFormulierV2(this,\'' + p.id + '\')">Wis data</button></div>'
       + '<div id="sb-link-veld"></div>'
-      ) : '')
-    + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="setTeamTab(\'spelers\');toonScherm(\'team\')">Annuleren</button><button class="btn btn--primary" onclick="slaSpelerOp()">Opslaan</button></div>'
-    + (p ? '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderSpeler(this)">Speler verwijderen</button></div>' : '');
+      + '</div>') : '<div></div>')
+    + '</div>';
   toonScherm('speler-bewerk');
   if (p) {
     renderVergelijkingV2(p.id).then(html => {
@@ -2749,26 +2818,31 @@ function renderTrainingSessie() {
   let html = '<div style="font-size:13px;color:var(--ink3);margin-bottom:2px">' + esc(wk.focus || 'Training') + ' · week ' + (wk.weekNr || getISOWeekV2(new Date(wk.isoDate)))+ '</div>'
     + '<div class="appbar-h1" style="font-size:22px;margin-bottom:14px">' + esc(s.dag) + ' ' + DAG_KORT[d.getDay()] + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + '</div>';
 
+  // Detail-archetype: Aanwezigheid+Notities in de linkerkolom, Oefeningen in
+  // de rechterkolom (vanaf 1024px ernaast, responsive-layer.css .detail-2col).
+  html += '<div class="detail-2col"><div>';
   html += '<div class="card"><div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px"><div class="sec" style="margin:0">Aanwezigheid</div><span class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + spActief.length + '</span></div>';
   html += afwPids.length
     ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + afwPids.map(pid => { const p = sp.find(x => x.id === pid); const reden = (aanw[nk][pid] || {}).reden || ''; return '<span class="chip" aria-pressed="true" style="cursor:pointer" onclick="verwijderAfwezig(\'' + pid + '\')">' + esc(p ? p.naam : '?') + (reden ? ' · ' + esc(reden) : '') + ' ✕</span>'; }).join('') + '</div>'
     : '<div style="font-size:13px;color:var(--ink3);margin-bottom:10px">Iedereen aanwezig.</div>';
   html += '<button class="btn btn--secondary btn--sm" onclick="openAfwezigSheet()">+ Afwezig</button></div>';
 
-  html += '<div class="card" style="margin-top:10px"><div class="sec">Oefeningen</div>'
+  if (notitie) html += '<div class="card" style="margin-top:10px"><div class="sec">Notities</div><div style="font-size:13.5px;white-space:pre-wrap">' + esc(notitie) + '</div></div>';
+
+  html += '</div><div>';
+  html += '<div class="card"><div class="sec">Oefeningen</div>'
     + (s.blokken && s.blokken.length ? s.blokken.map((b, bi) => '<a class="row" href="#" style="padding-left:0" onclick="openBlokDetail(' + bi + ');return false"><div class="row-body"><div class="row-title">' + esc(b.n) + '</div><div class="row-sub">' + esc(b.cat || '') + (b.tip ? ' · ' + esc(b.tip) : '') + '</div></div>'
         + (b.url ? '<button type="button" onclick="event.stopPropagation();event.preventDefault();window.open(\'' + esc(b.url) + '\',\'_blank\',\'noopener\')" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;display:flex" aria-label="Uitleg openen">' + videoIcoonGroot + '</button>' : '')
         + '<svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></a>').join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen oefeningen gepland.</div>')
     + '</div>';
+  html += '</div></div>';
 
-  if (notitie) html += '<div class="card" style="margin-top:10px"><div class="sec">Notities</div><div style="font-size:13.5px;white-space:pre-wrap">' + esc(notitie) + '</div></div>';
+  html += '<div class="actionbar" style="max-width:600px"><button class="btn btn--secondary" style="flex:1" onclick="deelTrainingWhatsapp()">Delen</button><button class="btn btn--primary" style="flex:1" onclick="openTrainingBewerk()">Bewerken</button></div>';
 
-  html += '<div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="deelTrainingWhatsapp()">Delen</button><button class="btn btn--primary" style="flex:1" onclick="openTrainingBewerk()">Bewerken</button></div>';
-
-  html += '<div class="divide"></div><div class="sec">Hele week — ' + esc(wk.focus || '') + '</div>'
+  html += '<div class="divide" style="max-width:600px"></div><div style="max-width:600px"><div class="sec">Hele week — ' + esc(wk.focus || '') + '</div>'
     + '<div class="actionbar"><button class="btn btn--secondary" style="flex:1" onclick="toonExtraTrainingVeld()">+ Extra training</button><button class="btn btn--secondary" style="flex:1" onclick="kopieerTrainingWeek()">Kopieer week</button></div>'
     + '<div id="tr-extra-veld"></div>'
-    + '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderTrainingWeek(this)">Hele week verwijderen</button></div>';
+    + '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderTrainingWeek(this)">Hele week verwijderen</button></div></div>';
 
   document.getElementById('tr-content').innerHTML = html;
 }
@@ -2892,14 +2966,16 @@ function openTrainingBewerk() {
   const wk = customWeken()[huidigTrainingWi];
   const s = wk.sessies[huidigTrainingSi];
   trbBlokken = JSON.parse(JSON.stringify(s.blokken || []));
-  document.getElementById('trb-content').innerHTML =
-      '<div class="field"><label class="label" for="trb-dag">Naam</label><input class="input" id="trb-dag" value="' + esc(s.dag) + '"></div>'
+  document.getElementById('trb-content').innerHTML = '<div class="form-2col"><div class="form-kolom">'
+      + '<div class="field"><label class="label" for="trb-dag">Naam</label><input class="input" id="trb-dag" value="' + esc(s.dag) + '"></div>'
+    + '<div class="field"><label class="label" for="trb-notitie">Notities</label><textarea class="input" id="trb-notitie" style="min-height:80px;resize:vertical">' + esc(sessionNotes()[nkVan(huidigTrainingWi, huidigTrainingSi)] || '') + '</textarea></div>'
+    + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="hervatTrainingSessie()">Annuleren</button><button class="btn btn--primary" onclick="slaTrainingBewerkOp()">Opslaan</button></div>'
+    + '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderTrainingSessie(this)">Training verwijderen</button></div>'
+    + '</div><div>'
     + '<div class="sec">Oefeningen</div>'
     + '<div id="trb-blokken"></div>'
     + '<button class="btn btn--ghost btn--sm" style="margin-top:8px" onclick="openBlokKiezer(trbCtx)">+ Oefening toevoegen</button>'
-    + '<div class="field" style="margin-top:16px"><label class="label" for="trb-notitie">Notities</label><textarea class="input" id="trb-notitie" style="min-height:80px;resize:vertical">' + esc(sessionNotes()[nkVan(huidigTrainingWi, huidigTrainingSi)] || '') + '</textarea></div>'
-    + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="hervatTrainingSessie()">Annuleren</button><button class="btn btn--primary" onclick="slaTrainingBewerkOp()">Opslaan</button></div>'
-    + '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderTrainingSessie(this)">Training verwijderen</button></div>';
+    + '</div></div>';
   renderTrbBlokken();
   toonScherm('training-bewerk');
 }
@@ -3068,17 +3144,18 @@ const twnCtx2 = { voegToe(b) { twnBlokken2.push(b); renderTwnBlokken(2); } };
 function openTrainingWeekNieuw() {
   twnBlokken1 = []; twnBlokken2 = [];
   const vandaag = isoVan(new Date());
-  document.getElementById('twn-content').innerHTML =
-      '<div class="field"><label class="label" for="twn-focus">Focus</label><input class="input" id="twn-focus" placeholder="bijv. Positiespel &amp; afwerken"></div>'
+  document.getElementById('twn-content').innerHTML = '<div class="form-2col"><div class="form-kolom">'
+      + '<div class="field"><label class="label" for="twn-focus">Focus</label><input class="input" id="twn-focus" placeholder="bijv. Positiespel &amp; afwerken"></div>'
     + '<div class="field"><label class="label" for="twn-datum">Weekdatum</label><input class="input" type="date" id="twn-datum" value="' + vandaag + '" oninput="twnToonWeeknr()"><div style="font-size:12px;color:var(--ink3);margin-top:4px" id="twn-weeknr"></div></div>'
-    + '<div class="divide"></div>'
+    + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeAanmaakSheet();toonScherm(\'agenda\')">Annuleren</button><button class="btn btn--primary" onclick="slaTrainingWeekNieuwOp()">Opslaan</button></div>'
+    + '</div><div>'
     + '<div class="field"><label class="label" for="twn-naam1">Training 1</label><input class="input" id="twn-naam1" value="Training 1"></div>'
     + '<div id="twn-blokken1"></div>'
     + '<button class="btn btn--ghost btn--sm" style="margin-bottom:16px" onclick="openBlokKiezer(twnCtx1)">+ Oefening toevoegen</button>'
     + '<div class="field"><label class="label" for="twn-naam2">Training 2</label><input class="input" id="twn-naam2" value="Training 2"></div>'
     + '<div id="twn-blokken2"></div>'
     + '<button class="btn btn--ghost btn--sm" style="margin-bottom:16px" onclick="openBlokKiezer(twnCtx2)">+ Oefening toevoegen</button>'
-    + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="closeAanmaakSheet();toonScherm(\'agenda\')">Annuleren</button><button class="btn btn--primary" onclick="slaTrainingWeekNieuwOp()">Opslaan</button></div>';
+    + '</div></div>';
   renderTwnBlokken(1); renderTwnBlokken(2); twnToonWeeknr();
   toonScherm('training-week-nieuw');
 }
@@ -3123,17 +3200,24 @@ function openWedstrijdBewerken(id) {
   if (!w) wbNieuwAfwezig = []; // vers formulier, geen leftover van een eerder afgebroken poging
   const sp = spelers();
   const ratings = (w && w.ratings) || {};
-  document.getElementById('wb-content').innerHTML =
-      '<div class="field"><label class="label" for="wb-tegenstander">Tegenstander</label><input class="input" id="wb-tegenstander" value="' + (w ? esc(w.tegenstander) : '') + '"></div>'
-    + '<div class="field" style="display:flex;gap:10px"><div style="flex:1"><label class="label" for="wb-datum">Datum</label><input class="input" type="date" id="wb-datum" value="' + (w ? w.isoDate : '') + '"></div><div style="flex:1"><label class="label" for="wb-tijd">Tijd</label><input class="input" type="time" id="wb-tijd" value="' + (w ? w.starttijd||'' : '') + '"></div></div>'
+  // Formulier-archetype: linkerkolom (.form-kolom) blijft op leesbreedte, ook
+  // op een breed scherm; Afwezig + Cijfers gaan naar de tweede kolom die
+  // vanaf 1024px ernaast komt (responsive-layer.css .form-2col) — anders is
+  // 16 spelers met een cijferveld een scrollpad van 2000px op desktop.
+  document.getElementById('wb-content').innerHTML = '<div class="form-2col"><div class="form-kolom">'
+      + '<div class="field"><label class="label" for="wb-tegenstander">Tegenstander</label><input class="input" id="wb-tegenstander" value="' + (w ? esc(w.tegenstander) : '') + '"></div>'
+    + '<div class="field veldrij"><div><label class="label" for="wb-datum">Datum</label><input class="input" type="date" id="wb-datum" value="' + (w ? w.isoDate : '') + '"></div><div><label class="label" for="wb-tijd">Tijd</label><input class="input" type="time" id="wb-tijd" value="' + (w ? w.starttijd||'' : '') + '"></div></div>'
     + '<div class="field"><span class="label">Thuis/uit</span><div class="seg" role="tablist"><button type="button" class="seg-opt" id="wb-thuis" aria-selected="' + (!w || w.thuis_uit==='thuis') + '" onclick="wbZetThuisUit(true)">Thuis</button><button type="button" class="seg-opt" id="wb-uit" aria-selected="' + (w && w.thuis_uit==='uit') + '" onclick="wbZetThuisUit(false)">Uit</button></div></div>'
     + '<div class="field"><label class="label" for="wb-type">Type</label><select class="input" id="wb-type" onchange="wbToggleFaseSectie()"><option value="competitie" ' + (!w||w.wed_type==='competitie'?'selected':'') + '>Competitie</option><option value="beker" ' + (w&&w.wed_type==='beker'?'selected':'') + '>Beker</option><option value="oefenwedstrijd" ' + (w&&w.wed_type==='oefenwedstrijd'?'selected':'') + '>Oefenwedstrijd</option></select></div>'
     + '<div class="field" id="wb-fase-sectie" style="display:' + ((!w || w.wed_type==='competitie') ? 'block' : 'none') + '"><span class="label">Fase</span><div style="display:flex;flex-wrap:wrap;gap:7px" id="wb-fase-chips">' + WED_FASES_V2.map(f => '<button type="button" class="chip" aria-pressed="' + (w && w.wed_fase===f) + '" onclick="wbKiesFase(this,\'' + f + '\')">' + f + '</button>').join('') + '</div></div>'
     + '<div class="divide"></div>'
-    + '<div class="field" style="display:flex;gap:10px;align-items:flex-end"><div><span class="label">Eindstand</span><div style="display:flex;align-items:center;gap:8px"><input class="input score-in" id="wb-score-eigen" aria-label="Eigen score" type="number" min="0" value="' + (w?w.score_eigen:0) + '"><span style="font-size:20px;font-weight:700;color:var(--ink3)">–</span><input class="input score-in" id="wb-score-tegen" aria-label="Score tegenstander" type="number" min="0" value="' + (w?w.score_tegen:0) + '"></div></div>'
-    + '<label style="display:flex;align-items:center;gap:8px;margin-left:12px"><button type="button" class="switch" id="wb-gespeeld-switch" role="switch" aria-checked="' + (w?w.gespeeld:false) + '" onclick="wbToggleGespeeld()"><span class="knob"></span></button><span style="font-size:13px;font-weight:600">Gespeeld</span></label></div>'
+    + '<div class="field veldrij" style="align-items:flex-end"><div style="flex:0 0 auto"><span class="label">Eindstand</span><div style="display:flex;align-items:center;gap:8px"><input class="input score-in" id="wb-score-eigen" aria-label="Eigen score" type="number" min="0" value="' + (w?w.score_eigen:0) + '"><span style="font-size:20px;font-weight:700;color:var(--ink3)">–</span><input class="input score-in" id="wb-score-tegen" aria-label="Score tegenstander" type="number" min="0" value="' + (w?w.score_tegen:0) + '"></div></div>'
+    + '<label style="display:flex;align-items:center;gap:8px;margin-left:12px;flex:0 0 auto"><button type="button" class="switch" id="wb-gespeeld-switch" role="switch" aria-checked="' + (w?w.gespeeld:false) + '" onclick="wbToggleGespeeld()"><span class="knob"></span></button><span style="font-size:13px;font-weight:600">Gespeeld</span></label></div>'
     + '<div class="field"><label class="label" for="wb-motm">Man of the match</label><select class="input" id="wb-motm"><option value="">— geen —</option>' + sp.map(p => '<option value="' + p.id + '" ' + (w && w.motm===p.id ? 'selected' : '') + '>' + esc(p.naam) + '</option>').join('') + '</select></div>'
-    + '<div class="divide"></div>'
+    + '<div class="field"><label class="label" for="wb-opmerkingen">Opmerkingen</label><textarea class="input" id="wb-opmerkingen" style="min-height:80px;resize:vertical">' + esc((w && w.opmerkingen) || '') + '</textarea></div>'
+    + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="' + (w ? "toonWedstrijd('"+w.id+"')" : "toonScherm('agenda')") + '">Annuleren</button><button class="btn btn--primary" onclick="slaWedstrijdOp()">Opslaan</button></div>'
+    + (w ? '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderWedstrijd(this)">Wedstrijd verwijderen</button></div>' : '')
+    + '</div><div>'
     + '<div class="sec">Afwezig</div>'
     // Zelfde chips+"+ Afwezig"-sheet als het detailscherm, ook voor een nog
     // niet opgeslagen nieuwe wedstrijd (wedAfwezigChipsHtmlNieuw) — die schrijft
@@ -3145,11 +3229,10 @@ function openWedstrijdBewerken(id) {
     // eerst de rest van dit formulier op (naOpslaan-param op slaWedstrijdOp),
     // zodat score/opmerkingen/cijfers niet verloren gaan bij het wegnavigeren.
     + (w ? '<button class="btn btn--ghost btn--sm" style="margin-bottom:16px" onclick="slaWedstrijdOp(renderWedOpstelling)">Opstelling voor deze wedstrijd →</button>' : '')
+    + '<div class="divide"></div>'
     + '<div class="sec">Cijfers per speler (1–10)</div>'
-    + '<div class="rows" style="margin-bottom:16px">' + sp.map(p => '<div class="row" style="cursor:default"><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div></div><input class="input" data-pid="' + p.id + '" aria-label="Cijfer voor ' + esc(p.naam) + '" type="number" min="1" max="10" step="0.5" placeholder="—" value="' + (ratings[p.id] != null ? ratings[p.id] : '') + '" style="width:64px;min-height:36px;padding:6px;text-align:center;font-weight:700"></div>').join('') + '</div>'
-    + '<div class="field"><label class="label" for="wb-opmerkingen">Opmerkingen</label><textarea class="input" id="wb-opmerkingen" style="min-height:80px;resize:vertical">' + esc((w && w.opmerkingen) || '') + '</textarea></div>'
-    + '<div class="actionbar actionbar--split"><button class="btn btn--secondary" onclick="' + (w ? "toonWedstrijd('"+w.id+"')" : "toonScherm('agenda')") + '">Annuleren</button><button class="btn btn--primary" onclick="slaWedstrijdOp()">Opslaan</button></div>'
-    + (w ? '<div class="danger-zone"><button class="btn btn--danger btn--block" onclick="verwijderWedstrijd(this)">Wedstrijd verwijderen</button></div>' : '');
+    + '<div class="cijferlijst" style="margin-bottom:16px">' + sp.map(p => '<div class="row" style="cursor:default"><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div></div><input class="input" data-pid="' + p.id + '" aria-label="Cijfer voor ' + esc(p.naam) + '" type="number" min="1" max="10" step="0.5" placeholder="—" value="' + (ratings[p.id] != null ? ratings[p.id] : '') + '" style="width:64px;min-height:36px;padding:6px;text-align:center;font-weight:700"></div>').join('') + '</div>'
+    + '</div></div>';
   toonScherm('wedstrijd-bewerk');
 }
 function wbZetThuisUit(thuis) {
@@ -3189,7 +3272,7 @@ async function slaWedstrijdOp(naOpslaan) {
   // (wedAfwezigChipsHtmlNieuw), pas hier voor het eerst echt weggeschreven.
   const afwezig = bestaandVoorAfwezig ? (bestaandVoorAfwezig.afwezig || []) : wbNieuwAfwezig;
   const ratings = {};
-  document.querySelectorAll('#wb-content .rows input[data-pid]').forEach(inp => { if (inp.value !== '') ratings[inp.dataset.pid] = +inp.value; });
+  document.querySelectorAll('#wb-content input[data-pid]').forEach(inp => { if (inp.value !== '') ratings[inp.dataset.pid] = +inp.value; });
   const w = {
     id: huidigWedstrijdId || 'i' + Date.now() + Math.random().toString(36).slice(2,6),
     tegenstander, isoDate,
@@ -3789,7 +3872,8 @@ function renderLiveTrainer() {
   const f = alle[actief];
   const slots = f.pos.map(pos => {
     const naam = sp.find(p => p.id === liveState.lineup[pos.id]);
-    return '<div class="fslot" style="left:' + pos.x + '%;top:' + pos.y + '%" onclick="openWisselSheet(\'' + pos.id + '\')">'
+    const proj = veldProjecteer(pos.x, pos.y);
+    return '<div class="fslot" style="left:' + proj.x + '%;top:' + proj.y + '%" onclick="openWisselSheet(\'' + pos.id + '\')">'
       + '<div class="ppill' + (naam ? '' : ' ppill--leeg') + '"><span class="ppill-rol ' + ppillRolClassV2(pos.label) + '">' + pos.label + '</span><span class="ppill-nm">' + (naam ? esc(naam.naam.split(' ')[0]) : 'Leeg') + '</span></div></div>';
   }).join('');
 
@@ -3808,21 +3892,26 @@ function renderLiveTrainer() {
     fases = '<div style="text-align:center;color:var(--ink3);font-size:13px">Wedstrijd afgelopen · ' + liveState.minsPerHelft + ' min per helft</div>';
   }
 
-  document.getElementById('lt-content').innerHTML =
-      '<div class="card" style="text-align:center">'
+  // Live-archetype: klok/veld/acties in de linkerkolom, Notities in de
+  // rechterkolom (liggende telefoon en vanaf 1024px ernaast, responsive-
+  // layer.css .live-2col) — het enige scherm dat je zowel staand als
+  // liggend in de hand houdt tijdens gebruik.
+  document.getElementById('lt-content').innerHTML = '<div class="live-2col"><div>'
+    + '<div class="card" style="text-align:center">'
     + '<div style="font-size:14px;color:var(--ink3);margin-bottom:6px">' + esc(teamNaamV2()) + ' · ' + esc(w.tegenstander||'?') + '</div>'
     + voorStartVeld
     + '<div style="display:flex;align-items:center;justify-content:center;gap:18px">'
     + '<div class="stepper"><button class="stepper-b" onclick="ltStap(\'scoreEigen\',-1)">–</button><div class="num" style="font-size:34px;font-weight:700;width:40px;text-align:center">' + liveState.scoreEigen + '</div><button class="stepper-b" onclick="ltStap(\'scoreEigen\',1)">+</button></div>'
-    + '<div class="clock">' + liveState.minuut + "'</div>"
+    + '<div class="clock live-klok">' + liveState.minuut + "'</div>"
     + '<div class="stepper"><button class="stepper-b" onclick="ltStap(\'scoreTegen\',-1)">–</button><div class="num" style="font-size:34px;font-weight:700;width:40px;text-align:center">' + liveState.scoreTegen + '</div><button class="stepper-b" onclick="ltStap(\'scoreTegen\',1)">+</button></div>'
     + '</div>'
     + '<div style="margin-top:14px">' + fases + '</div>'
     + '</div>'
-    + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="height:auto;aspect-ratio:1.3;max-width:420px;margin:0 auto"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div></div>'
+    + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="max-width:420px;margin:0 auto"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div></div>'
     + (liveState.status !== 'gepland' ? formatieSnelwisselHtml(actief) : '')
     + (liveState.status !== 'gepland' ? '<div class="card" style="margin-top:10px;display:flex;gap:8px"><button class="btn btn--secondary" style="flex:1" onclick="openPositieSwapSheet()">Posities wisselen</button><button class="btn btn--secondary" style="flex:1" onclick="openFormatieWijzigenSheet()">Formatie wijzigen</button></div>' : '')
-    + '<div class="card" style="margin-top:10px"><div class="sec">Notities</div>'
+    + '</div><div>'
+    + '<div class="card"><div class="sec">Notities</div>'
     + '<div style="position:relative;margin-bottom:12px">'
     + '<div style="display:flex;gap:8px"><input class="input" id="lt-notitie-input" placeholder="Typ een notitie... @naam om te taggen" style="flex:1" oninput="ltNotitieInput();ltToonNaamSuggesties()" onkeyup="ltNotitieKeyup(event)" onblur="ltNotitieBlur()">' + (ltSpraakOndersteund()
         ? '<button class="btn btn--secondary btn--icon" id="lt-mic-btn" aria-label="Inspreken" title="Spraakinvoer" onclick="ltToggleSpraak()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button>'
@@ -3837,7 +3926,8 @@ function renderLiveTrainer() {
         + (n.spelerIds && n.spelerIds.length ? '<div style="font-size:11.5px;color:var(--ink3);margin-top:2px">Getagd: ' + n.spelerIds.map(pid => { const p = sp.find(x => x.id === pid); return p ? esc(p.naam.split(' ')[0]) : null; }).filter(Boolean).join(', ') + '</div>' : '')
         + '<button class="note-act" onclick="ltIntrekken(' + n.id + ')" aria-label="Intrekken">✕</button></div>'
       ).join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen notities.</div>')
-    + '</div>';
+    + '</div>'
+    + '</div></div>';
 }
 
 // ─── Wissel — twee stappen ───
@@ -4058,7 +4148,8 @@ function renderFormatieRemapVeld() {
   const sp = spelers();
   document.getElementById('fw-veld').innerHTML = f.pos.map(pos => {
     const naam = sp.find(p => p.id === fwNieuweLineup[pos.id]);
-    return '<div class="fslot" style="left:' + pos.x + '%;top:' + pos.y + '%" onclick="fwKiesSpelerVoorPositie(\'' + pos.id + '\')">'
+    const proj = veldProjecteer(pos.x, pos.y);
+    return '<div class="fslot" style="left:' + proj.x + '%;top:' + proj.y + '%" onclick="fwKiesSpelerVoorPositie(\'' + pos.id + '\')">'
       + '<div class="ppill' + (naam ? '' : ' ppill--leeg') + '"><span class="ppill-rol ' + ppillRolClassV2(pos.label) + '">' + pos.label + '</span><span class="ppill-nm">' + (naam ? esc(naam.naam.split(' ')[0]) : 'Kies') + '</span></div></div>';
   }).join('');
   // Per positie van dít systeem tellen (niet Object.keys(fwNieuweLineup).length)
@@ -4129,7 +4220,8 @@ function renderPositieSwapVeld() {
   document.getElementById('ps-veld').innerHTML = f.pos.map(pos => {
     const naam = sp.find(p => p.id === liveState.lineup[pos.id]);
     const geselecteerd = pos.id === psEerstePosId;
-    return '<div class="fslot" style="left:' + pos.x + '%;top:' + pos.y + '%" onclick="tikPositieSwap(\'' + pos.id + '\')">'
+    const proj = veldProjecteer(pos.x, pos.y);
+    return '<div class="fslot" style="left:' + proj.x + '%;top:' + proj.y + '%" onclick="tikPositieSwap(\'' + pos.id + '\')">'
       + '<div class="ppill' + (naam ? '' : ' ppill--leeg') + '"' + (geselecteerd ? ' style="box-shadow:0 0 0 3px var(--accent)"' : '') + '><span class="ppill-rol ' + ppillRolClassV2(pos.label) + '">' + pos.label + '</span><span class="ppill-nm">' + (naam ? esc(naam.naam.split(' ')[0]) : 'Leeg') + '</span></div></div>';
   }).join('');
 }
@@ -4173,17 +4265,20 @@ function renderLivePubliek() {
   const cont = document.getElementById('lp-content');
   if (!liveState) { cont.innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:28px;margin-top:14px">Nog geen wedstrijd geopend in Live. Open eerst "Live starten" bij een wedstrijd.</div>'; return; }
   const w = wedstrijden().find(x => x.id === liveState.wedstrijdId);
-  cont.innerHTML = '<div class="card" style="margin-top:14px;text-align:center">'
+  cont.innerHTML = '<div class="live-2col" style="margin-top:14px"><div>'
+    + '<div class="card" style="text-align:center">'
     + '<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px">' + (liveState.status.startsWith('live') ? '<span class="livedot"></span>' : '') + '<span style="font-size:12px;font-weight:700;color:var(--ink3)">' + STATUS_LABEL[liveState.status] + '</span></div>'
     + '<div style="font-size:15px;font-weight:600">' + esc(teamNaamV2()) + ' – ' + esc(w.tegenstander||'?') + '</div>'
     + '<div class="num" style="font-size:34px;font-weight:700;margin-top:6px">' + liveState.scoreEigen + '–' + liveState.scoreTegen + '</div>'
     + '</div>'
-    + '<div class="card" style="margin-top:10px"><div class="sec">Verloop</div>'
+    + '<div style="font-size:11px;color:var(--ink3);text-align:center;margin-top:10px">Alleen-lezen · geen tabbalk in de echte publieke pagina</div>'
+    + '</div><div>'
+    + '<div class="card"><div class="sec">Verloop</div>'
     + (liveState.notities.filter(n => n.gedeeld).length
         ? '<div style="display:flex;flex-direction:column;gap:7px">' + liveState.notities.filter(n => n.gedeeld).map(n => '<div class="note note--gedeeld"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(ltPubliekeNotitieTekst(n)) + '</div></div>').join('') + '</div>'
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen gedeelde updates.</div>')
     + '</div>'
-    + '<div style="font-size:11px;color:var(--ink3);text-align:center;margin-top:10px">Alleen-lezen · geen tabbalk in de echte publieke pagina</div>';
+    + '</div></div>';
 }
 
 // ─── Instellingen ───
@@ -4202,8 +4297,11 @@ function renderInstellingen() {
   const spelvorm = localStorage.getItem('fcp_spelvorm') || '11';
   const sbUrl = localStorage.getItem('sb_url') || '';
   const sbKey = localStorage.getItem('sb_key') || '';
-  document.getElementById('is-content').innerHTML =
-      '<div class="sec" style="margin-top:14px">Weergave</div>'
+  // Focus-archetype: linkerkolom = Weergave/Spelvorm/Team (wat je hier komt
+  // instellen), rechterkolom = de losse beheerlijsten (vanaf 1024px naast
+  // elkaar, responsive-layer.css .focus-2col).
+  document.getElementById('is-content').innerHTML = '<div class="focus-2col"><div>'
+      + '<div class="sec" style="margin-top:14px">Weergave</div>'
     + '<div class="seg" role="tablist">'
     + ['licht', 'donker', 'systeem'].map(m => '<button type="button" class="seg-opt" aria-selected="' + (m === themaModus) + '" onclick="kiesThemaV2(\'' + m + '\')">' + (m === 'licht' ? 'Licht' : m === 'donker' ? 'Donker' : 'Systeem') + '</button>').join('')
     + '</div>'
@@ -4226,9 +4324,9 @@ function renderInstellingen() {
     + '<div class="field"><label class="label" for="inst-naam">Teamnaam</label><input class="input" id="inst-naam" value="' + esc(cfg.naam||'') + '" placeholder="Teamnaam"></div>'
     + '<div class="field"><label class="label" for="inst-subtitel">Seizoen</label><input class="input" id="inst-subtitel" value="' + esc(cfg.subtitel||'') + '" placeholder="Bijv. 2026/2027"></div>'
     + '<button class="btn btn--primary btn--block" onclick="instOpslaanTeam(this)">Opslaan</button>'
-    + '<div class="divide"></div>'
+    + '</div><div>'
 
-    + '<div class="sec">Beheer</div>'
+    + '<div class="sec" style="margin-top:14px">Beheer</div>'
     + '<div class="row" style="border-radius:var(--r-card);box-shadow:var(--sh1)" onclick="openFormatiesSheet()"><div class="row-body"><div class="row-title">Formaties</div><div class="row-sub">' + Object.keys(alleFormatiesV2()).length + ' systemen</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>'
     + '<div class="row" style="border-radius:var(--r-card);box-shadow:var(--sh1);margin-top:8px" onclick="openCatSheet()"><div class="row-body"><div class="row-title">Categorieën oefeningen</div><div class="row-sub">' + categorieen().length + ' categorieën</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>'
     + '<div class="row" style="border-radius:var(--r-card);box-shadow:var(--sh1);margin-top:8px" onclick="openAfwRedenSheet()"><div class="row-body"><div class="row-title">Afwezigheidsredenen</div><div class="row-sub">' + absRedenen().length + ' redenen</div></div><svg class="row-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>'
@@ -4250,7 +4348,8 @@ function renderInstellingen() {
     + '<div class="field"><label class="label" for="inst-sb-key">Anon key</label><input class="input" id="inst-sb-key" value="' + esc(sbKey) + '" placeholder="eyJ..."></div>'
     + '<div style="font-size:11.5px;color:' + (sbUrl ? 'var(--win)' : 'var(--ink3)') + ';margin-bottom:10px">' + (sbUrl ? '✓ Gekoppeld aan ' + esc(sbUrl.replace('https://','').split('.')[0]) : 'Niet gekoppeld') + ' — test met Health check hieronder.</div>'
     + '<button class="btn btn--secondary btn--block" onclick="instOpslaanSupabase(this)">Opslaan</button>'
-    + (sbUrl ? '<button class="btn btn--danger btn--block" style="margin-top:8px" onclick="instVerwijderSupabase(this)">Verbinding verwijderen</button>' : '');
+    + (sbUrl ? '<button class="btn btn--danger btn--block" style="margin-top:8px" onclick="instVerwijderSupabase(this)">Verbinding verwijderen</button>' : '')
+    + '</div></div>';
   renderTrainersV2();
 }
 // ─── Trainers (invite-only) — apart, async gerenderd in een placeholder-div
@@ -4351,65 +4450,146 @@ async function instWisCache(btn) {
 }
 
 // ─── Inzicht ───
-let inzichtTabV2 = 'afwezigheid';
-function setInzichtTab(t) {
-  inzichtTabV2 = t;
-  document.querySelectorAll('#i-seg .seg-opt').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t ? 'true' : 'false'));
-  renderInzicht();
+// Vroeger twee renderpaden: vier tabbladen op mobiel (elk zijn eigen
+// render-functie) en een apart samengesteld dashboard vanaf 860px
+// (renderInzichtDesktop). Die twee zijn tweemaal uit elkaar gedreven —
+// 2026-09-08 (afwezigheid onvindbaar op desktop) en 2026-09-14 (volledige
+// speeltijdlijst ontbrak) — omdat een fix op de ene plek niet vanzelf ook
+// op de andere landde. Nu: dezelfde kaarten, met data-groep, staan altijd
+// allemaal in de DOM; op mobiel filtert setInzichtTab() met een CSS-klasse
+// welke zichtbaar zijn, vanaf 1024px (responsive-layer.css) staat alles
+// gelijk en verdwijnt het segment zelf. Eén render, dus niets kan meer op
+// de ene breedte bestaan en op de andere onvindbaar zijn.
+let inzGroepActief = 'ranking';
+function setInzichtTab(groep) {
+  inzGroepActief = groep;
+  document.querySelectorAll('#i-seg .seg-opt').forEach(b => b.setAttribute('aria-selected', b.dataset.groep === groep ? 'true' : 'false'));
+  document.querySelectorAll('#i-grid [data-groep]').forEach(el => el.classList.toggle('actief', el.dataset.groep === groep));
 }
-function renderInzicht() {
-  // Vanaf 860px (zelfde grens als de zijbalk) één samengestelde dashboardweergave
-  // i.p.v. losse tabbladen — op desktop is er ruimte om alles gelijk te tonen,
-  // tabbladen zijn een mobiel-schaarste-oplossing (afgestemd met gebruiker
-  // 2026-09-07, zie de desktop-dashboardmockup).
-  const desktop = window.matchMedia('(min-width:860px)').matches;
-  document.getElementById('i-seg').style.display = desktop ? 'none' : '';
-  if (desktop) { renderInzichtDesktop(); return; }
-  if (inzichtTabV2 === 'afwezigheid') renderInzAfwezigheid();
-  else if (inzichtTabV2 === 'skills') renderInzSkills();
-  else if (inzichtTabV2 === 'ranking') renderInzRanking();
-  else renderInzSpeelminuten();
+async function renderInzicht() {
+  document.getElementById('i-hero').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px">Laden…</div>';
+  const sp = spelers();
+  // Zelfde type-/fase-filter voor Vorm/Doelpunten/Topscorers/Cijfer/MOTM/
+  // Speeltijd; Opkomst/Spelers/Afwezigheid/Skills blijven ongefilterd —
+  // die vraag ("hoeveel afwezigheid door het hele seizoen") is onafhankelijk
+  // van welk wedstrijdtype je net bekijkt.
+  let gespeeld = wedstrijden().filter(w => w.gespeeld && (inzRankingType === 'alle' || (w.wed_type || 'oefenwedstrijd') === inzRankingType));
+  const faseOpties = inzRankingType === 'competitie' ? [...new Set(gespeeld.map(w => w.wed_fase).filter(Boolean))] : [];
+  if (inzRankingType === 'competitie' && inzRankingFases.size > 0) {
+    gespeeld = gespeeld.filter(w => inzRankingFases.has(w.wed_fase || ''));
+  }
+  const wins = gespeeld.filter(w => w.score_eigen > w.score_tegen).length;
+  const gelijk = gespeeld.filter(w => w.score_eigen === w.score_tegen).length;
+  const verloren = gespeeld.filter(w => w.score_eigen < w.score_tegen).length;
+  const saldo = gespeeld.reduce((s, w) => s + (w.score_eigen || 0) - (w.score_tegen || 0), 0);
+  const punten = wins * 3 + gelijk;
+
+  const aanw = aanwAlles();
+  let totaalRijen = 0, aanwezigRijen = 0;
+  Object.values(aanw).forEach(perSpeler => {
+    Object.values(perSpeler).forEach(rec => { totaalRijen++; if (!rec.afwezig) aanwezigRijen++; });
+  });
+  const opkomstPct = totaalRijen ? Math.round(100 * aanwezigRijen / totaalRijen) : null;
+
+  const laatsteAcht = [...gespeeld].sort((a, b) => (b.isoDate || '').localeCompare(a.isoDate || '')).slice(0, 8).reverse();
+
+  const [skillsData, doelpuntenHtml, topscorersHtml, speeltijdHtml] = await Promise.all([
+    skillsVergelijkingData(),
+    doelpuntenKaartHtml(gespeeld),
+    topscorersKaartHtml(gespeeld, sp),
+    speeltijdKaartHtml(gespeeld, sp),
+  ]);
+  VD_SKILLS_RAW = skillsData;
+  const metSkillData = skillsData.rijen.filter(r => r.sGem != null || r.tGem != null);
+  const skillsVerschillenHtml = skillsVerschillenKaartHtml(skillsData.rijen);
+
+  document.getElementById('i-hero').innerHTML =
+      '<div class="card card--accent" style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap">'
+      + '<div><div style="font-size:22px;font-weight:700;letter-spacing:-.035em">Inzicht</div>'
+      + '<div style="font-size:13px;opacity:.6;margin-top:2px">' + gespeeld.length + ' wedstrijden · ' + Object.keys(aanw).length + ' trainingen</div></div>'
+      + '<div class="kpis">'
+      + '<div><div class="num" style="font-size:28px;font-weight:700;letter-spacing:-.02em">' + punten + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Punten</div></div>'
+      + '<div><div class="num" style="font-size:28px;font-weight:700;letter-spacing:-.02em">' + (saldo > 0 ? '+' : '') + saldo + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Doelsaldo</div></div>'
+      + '<div><div class="num" style="font-size:28px;font-weight:700;letter-spacing:-.02em">' + (opkomstPct != null ? opkomstPct + '%' : '–') + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Opkomst training</div></div>'
+      + '<div><div class="num" style="font-size:28px;font-weight:700;letter-spacing:-.02em">' + actieveSpelers().length + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Spelers</div></div>'
+      + '</div></div>'
+      + '<div class="seg" role="tablist" style="margin-top:14px;max-width:420px">' + ['alle', 'competitie', 'beker', 'oefenwedstrijd'].map(t => '<button type="button" class="seg-opt" aria-selected="' + (t === inzRankingType) + '" onclick="inzZetRankingType(\'' + t + '\')">' + (t === 'alle' ? 'Alle' : t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen') + '</button>').join('') + '</div>'
+      + (faseOpties.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' + faseOpties.map(f => '<button type="button" class="chip" aria-pressed="' + inzRankingFases.has(f) + '" onclick="inzToggleRankingFase(\'' + esc(f) + '\')">' + esc(f) + '</button>').join('') + '</div>' : '');
+
+  document.getElementById('i-grid').innerHTML =
+      '<div class="card" data-groep="ranking">'
+        + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px"><div class="sec" style="margin:0">Vorm</div><span class="tag tag--line">' + wins + 'W · ' + gelijk + 'G · ' + verloren + 'V</span></div>'
+        + '<div style="display:flex;height:9px;border-radius:5px;overflow:hidden;margin-bottom:18px;background:var(--surface3)">'
+          + '<div style="flex:' + (wins || 0.0001) + ';background:var(--win)"></div><div style="flex:' + (gelijk || 0.0001) + ';background:var(--neutral)"></div><div style="flex:' + (verloren || 0.0001) + ';background:var(--loss)"></div>'
+        + '</div>'
+        + (laatsteAcht.length ? '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px"><span>oudste</span><span>nieuwste</span></div><div class="formstrip" style="margin-top:2px">' + laatsteAcht.map(w => {
+            const u = w.score_eigen > w.score_tegen ? 'win' : w.score_eigen < w.score_tegen ? 'loss' : 'neutral';
+            const letter = u === 'win' ? 'W' : u === 'loss' ? 'V' : 'G';
+            return '<span style="background:var(--' + u + '-soft);color:var(--' + u + ')">' + letter + '</span>';
+          }).join('') + '</div>' : '<div style="font-size:12.5px;color:var(--ink3)">Geen wedstrijden voor dit filter.</div>')
+      + '</div>'
+
+      + '<div class="card" data-groep="ranking">' + (doelpuntenHtml || '<div class="sec">Doelpunten per helft</div><div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter.</div>') + '</div>'
+      + '<div class="card" data-groep="ranking">' + (topscorersHtml || '<div class="sec">Topscorers &amp; assists</div><div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter.</div>') + '</div>'
+
+      + (skillsVerschillenHtml ? '<div class="card w-full" data-groep="skills">' + skillsVerschillenHtml + '</div>' : '')
+      + '<div class="card w-full" data-groep="skills">' + (metSkillData.length ? skillsVerdelingLijstHtml(skillsData.rijen) : '<div class="sec">Vaardigheden</div><div style="font-size:13px;color:var(--ink3)">Nog geen speler- en trainerbeoordelingen om te vergelijken.</div>') + '</div>'
+
+      + '<div class="fill fill--ruim w-full">'
+      + '<div class="card" data-groep="ranking">' + cijfersKaartHtml(gespeeld, sp) + '</div>'
+      + '<div class="card" data-groep="ranking">' + motmKaartHtml(gespeeld, sp) + '</div>'
+      + '<div class="card" data-groep="minuten">' + speeltijdHtml + '</div>'
+      + '<div class="card" data-groep="afwezigheid">' + afwezigheidKaartHtml(sp) + '</div>'
+      + '</div>';
+
+  // Kaarten zijn net vervangen — de zichtbaarheids-/aria-status van vóór
+  // deze herrender opnieuw toepassen op de nieuwe DOM-knopen.
+  setInzichtTab(inzGroepActief);
 }
 // Top-afwezigen met redenen — uit dezelfde aanwAlles()-data als Inzicht → Afwezig
 // (mobiel), hier samengevat tot de 4 spelers met de meeste afwezigheid i.p.v. een
 // volledige lijst. Alleen op het desktop-dashboard (afgestemd 2026-09-07).
-function afwezigheidAandachtHtml() {
-  const sp = spelers();
+// Samengevoegd uit de vroegere aparte mobiele (renderInzAfwezigheid, klap-uit
+// per training) en desktop (afwezigheidAandachtHtml, sorteerknoppen + totaal-
+// uitsplitsing) versie tot één kaart — zie toelichting bij renderInzicht()
+// hierboven. Telt over álle aanw-records (niet alleen sessies die nog in
+// customWeken() bestaan, zelfde bewuste keuze als de oude desktop-versie —
+// een sindsdien verwijderde training mag niet uit het totaal verdwijnen),
+// en zoekt de dag-naam per record op voor de klap-uit-detail; een record
+// zonder nog vindbare sessie toont daar "Training" i.p.v. te crashen.
+function afwezigheidKaartHtml(sp) {
   const aanw = aanwAlles();
+  const dagVan = {};
+  customWeken().forEach((wk, wi) => (wk.sessies || []).forEach((s, si) => {
+    dagVan[s.id || ('cw' + wi + '_' + si)] = s.dag || 'Training';
+  }));
   const perSpeler = {};
   const perRedenTotaal = {};
   let totaalAfwezig = 0;
-  Object.values(aanw).forEach(perTraining => {
+  Object.entries(aanw).forEach(([nk, perTraining]) => {
     Object.entries(perTraining).forEach(([spelerId, rec]) => {
-      if (rec && rec.afwezig) {
-        if (!perSpeler[spelerId]) perSpeler[spelerId] = { n: 0, redenen: new Set() };
-        perSpeler[spelerId].n++;
-        totaalAfwezig++;
-        const reden = rec.reden || 'onbekend';
-        perRedenTotaal[reden] = (perRedenTotaal[reden] || 0) + 1;
-        if (rec.reden) perSpeler[spelerId].redenen.add(rec.reden);
-      }
+      if (!rec || !rec.afwezig) return;
+      if (!perSpeler[spelerId]) perSpeler[spelerId] = { n: 0, perReden: {}, detail: [] };
+      perSpeler[spelerId].n++;
+      totaalAfwezig++;
+      const reden = rec.reden || 'Onbekend';
+      perSpeler[spelerId].perReden[reden] = (perSpeler[spelerId].perReden[reden] || 0) + 1;
+      perSpeler[spelerId].detail.push({ dag: dagVan[nk] || 'Training', reden });
+      perRedenTotaal[reden] = (perRedenTotaal[reden] || 0) + 1;
     });
   });
   const naamVan = id => (sp.find(p => p.id === id) || {}).naam || '?';
-  // Volledige lijst i.p.v. top 4 — dit is op desktop de enige plek om afwezigheid
-  // te zien (geen apart "Afwezig"-tabblad meer zoals op mobiel), dus een
-  // afgekapte lijst liet het totaal onvindbaar. Gemeld 2026-09-08.
   const alle = rangschikkingSorteer('afwezigheid', Object.entries(perSpeler)
-    .map(([id, x]) => ({ naam: naamVan(id), n: x.n, redenen: [...x.redenen].join(', ') })), 'n');
-  // Team-breed totaal + uitsplitsing per reden — gevraagd door gebruiker
-  // 2026-09-16, naast de al bestaande per-speler-uitsplitsing hierboven.
-  // Onderaan i.p.v. tussen titel en sorteerknoppen (was eerst zo) — anders
-  // stond de sorteerknoppenrij niet meer op dezelfde hoogte als bij de
-  // andere rangschikkingskaarten (Cijfer/Speeltijd/MOTM). Gemeld 2026-09-16.
+    .map(([id, x]) => ({ naam: naamVan(id), n: x.n, perReden: x.perReden, detail: x.detail })), 'n');
   const redenTekst = Object.entries(perRedenTotaal).sort((a, b) => b[1] - a[1]).map(([r, n]) => esc(r) + ' ' + n + 'x').join(' · ');
   const totaalHtml = totaalAfwezig ? '<div style="font-size:12.5px;color:var(--ink3);margin-top:10px">' + totaalAfwezig + 'x totaal' + (redenTekst ? ' — ' + redenTekst : '') + '</div>' : '';
   return rangschikkingKopHtml('afwezigheid', 'Afwezigheid', alle.length + ' spelers', 'Meeste eerst')
     + (alle.length
-        // white-space:nowrap + ellipsis (i.p.v. wrappen) zodat een lange
-        // redenenlijst (bv. 4 redenen) altijd op 1 regel blijft — volledige
-        // tekst staat in de title-tooltip. Gemeld door gebruiker 2026-09-14.
-        ? '<div style="display:flex;flex-direction:column">' + alle.map(x => '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:6px 0;font-size:13px" title="' + esc(x.n + '× · ' + x.redenen) + '"><span style="font-weight:600;flex-shrink:0">' + esc(x.naam) + '</span><span style="color:var(--ink3);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">' + x.n + '×' + (x.redenen ? ' · ' + esc(x.redenen) : '') + '</span></div>').join('') + '</div>'
+        ? alle.map(x => '<div style="margin-bottom:4px">'
+            + '<div style="cursor:pointer" onclick="inzToggle(this)"><div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0"><span style="font-size:13.5px;font-weight:600">' + esc(x.naam) + '</span><span class="tag tag--line">' + x.n + 'x</span></div>'
+            + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">' + Object.entries(x.perReden).map(([r, n]) => '<span class="tag tag--neutral">' + esc(r) + ': ' + n + 'x</span>').join('') + '</div></div>'
+            + '<div class="inz-detail" style="display:none;padding-bottom:8px">' + x.detail.map(d => '<div style="font-size:12.5px;color:var(--ink3);padding:3px 0">' + esc(d.dag) + ' · ' + esc(d.reden) + '</div>').join('') + '</div>'
+            + '</div>').join('')
         : '<div style="font-size:12.5px;color:var(--ink3)">Geen afwezigheid geregistreerd.</div>')
     + totaalHtml;
 }
@@ -4423,8 +4603,8 @@ async function speeltijdKaartHtml(wed, sp) {
   // voorheen las deze kaart zelf altijd ALLE gespeelde wedstrijden, dus een
   // filter op bv. "Competitie" had hier geen effect. Gemeld door gebruiker
   // 2026-09-20.)
-  const totaal = {}; const minutenPerWed = {};
-  sp.forEach(p => { totaal[p.id] = 0; minutenPerWed[p.id] = {}; });
+  const totaal = {}; const minutenPerWed = {}; const detailPerSpeler = {};
+  sp.forEach(p => { totaal[p.id] = 0; minutenPerWed[p.id] = {}; detailPerSpeler[p.id] = []; });
   // "Bijgehouden" = heeft een opstelling ÉN een eindmoment (via Live afgerond).
   // Zonder eindMinuut geeft berekenSpeeltijd() voor een niet-gewisselde speler
   // altijd 0 terug (de laatste periode sluit dan nooit af) — een wedstrijd met
@@ -4444,6 +4624,10 @@ async function speeltijdKaartHtml(wed, sp) {
         const min = berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindMinuut);
         totaal[p.id] += min;
         minutenPerWed[p.id][w.id] = min;
+        // Klap-uit-detail per wedstrijd (vroeger alleen op het mobiele
+        // Minuten-tabblad, nu overal) — alleen wedstrijden waarin de speler
+        // ook echt minuten maakte, anders staat er een lange lijst met 0's.
+        if (min > 0) detailPerSpeler[p.id].push({ tegenstander: w.tegenstander, minuten: min, wissels: wisselDetailTekstV2(p.id, wisselsVoorWedstrijd) });
       });
     });
   }
@@ -4451,161 +4635,38 @@ async function speeltijdKaartHtml(wed, sp) {
   // (afwezigheid-bewust voor actieve spelers, gemeten-minuten voor gearchiveerde).
   const aantalWed = {};
   sp.forEach(p => { aantalWed[p.id] = aantalWedstrijdenVoorSpeler(p, wedMetOpstelling, minutenPerWed[p.id]); });
-  const rijen = rangschikkingSorteer('speeltijd', sp.map(p => ({ naam: p.naam, min: totaal[p.id], n: aantalWed[p.id] })).filter(x => x.min > 0), 'min');
+  const rijen = rangschikkingSorteer('speeltijd', sp.map(p => ({ naam: p.naam, min: totaal[p.id], n: aantalWed[p.id], detail: detailPerSpeler[p.id] })).filter(x => x.min > 0), 'min');
   const kolom = 'display:grid;grid-template-columns:1fr 88px 46px;align-items:center;gap:16px';
   // Totaal gespeeld (binnen het filter) als hoofdcijfer, "bijgehouden" als
-  // aanvulling wanneer dat afwijkt — zie toelichting bij renderInzSpeelminuten().
+  // aanvulling wanneer dat afwijkt.
   const bijgehoudenNote = wedMetOpstelling.length < wed.length ? ' (' + wedMetOpstelling.length + ' bijgehouden)' : '';
   const aantalLabel = rijen.length + ' spelers · ' + wed.length + ' wedstrijd' + (wed.length === 1 ? '' : 'en') + bijgehoudenNote;
   return rangschikkingKopHtml('speeltijd', 'Speeltijd', aantalLabel, 'Meeste eerst')
     + (rijen.length
         ? '<div style="' + kolom + ';font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px"><span>Speler</span><span style="text-align:right">Wedstrijden</span><span style="text-align:right">Min</span></div>'
-          + rijen.map(x => '<div style="' + kolom + ';font-size:13.5px;padding:6px 0"><span>' + esc(x.naam) + '</span><span class="num" style="text-align:right;color:var(--ink3)">' + x.n + '×</span><span class="num" style="text-align:right;font-weight:700">' + x.min + '</span></div>').join('')
+          + rijen.map(x => '<div style="margin-bottom:2px">'
+              + '<div style="cursor:pointer" onclick="inzToggle(this)"><div style="' + kolom + ';font-size:13.5px;padding:6px 0"><span>' + esc(x.naam) + '</span><span class="num" style="text-align:right;color:var(--ink3)">' + x.n + '×</span><span class="num" style="text-align:right;font-weight:700">' + x.min + '</span></div></div>'
+              + '<div class="inz-detail" style="display:none;padding-bottom:8px">' + x.detail.map(m => '<div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--ink3);padding:3px 0"><span>vs ' + esc(m.tegenstander) + '</span><span style="text-align:right;flex-shrink:0">' + m.minuten + ' min' + (m.wissels ? ' · ' + esc(m.wissels) : '') + '</span></div>').join('') + '</div>'
+            + '</div>').join('')
         : '<div style="font-size:12.5px;color:var(--ink3)">Nog geen speelminuten dit seizoen.</div>');
 }
-// Desktop-dashboard voor Inzicht: donkere kop met Punten/Doelsaldo/Opkomst/Kader,
-// een smalle linkerkolom (Vorm+Doelpunten, Afwezigheid+Speeltijd) en een brede
-// rechterkolom voor Verdeling per vaardigheid (klikbaar per rij) — layout 1-op-1
-// afgestemd met gebruiker 2026-09-07 (schets: smalle datakolom, brede
-// vaardighedenkolom, "Laatste wedstrijden" bewust weggelaten). Alle data via
-// dezelfde functies als de mobiele tabbladen. Reageert live op resize via de
-// matchMedia-listener onderaan dit script.
-async function renderInzichtDesktop() {
-  document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
-  const sp = spelers();
-  // Zelfde wedstrijdtype-filter (alle/competitie/beker/oefen) als het mobiele
-  // Ranking-tabblad — miste hier nog, een echte functionaliteitsregressie
-  // t.o.v. mobiel (gemeld 2026-09-08). Filtert Punten/Doelsaldo/Vorm/Doelpunten/
-  // Cijfer/MOTM/Speeltijd; Opkomst/Spelers/Afwezigheid/Skills blijven
-  // ongefilterd, zoals ook op mobiel (die tabbladen hebben zelf geen
-  // type-filter). Speeltijd las tot 2026-09-20 zelf altijd ALLE gespeelde
-  // wedstrijden i.p.v. dit filter te gebruiken (gemeld door gebruiker).
-  let gespeeld = wedstrijden().filter(w => w.gespeeld && (inzRankingType === 'alle' || (w.wed_type || 'oefenwedstrijd') === inzRankingType));
-  // Fase-filter (competitie werkt met fases, bv. "Fase 1"/"Fase 2") — bestond
-  // alleen op het mobiele Ranking-tabblad, miste hier nog op desktop
-  // (gemeld door gebruiker 2026-09-14). Zelfde inzRankingFases-state, dus
-  // een keuze op mobiel/desktop blijft ook bij het wisselen van schermgrootte
-  // staan.
-  const faseOpties = inzRankingType === 'competitie' ? [...new Set(gespeeld.map(w => w.wed_fase).filter(Boolean))] : [];
-  if (inzRankingType === 'competitie' && inzRankingFases.size > 0) {
-    gespeeld = gespeeld.filter(w => inzRankingFases.has(w.wed_fase || ''));
-  }
-  const wins = gespeeld.filter(w => w.score_eigen > w.score_tegen).length;
-  const gelijk = gespeeld.filter(w => w.score_eigen === w.score_tegen).length;
-  const verloren = gespeeld.filter(w => w.score_eigen < w.score_tegen).length;
-  const saldo = gespeeld.reduce((s, w) => s + (w.score_eigen || 0) - (w.score_tegen || 0), 0);
-  const punten = wins * 3 + gelijk;
-
-  // Opkomst training — % over alle geregistreerde aanwezigheidsrijen (aanwAlles(),
-  // zelfde bron als Inzicht → Afwezig), hier samengevat tot één percentage.
-  const aanw = aanwAlles();
-  let totaalRijen = 0, aanwezigRijen = 0;
-  Object.values(aanw).forEach(perSpeler => {
-    Object.values(perSpeler).forEach(rec => { totaalRijen++; if (!rec.afwezig) aanwezigRijen++; });
-  });
-  const opkomstPct = totaalRijen ? Math.round(100 * aanwezigRijen / totaalRijen) : null;
-
-  const laatsteAcht = [...gespeeld].sort((a, b) => (b.isoDate || '').localeCompare(a.isoDate || '')).slice(0, 8).reverse();
-
-  const [skillsData, doelpuntenHtml, topscorersHtml, speeltijdHtml] = await Promise.all([
-    skillsVergelijkingData(),
-    doelpuntenKaartHtml(gespeeld),
-    topscorersKaartHtml(gespeeld, sp),
-    speeltijdKaartHtml(gespeeld, sp),
-  ]);
-  VD_SKILLS_RAW = skillsData;
-  const metSkillData = skillsData.rijen.filter(r => r.sGem != null || r.tGem != null);
-  const afwezigheidHtml = afwezigheidAandachtHtml();
-
-  // Lay-out herzien 2026-09-14 (mockup design/inzicht-desktop/, met gebruiker
-  // doorlopen): vaste 300px/1fr-tweekoloms-grid gaf elke kaart evenveel
-  // ruimte ongeacht inhoud — veel lege ruimte bij korte kaarten (MOTM), te
-  // krap bij lange (Gemiddeld cijfer/Afwezigheid). Nu content-brede kaarten
-  // in flex-wrap-rijen (.inzd-row/.inzd-*, zie <style> bovenaan dit bestand):
-  // rij 1 = korte samenvattingskaarten, Vaardigheden krijgt de volle breedte
-  // op een eigen rij, rij 2 = de langere per-speler-lijsten (Cijfer/
-  // Speeltijd/Afwezigheid) + MOTM (bewust smal, weinig inhoud).
-  document.getElementById('i-content').innerHTML =
-      // Hero: seizoenskop + de 4 kerncijfers in één donkere band i.p.v. losse
-      // witte vlakken — zelfde .card--accent-patroon als "Eerstvolgend" op
-      // Vandaag, hier voor het eerst als headerbalk gebruikt.
-      '<div class="card card--accent" style="margin-top:14px;padding:26px 30px;display:flex;align-items:flex-end;justify-content:space-between;gap:30px;flex-wrap:wrap">'
-      + '<div><div style="font-size:26px;font-weight:700;letter-spacing:-.035em">Inzicht</div>'
-      + '<div style="font-size:13px;opacity:.6;margin-top:2px">' + gespeeld.length + ' wedstrijden · ' + Object.keys(aanw).length + ' trainingen</div></div>'
-      + '<div style="display:flex;gap:36px">'
-      + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + punten + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Punten</div></div>'
-      + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + (saldo > 0 ? '+' : '') + saldo + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Doelsaldo</div></div>'
-      + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + (opkomstPct != null ? opkomstPct + '%' : '–') + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Opkomst training</div></div>'
-      // Actief team-aantal (niet sp.length/18, want dat telt ook gearchiveerde
-      // spelers mee) — dit kopcijfer beantwoordt "hoe groot is mijn team nu",
-      // een andere vraag dan de kaarten eronder (Cijfer/Speeltijd/MOTM/
-      // Afwezigheid) die bewust WEL historisch alle spelers meenemen, incl.
-      // gearchiveerd. Gemeld door gebruiker 2026-09-20.
-      + '<div><div class="num" style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + actieveSpelers().length + '</div><div style="font-size:11px;opacity:.55;font-weight:600;margin-top:1px">Spelers</div></div>'
-      + '</div></div>'
-      + '<div class="seg" role="tablist" style="margin-top:14px;max-width:420px">' + ['alle', 'competitie', 'beker', 'oefenwedstrijd'].map(t => '<button type="button" class="seg-opt" aria-selected="' + (t === inzRankingType) + '" onclick="inzZetRankingType(\'' + t + '\')">' + (t === 'alle' ? 'Alle' : t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen') + '</button>').join('') + '</div>'
-      + (faseOpties.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' + faseOpties.map(f => '<button type="button" class="chip" aria-pressed="' + inzRankingFases.has(f) + '" onclick="inzToggleRankingFase(\'' + esc(f) + '\')">' + esc(f) + '</button>').join('') + '</div>' : '')
-
-      + '<div class="inzd-row" style="margin-top:14px">'
-      + '<div class="card inzd-vorm">'
-        // Marges getuned voor hoogte-uitlijning met de Doelpunten-per-helft-
-        // tabel ernaast.
-        + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px"><div class="sec" style="margin:0">Vorm</div><span class="tag tag--line">' + wins + 'W · ' + gelijk + 'G · ' + verloren + 'V</span></div>'
-        + '<div style="display:flex;height:9px;border-radius:5px;overflow:hidden;margin-bottom:18px;background:var(--surface3)">'
-          + '<div style="flex:' + (wins || 0.0001) + ';background:var(--win)"></div><div style="flex:' + (gelijk || 0.0001) + ';background:var(--neutral)"></div><div style="flex:' + (verloren || 0.0001) + ';background:var(--loss)"></div>'
-        + '</div>'
-        + (laatsteAcht.length ? '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px"><span>oudste</span><span>nieuwste</span></div><div class="formstrip" style="margin-top:2px">' + laatsteAcht.map(w => {
-            const u = w.score_eigen > w.score_tegen ? 'win' : w.score_eigen < w.score_tegen ? 'loss' : 'neutral';
-            const letter = u === 'win' ? 'W' : u === 'loss' ? 'V' : 'G';
-            return '<span style="background:var(--' + u + '-soft);color:var(--' + u + ')">' + letter + '</span>';
-          }).join('') + '</div>' : '<div style="font-size:12.5px;color:var(--ink3)">Geen wedstrijden voor dit filter.</div>')
-      + '</div>'
-      + '<div class="card inzd-dp">' + doelpuntenHtml + '</div>'
-      + '<div class="card inzd-top">' + (topscorersHtml || '<div class="sec">Topscorers &amp; assists</div><div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter.</div>') + '</div>'
-      + '</div>'
-
-      + '<div style="margin-top:16px">'
-      + (metSkillData.length ? skillsVerdelingLijstHtml(skillsData.rijen) : '<div class="card"><div class="sec">Vaardigheden</div><div style="font-size:13px;color:var(--ink3)">Nog geen speler- en trainerbeoordelingen om te vergelijken.</div></div>')
-      + '</div>'
-
-      + '<div class="inzd-row" style="margin-top:16px">'
-      + '<div class="card inzd-cijfer">' + cijfersKaartHtml(gespeeld, sp) + '</div>'
-      + '<div class="card inzd-motm">' + motmKaartHtml(gespeeld, sp) + '</div>'
-      + '<div class="card inzd-min">' + speeltijdHtml + '</div>'
-      + '<div class="card inzd-afw">' + afwezigheidHtml + '</div>'
-      + '</div>';
+// Top-5 grootste verschillen speler↔trainer-inschatting per vaardigheid —
+// vroeger alleen op het mobiele Skills-tabblad (renderInzSkills), gemist op
+// desktop. Nu onderdeel van de gedeelde data-groep="skills"-kaarten.
+function skillsVerschillenKaartHtml(rijen) {
+  const metBeide = rijen.filter(r => r.sGem != null && r.tGem != null);
+  const verschillen = [...metBeide].sort((a, b) => Math.abs(b.sGem - b.tGem) - Math.abs(a.sGem - a.tGem)).slice(0, 5);
+  if (!verschillen.length) return '';
+  return '<div class="sec">Grootste verschillen speler ↔ trainer</div>'
+    + verschillen.map(r => {
+        const richting = r.sGem > r.tGem ? 'Spelers schatten zichzelf hoger in' : r.sGem < r.tGem ? 'Trainer ziet meer potentie' : 'Gelijk';
+        return '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="font-weight:600">' + r.sk + '</span><span style="color:var(--ink3)">' + richting + '</span></div>'
+          + '<div class="trk" style="margin-top:4px"><div class="trk-line"></div><div class="trk-dot src-speler" style="left:' + r.sGem + '%;background:currentColor"></div><div class="trk-dot src-trainer" style="left:' + r.tGem + '%;background:currentColor"></div></div></div>';
+      }).join('');
 }
 function inzToggle(headerEl) {
   const d = headerEl.parentElement.querySelector('.inz-detail');
   d.style.display = d.style.display === 'none' ? 'block' : 'none';
-}
-
-// ─── Inzicht → Afwezig ───
-function renderInzAfwezigheid() {
-  const sp = spelers();
-  const aanw = aanwAlles();
-  const weken = customWeken();
-  const perSpeler = sp.map(p => {
-    let totaal = 0; const perReden = {}; const detail = [];
-    weken.forEach((wk, wi) => (wk.sessies || []).forEach((s, si) => {
-      const nk = s.id || ('cw' + wi + '_' + si);
-      const rec = aanw[nk] && aanw[nk][p.id];
-      if (rec && rec.afwezig) {
-        totaal++;
-        const reden = rec.reden || 'Onbekend';
-        perReden[reden] = (perReden[reden] || 0) + 1;
-        detail.push({ dag: s.dag, reden });
-      }
-    }));
-    return { p, totaal, perReden, detail };
-  }).filter(x => x.totaal > 0).sort((a, b) => b.totaal - a.totaal);
-  document.getElementById('i-content').innerHTML = perSpeler.length ? perSpeler.map(x =>
-    '<div class="card" style="margin-top:10px">'
-    + '<div style="cursor:pointer" onclick="inzToggle(this)"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:600">' + esc(x.p.naam) + '</div><span class="tag tag--line">' + x.totaal + 'x afwezig</span></div>'
-    + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + Object.entries(x.perReden).map(([r, n]) => '<span class="tag tag--neutral">' + esc(r) + ': ' + n + 'x</span>').join('') + '</div></div>'
-    + '<div class="inz-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">' + x.detail.map(d => '<div style="font-size:12.5px;color:var(--ink3);margin-bottom:4px">' + esc(d.dag) + ' · ' + esc(d.reden) + '</div>').join('') + '</div>'
-    + '</div>'
-  ).join('') : '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Geen afwezigheid geregistreerd.</div>';
 }
 
 // ─── Inzicht → Skills — team-brede speler-vs-trainer-vergelijking, zelfde
@@ -4639,28 +4700,11 @@ async function skillsVergelijkingData() {
   });
   return { rijen, sp, laatsteSpelerPerSpeler, laatsteTrainerPerSpeler };
 }
-// Schaalstreepjes (.trk-tick, bestond al in ui-v2.css maar werd nergens gerenderd) +
-// eenmalige niveaunamen erboven, zodat duidelijk is wat een stip-positie betekent i.p.v.
-// 15× herhaald bijschrift (zie mockup, met gebruiker afgestemd 2026-09-07).
-function skillsVerdelingKaartHtml(rijen) {
-  const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
-  return '<div class="card" style="margin-top:10px"><div class="sec">Verdeling per vaardigheid</div>'
-    + '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:10px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>'
-    + '<div style="display:flex;gap:10px;margin-bottom:6px"><div style="width:112px;flex-shrink:0"></div>'
-    + '<div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:9px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div></div>'
-    + rijen.map(r => '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:112px;font-size:12.5px;flex-shrink:0">' + r.sk + '</div><div class="trk" style="flex:1"><div class="trk-line"></div>'
-        + NIVEAU_TICKS.map(([, pct]) => '<div class="trk-tick" style="left:' + pct + '%"></div>').join('')
-        + (r.sGem != null ? '<div class="trk-dot src-speler" style="left:' + r.sGem + '%;background:currentColor"></div>' : '')
-        + (r.tGem != null ? '<div class="trk-dot src-trainer" style="left:' + r.tGem + '%;background:currentColor"></div>' : '')
-        + '</div></div>').join('')
-    + '</div>';
-}
-// Desktop-variant: één lange lijst i.p.v. 2 kolommen, zodat elke track de volle
-// breedte van de kaart krijgt — meer ruimte tussen de 4 niveaus, dus duidelijker
-// verschil tussen spelers (afgestemd met gebruiker 2026-09-07). Rijen zijn
-// klikbaar: opent sheet-vaardigheid met alle spelers gegroepeerd per niveau.
-// VD_SKILLS_RAW wordt gezet door renderInzichtDesktop(), zodat de sheet niet
-// opnieuw hoeft te fetchen.
+// Eén lange lijst i.p.v. 2 kolommen, zodat elke track de volle breedte van de
+// kaart krijgt — meer ruimte tussen de 4 niveaus, dus duidelijker verschil
+// tussen spelers. Rijen zijn klikbaar: opent sheet-vaardigheid met alle
+// spelers gegroepeerd per niveau. VD_SKILLS_RAW wordt gezet door
+// renderInzicht(), zodat de sheet niet opnieuw hoeft te fetchen.
 let VD_SKILLS_RAW = null;
 function skillsVerdelingLijstHtml(rijen) {
   const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
@@ -4719,32 +4763,7 @@ function openVaardigheidSheet(skill) {
 function closeVaardigheidSheet() {
   document.getElementById('sheet-vaardigheid').classList.add('verborgen');
 }
-async function renderInzSkills() {
-  document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
-  const { rijen } = await skillsVergelijkingData();
-  const metData = rijen.filter(r => r.sGem != null || r.tGem != null);
-  const metBeide = rijen.filter(r => r.sGem != null && r.tGem != null);
-  const verschillen = [...metBeide].sort((a, b) => Math.abs(b.sGem - b.tGem) - Math.abs(a.sGem - a.tGem)).slice(0, 5);
 
-  let html = '';
-  if (!metData.length) {
-    html += '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Nog geen speler- en trainerbeoordelingen om te vergelijken.</div>';
-  } else {
-    if (verschillen.length) {
-      html += '<div class="card" style="margin-top:14px"><div class="sec">Grootste verschillen speler ↔ trainer</div>'
-        + verschillen.map(r => {
-            const richting = r.sGem > r.tGem ? 'Spelers schatten zichzelf hoger in' : r.sGem < r.tGem ? 'Trainer ziet meer potentie' : 'Gelijk';
-            return '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="font-weight:600">' + r.sk + '</span><span style="color:var(--ink3)">' + richting + '</span></div>'
-              + '<div class="trk" style="margin-top:4px"><div class="trk-line"></div><div class="trk-dot src-speler" style="left:' + r.sGem + '%;background:currentColor"></div><div class="trk-dot src-trainer" style="left:' + r.tGem + '%;background:currentColor"></div></div></div>';
-          }).join('')
-        + '</div>';
-    }
-    html += skillsVerdelingKaartHtml(rijen);
-  }
-  document.getElementById('i-content').innerHTML = html;
-}
-
-// ─── Inzicht → Ranking ───
 let inzRankingType = 'alle';
 let inzRankingFases = new Set();
 // Herdispatcht via renderInzicht() i.p.v. rechtstreeks renderInzRanking() aan te
@@ -4882,41 +4901,6 @@ async function topscorersKaartHtml(wed, sp) {
         ? header + lijst.map(rij).join('')
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter.</div>');
 }
-async function renderInzRanking() {
-  document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
-  const sp = spelers();
-  let wed = wedstrijden().filter(w => w.gespeeld && (inzRankingType === 'alle' || (w.wed_type || 'oefenwedstrijd') === inzRankingType));
-  // Fase-chips alleen bij Competitie, zelfde regel als team.html — gevuld met
-  // de fases die daadwerkelijk voorkomen in de (type-gefilterde) wedstrijden.
-  const faseOpties = inzRankingType === 'competitie' ? [...new Set(wed.map(w => w.wed_fase).filter(Boolean))] : [];
-  if (inzRankingType === 'competitie' && inzRankingFases.size > 0) {
-    wed = wed.filter(w => inzRankingFases.has(w.wed_fase || ''));
-  }
-  const wins = wed.filter(w => w.score_eigen > w.score_tegen).length;
-  const gelijk = wed.filter(w => w.score_eigen === w.score_tegen).length;
-  const verloren = wed.filter(w => w.score_eigen < w.score_tegen).length;
-  const saldo = wed.reduce((s, w) => s + (w.score_eigen || 0) - (w.score_tegen || 0), 0);
-
-  const doelpuntenInhoud = await doelpuntenKaartHtml(wed);
-  const doelpuntenHtml = doelpuntenInhoud ? '<div class="card" style="margin-top:8px">' + doelpuntenInhoud + '</div>' : '';
-  const topscorersInhoud = await topscorersKaartHtml(wed, sp);
-  const topscorersHtml = topscorersInhoud ? '<div class="card" style="margin-top:8px">' + topscorersInhoud + '</div>' : '';
-
-  document.getElementById('i-content').innerHTML =
-      '<div class="seg" role="tablist" style="margin-top:14px">' + ['alle', 'competitie', 'beker', 'oefenwedstrijd'].map(t => '<button type="button" class="seg-opt" aria-selected="' + (t === inzRankingType) + '" onclick="inzZetRankingType(\'' + t + '\')">' + (t === 'alle' ? 'Alle' : t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen') + '</button>').join('') + '</div>'
-    + (faseOpties.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' + faseOpties.map(f => '<button type="button" class="chip" aria-pressed="' + inzRankingFases.has(f) + '" onclick="inzToggleRankingFase(\'' + esc(f) + '\')">' + esc(f) + '</button>').join('') + '</div>' : '')
-    + '<div class="grid3" style="margin-top:12px">'
-    + '<div class="card"><div class="stat-n num" style="color:var(--win)">' + wins + '</div><div class="stat-l">Gewonnen</div></div>'
-    + '<div class="card"><div class="stat-n num" style="color:var(--ink2)">' + gelijk + '</div><div class="stat-l">Gelijk</div></div>'
-    + '<div class="card"><div class="stat-n num" style="color:var(--loss)">' + verloren + '</div><div class="stat-l">Verloren</div></div>'
-    + '</div>'
-    + '<div class="card" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between"><div class="stat-l" style="margin:0">Doelsaldo</div><div class="stat-n num">' + (saldo > 0 ? '+' : '') + saldo + '</div></div>'
-    + doelpuntenHtml
-    + topscorersHtml
-    + '<div class="card" style="margin-top:10px">' + motmKaartHtml(wed, sp) + '</div>'
-    + '<div class="card" style="margin-top:10px">' + cijfersKaartHtml(wed, sp) + '</div>';
-}
-
 // Spelers die voor een wedstrijd afwezig zijn gemeld (wedstrijden.afwezig) —
 // zelfde patroon als wedOpstCtx.afwezigeIds()/renderWisselSheet(), hier
 // hergebruikt om het "aantal wedstrijden"-kolom bij Speeltijd afwezigheid-
@@ -4941,61 +4925,14 @@ function aantalWedstrijdenVoorSpeler(p, wedMetOpstelling, minutenPerWed) {
   }
   return wedMetOpstelling.filter(w => !wedstrijdAfwezigeIds(w).has(p.id)).length;
 }
-// ─── Inzicht → Speelminuten — nu de echte berekenSpeeltijd() (app.js) op
-// echte Supabase-wisselregistraties, i.p.v. de eigen lokale
-// startLineup/w.wissels-simulatie. Een wedstrijd zonder wed_lineup (nooit
-// opgesteld) levert geen speelminuten op, exact zoals de echte app. ───
+// Wissel-tijdstippen als leesbare tekst ("Erin 34' · Eruit 60'") — gebruikt
+// in de klap-uit-detail per wedstrijd van speeltijdKaartHtml() hierboven.
 function wisselDetailTekstV2(spelerId, wisselsVoorWedstrijd) {
   return wisselsVoorWedstrijd
     .filter(w => w.speler_id === spelerId)
     .sort((a, b) => (a.wedstrijd_minuut || 0) - (b.wedstrijd_minuut || 0))
     .map(w => (w.moment === 'erin' ? 'Erin ' : 'Eruit ') + (w.wedstrijd_minuut || 0) + "'")
     .join(' · ');
-}
-async function renderInzSpeelminuten() {
-  document.getElementById('i-content').innerHTML = '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Laden…</div>';
-  const sp = spelers();
-  // alleGespeeld = écht alle gespeelde wedstrijden. wedBijgehouden is de subset
-  // die ook echt volledig bijgehouden is: een opstelling ÉN een eindmoment (via
-  // Live afgerond) — zonder eindmoment geeft berekenSpeeltijd() voor een niet-
-  // gewisselde speler altijd 0 terug (de laatste periode sluit dan nooit af), dus
-  // "heeft alleen een opstelling" was niet genoeg om als "bijgehouden" te tellen
-  // (gemeld door gebruiker 2026-09-20: Jamie kreeg zo 3 wedstrijden toegerekend
-  // i.p.v. de verwachte 2, terwijl de 160 minuten daarbij wél klopten).
-  const alleGespeeld = wedstrijden().filter(w => w.gespeeld);
-  const wedMogelijk = alleGespeeld.filter(w => w.wed_lineup && Object.keys(w.wed_lineup).length);
-  const perSpeler = {};
-  sp.forEach(p => { perSpeler[p.id] = { totaal: 0, wedstrijden: [], minutenPerWed: {} }; });
-  let wedBijgehouden = [];
-  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
-    const [alleWissels, eindeMomenten] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten()]);
-    wedBijgehouden = wedMogelijk.filter(w => eindeMomenten[w.id] != null);
-    wedBijgehouden.forEach(w => {
-      const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
-      const eindMinuut = eindeMomenten[w.id];
-      sp.forEach(p => {
-        const min = berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindMinuut);
-        perSpeler[p.id].minutenPerWed[w.id] = min;
-        if (min > 0) {
-          perSpeler[p.id].totaal += min;
-          perSpeler[p.id].wedstrijden.push({ tegenstander: w.tegenstander, isoDate: w.isoDate, minuten: min, wissels: wisselDetailTekstV2(p.id, wisselsVoorWedstrijd) });
-        }
-      });
-    });
-  }
-  const lijst = sp.map(p => ({ p, ...perSpeler[p.id] })).filter(x => x.totaal > 0).sort((a, b) => b.totaal - a.totaal);
-  const bijgehoudenNote = wedBijgehouden.length < alleGespeeld.length ? ' (waarvan ' + wedBijgehouden.length + ' bijgehouden)' : '';
-  const aantalWedTekst = alleGespeeld.length + ' gespeelde wedstrijd' + (alleGespeeld.length === 1 ? '' : 'en') + bijgehoudenNote;
-  document.getElementById('i-content').innerHTML = (lijst.length
-    ? '<div style="font-size:12.5px;color:var(--ink3);margin-top:14px">' + aantalWedTekst + '.</div>'
-      + lijst.map(x => {
-        const beschikbaarVoor = aantalWedstrijdenVoorSpeler(x.p, wedBijgehouden, x.minutenPerWed);
-        return '<div class="card" style="margin-top:10px">'
-        + '<div style="cursor:pointer" onclick="inzToggle(this)"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:600">' + esc(x.p.naam) + '</div><span class="tag tag--line">' + x.totaal + ' min · ' + beschikbaarVoor + ' wedstrijd' + (beschikbaarVoor === 1 ? '' : 'en') + '</span></div></div>'
-        + '<div class="inz-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">' + x.wedstrijden.map(m => '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span>vs ' + esc(m.tegenstander) + '</span><span style="color:var(--ink3)">' + m.minuten + ' min' + (m.wissels ? ' · ' + esc(m.wissels) : '') + '</span></div>').join('') + '</div>'
-        + '</div>';
-      }).join('')
-    : '<div class="card card--flat" style="text-align:center;color:var(--ink3);padding:24px;margin-top:14px">Nog geen speelminuten — start een wedstrijd via Live om ze hier te zien verschijnen.</div>');
 }
 
 // ─── Navigatie ───
@@ -5208,19 +5145,34 @@ async function initAuthGateV2() {
 
 // Init
 initAuthGateV2();
-// Herlaadt Inzicht bij het oversteken van de 860px-grens (bv. venster resizen),
-// zodat je niet handmatig hoeft te navigeren om tussen tabbladen en dashboard
-// te wisselen. Alleen als het scherm al actief is — anders is er niets te doen.
-// Zelfde reden voor het speler-scherm: de klik-door-pijltjes in
+// Herlaadt het speler-vergelijkingsblok bij het oversteken van de 1024px-
+// zijbalkgrens (bv. venster resizen) — de klik-door-pijltjes in
 // renderVergelijkingV2 zijn alleen op desktop actief (gebruiker 2026-09-11).
-window.matchMedia('(min-width:860px)').addEventListener('change', () => {
-  if (document.getElementById('screen-inzicht').classList.contains('actief')) renderInzicht();
+// Inzicht zelf hoeft hier niet meer in mee: sinds de responsieve laag staat
+// daar altijd dezelfde kaartenset in de DOM en regelt CSS alleen welke
+// groep zichtbaar is, dus geen JS-herrender nodig bij het kruisen van een
+// breedtegrens.
+window.matchMedia('(min-width:1024px)').addEventListener('change', () => {
   if (document.getElementById('screen-speler-bewerk').classList.contains('actief') && bewerkSpelerId) {
     renderVergelijkingV2(bewerkSpelerId).then(html => {
       const el = document.getElementById('sb-vergelijking');
       if (el) el.innerHTML = html;
     });
   }
+});
+// Herlaadt een open veldscherm bij het oversteken van de liggend-telefoon-
+// grens (veldLiggend()) — de posities op het veld worden dan geprojecteerd
+// (zie veldProjecteer hierboven), en die projectie staat vast in de HTML op
+// het moment van tekenen. Zonder dit blijft een al open veld in de oude
+// (niet-geroteerde) stand staan totdat er toevallig iets anders het
+// opnieuw laat renderen.
+window.matchMedia('(orientation:landscape) and (max-height:540px)').addEventListener('change', () => {
+  if (document.getElementById('screen-team').classList.contains('actief') && teamTabV2 === 'opstelling') renderTeamOpstelling();
+  if (document.getElementById('screen-wedstrijd-opstelling').classList.contains('actief') && huidigWedstrijdId) renderWedOpstelling(huidigWedstrijdId);
+  if (document.getElementById('screen-formatie-editor').classList.contains('actief') && foPosities) foRenderField();
+  if (document.getElementById('screen-live-trainer').classList.contains('actief')) renderLiveTrainer();
+  if (!document.getElementById('sheet-formatie-remap').classList.contains('verborgen')) renderFormatieRemapVeld();
+  if (!document.getElementById('sheet-positie-swap').classList.contains('verborgen')) renderPositieSwapVeld();
 });
 </script>
 </body>

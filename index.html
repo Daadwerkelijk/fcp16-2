@@ -799,7 +799,12 @@ let wisselStap = null; // {uitPosId, uitSpelerId} tijdens stap 2
 // zonder de datumgrens (Agenda in dit ontwerp toont ook net-verstreken
 // items totdat ze "afgerond" zijn, zie frame 2).
 function alleAgendaItems() {
-  const sp = spelers();
+  // actieveSpelers() i.p.v. spelers() — dit is de aanwezigheid-teller die op
+  // Vandaag en in het Agenda-overzicht wordt getoond, zelfde categorie als
+  // renderTrainingSessie() (zie actieveSpelers()): een gearchiveerde speler
+  // hoort niet mee te tellen in het team-totaal. Gemeld door gebruiker
+  // 2026-09-22: aantal aanwezigen klopte niet, archief werd meegeteld.
+  const sp = actieveSpelers();
   const aanw = aanwAlles();
   const items = [];
 
@@ -1182,8 +1187,14 @@ async function toonWedstrijd(id) {
     if (notitiesRaw) { try { wedVerloopNotities = JSON.parse(notitiesRaw); } catch(e) {} }
   }
   const sp = spelers();
+  // spActief i.p.v. sp: alleen voor de "Selectie"-aanwezigheidsteller hieronder
+  // — zelfde regel als bij alleAgendaItems()/renderTrainingSessie(), een
+  // gearchiveerde speler hoort niet mee te tellen in het team-totaal. sp zelf
+  // (met archief) blijft nodig voor de cijfers-lijst verderop (historische
+  // weergave, mag een inmiddels gearchiveerde speler nog tonen).
+  const spActief = actieveSpelers();
   const afw = (w.afwezig || []).length;
-  const aanwTal = sp.length - afw;
+  const aanwTal = spActief.length - afw;
   const d = new Date(w.isoDate);
   const cijfers = Object.entries(w.ratings || {}).map(([pid, cijfer]) => ({ speler: sp.find(p => p.id === pid), cijfer })).filter(x => x.speler);
   cijfers.sort((a, b) => b.cijfer - a.cijfer);
@@ -1209,7 +1220,7 @@ async function toonWedstrijd(id) {
   // worden, zie wedAfwezigNaWijziging() voor waarom dat scherm-bewust herrendert
   // i.p.v. altijd naar toonWedstrijd() te springen.
   html += '<div class="card" style="margin-top:10px"><div class="sec">Selectie</div>'
-    + (sp.length ? '<div style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + Math.round(aanwTal/sp.length*100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + sp.length + '</div></div>' : '<div style="color:var(--ink3);font-size:13px">Nog geen spelers.</div>')
+    + (spActief.length ? '<div style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + Math.round(aanwTal/spActief.length*100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + spActief.length + '</div></div>' : '<div style="color:var(--ink3);font-size:13px">Nog geen spelers.</div>')
     + '<div style="margin-top:10px" id="w-afwezig">' + wedAfwezigChipsHtml(w) + '</div>'
     + '<button class="btn btn--ghost btn--sm" style="margin-top:10px" onclick="renderWedOpstelling(\'' + w.id + '\')">Opstelling voor deze wedstrijd →</button>'
     + '</div>';

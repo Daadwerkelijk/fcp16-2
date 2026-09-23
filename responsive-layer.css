@@ -183,7 +183,18 @@ body{margin:0 auto;max-width:480px;padding-bottom:88px;min-height:100dvh}
 @media (min-width:1024px){
   .veld-2col{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);
              gap:24px;align-items:start}
-  .pitch-wrap{max-width:none}
+  /* Zonder grens werd de breedte van de linkerkolom (tot 1fr van een 1560px-
+     pagina) leidend, en dus de hoogte via aspect-ratio ook — het veld viel
+     dan buiten het scherm en was niet meer above the fold zonder scrollen
+     (gemeld door gebruiker 2026-09-23). width via dezelfde aspect-ratio (.70)
+     teruggerekend uit de hoogtegrens, zodat de vorm klopt op elke
+     schermhoogte i.p.v. te vertrouwen op aspect-ratio's eigen auto-breedte-
+     gedrag in een grid-cel. */
+  /* 210px i.p.v. 160px: de formatie-editor heeft een "Start vanuit"-veld
+     boven het veld staan, team-/wedstrijd-opstelling niet — dezelfde marge
+     moet voor alle drie kloppen, dus uitgaan van de krapste. */
+  .pitch-wrap{max-width:none;max-height:calc(100dvh - 210px);
+              width:min(100%,calc((100dvh - 210px) * .70))}
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

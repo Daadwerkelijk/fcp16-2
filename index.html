@@ -784,17 +784,30 @@ let wisselStap = null; // {uitPosId, uitSpelerId} tijdens stap 2
 // zonder de datumgrens (Agenda in dit ontwerp toont ook net-verstreken
 // items totdat ze "afgerond" zijn, zie frame 2).
 function alleAgendaItems() {
-  // actieveSpelers() i.p.v. spelers() — dit is de aanwezigheid-teller die op
-  // Vandaag en in het Agenda-overzicht wordt getoond, zelfde categorie als
-  // renderTrainingSessie() (zie actieveSpelers()): een gearchiveerde speler
-  // hoort niet mee te tellen in het team-totaal. Gemeld door gebruiker
-  // 2026-09-22: aantal aanwezigen klopte niet, archief werd meegeteld.
-  const sp = actieveSpelers();
+  // Twee tellers, per item gekozen op basis van afgerond-status. actieveSpelers()
+  // voor nog te plannen/spelen items — een "nieuwe keuze"-context, dezelfde
+  // categorie als renderTrainingSessie() (zie actieveSpelers()): een
+  // gearchiveerde speler hoort daar niet in mee te tellen (gemeld door
+  // gebruiker 2026-09-22). spelers() (incl. archief) voor AFGERONDE items —
+  // dat is geschiedenis, en geschiedenis blijft staan zoals 'm was, ook als
+  // iemand inmiddels is gearchiveerd. Zonder dit onderscheid veranderde het
+  // aantal bij elke wedstrijd met terugwerkende kracht mee zodra er een
+  // speler werd gearchiveerd (gemeld door gebruiker 2026-09-23: overal 17
+  // i.p.v. de 18 die er toen echt waren).
+  const spActief = actieveSpelers();
+  const spAlle = spelers();
   const aanw = aanwAlles();
   const items = [];
 
   wedstrijden().forEach(w => {
     if (!w.isoDate) return;
+    // Ook een wedstrijd waarvan de uitslag nog niet is ingevuld telt als
+    // afgerond zodra de datum verstreken is — anders wint zo'n wedstrijd
+    // altijd de "eerstvolgend"-plek van echte toekomstige wedstrijden.
+    // Zelfde datumgrens als de trainingen hieronder, en zelfde principe
+    // als de klassieke app (index.html: `w.isoDate >= vandaagIso`).
+    const afgerond = w.gespeeld || w.isoDate < isoVan(new Date());
+    const sp = afgerond ? spAlle : spActief;
     const afw = (w.afwezig || []).length;
     items.push({
       type: 'wedstrijd', isoDate: w.isoDate, tijd: w.starttijd || '',
@@ -809,12 +822,7 @@ function alleAgendaItems() {
       tagTekst: w.gespeeld ? (w.score_eigen + '–' + w.score_tegen) : (w.wed_type === 'beker' ? 'Beker' : w.wed_type === 'oefenwedstrijd' ? 'Oefen' : 'Comp.'),
       tagClass: w.gespeeld ? (w.score_eigen > w.score_tegen ? 'tag--win' : w.score_eigen < w.score_tegen ? 'tag--loss' : 'tag--neutral') : 'tag--line',
       tagNum: w.gespeeld,
-      // Ook een wedstrijd waarvan de uitslag nog niet is ingevuld telt als
-      // afgerond zodra de datum verstreken is — anders wint zo'n wedstrijd
-      // altijd de "eerstvolgend"-plek van echte toekomstige wedstrijden.
-      // Zelfde datumgrens als de trainingen hierboven, en zelfde principe
-      // als de klassieke app (index.html: `w.isoDate >= vandaagIso`).
-      afgerond: w.gespeeld || w.isoDate < isoVan(new Date()),
+      afgerond,
       wedId: w.id,
     });
   });
@@ -825,9 +833,10 @@ function alleAgendaItems() {
       const d = sessieDatum(wk.isoDate, s, si);
       const iso = isoVan(d);
       const nk = s.id || ('cw' + wi + '_' + si);
+      const inVerleden = iso < isoVan(new Date());
+      const sp = inVerleden ? spAlle : spActief;
       const afwNum = Object.values(aanw[nk] || {}).filter(v => v && v.afwezig).length;
       const aanwTxt = sp.length ? (sp.length - afwNum) + '/' + sp.length : '';
-      const inVerleden = iso < isoVan(new Date());
       items.push({
         type: 'training', isoDate: iso, tijd: '',
         titel: s.dag || 'Training',
@@ -854,7 +863,13 @@ function renderVandaag() {
   // buiten het raster (eigen volle breedte, meestal leeg), de kaarten erin
   // krijgen w-half/w-full zodat ze vanaf 600px naast elkaar kunnen staan
   // i.p.v. altijd één kolom.
-  let html = '<div id="v-live-banner"></div><div class="grid">';
+  // align-items:stretch i.p.v. het gedeelde .grid-default (start): de
+  // Eerstvolgend-kaart en de kaart ernaast zijn een vast koppel dat qua
+  // vorm bij elkaar hoort — in tegenstelling tot bv. Inzicht, waar juist
+  // voorkomen moet worden dat een korte kaart (MOTM) uitrekt naast een
+  // lange lijst, is hier precies gelijke hoogte gewenst. Gemeld door
+  // gebruiker 2026-09-23.
+  let html = '<div id="v-live-banner"></div><div class="grid" style="align-items:stretch">';
 
   if (eerste) {
     const d = new Date(eerste.isoDate);
@@ -994,6 +1009,11 @@ function renderAgenda() {
   // (vanaf 600px naast elkaar) — de maand-groepering binnen "aankomend"
   // blijft daarbinnen gewoon bestaan, dat is geen aparte kolom maar structuur
   // binnen dezelfde kolom.
+  // Alleen vánaf de tweede maandkop een margin-top — de eerste kop moet op
+  // dezelfde hoogte beginnen als "Afgerond" in de kolom ernaast (die geen
+  // eigen margin-top heeft). Gemeld door gebruiker 2026-09-23: op een
+  // resolutie waar beide kolommen naast elkaar staan, begon "Aankomend"
+  // door deze margin lager dan "Afgerond".
   let aankomendHtml = '';
   let huidigeMaand = null;
   aankomend.forEach(item => {
@@ -1001,7 +1021,7 @@ function renderAgenda() {
     const maandLbl = MAAND_VOL[d.getMonth()][0].toUpperCase() + MAAND_VOL[d.getMonth()].slice(1);
     if (maandLbl !== huidigeMaand) {
       if (huidigeMaand !== null) aankomendHtml += '</div>';
-      aankomendHtml += '<div class="sec" style="margin-top:18px">' + maandLbl + '</div><div class="rows">';
+      aankomendHtml += '<div class="sec"' + (huidigeMaand !== null ? ' style="margin-top:18px"' : '') + '>' + maandLbl + '</div><div class="rows">';
       huidigeMaand = maandLbl;
     }
     aankomendHtml += rijHtml(item);
@@ -1184,14 +1204,19 @@ async function toonWedstrijd(id) {
     if (notitiesRaw) { try { wedVerloopNotities = JSON.parse(notitiesRaw); } catch(e) {} }
   }
   const sp = spelers();
-  // spActief i.p.v. sp: alleen voor de "Selectie"-aanwezigheidsteller hieronder
-  // — zelfde regel als bij alleAgendaItems()/renderTrainingSessie(), een
-  // gearchiveerde speler hoort niet mee te tellen in het team-totaal. sp zelf
-  // (met archief) blijft nodig voor de cijfers-lijst verderop (historische
-  // weergave, mag een inmiddels gearchiveerde speler nog tonen).
-  const spActief = actieveSpelers();
+  // Selectie-teller: actieveSpelers() zolang de wedstrijd nog moet, spelers()
+  // (incl. archief) zodra 'm heeft plaatsgevonden — zelfde regel als
+  // alleAgendaItems()/renderTrainingSessie(), en dezelfde afgerond-definitie
+  // als daar (ook een wedstrijd waarvan de datum al verstreken is telt als
+  // afgerond, ongeacht of "Gespeeld" al is aangevinkt). Eerder gebruikte dit
+  // altijd actieveSpelers(), waardoor het aantal bij een AL GESPEELDE
+  // wedstrijd met terugwerkende kracht meeveranderde zodra iemand werd
+  // gearchiveerd — geschiedenis hoort niet te veranderen. Gemeld door
+  // gebruiker 2026-09-23.
+  const afgerond = w.gespeeld || w.isoDate < isoVan(new Date());
+  const spTeller = afgerond ? sp : actieveSpelers();
   const afw = (w.afwezig || []).length;
-  const aanwTal = spActief.length - afw;
+  const aanwTal = spTeller.length - afw;
   const d = new Date(w.isoDate);
   const cijfers = Object.entries(w.ratings || {}).map(([pid, cijfer]) => ({ speler: sp.find(p => p.id === pid), cijfer })).filter(x => x.speler);
   cijfers.sort((a, b) => b.cijfer - a.cijfer);
@@ -1220,7 +1245,7 @@ async function toonWedstrijd(id) {
   // worden, zie wedAfwezigNaWijziging() voor waarom dat scherm-bewust herrendert
   // i.p.v. altijd naar toonWedstrijd() te springen.
   html += '<div class="card" style="margin-top:10px"><div class="sec">Selectie</div>'
-    + (spActief.length ? '<div style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + Math.round(aanwTal/spActief.length*100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + spActief.length + '</div></div>' : '<div style="color:var(--ink3);font-size:13px">Nog geen spelers.</div>')
+    + (spTeller.length ? '<div style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + Math.round(aanwTal/spTeller.length*100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + spTeller.length + '</div></div>' : '<div style="color:var(--ink3);font-size:13px">Nog geen spelers.</div>')
     + '<div style="margin-top:10px" id="w-afwezig">' + wedAfwezigChipsHtml(w) + '</div>'
     + '<button class="btn btn--ghost btn--sm" style="margin-top:10px" onclick="renderWedOpstelling(\'' + w.id + '\')">Opstelling voor deze wedstrijd →</button>'
     + '</div>';
@@ -2804,15 +2829,20 @@ function renderTrainingSessie() {
   const s = wk.sessies[huidigTrainingSi];
   const nk = nkVan(huidigTrainingWi, huidigTrainingSi);
   // sp blijft de volledige lijst (nodig om namen van al-afgemelde spelers te
-  // herkennen, ook als die inmiddels gearchiveerd zijn) — alleen de teller
-  // ("X/Y aanwezig") gebruikt actieveSpelers(), zodat een gearchiveerde
-  // speler niet blijft meetellen in het team-totaal voor nieuwe trainingen.
+  // herkennen, ook als die inmiddels gearchiveerd zijn). De teller ("X/Y
+  // aanwezig") gebruikt actieveSpelers() voor een nog te geven training —
+  // een gearchiveerde speler hoort daar niet in mee te tellen — maar spelers()
+  // (incl. archief) zodra de training al heeft plaatsgevonden: dat is
+  // geschiedenis, en geschiedenis mag niet met terugwerkende kracht
+  // veranderen zodra iemand wordt gearchiveerd. Gemeld door gebruiker
+  // 2026-09-23 (zelfde bug als bij toonWedstrijd()/alleAgendaItems()).
   const sp = spelers();
-  const spActief = actieveSpelers();
+  const d = sessieDatum(wk.isoDate, s, huidigTrainingSi);
+  const inVerleden = isoVan(d) < isoVan(new Date());
+  const spTeller = inVerleden ? sp : actieveSpelers();
   const aanw = aanwAlles();
   const afwPids = Object.entries(aanw[nk] || {}).filter(([, v]) => v && v.afwezig).map(([pid]) => pid);
-  const aanwTal = spActief.length - afwPids.length;
-  const d = sessieDatum(wk.isoDate, s, huidigTrainingSi);
+  const aanwTal = spTeller.length - afwPids.length;
   const notitie = sessionNotes()[nk] || '';
 
   let html = '<div style="font-size:13px;color:var(--ink3);margin-bottom:2px">' + esc(wk.focus || 'Training') + ' · week ' + (wk.weekNr || getISOWeekV2(new Date(wk.isoDate)))+ '</div>'
@@ -2821,7 +2851,7 @@ function renderTrainingSessie() {
   // Detail-archetype: Aanwezigheid+Notities in de linkerkolom, Oefeningen in
   // de rechterkolom (vanaf 1024px ernaast, responsive-layer.css .detail-2col).
   html += '<div class="detail-2col"><div>';
-  html += '<div class="card"><div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px"><div class="sec" style="margin:0">Aanwezigheid</div><span class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + spActief.length + '</span></div>';
+  html += '<div class="card"><div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px"><div class="sec" style="margin:0">Aanwezigheid</div><span class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + spTeller.length + '</span></div>';
   html += afwPids.length
     ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + afwPids.map(pid => { const p = sp.find(x => x.id === pid); const reden = (aanw[nk][pid] || {}).reden || ''; return '<span class="chip" aria-pressed="true" style="cursor:pointer" onclick="verwijderAfwezig(\'' + pid + '\')">' + esc(p ? p.naam : '?') + (reden ? ' · ' + esc(reden) : '') + ' ✕</span>'; }).join('') + '</div>'
     : '<div style="font-size:13px;color:var(--ink3);margin-bottom:10px">Iedereen aanwezig.</div>';
@@ -4580,14 +4610,20 @@ function afwezigheidKaartHtml(sp) {
   });
   const naamVan = id => (sp.find(p => p.id === id) || {}).naam || '?';
   const alle = rangschikkingSorteer('afwezigheid', Object.entries(perSpeler)
-    .map(([id, x]) => ({ naam: naamVan(id), n: x.n, perReden: x.perReden, detail: x.detail })), 'n');
+    .map(([id, x]) => ({ naam: naamVan(id), n: x.n, redenen: Object.entries(x.perReden).map(([r, n]) => r + ': ' + n + 'x').join(', '), detail: x.detail })), 'n');
   const redenTekst = Object.entries(perRedenTotaal).sort((a, b) => b[1] - a[1]).map(([r, n]) => esc(r) + ' ' + n + 'x').join(' · ');
   const totaalHtml = totaalAfwezig ? '<div style="font-size:12.5px;color:var(--ink3);margin-top:10px">' + totaalAfwezig + 'x totaal' + (redenTekst ? ' — ' + redenTekst : '') + '</div>' : '';
   return rangschikkingKopHtml('afwezigheid', 'Afwezigheid', alle.length + ' spelers', 'Meeste eerst')
     + (alle.length
-        ? alle.map(x => '<div style="margin-bottom:4px">'
-            + '<div style="cursor:pointer" onclick="inzToggle(this)"><div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0"><span style="font-size:13.5px;font-weight:600">' + esc(x.naam) + '</span><span class="tag tag--line">' + x.n + 'x</span></div>'
-            + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">' + Object.entries(x.perReden).map(([r, n]) => '<span class="tag tag--neutral">' + esc(r) + ': ' + n + 'x</span>').join('') + '</div></div>'
+        // white-space:nowrap + ellipsis (i.p.v. losse chips die wrappen) zodat
+        // een lange redenenlijst altijd op 1 regel blijft — volledige tekst
+        // staat in de title-tooltip. Dit was al zo opgelost in de vroegere
+        // desktop-only versie van deze kaart, maar raakte kwijt toen de
+        // mobiele en desktop-kaart werden samengevoegd (met de mobiele losse-
+        // chips-stijl als basis) — met veel redenen oogde dat op elke breedte
+        // rommelig. Gemeld door gebruiker 2026-09-23.
+        ? alle.map(x => '<div style="margin-bottom:2px">'
+            + '<div style="cursor:pointer" onclick="inzToggle(this)"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:6px 0;font-size:13px" title="' + esc(x.n + '× · ' + x.redenen) + '"><span style="font-weight:600;flex-shrink:0">' + esc(x.naam) + '</span><span style="color:var(--ink3);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">' + x.n + '×' + (x.redenen ? ' · ' + esc(x.redenen) : '') + '</span></div></div>'
             + '<div class="inz-detail" style="display:none;padding-bottom:8px">' + x.detail.map(d => '<div style="font-size:12.5px;color:var(--ink3);padding:3px 0">' + esc(d.dag) + ' · ' + esc(d.reden) + '</div>').join('') + '</div>'
             + '</div>').join('')
         : '<div style="font-size:12.5px;color:var(--ink3)">Geen afwezigheid geregistreerd.</div>')

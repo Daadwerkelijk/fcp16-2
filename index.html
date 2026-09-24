@@ -2332,27 +2332,24 @@ async function renderSpelerWedstrijdenV2(spelerId) {
     const cijfer = (w.ratings || {})[spelerId];
     const motm = w.motm === spelerId;
     const afwezig = wedstrijdAfwezigeIds(w).has(spelerId);
-    // "Bijgehouden" (wedstrijd-breed) = heeft opstelling ÉN eindmoment — bepaalt
-    // de Aanwezig-kolom (die staat los van wissels). Voor Minuten/Positie is dat
-    // niet genoeg: zie speeltijdBetrouwbaarVoorSpeler() hierboven — een
-    // bankspeler bij een wedstrijd zonder één wisselregistratie krijgt daar
-    // terecht "geen data" i.p.v. "0 min".
-    const bijgehouden = !!(w.wed_lineup && Object.keys(w.wed_lineup).length && eindeMomenten[w.id] != null);
     const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
     const positieWisselsVoorWedstrijd = allePositieWissels.filter(ps => ps.wedstrijd_id === w.id);
     const speeltijdBetrouwbaar = !afwezig && speeltijdBetrouwbaarVoorSpeler(spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]);
     const minuten = speeltijdBetrouwbaar ? berekenSpeeltijd(w.id, spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]) : null;
     const posities = speeltijdBetrouwbaar ? spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd, positieWisselsVoorWedstrijd) : [];
-    // Aanwezig-kolom: afwezig gemeld → ✕. Een cijfer of MOTM-toekenning is op
-    // zichzelf al bewijs van aanwezigheid (je geeft nooit een cijfer aan iemand
-    // die er niet was) — telt dus altijd als ✓, ook als de wedstrijd verder niet
-    // via Live is bijgehouden. Zonder dat bewijs: bijgehouden → ✓, anders (geen
-    // enkel signaal) → — (onbekend). Gemeld door gebruiker 2026-09-20: een
-    // speler met een cijfer toonde ten onrechte — i.p.v. ✓.
+    // Aanwezig-kolom: simpelweg niet-afwezig → ✓, afwezig gemeld → ✕ — zelfde
+    // regel als overal elders in de app (Selectie-teller, Agenda-aantallen):
+    // wie niet als afwezig gemeld is, was er gewoon. Eerder eiste deze ene
+    // kolom extra bewijs (cijfer/MOTM, of een "bijgehouden" wedstrijd met
+    // opstelling ÉN een via Live vastgelegd eindmoment) en toonde anders —,
+    // ook al was gewoon bekend wie er niet was. Dat gaf bij een wedstrijd die
+    // nooit via Live is afgerond (bv. een oudere, achteraf ingevoerde
+    // toernooiwedstrijd) voor bijna iedereen — i.p.v. ✓. Minuten/Positie
+    // blijven wél afhankelijk van echte wissel-/eindmomentdata (die mag je
+    // niet raden). Gemeld door gebruiker 2026-09-24.
     const aanwCel = afwezig
       ? '<span style="color:var(--loss);font-weight:700">✕</span>'
-      : (cijfer != null || motm) ? '<span style="color:var(--win);font-weight:700">✓</span>'
-      : !bijgehouden ? '<span style="color:var(--ink3)">—</span>' : '<span style="color:var(--win);font-weight:700">✓</span>';
+      : '<span style="color:var(--win);font-weight:700">✓</span>';
     const minCel = speeltijdBetrouwbaar ? String(minuten) : '—';
     const posCel = (!speeltijdBetrouwbaar || !posities.length) ? '—' : esc(posities.join(', '));
     return '<div style="' + kolom + ';padding:8px 0;font-size:12.5px' + (i > 0 ? ';border-top:1px solid var(--line)' : '') + (afwezig ? ';opacity:.65' : '') + '">'

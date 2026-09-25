@@ -393,6 +393,29 @@
   </div></div>
 </div>
 
+<!-- ═══ SHEET: kaart geven — wie krijgt de kaart ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-kaart-speler" onclick="if(event.target===this)closeKaartSheets()">
+  <div class="sheet-wrap"><div class="sheet" style="max-height:85vh;overflow-y:auto">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">Wie krijgt de kaart?</div>
+    <div id="kt-speler-lijst" class="bench" style="max-height:320px;overflow-y:auto"></div>
+    <button class="btn btn--ghost btn--block" style="margin-top:14px" onclick="closeKaartSheets()">Annuleren</button>
+  </div></div>
+</div>
+
+<!-- ═══ SHEET: kaart geven — geel of rood ═══ -->
+<div class="sheet-overlay verborgen" id="sheet-kaart-type" onclick="if(event.target===this)closeKaartSheets()">
+  <div class="sheet-wrap"><div class="sheet" style="max-height:85vh;overflow-y:auto">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title" id="kt-titel">Welke kaart?</div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn btn--secondary btn--block" style="font-size:16px;padding:18px 0" onclick="ltAfrondenKaart('geel')">🟨 Geel</button>
+      <button class="btn btn--secondary btn--block" style="font-size:16px;padding:18px 0" onclick="ltAfrondenKaart('rood')">🟥 Rood</button>
+    </div>
+    <button class="btn btn--ghost btn--block" style="margin-top:14px" onclick="closeKaartSheets()">Annuleren</button>
+  </div></div>
+</div>
+
 <!-- ═══ SHEET: oefening toevoegen aan trainingsblok — categorie-gefilterd,
      zelfde als de echte oefening-picker in trainen.html, incl. snel-nieuw ═══ -->
 <div class="sheet-overlay verborgen" id="sheet-blok-kies" onclick="if(event.target===this)closeBlokKiezer()">
@@ -2317,21 +2340,26 @@ async function renderSpelerWedstrijdenV2(spelerId) {
     return;
   }
   const typeLabel = t => t === 'competitie' ? 'Competitie' : t === 'beker' ? 'Beker' : 'Oefen';
-  let alleWissels = [], eindeMomenten = {}, allePositieWissels = [];
+  let alleWissels = [], eindeMomenten = {}, allePositieWissels = [], alleKaarten = [];
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
-    [alleWissels, eindeMomenten, allePositieWissels] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten(), haalAllePositieWissels()]);
+    [alleWissels, eindeMomenten, allePositieWissels, alleKaarten] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten(), haalAllePositieWissels(), haalAlleKaarten()]);
   }
   // Echte tabel — elke waarde zijn eigen kolom met koptekst (net als Cijfer al
   // had), i.p.v. alles samengevoegd in één statusregel. Kolombreedtes gekozen
   // om op telefoonbreedte (~390px) zonder horizontale scroll te passen — Pos.
   // is de enige kolom die kan wrappen (meerdere posities); de rest is één regel.
   // Gevraagd door gebruiker 2026-09-20 ("een hele tabel, zoals bij cijfer").
-  const kolom = 'display:grid;grid-template-columns:1fr 28px 34px 38px 20px 58px;align-items:center;gap:6px';
+  // Kaart-kolom (G/R) als cijfer i.p.v. iconen — gevraagd door gebruiker
+  // 2026-09-25, overzichtelijker dan losse 🟨/🟥-badges in een smalle kolom.
+  const kolom = 'display:grid;grid-template-columns:1fr 28px 34px 38px 20px 36px 58px;align-items:center;gap:6px';
   const rij = (w, i) => {
     const d = new Date(w.isoDate);
     const cijfer = (w.ratings || {})[spelerId];
     const motm = w.motm === spelerId;
     const afwezig = wedstrijdAfwezigeIds(w).has(spelerId);
+    const kaartenVoorSpeler = alleKaarten.filter(k => k.wedstrijd_id === w.id && k.speler_id === spelerId);
+    const geel = kaartenVoorSpeler.filter(k => k.type === 'geel').length;
+    const rood = kaartenVoorSpeler.filter(k => k.type === 'rood').length;
     const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
     const positieWisselsVoorWedstrijd = allePositieWissels.filter(ps => ps.wedstrijd_id === w.id);
     const speeltijdBetrouwbaar = !afwezig && speeltijdBetrouwbaarVoorSpeler(spelerId, w, wisselsVoorWedstrijd, eindeMomenten[w.id]);
@@ -2352,20 +2380,22 @@ async function renderSpelerWedstrijdenV2(spelerId) {
       : '<span style="color:var(--win);font-weight:700">✓</span>';
     const minCel = speeltijdBetrouwbaar ? String(minuten) : '—';
     const posCel = (!speeltijdBetrouwbaar || !posities.length) ? '—' : esc(posities.join(', '));
+    const kaartCel = geel || rood ? geel + '/' + rood : '—';
     return '<div style="' + kolom + ';padding:8px 0;font-size:12.5px' + (i > 0 ? ';border-top:1px solid var(--line)' : '') + (afwezig ? ';opacity:.65' : '') + '">'
       + '<div><div style="font-size:13.5px;font-weight:600">vs ' + esc(w.tegenstander || '?') + '</div><div style="font-size:11px;color:var(--ink3);margin-top:1px">' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + ' · ' + typeLabel(w.wed_type || 'oefenwedstrijd') + '</div></div>'
       + '<div style="text-align:center">' + aanwCel + '</div>'
       + '<div class="num" style="text-align:right;color:var(--ink3)">' + minCel + '</div>'
       + '<div class="num" style="text-align:right;' + (cijfer != null ? 'font-weight:700' : 'color:var(--ink3)') + '">' + (cijfer != null ? Number(cijfer).toFixed(1) : '—') + '</div>'
       + '<div style="text-align:center;color:#f0c040">' + (motm ? '⭐' : '') + '</div>'
+      + '<div class="num" style="text-align:right;font-weight:' + (geel || rood ? '700' : '400') + ';color:' + (rood ? 'var(--loss)' : (geel ? 'inherit' : 'var(--ink3)')) + '">' + kaartCel + '</div>'
       + '<div style="color:var(--ink3);line-height:1.3">' + posCel + '</div>'
       + '</div>';
   };
   const motmCount = gespeeld.filter(w => w.motm === spelerId).length;
   el.innerHTML = '<div class="sec" style="display:flex;align-items:baseline;justify-content:space-between"><span>Wedstrijden</span><span style="font-size:11.5px;color:var(--ink3);text-transform:none;letter-spacing:0">' + gespeeld.length + ' wedstrijden · ' + motmCount + '× MOTM</span></div>'
     + '<div class="card" style="margin-bottom:14px;overflow-x:auto">'
-    + '<div style="min-width:290px">'
-    + '<div style="' + kolom + ';font-size:9px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding-bottom:6px;border-bottom:1px solid var(--line)"><span>Wedstrijd</span><span style="text-align:center">Aanw</span><span style="text-align:right">Min</span><span style="text-align:right">Cijf.</span><span></span><span>Pos.</span></div>'
+    + '<div style="min-width:326px">'
+    + '<div style="' + kolom + ';font-size:9px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding-bottom:6px;border-bottom:1px solid var(--line)"><span>Wedstrijd</span><span style="text-align:center">Aanw</span><span style="text-align:right">Min</span><span style="text-align:right">Cijf.</span><span></span><span style="text-align:right" title="Geel/rood">G/R</span><span>Pos.</span></div>'
     + gespeeld.map((w, i) => rij(w, i)).join('')
     + '</div></div>';
 }
@@ -3634,6 +3664,55 @@ async function ltAfrondenDoelpuntTegen(eigenDoelpuntSpelerId) {
     }
   }
 }
+// ─── Kaart geven — zelfde 2-staps-sheetpatroon als een doelpunt (eerst wie,
+// dan welke), maar dan vanaf een losse knop i.p.v. de score-steppers (een
+// kaart heeft geen stand). Net als bij een doelpunt is dit gewoon publiek
+// zichtbaar (pushLiveUpdate) — geen reden om een kaart privé te houden.
+// Geen reden-veld: tijdens Live is typen niet realistisch, zie ook
+// registreerDoelpunt() die om dezelfde reden geen vrije tekst vraagt.
+let ltKaartSpelerId = null;
+function closeKaartSheets() {
+  document.getElementById('sheet-kaart-speler').classList.add('verborgen');
+  document.getElementById('sheet-kaart-type').classList.add('verborgen');
+  ltKaartSpelerId = null;
+}
+function openKaartSheet() {
+  document.getElementById('kt-speler-lijst').innerHTML = spelers().map(p =>
+    '<div class="bench-row" onclick="ltKiesKaartSpeler(\'' + p.id + '\')"><div class="bench-nm">' + esc(p.naam) + '</div></div>'
+  ).join('');
+  document.getElementById('sheet-kaart-speler').classList.remove('verborgen');
+}
+function ltKiesKaartSpeler(spelerId) {
+  ltKaartSpelerId = spelerId;
+  document.getElementById('sheet-kaart-speler').classList.add('verborgen');
+  const sp = spelers().find(p => p.id === spelerId);
+  document.getElementById('kt-titel').textContent = 'Welke kaart voor ' + (sp ? sp.naam.split(' ')[0] : '?') + '?';
+  document.getElementById('sheet-kaart-type').classList.remove('verborgen');
+}
+async function ltAfrondenKaart(type) {
+  const spelerId = ltKaartSpelerId;
+  closeKaartSheets();
+  const sp = spelers();
+  const speler = spelerId ? sp.find(p => p.id === spelerId) : null;
+  if (!speler) return;
+  const icoon = type === 'rood' ? '🟥' : '🟨';
+  const tekst = icoon + ' ' + speler.naam.split(' ')[0];
+  const kaartNotitie = { id: Date.now(), tekst, minuut: liveState.minuut, gedeeld: false, spelerIds: [spelerId] };
+  liveState.notities.unshift(kaartNotitie);
+  renderLiveTrainer();
+  await ltSyncNotities();
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    registreerKaart(liveState.wedstrijdId, spelerId, type, liveState.status.includes('1e') ? '1e' : '2e', liveState.minuut);
+    const liveUpdateId = await pushLiveUpdate(liveState.wedstrijdId, 'update', tekst, liveState.scoreEigen, liveState.scoreTegen, liveState.minuut);
+    if (liveUpdateId) {
+      kaartNotitie.gedeeld = true;
+      kaartNotitie.liveUpdateId = liveUpdateId;
+      kaartNotitie.publiekeTekst = tekst;
+      renderLiveTrainer();
+      await ltSyncNotities();
+    }
+  }
+}
 // Notities zaten tot 2026-09-12 alleen in liveState (in-memory) — elke
 // refresh of het opnieuw openen van Live op hetzelfde/een ander apparaat
 // veegde ze weg. Bewaard via session_notes (privé, trainer-only tabel, niet
@@ -3937,6 +4016,7 @@ function renderLiveTrainer() {
     + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="max-width:420px;margin:0 auto"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div></div>'
     + (liveState.status !== 'gepland' ? formatieSnelwisselHtml(actief) : '')
     + (liveState.status !== 'gepland' ? '<div class="card" style="margin-top:10px;display:flex;gap:8px"><button class="btn btn--secondary" style="flex:1" onclick="openPositieSwapSheet()">Posities wisselen</button><button class="btn btn--secondary" style="flex:1" onclick="openFormatieWijzigenSheet()">Formatie wijzigen</button></div>' : '')
+    + (liveState.status !== 'gepland' ? '<div class="card" style="margin-top:10px"><button class="btn btn--secondary btn--block" onclick="openKaartSheet()">🟨🟥 Kaart geven</button></div>' : '')
     + '</div><div>'
     + '<div class="card"><div class="sec">Notities</div>'
     + '<div style="position:relative;margin-bottom:12px">'
@@ -4520,11 +4600,12 @@ async function renderInzicht() {
 
   const laatsteAcht = [...gespeeld].sort((a, b) => (b.isoDate || '').localeCompare(a.isoDate || '')).slice(0, 8).reverse();
 
-  const [skillsData, doelpuntenHtml, topscorersHtml, speeltijdHtml] = await Promise.all([
+  const [skillsData, doelpuntenHtml, topscorersHtml, speeltijdHtml, kaartenHtml] = await Promise.all([
     skillsVergelijkingData(),
     doelpuntenKaartHtml(gespeeld),
     topscorersKaartHtml(gespeeld, sp),
     speeltijdKaartHtml(gespeeld, sp),
+    kaartenKaartHtml(gespeeld, sp),
   ]);
   VD_SKILLS_RAW = skillsData;
   const metSkillData = skillsData.rijen.filter(r => r.sGem != null || r.tGem != null);
@@ -4565,6 +4646,7 @@ async function renderInzicht() {
       + '<div class="fill fill--ruim w-full">'
       + '<div class="card" data-groep="ranking">' + cijfersKaartHtml(gespeeld, sp) + '</div>'
       + '<div class="card" data-groep="ranking">' + motmKaartHtml(gespeeld, sp) + '</div>'
+      + '<div class="card" data-groep="ranking">' + (kaartenHtml || '<div class="sec">Kaarten</div><div style="font-size:13px;color:var(--ink3)">Nog geen kaarten geregistreerd voor dit filter.</div>') + '</div>'
       + '<div class="card" data-groep="minuten">' + speeltijdHtml + '</div>'
       + '<div class="card" data-groep="afwezigheid">' + afwezigheidKaartHtml(sp) + '</div>'
       + '</div>';
@@ -4814,7 +4896,7 @@ function inzZetRankingType(t) { inzRankingType = t; inzRankingFases = new Set();
 // aanroeper sorteert zijn eigen rijen met rangschikkingSorteer() en bouwt
 // zelf de rijen-HTML (kolomindeling verschilt per kaart), alleen kop +
 // knoppen zijn gedeeld.
-let inzRangschikkingSort = { cijfer: 'waarde', speeltijd: 'waarde', afwezigheid: 'waarde', motm: 'waarde' };
+let inzRangschikkingSort = { cijfer: 'waarde', speeltijd: 'waarde', afwezigheid: 'waarde', motm: 'waarde', kaarten: 'waarde' };
 function inzZetRangschikkingSort(kaart, sort) { inzRangschikkingSort[kaart] = sort; renderInzicht(); }
 function rangschikkingSorteer(kaart, rijen, waardeVeld) {
   const sort = inzRangschikkingSort[kaart];
@@ -4933,6 +5015,32 @@ async function topscorersKaartHtml(wed, sp) {
     + (lijst.length
         ? header + lijst.map(rij).join('')
         : '<div style="font-size:13px;color:var(--ink3)">Nog geen doelpunten geregistreerd voor dit filter.</div>');
+}
+// Kaarten — leest de structurele kaartregistratie (index.html, ltAfrondenKaart()
+// tijdens Live), zelfde patroon als topscorersKaartHtml hierboven. Aantal
+// geel/rood per speler als cijfer i.p.v. losse iconen per kaart — gevraagd
+// door gebruiker 2026-09-25 ("ik hou het liever cijfer om het overzichtelijk
+// te houden").
+async function kaartenKaartHtml(wed, sp) {
+  if (typeof supabaseReady === 'undefined' || !supabaseReady) return '';
+  const wedIds = new Set(wed.map(w => w.id));
+  const alleKaarten = await haalAlleKaarten();
+  const kt = alleKaarten.filter(k => wedIds.has(k.wedstrijd_id));
+  const perSpeler = {};
+  sp.forEach(p => { perSpeler[p.id] = { naam: p.naam, geel: 0, rood: 0 }; });
+  kt.forEach(k => { if (perSpeler[k.speler_id]) perSpeler[k.speler_id][k.type === 'rood' ? 'rood' : 'geel']++; });
+  const lijst = rangschikkingSorteer('kaarten', Object.values(perSpeler).map(x => ({ ...x, totaal: x.geel + x.rood })).filter(x => x.totaal), 'totaal');
+  const aantalLabel = '· ' + wed.length + ' wedstrijd' + (wed.length === 1 ? '' : 'en');
+  const kolom = 'display:grid;grid-template-columns:1fr 30px 30px;align-items:center;gap:10px';
+  const header = '<div style="' + kolom + ';font-size:9.5px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.02em;padding-bottom:5px;margin-bottom:5px;border-bottom:1px solid var(--line)">'
+    + '<span>Speler</span><span style="text-align:right" title="Gele kaarten">🟨</span><span style="text-align:right" title="Rode kaarten">🟥</span></div>';
+  const rij = x => '<div style="' + kolom + ';font-size:13.5px;padding:5px 0">'
+    + '<span>' + esc(x.naam) + '</span>'
+    + '<span class="num" style="text-align:right;font-weight:600">' + x.geel + '</span>'
+    + '<span class="num" style="text-align:right;font-weight:600' + (x.rood ? ';color:var(--loss)' : '') + '">' + x.rood + '</span>'
+    + '</div>';
+  return rangschikkingKopHtml('kaarten', 'Kaarten', aantalLabel, 'Meeste eerst')
+    + (lijst.length ? header + lijst.map(rij).join('') : '<div style="font-size:13px;color:var(--ink3)">Nog geen kaarten geregistreerd voor dit filter.</div>');
 }
 // Spelers die voor een wedstrijd afwezig zijn gemeld (wedstrijden.afwezig) —
 // zelfde patroon als wedOpstCtx.afwezigeIds()/renderWisselSheet(), hier

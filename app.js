@@ -464,6 +464,21 @@ async function haalAlleDoelpunten() {
   const res = await sbFetch('doelpunten?select=*&order=created_at.asc');
   return res && !res._error ? res : [];
 }
+// ─── Datalaag: Kaarten (geel/rood, structureel) — zelfde patroon als
+// Doelpunten hierboven: elke registratie tijdens Live schrijft direct een
+// eigen rij weg. speler_id is hier wél verplicht (anders van geen nut voor
+// Inzicht/spelersprofiel), in tegenstelling tot doelpunten waar de scorer
+// ook onbekend/overgeslagen kan zijn.
+async function registreerKaart(wedstrijdId, spelerId, type, helft, minuut) {
+  const res = await sbWrite('kaarten', 'POST', {
+    id: genId(), wedstrijd_id: wedstrijdId, speler_id: spelerId, type, helft, wedstrijd_minuut: minuut,
+  });
+  return (res && res._error) ? null : res;
+}
+async function haalAlleKaarten() {
+  const res = await sbFetch('kaarten?select=*&order=created_at.asc');
+  return res && !res._error ? res : [];
+}
 // Eind-minuut per wedstrijd (uit live_updates, type 'einde') — nodig om de speeltijd van een
 // speler die de wedstrijd op het veld heeft uitgespeeld correct af te sluiten (zie berekenSpeeltijd).
 async function haalAlleEindeMomenten() {

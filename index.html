@@ -253,7 +253,7 @@
   <div class="sheet-wrap"><div class="sheet" style="max-height:85vh;overflow-y:auto">
     <div class="sheet-grip"></div>
     <div class="sheet-title">Categorieën</div>
-    <div class="sheet-sub">Hernoemen werkt door in alle oefeningen die de categorie gebruiken.</div>
+    <div class="sheet-sub">Hernoemen werkt door in alle oefeningen die de categorie gebruiken. Een categorie die nog in gebruik is kan niet verwijderd worden.</div>
     <div id="cat-lijst-v2" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
     <div class="field" style="display:flex;gap:8px;margin-bottom:0">
       <input class="input" id="cat-nieuw-input" placeholder="Nieuwe categorie...">
@@ -268,7 +268,7 @@
   <div class="sheet-wrap"><div class="sheet" style="max-height:85vh;overflow-y:auto">
     <div class="sheet-grip"></div>
     <div class="sheet-title">Afwezigheidsredenen</div>
-    <div class="sheet-sub">Deze lijst staat klaar bij het afmelden van een speler.</div>
+    <div class="sheet-sub">Deze lijst staat klaar bij het afmelden van een speler. Hernoemen werkt door in bestaande aanwezigheid, wedstrijden en periodes; een reden die nog in gebruik is kan niet verwijderd worden.</div>
     <div id="afw-reden-lijst-v2" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
     <div class="field" style="display:flex;gap:8px;margin-bottom:0">
       <input class="input" id="afw-reden-nieuw-input" placeholder="Nieuwe reden...">
@@ -283,7 +283,7 @@
   <div class="sheet-wrap"><div class="sheet" style="max-height:85vh;overflow-y:auto">
     <div class="sheet-grip"></div>
     <div class="sheet-title">Wisselredenen</div>
-    <div class="sheet-sub">Deze lijst staat klaar bij het wisselen van een speler tijdens Live.</div>
+    <div class="sheet-sub">Deze lijst staat klaar bij het wisselen van een speler tijdens Live. Hernoemen werkt door in bestaande wissels; een reden die nog in gebruik is kan niet verwijderd worden.</div>
     <div id="wissel-reden-lijst-v2" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
     <div class="field" style="display:flex;gap:8px;margin-bottom:0">
       <input class="input" id="wissel-reden-nieuw-input" placeholder="Nieuwe reden...">
@@ -712,9 +712,44 @@ function customWeken() { return ls('fcp_custom_weken', '[]'); }
 function aanwAlles() { return ls('fcp_aanw', '{}'); }
 function categorieen() { return ls('fcp_cats', '["Passing","Afwerken","Duel","Positiespel"]'); }
 function oefeningenLijst() { return ls('fcp_oef', '[]'); }
-function absRedenen() { return ls('fcp_abs_redenen', '["Ziek","Geblesseerd","Leren","Feest","Anders","Onbekend"]'); }
+function absRedenen() { return ls('fcp_abs_redenen', '["Ziek","Geblesseerd","School","Feest","Anders","Onbekend"]'); }
 function wisselRedenen() { return ls('fcp_wissel_redenen', '["Te laat","Moe","Tactisch","Minder goed","Blessure tijdens wedstrijd","Gedrag"]'); }
 function sessionNotes() { return ls('fcp_snotes', '{}'); }
+// ─── "In gebruik"-checks voor categorieën/redenen — bepaalt of Verwijderen
+// geblokkeerd moet worden (een categorie/reden die nog ergens staat mag niet
+// verwijderd worden, wél hernoemd — zie bewaarAfwRedenNaam/bewaarWisselRedenNaam/
+// bewaarCategorieNaam). Categorieën zijn volledig lokaal af te leiden
+// (oefeningenLijst() is al gesynchroniseerd); afwezigheids-/wisselredenen
+// hebben ook databronnen die niet in een lokale cache staan
+// (afwezigheidsperiodes, wissels) en vragen dus een verse Supabase-check.
+// Gevraagd door gebruiker 2026-09-25.
+function gebruikteCategorieen() {
+  const set = new Set();
+  oefeningenLijst().forEach(o => { if (o.cat) set.add(o.cat); });
+  return set;
+}
+async function gebruikteAfwezigheidsredenen() {
+  const set = new Set();
+  Object.values(aanwAlles()).forEach(perSpeler => {
+    Object.values(perSpeler).forEach(rec => { if (rec && rec.afwezig && rec.reden) set.add(rec.reden); });
+  });
+  wedstrijden().forEach(w => {
+    (w.afwezig || []).forEach(a => { if (a && a.reden) set.add(a.reden); });
+  });
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const periodes = await haalAlleAfwezigheidsperiodes();
+    periodes.forEach(p => { if (p.reden) set.add(p.reden); });
+  }
+  return set;
+}
+async function gebruikteWisselredenen() {
+  const set = new Set();
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const alleWissels = await haalAlleWissels();
+    alleWissels.forEach(w => { if (w.reden) set.add(w.reden); });
+  }
+  return set;
+}
 function getISOWeekV2(d) {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const dayNum = (date.getUTCDay() + 6) % 7;
@@ -1946,10 +1981,14 @@ function renderCatSheet() {
         + '<button class="btn btn--ghost btn--icon btn--sm" onclick="catBewerkIndex=null;renderCatSheet()" aria-label="Annuleren"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>'
         + '</div>';
     }
-    return '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl)"><div class="row-body"><div class="row-title" style="font-size:14px">' + esc(c) + '</div></div>'
+    const inGebruik = gebruikteCategorieen().has(c);
+    return '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl)"><div class="row-body"><div class="row-title" style="font-size:14px">' + esc(c) + (inGebruik ? ' <span style="color:var(--ink3);font-weight:400;font-size:11.5px">· in gebruik</span>' : '') + '</div></div>'
     + verplaatsKnoppen(i > 0, i < cats.length - 1, 'verplaatsCategorie(' + i + ',-1)', 'verplaatsCategorie(' + i + ',1)')
     + '<button class="btn btn--ghost btn--icon btn--sm" onclick="catBewerkIndex=' + i + ';renderCatSheet()" aria-label="Hernoemen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>'
-    + '<button class="btn btn--ghost btn--icon btn--sm" onclick="verwijderCategorie(' + i + ')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button></div>';
+    + (inGebruik
+        ? '<button class="btn btn--ghost btn--icon btn--sm" disabled style="opacity:.35" title="In gebruik bij oefeningen — kan niet verwijderd worden" aria-label="Verwijderen (geblokkeerd, in gebruik)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button>'
+        : '<button class="btn btn--ghost btn--icon btn--sm" onclick="verwijderCategorie(' + i + ')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button>')
+    + '</div>';
   }).join('');
 }
 // Hernoemt zowel in de categorieënlijst als op elke oefening die de oude
@@ -1995,6 +2034,7 @@ async function voegCategorieToe() {
 async function verwijderCategorie(i) {
   const cats = categorieen();
   const naam = cats[i];
+  if (gebruikteCategorieen().has(naam)) { showToast('⚠️ "' + naam + '" is nog in gebruik bij oefeningen — kan niet verwijderd worden.'); renderCatSheet(); return; }
   cats.splice(i, 1);
   localStorage.setItem('fcp_cats', JSON.stringify(cats));
   if (supabaseReady) {
@@ -2018,18 +2058,33 @@ function verplaatsCategorie(i, dir) {
 }
 
 // ─── Redenenlijsten (afwezigheid + wissel) — twee byte-voor-byte identieke
-// functiesets (alleen localStorage-sleutel/DOM-id's verschilden) nu gedeeld
-// via 4 generieke helpers. Categorieën (renderCatSheet hierboven) blijft
-// een eigen implementatie — heeft ook inline hernoemen, past niet in dit
-// simpele lijst-patroon. Bestaande functienamen blijven ongewijzigd bestaan
-// (aangeroepen vanuit de statische sheet-HTML via onclick), alleen de body
-// is nu gedeeld — geen andere plek in de code hoeft aangepast te worden.
-function redenenLijstRender(redenen, lijstElId, verplaatsFnNaam, verwijderFnNaam) {
-  document.getElementById(lijstElId).innerHTML = redenen.map((r, i) =>
-    '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl)"><div class="row-body"><div class="row-title" style="font-size:14px">' + esc(r) + '</div></div>'
-    + verplaatsKnoppen(i > 0, i < redenen.length - 1, verplaatsFnNaam + '(' + i + ',-1)', verplaatsFnNaam + '(' + i + ',1)')
-    + '<button class="btn btn--ghost btn--icon btn--sm" onclick="' + verwijderFnNaam + '(' + i + ')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button></div>'
-  ).join('');
+// functiesets (alleen localStorage-sleutel/DOM-id's verschilden) gedeeld via
+// generieke helpers. Categorieën (renderCatSheet hierboven) blijft een eigen
+// implementatie — heeft ook inline hernoemen, past niet in dit lijst-patroon.
+// Bestaande functienamen blijven ongewijzigd bestaan (aangeroepen vanuit de
+// statische sheet-HTML via onclick), alleen de body is gedeeld.
+// Hernoemen (bewerkIndex) en een "in gebruik"-guard op Verwijderen toegevoegd
+// (2026-09-25, gevraagd door gebruiker) — beide lijsten hadden tot nu toe
+// geen hernoemen, en Verwijderen controleerde nooit of een reden nog actief
+// bij een training/wedstrijd/wissel stond (net als categorieën voorheen).
+function redenenLijstRender(redenen, lijstElId, verplaatsFnNaam, verwijderFnNaam, bewerkFnNaam, bewaarFnNaam, bewerkIndex, gebruikt) {
+  document.getElementById(lijstElId).innerHTML = redenen.map((r, i) => {
+    if (i === bewerkIndex) {
+      return '<div class="row" style="border:1.5px solid var(--accent);border-radius:var(--r-ctl);gap:8px">'
+        + '<input class="input" id="' + lijstElId + '-bewerk-input" value="' + esc(r) + '" style="flex:1" onkeydown="if(event.key===\'Enter\')' + bewaarFnNaam + '(' + i + ')">'
+        + '<button class="btn btn--ghost btn--icon btn--sm" onclick="' + bewaarFnNaam + '(' + i + ')" aria-label="Opslaan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg></button>'
+        + '<button class="btn btn--ghost btn--icon btn--sm" onclick="' + bewerkFnNaam + '(null)" aria-label="Annuleren"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>'
+        + '</div>';
+    }
+    const inGebruik = gebruikt && gebruikt.has(r);
+    return '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl)"><div class="row-body"><div class="row-title" style="font-size:14px">' + esc(r) + (inGebruik ? ' <span style="color:var(--ink3);font-weight:400;font-size:11.5px">· in gebruik</span>' : '') + '</div></div>'
+      + verplaatsKnoppen(i > 0, i < redenen.length - 1, verplaatsFnNaam + '(' + i + ',-1)', verplaatsFnNaam + '(' + i + ',1)')
+      + '<button class="btn btn--ghost btn--icon btn--sm" onclick="' + bewerkFnNaam + '(' + i + ')" aria-label="Hernoemen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>'
+      + (inGebruik
+          ? '<button class="btn btn--ghost btn--icon btn--sm" disabled style="opacity:.35" title="In gebruik — kan niet verwijderd worden" aria-label="Verwijderen (geblokkeerd, in gebruik)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button>'
+          : '<button class="btn btn--ghost btn--icon btn--sm" onclick="' + verwijderFnNaam + '(' + i + ')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button>')
+      + '</div>';
+  }).join('');
 }
 function redenenLijstToevoegen(ophalenFn, key, inputElId, renderFn) {
   const inp = document.getElementById(inputElId);
@@ -2058,19 +2113,97 @@ function redenenLijstVerplaatsen(ophalenFn, key, i, dir, renderFn) {
 }
 
 // ─── Afwezigheidsredenen-sheet ───
-function openAfwRedenSheet() { renderAfwRedenSheet(); document.getElementById('sheet-afw-redenen').classList.remove('verborgen'); }
-function closeAfwRedenSheet() { document.getElementById('sheet-afw-redenen').classList.add('verborgen'); if (document.getElementById('screen-instellingen').classList.contains('actief')) renderInstellingen(); }
-function renderAfwRedenSheet() { redenenLijstRender(absRedenen(), 'afw-reden-lijst-v2', 'verplaatsAfwReden', 'verwijderAfwReden'); }
+let afwBewerkIndex = null;
+let afwGebruiktSet = new Set();
+function openAfwRedenSheet() { afwBewerkIndex = null; renderAfwRedenSheet(); document.getElementById('sheet-afw-redenen').classList.remove('verborgen'); }
+function closeAfwRedenSheet() { afwBewerkIndex = null; document.getElementById('sheet-afw-redenen').classList.add('verborgen'); if (document.getElementById('screen-instellingen').classList.contains('actief')) renderInstellingen(); }
+async function renderAfwRedenSheet() {
+  redenenLijstRender(absRedenen(), 'afw-reden-lijst-v2', 'verplaatsAfwReden', 'verwijderAfwReden', 'afwBewerken', 'bewaarAfwRedenNaam', afwBewerkIndex, afwGebruiktSet);
+  afwGebruiktSet = await gebruikteAfwezigheidsredenen();
+  redenenLijstRender(absRedenen(), 'afw-reden-lijst-v2', 'verplaatsAfwReden', 'verwijderAfwReden', 'afwBewerken', 'bewaarAfwRedenNaam', afwBewerkIndex, afwGebruiktSet);
+}
 function voegAfwRedenToe() { redenenLijstToevoegen(absRedenen, 'fcp_abs_redenen', 'afw-reden-nieuw-input', renderAfwRedenSheet); }
-function verwijderAfwReden(i) { redenenLijstVerwijderen(absRedenen, 'fcp_abs_redenen', i, renderAfwRedenSheet); }
+function afwBewerken(i) { afwBewerkIndex = i; renderAfwRedenSheet(); }
+// Hernoemt de reden lokaal (lijst + de cache van al ingevulde aanwezigheid/
+// afwezig-lijsten, anders toont de app tot de volgende sync nog de oude
+// naam) en cascadeert daarna naar Supabase — aanwezigheid, wedstrijden.afwezig
+// en afwezigheidsperiodes, zie cascadeHernoemAfwezigheidsreden() in app.js.
+async function bewaarAfwRedenNaam(i) {
+  if (i === null) { afwBewerkIndex = null; renderAfwRedenSheet(); return; }
+  const input = document.getElementById('afw-reden-lijst-v2-bewerk-input');
+  const val = input.value.trim();
+  const redenen = absRedenen();
+  if (!val) return;
+  if (val !== redenen[i] && redenen.includes(val)) { input.style.borderColor = 'var(--loss)'; return; }
+  const oud = redenen[i];
+  if (oud !== val) {
+    redenen[i] = val;
+    localStorage.setItem('fcp_abs_redenen', JSON.stringify(redenen));
+    const aanw = aanwAlles();
+    Object.values(aanw).forEach(perSpeler => {
+      Object.values(perSpeler).forEach(rec => { if (rec && rec.reden === oud) rec.reden = val; });
+    });
+    localStorage.setItem('fcp_aanw', JSON.stringify(aanw));
+    const wed = wedstrijden();
+    wed.forEach(w => { (w.afwezig || []).forEach(a => { if (a && a.reden === oud) a.reden = val; }); });
+    localStorage.setItem('fcp_wed', JSON.stringify(wed));
+    if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+      const fouten = await cascadeHernoemAfwezigheidsreden(oud, val);
+      if (fouten) showToast('⚠️ Niet volledig opgeslagen naar Supabase');
+    }
+  }
+  afwBewerkIndex = null;
+  renderAfwRedenSheet();
+}
+async function verwijderAfwReden(i) {
+  const redenen = absRedenen();
+  const naam = redenen[i];
+  const gebruikt = await gebruikteAfwezigheidsredenen();
+  afwGebruiktSet = gebruikt;
+  if (gebruikt.has(naam)) { showToast('⚠️ "' + naam + '" is nog in gebruik — kan niet verwijderd worden.'); renderAfwRedenSheet(); return; }
+  redenenLijstVerwijderen(absRedenen, 'fcp_abs_redenen', i, renderAfwRedenSheet);
+}
 function verplaatsAfwReden(i, dir) { redenenLijstVerplaatsen(absRedenen, 'fcp_abs_redenen', i, dir, renderAfwRedenSheet); }
 
 // ─── Wisselredenen-sheet ───
-function openWisselRedenSheet() { renderWisselRedenSheet(); document.getElementById('sheet-wissel-redenen').classList.remove('verborgen'); }
-function closeWisselRedenSheet() { document.getElementById('sheet-wissel-redenen').classList.add('verborgen'); if (document.getElementById('screen-instellingen').classList.contains('actief')) renderInstellingen(); }
-function renderWisselRedenSheet() { redenenLijstRender(wisselRedenen(), 'wissel-reden-lijst-v2', 'verplaatsWisselReden', 'verwijderWisselReden'); }
+let wisselBewerkIndex = null;
+let wisselGebruiktSet = new Set();
+function openWisselRedenSheet() { wisselBewerkIndex = null; renderWisselRedenSheet(); document.getElementById('sheet-wissel-redenen').classList.remove('verborgen'); }
+function closeWisselRedenSheet() { wisselBewerkIndex = null; document.getElementById('sheet-wissel-redenen').classList.add('verborgen'); if (document.getElementById('screen-instellingen').classList.contains('actief')) renderInstellingen(); }
+async function renderWisselRedenSheet() {
+  redenenLijstRender(wisselRedenen(), 'wissel-reden-lijst-v2', 'verplaatsWisselReden', 'verwijderWisselReden', 'wisselBewerken', 'bewaarWisselRedenNaam', wisselBewerkIndex, wisselGebruiktSet);
+  wisselGebruiktSet = await gebruikteWisselredenen();
+  redenenLijstRender(wisselRedenen(), 'wissel-reden-lijst-v2', 'verplaatsWisselReden', 'verwijderWisselReden', 'wisselBewerken', 'bewaarWisselRedenNaam', wisselBewerkIndex, wisselGebruiktSet);
+}
 function voegWisselRedenToe() { redenenLijstToevoegen(wisselRedenen, 'fcp_wissel_redenen', 'wissel-reden-nieuw-input', renderWisselRedenSheet); }
-function verwijderWisselReden(i) { redenenLijstVerwijderen(wisselRedenen, 'fcp_wissel_redenen', i, renderWisselRedenSheet); }
+function wisselBewerken(i) { wisselBewerkIndex = i; renderWisselRedenSheet(); }
+async function bewaarWisselRedenNaam(i) {
+  if (i === null) { wisselBewerkIndex = null; renderWisselRedenSheet(); return; }
+  const input = document.getElementById('wissel-reden-lijst-v2-bewerk-input');
+  const val = input.value.trim();
+  const redenen = wisselRedenen();
+  if (!val) return;
+  if (val !== redenen[i] && redenen.includes(val)) { input.style.borderColor = 'var(--loss)'; return; }
+  const oud = redenen[i];
+  if (oud !== val) {
+    redenen[i] = val;
+    localStorage.setItem('fcp_wissel_redenen', JSON.stringify(redenen));
+    if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+      const fouten = await cascadeHernoemWisselreden(oud, val);
+      if (fouten) showToast('⚠️ Niet volledig opgeslagen naar Supabase');
+    }
+  }
+  wisselBewerkIndex = null;
+  renderWisselRedenSheet();
+}
+async function verwijderWisselReden(i) {
+  const redenen = wisselRedenen();
+  const naam = redenen[i];
+  const gebruikt = await gebruikteWisselredenen();
+  wisselGebruiktSet = gebruikt;
+  if (gebruikt.has(naam)) { showToast('⚠️ "' + naam + '" is nog in gebruik — kan niet verwijderd worden.'); renderWisselRedenSheet(); return; }
+  redenenLijstVerwijderen(wisselRedenen, 'fcp_wissel_redenen', i, renderWisselRedenSheet);
+}
 function verplaatsWisselReden(i, dir) { redenenLijstVerplaatsen(wisselRedenen, 'fcp_wissel_redenen', i, dir, renderWisselRedenSheet); }
 
 // ─── Formaties-sheet — zelfde ingebouwd+eigen-lijst als de "Formaties

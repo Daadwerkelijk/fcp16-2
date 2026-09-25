@@ -167,6 +167,41 @@ async function deleteCategorieRemote(naam) {
   return await sbFetch('categories?naam=eq.' + encodeURIComponent(naam), 'DELETE');
 }
 
+// ─── Datalaag: Cascade-hernoemen van afwezigheids-/wisselredenen — zelfde
+// idee als renameCategorie() hierboven, maar over meerdere tabellen. Bij
+// aanwezigheid en afwezigheidsperiodes staat de reden in een plat veld
+// (bulk-PATCH, net als custom_oef.cat). Bij wedstrijden.afwezig staat de
+// reden verstopt in een JSON-array-als-tekst-kolom, die kan niet in één
+// bulk-PATCH gematcht worden — elke wedstrijd die de oude reden bevat wordt
+// daarom los opgehaald, de reden vervangen, en teruggeschreven. Gevraagd
+// door gebruiker 2026-09-25 (hernoemen moet blijven werken, i.p.v. dat een
+// reden alleen nog verwijderd/toegevoegd kan worden).
+async function cascadeHernoemAfwezigheidsreden(oud, nieuw) {
+  const fouten = [];
+  const r1 = await sbWrite('aanwezigheid?reden=eq.' + encodeURIComponent(oud), 'PATCH', { reden: nieuw });
+  if (r1 && r1._error) fouten.push(r1);
+  const r2 = await sbWrite('afwezigheidsperiodes?reden=eq.' + encodeURIComponent(oud), 'PATCH', { reden: nieuw });
+  if (r2 && r2._error) fouten.push(r2);
+  const wed = await sbFetch('wedstrijden?select=id,afwezig');
+  if (wed && !wed._error) {
+    for (const w of wed) {
+      let afwezig;
+      try { afwezig = JSON.parse(w.afwezig || '[]'); } catch (e) { afwezig = []; }
+      if (!Array.isArray(afwezig) || !afwezig.some(a => a && a.reden === oud)) continue;
+      afwezig.forEach(a => { if (a && a.reden === oud) a.reden = nieuw; });
+      const r3 = await sbWrite('wedstrijden?id=eq.' + w.id, 'PATCH', { afwezig: JSON.stringify(afwezig) });
+      if (r3 && r3._error) fouten.push(r3);
+    }
+  } else if (wed && wed._error) {
+    fouten.push(wed);
+  }
+  return fouten.length ? fouten : null;
+}
+async function cascadeHernoemWisselreden(oud, nieuw) {
+  const res = await sbWrite('wissels?reden=eq.' + encodeURIComponent(oud), 'PATCH', { reden: nieuw });
+  return (res && res._error) ? [res] : null;
+}
+
 // ─── Datalaag: Basisopstelling ───
 async function assignLineupPositie(posId, playerId) {
   await sbFetch('lineup?pos_id=eq.' + posId, 'DELETE');

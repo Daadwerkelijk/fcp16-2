@@ -514,6 +514,15 @@ async function haalAlleKaarten() {
   const res = await sbFetch('kaarten?select=*&order=created_at.asc');
   return res && !res._error ? res : [];
 }
+// Achteraf toevoegen/verwijderen van een kaart bij Wedstrijd bewerken (naast
+// de live registratie hierboven) — helft is hier bewust optioneel (kolom is
+// sinds de kaarten_helft_optioneel-migratie nullable): bij een correctie of
+// een niet-Live ingevoerde wedstrijd weet een trainer dat vaak niet meer
+// precies. Gevraagd door gebruiker 2026-09-26 (Davino's gele kaart bij een
+// al gespeelde wedstrijd kon nergens ingevoerd worden).
+async function verwijderKaart(id) {
+  return await sbWrite('kaarten?id=eq.' + id, 'DELETE');
+}
 // Eind-minuut per wedstrijd (uit live_updates, type 'einde') — nodig om de speeltijd van een
 // speler die de wedstrijd op het veld heeft uitgespeeld correct af te sluiten (zie berekenSpeeltijd).
 async function haalAlleEindeMomenten() {

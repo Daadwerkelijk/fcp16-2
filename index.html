@@ -2521,14 +2521,14 @@ async function renderSpelerWedstrijdenV2(spelerId) {
       + '<div class="num" style="text-align:right;' + (cijfer != null ? 'font-weight:700' : 'color:var(--ink3)') + '">' + (cijfer != null ? Number(cijfer).toFixed(1) : '—') + '</div>'
       + '<div style="text-align:center;color:#f0c040">' + (motm ? '⭐' : '') + '</div>'
       + '<div class="num" style="text-align:right;font-weight:' + (geel || rood ? '700' : '400') + ';color:' + (rood ? 'var(--loss)' : (geel ? 'inherit' : 'var(--ink3)')) + '">' + kaartCel + '</div>'
-      + '<div style="color:var(--ink3);line-height:1.3">' + posCel + '</div>'
+      + '<div style="color:var(--ink3);line-height:1.3;padding-left:8px">' + posCel + '</div>'
       + '</div>';
   };
   const motmCount = gespeeld.filter(w => w.motm === spelerId).length;
   el.innerHTML = '<div class="sec" style="display:flex;align-items:baseline;justify-content:space-between"><span>Wedstrijden</span><span style="font-size:11.5px;color:var(--ink3);text-transform:none;letter-spacing:0">' + gespeeld.length + ' wedstrijden · ' + motmCount + '× MOTM</span></div>'
     + '<div class="card" style="margin-bottom:14px;overflow-x:auto">'
-    + '<div style="min-width:326px">'
-    + '<div style="' + kolom + ';font-size:9px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding-bottom:6px;border-bottom:1px solid var(--line)"><span>Wedstrijd</span><span style="text-align:center">Aanw</span><span style="text-align:right">Min</span><span style="text-align:right">Cijf.</span><span></span><span style="text-align:right" title="Geel/rood">G/R</span><span>Pos.</span></div>'
+    + '<div style="min-width:334px">'
+    + '<div style="' + kolom + ';font-size:9px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding-bottom:6px;border-bottom:1px solid var(--line)"><span>Wedstrijd</span><span style="text-align:center">Aanw</span><span style="text-align:right">Min</span><span style="text-align:right">Cijf.</span><span></span><span style="text-align:right" title="Geel/rood">G/R</span><span style="padding-left:8px">Pos.</span></div>'
     + gespeeld.map((w, i) => rij(w, i)).join('')
     + '</div></div>';
 }
@@ -3422,8 +3422,59 @@ function openWedstrijdBewerken(id) {
     + '<div class="divide"></div>'
     + '<div class="sec">Cijfers per speler (1–10)</div>'
     + '<div class="cijferlijst" style="margin-bottom:16px">' + sp.map(p => '<div class="row" style="cursor:default"><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div></div><input class="input" data-pid="' + p.id + '" aria-label="Cijfer voor ' + esc(p.naam) + '" type="number" min="1" max="10" step="0.5" placeholder="—" value="' + (ratings[p.id] != null ? ratings[p.id] : '') + '" style="width:64px;min-height:36px;padding:6px;text-align:center;font-weight:700"></div>').join('') + '</div>'
+    // Kaarten — los van de live registratie (ltAfrondenKaart) ook hier te
+    // beheren, anders is er geen manier om een kaart bij een niet-Live
+    // ingevoerde wedstrijd (of een correctie achteraf) toe te voegen. Alleen
+    // bij een al bestaande wedstrijd (net als "Opstelling voor deze
+    // wedstrijd" hierboven) — een nieuwe, nog niet opgeslagen wedstrijd heeft
+    // nog geen id om de kaart aan te koppelen.
+    + (w ? wbKaartenSectieHtml() : '')
     + '</div></div>';
   toonScherm('wedstrijd-bewerk');
+  if (w) renderWbKaarten();
+}
+function wbKaartenSectieHtml() {
+  return '<div class="sec">Kaarten</div><div id="wb-kaarten" style="margin-bottom:16px"><div style="font-size:13px;color:var(--ink3)">Laden…</div></div>';
+}
+async function renderWbKaarten() {
+  const el = document.getElementById('wb-kaarten');
+  if (!el || !huidigWedstrijdId) return;
+  const sp = spelers();
+  let kaarten = [];
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const alle = await haalAlleKaarten();
+    kaarten = alle.filter(k => k.wedstrijd_id === huidigWedstrijdId);
+  }
+  const rij = k => {
+    const speler = sp.find(p => p.id === k.speler_id);
+    const helftLabel = k.helft ? (' · ' + k.helft + ' helft') : '';
+    return '<div class="row" style="border:1.5px solid var(--line);border-radius:var(--r-ctl)"><div class="row-body"><div class="row-title" style="font-size:14px">' + (k.type === 'rood' ? '🟥' : '🟨') + ' ' + esc(speler ? speler.naam : '?') + '</div><div class="row-sub">' + (k.type === 'rood' ? 'Rood' : 'Geel') + helftLabel + '</div></div><button class="btn btn--ghost btn--icon btn--sm" onclick="wbVerwijderKaart(\'' + k.id + '\')" aria-label="Verwijderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button></div>';
+  };
+  el.innerHTML = (kaarten.length ? kaarten.map(rij).join('') : '<div style="font-size:13px;color:var(--ink3);margin-bottom:8px">Nog geen kaarten voor deze wedstrijd.</div>')
+    + '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
+      + '<select class="input" id="wb-kaart-speler" style="flex:1;min-width:120px">' + sp.map(p => '<option value="' + p.id + '">' + esc(p.naam) + '</option>').join('') + '</select>'
+      + '<select class="input" id="wb-kaart-type" style="width:98px"><option value="geel">🟨 Geel</option><option value="rood">🟥 Rood</option></select>'
+      + '<select class="input" id="wb-kaart-helft" style="width:116px"><option value="">Onbekend</option><option value="1e">1e helft</option><option value="2e">2e helft</option></select>'
+      + '<button class="btn btn--secondary btn--sm" onclick="wbVoegKaartToe()">Toevoegen</button>'
+    + '</div>';
+}
+async function wbVoegKaartToe() {
+  const spelerId = document.getElementById('wb-kaart-speler').value;
+  const type = document.getElementById('wb-kaart-type').value;
+  const helft = document.getElementById('wb-kaart-helft').value || null;
+  if (!spelerId || !huidigWedstrijdId) return;
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const res = await registreerKaart(huidigWedstrijdId, spelerId, type, helft, null);
+    if (!res) { showToast('⚠️ Kaart niet opgeslagen naar Supabase'); return; }
+  }
+  renderWbKaarten();
+}
+async function wbVerwijderKaart(id) {
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const res = await verwijderKaart(id);
+    if (res && res._error) { showToast('⚠️ Niet verwijderd uit Supabase'); return; }
+  }
+  renderWbKaarten();
 }
 function wbZetThuisUit(thuis) {
   document.getElementById('wb-thuis').setAttribute('aria-selected', thuis);

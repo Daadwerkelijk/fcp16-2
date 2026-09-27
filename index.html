@@ -683,8 +683,10 @@ const DAG_VOL = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','
 // Alfabetisch op naam (voornaam staat voorop in dit veld) — de opslagvolgorde
 // zelf is toevoegvolgorde (created_at, zie loadFromSupabase() in app.js) en
 // zegt niets over hoe een trainer een speler wil terugvinden. Overal waar
-// verder geen eigen logica op deze lijst zit (Afwezig, MOTM, Cijfers, "Overige
-// spelers" in de opstelling-kiezer) werkt dit dus meteen alfabetisch mee; waar
+// verder geen eigen logica op deze lijst zit (Afwezig, MOTM, "Overige
+// spelers" in de opstelling-kiezer) werkt dit dus meteen alfabetisch mee —
+// Cijfers per speler filtert sinds 2026-09-27 apart op actief+niet-afwezig
+// (zie openWedstrijdBewerken), niet meer op deze ongefilterde lijst. Waar
 // wél eigen logica zit (bv. "Passende positie" eerst in openOpstSlotKiezer)
 // blijft die groepering intact, alleen de volgorde erbínnen wordt alfabetisch.
 function spelers() {
@@ -3390,6 +3392,13 @@ function openWedstrijdBewerken(id) {
   if (!w) wbNieuwAfwezig = []; // vers formulier, geen leftover van een eerder afgebroken poging
   const sp = spelers();
   const ratings = (w && w.ratings) || {};
+  // Cijferlijst: alleen actieve, voor déze wedstrijd niet-afwezige spelers —
+  // een gearchiveerde of afwezige speler hoeft geen cijfer te krijgen. Gemeld
+  // door gebruiker 2026-09-27 ("dat wil ik niet"). Een al bestaand cijfer van
+  // een speler die hier niet meer getoond wordt, blijft intact (zie
+  // slaWedstrijdOp) — alleen het invulveld verdwijnt, niet de data.
+  const afwezigIdsVoorCijfers = w ? wedstrijdAfwezigeIds(w) : new Set(wbNieuwAfwezig.map(a => a.pid));
+  const spCijfers = actieveSpelers().filter(p => !afwezigIdsVoorCijfers.has(p.id));
   // Formulier-archetype: linkerkolom (.form-kolom) blijft op leesbreedte, ook
   // op een breed scherm; Afwezig + Cijfers gaan naar de tweede kolom die
   // vanaf 1024px ernaast komt (responsive-layer.css .form-2col) — anders is
@@ -3421,7 +3430,7 @@ function openWedstrijdBewerken(id) {
     + (w ? '<button class="btn btn--ghost btn--sm" style="margin-bottom:16px" onclick="slaWedstrijdOp(renderWedOpstelling)">Opstelling voor deze wedstrijd →</button>' : '')
     + '<div class="divide"></div>'
     + '<div class="sec">Cijfers per speler (1–10)</div>'
-    + '<div class="cijferlijst" style="margin-bottom:16px">' + sp.map(p => '<div class="row" style="cursor:default"><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div></div><input class="input" data-pid="' + p.id + '" aria-label="Cijfer voor ' + esc(p.naam) + '" type="number" min="1" max="10" step="0.5" placeholder="—" value="' + (ratings[p.id] != null ? ratings[p.id] : '') + '" style="width:64px;min-height:36px;padding:6px;text-align:center;font-weight:700"></div>').join('') + '</div>'
+    + '<div class="cijferlijst" style="margin-bottom:16px">' + spCijfers.map(p => '<div class="row" style="cursor:default"><div class="row-body"><div class="row-title">' + esc(p.naam) + '</div></div><input class="input" data-pid="' + p.id + '" aria-label="Cijfer voor ' + esc(p.naam) + '" type="number" min="1" max="10" step="0.5" placeholder="—" value="' + (ratings[p.id] != null ? ratings[p.id] : '') + '" style="width:64px;min-height:36px;padding:6px;text-align:center;font-weight:700"></div>').join('') + '</div>'
     // Kaarten — los van de live registratie (ltAfrondenKaart) ook hier te
     // beheren, anders is er geen manier om een kaart bij een niet-Live
     // ingevoerde wedstrijd (of een correctie achteraf) toe te voegen. Alleen
@@ -3512,8 +3521,14 @@ async function slaWedstrijdOp(naOpslaan) {
   // opgeslagen selectie uit dezelfde chips+"+ Afwezig"-sheet-variant
   // (wedAfwezigChipsHtmlNieuw), pas hier voor het eerst echt weggeschreven.
   const afwezig = bestaandVoorAfwezig ? (bestaandVoorAfwezig.afwezig || []) : wbNieuwAfwezig;
-  const ratings = {};
-  document.querySelectorAll('#wb-content input[data-pid]').forEach(inp => { if (inp.value !== '') ratings[inp.dataset.pid] = +inp.value; });
+  // Start bij de al bestaande cijfers (incl. van archief/afwezige spelers die
+  // hier niet meer als invulveld getoond worden, zie openWedstrijdBewerken) en
+  // werk alleen de zichtbare velden bij — zo veegt het weglaten van hun
+  // invulveld nooit per ongeluk een al ingevuld cijfer weg.
+  const ratings = { ...((bestaandVoorAfwezig && bestaandVoorAfwezig.ratings) || {}) };
+  document.querySelectorAll('#wb-content input[data-pid]').forEach(inp => {
+    if (inp.value !== '') ratings[inp.dataset.pid] = +inp.value; else delete ratings[inp.dataset.pid];
+  });
   const w = {
     id: huidigWedstrijdId || 'i' + Date.now() + Math.random().toString(36).slice(2,6),
     tegenstander, isoDate,

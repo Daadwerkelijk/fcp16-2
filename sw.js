@@ -1,4 +1,7 @@
-const CACHE = 'fcp162-v221';
+const CACHE = 'fcp162-v222';
+// Andere apps van de gebruiker draaien op hetzelfde domein (daadwerkelijk.github.io)
+// en delen de cache-opslag: alleen caches met dit voorvoegsel zijn van fcp16-2.
+const VOORVOEGSEL = 'fcp162-';
 const ASSETS = [
   '/fcp16-2/',
   '/fcp16-2/index.html',
@@ -23,7 +26,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => k.startsWith(VOORVOEGSEL) && k !== CACHE).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();

@@ -107,6 +107,11 @@ en is verouderd op dit punt.
   een duidelijk "ja" voordat je pusht.
 - Verhoog bij elke wijziging aan `sw.js` het versienummer (CACHE-constante
   bovenaan), zodat de PWA de nieuwe versie ook echt oppikt.
+- Andere apps van de gebruiker draaien op hetzelfde domein
+  (`daadwerkelijk.github.io`) en delen cache-opslag, service workers en
+  localStorage. Alleen eigen caches (voorvoegsel `fcp162-`) en de eigen
+  service worker (scope `/fcp16-2/`) opruimen; nooit alles wissen of
+  `localStorage.clear()` gebruiken.
 
 ### Na elke wijziging
 - Geef een beknopte samenvatting: wat is er veranderd, welke bestanden,

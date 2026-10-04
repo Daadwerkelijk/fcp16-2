@@ -3587,18 +3587,20 @@ function openAanmaakSheet() { document.getElementById('sheet-aanmaken').classLis
 function closeAanmaakSheet() { document.getElementById('sheet-aanmaken').classList.add('verborgen'); }
 
 // ─── Live — trainerskant (lokale simulatie, zie toelichting bij liveState).
-// De klok volgt hetzelfde principe als de echte live.html: helftStartTs is
-// de enige bron van waarheid en loopt altijd door — "Pauze" bevriest alleen
-// het GETAL op dit scherm (interval stopt), niet de eigenlijke wedstrijdklok.
-// Bij "Verder" springt de klok dus bij naar de echte verstreken tijd, precies
-// zoals hervatLokaleKlokWeergave() dat in de bestaande app doet. ───
+// De klok (liveState.klok) volgt exact hetzelfde contract als live_minuut() in
+// live.html, via de liveKlok*-functies in app.js: offsetMin + minuten sinds het
+// échte startmoment van de helft. "Pauze" zet de klok écht stil, ook op de
+// publieke pagina, en de pauzetijd telt na "Verder" niet mee (2026-10-04 —
+// voorheen liep de klok tijdens een pauze stiekem door en sprong 'ie bij
+// "Verder" vooruit, en telde de publieke 2e helft de offset dubbel: 103' i.p.v.
+// 63', gemeld door een ouder). ───
 let ltTickTimer = null;
 function ltStopTick() { if (ltTickTimer) { clearInterval(ltTickTimer); ltTickTimer = null; } }
 function ltStartTick() {
   ltStopTick();
-  liveState.minuut = Math.floor((Date.now() - liveState.helftStartTs) / 60000);
+  liveState.minuut = liveKlokMinuut(liveState.klok, Date.now());
   ltTickTimer = setInterval(() => {
-    liveState.minuut = Math.floor((Date.now() - liveState.helftStartTs) / 60000);
+    liveState.minuut = liveKlokMinuut(liveState.klok, Date.now());
     const statusEl = document.getElementById('lt-status');
     if (statusEl) statusEl.textContent = STATUS_LABEL[liveState.status] + ' · ' + liveState.minuut + "'";
     const klok = document.querySelector('#lt-content .clock');
@@ -3612,16 +3614,16 @@ async function openLiveTrainer(id) {
   ltStopTick();
   const startLineup = w.startLineup || w.wed_lineup || ls('fcp_lineup', '{}');
   const startFormatieId = w.formatie || w.startFormatie || localStorage.getItem('fcp_formatie') || '4222';
-  liveState = { wedstrijdId: id, status: 'gepland', minsPerHelft: w.minsPerHelft || 40, minuut: 0, helftStartTs: null, scoreEigen: w.score_eigen||0, scoreTegen: w.score_tegen||0, notities: [], lineup: { ...startLineup }, formatieId: startFormatieId };
+  liveState = { wedstrijdId: id, status: 'gepland', minsPerHelft: w.minsPerHelft || 40, minuut: 0, klok: liveKlokStart(0, null), scoreEigen: w.score_eigen||0, scoreTegen: w.score_tegen||0, notities: [], lineup: { ...startLineup }, formatieId: startFormatieId };
   // Live-status van elders overnemen i.p.v. altijd blanco beginnen — anders kon
   // dit apparaat de voortgang van een ander apparaat/trainer overschrijven
   // zodra er iets bediend werd, zonder enige waarschuwing (gemeld door
   // gebruiker 2026-09-11: kon op mobiel "Live starten" drukken terwijl desktop
   // al actief live was). Zelfde probleem en oplossing als openLive() in
   // wedstrijden.html al had (zie commentaar daar, 2026-09-0x) — hier nooit
-  // overgenomen toen V2 gebouwd werd. Pauzeminuut is een schatting
-  // (Date.now() - helft_start): er wordt geen apart pauzemoment bijgehouden,
-  // dus een lange pauze op het andere apparaat telt hier even mee door.
+  // overgenomen toen V2 gebouwd werd. Een pauze wordt sinds 2026-10-04 ook
+  // gepusht (pauze_1e/pauze_2e, helft_start=null), dus de klok staat hier dan
+  // ook stil op de juiste minuut.
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     // Notities herstellen — deze stonden tot 2026-09-12 alleen in liveState en
     // gingen dus verloren bij elke refresh of nieuwe opening van Live (gemeld
@@ -3653,12 +3655,18 @@ async function openLiveTrainer(id) {
       } else if (remote.status === 'rust') {
         liveState.status = 'rust';
         if (remote.minuut_offset) liveState.minsPerHelft = remote.minuut_offset;
-      } else if (['live_1e', 'pauze_1e', 'live_2e', 'pauze_2e'].includes(remote.status) && remote.helft_start) {
+      } else if (['live_1e', 'pauze_1e', 'live_2e', 'pauze_2e'].includes(remote.status)) {
+        // Bij pauze is helft_start bewust null (klok staat stil op minuut_offset).
         liveState.status = remote.status;
-        liveState.helftStartTs = new Date(remote.helft_start).getTime();
-        if ((remote.status === 'live_2e' || remote.status === 'pauze_2e') && remote.minuut_offset) liveState.minsPerHelft = remote.minuut_offset;
+        liveState.klok = liveKlokUitRemote(remote);
+        if (remote.status === 'live_2e' || remote.status === 'pauze_2e') {
+          // minuut_offset is na een pauze in de 2e helft niet meer gelijk aan de
+          // helftlengte — die staat vast in de start_2e-update (wedstrijd_minuut).
+          const start2e = await sbFetch('live_updates?select=wedstrijd_minuut&type=eq.start_2e&wedstrijd_id=eq.' + id + '&limit=1');
+          if (Array.isArray(start2e) && start2e[0] && start2e[0].wedstrijd_minuut) liveState.minsPerHelft = start2e[0].wedstrijd_minuut;
+        }
         if (remote.status === 'live_1e' || remote.status === 'live_2e') ltStartTick();
-        else liveState.minuut = Math.max(0, Math.floor((Date.now() - liveState.helftStartTs) / 60000));
+        else liveState.minuut = liveKlokMinuut(liveState.klok, Date.now());
       }
     }
   }
@@ -3678,7 +3686,7 @@ function ltZetMinsPerHelft(val) {
 }
 async function ltStartHelft(helft) {
   liveState.status = helft === 1 ? 'live_1e' : 'live_2e';
-  liveState.helftStartTs = helft === 1 ? Date.now() : Date.now() - liveState.minsPerHelft * 60000;
+  liveState.klok = liveKlokStart(helft === 1 ? 0 : liveState.minsPerHelft, Date.now());
   if (helft === 2) liveState.notities.unshift({ id: Date.now(), tekst: 'Rust afgelopen — 2e helft gestart', minuut: liveState.minsPerHelft, gedeeld: false });
   if (helft === 2) await ltSyncNotities();
   if (helft === 1) {
@@ -3719,17 +3727,31 @@ async function ltStartHelft(helft) {
   ltStartTick();
   renderLiveTrainer();
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
-    const offset = helft === 1 ? 0 : liveState.minsPerHelft;
-    await setLiveStatus(liveState.wedstrijdId, helft === 1 ? 'live_1e' : 'live_2e', new Date(liveState.helftStartTs).toISOString(), offset, liveState.scoreEigen, liveState.scoreTegen);
-    await pushLiveUpdate(liveState.wedstrijdId, helft === 1 ? 'start_1e' : 'start_2e', '', liveState.scoreEigen, liveState.scoreTegen, offset);
+    const remote = liveKlokNaarRemote(liveState.klok);
+    await setLiveStatus(liveState.wedstrijdId, helft === 1 ? 'live_1e' : 'live_2e', remote.helft_start, remote.minuut_offset, liveState.scoreEigen, liveState.scoreTegen);
+    await pushLiveUpdate(liveState.wedstrijdId, helft === 1 ? 'start_1e' : 'start_2e', '', liveState.scoreEigen, liveState.scoreTegen, remote.minuut_offset);
   }
 }
-function ltTogglePauze() {
-  if (liveState.status === 'live_1e') { liveState.status = 'pauze_1e'; ltStopTick(); }
-  else if (liveState.status === 'pauze_1e') { liveState.status = 'live_1e'; ltStartTick(); }
-  else if (liveState.status === 'live_2e') { liveState.status = 'pauze_2e'; ltStopTick(); }
-  else if (liveState.status === 'pauze_2e') { liveState.status = 'live_2e'; ltStartTick(); }
+async function ltTogglePauze() {
+  const volgende = { live_1e: 'pauze_1e', pauze_1e: 'live_1e', live_2e: 'pauze_2e', pauze_2e: 'live_2e' }[liveState.status];
+  if (!volgende) return;
+  liveState.status = volgende;
+  if (volgende.startsWith('pauze')) {
+    liveState.klok = liveKlokPauzeer(liveState.klok, Date.now());
+    ltStopTick();
+    liveState.minuut = liveKlokMinuut(liveState.klok, Date.now());
+  } else {
+    liveState.klok = liveKlokHervat(liveState.klok, Date.now());
+    ltStartTick();
+  }
   renderLiveTrainer();
+  // Pauze ook naar de publieke pagina — anders liep de klok daar gewoon door.
+  // Bewust geen live_updates-regel: het verloop blijft voor ouders rustig.
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const remote = liveKlokNaarRemote(liveState.klok);
+    const res = await setLiveStatus(liveState.wedstrijdId, volgende, remote.helft_start, remote.minuut_offset);
+    if (res && res._error) showToast('⚠️ Pauze niet doorgegeven aan publieke pagina: ' + (res.message || res.status));
+  }
 }
 async function ltZetRust() {
   liveState.status = 'rust';

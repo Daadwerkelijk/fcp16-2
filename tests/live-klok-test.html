@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live-klok tests</title>
+<style>body{font:14px system-ui,sans-serif;margin:16px;background:#fff;color:#111}li{margin:2px 0}</style>
+</head>
+<body>
+<h1>Live-klok tests</h1>
+<p>Pure klok-logica uit <code>app.js</code> (liveKlok*). Open via een lokale server, bv. <code>http://localhost:8934/tests/live-klok-test.html</code>.</p>
+<ul id="uitslag"></ul>
+<script src="../app.js"></script>
+<script>
+const MIN = 60000;
+const T0 = Date.UTC(2026, 9, 3, 13, 53, 54); // vaste tijd, geen systeemklok
+const resultaten = [];
+function testGelijk(naam, verwacht, werkelijk) {
+  const ok = JSON.stringify(verwacht) === JSON.stringify(werkelijk);
+  resultaten.push({ naam, ok, tekst: ok ? '' : ' — verwacht ' + JSON.stringify(verwacht) + ', kreeg ' + JSON.stringify(werkelijk) });
+}
+function test(naam, fn) {
+  try { fn(); } catch (e) { resultaten.push({ naam, ok: false, tekst: ' — ' + e.name + ': ' + e.message }); }
+}
+// Exacte kopie van live_minuut() in live.html — de publieke pagina laadt app.js
+// bewust niet, dus hier controleren dat wat de trainer pusht daar goed uitkomt.
+function publiekeMinuut(w, nu) {
+  if (!w.helft_start) return w.minuut_offset || 0;
+  const verstreken = Math.floor((nu - new Date(w.helft_start).getTime()) / 60000);
+  return (w.minuut_offset||0) + Math.max(0, verstreken);
+}
+
+// Bug 2026-10-03: 2e helft 23 min bezig gaf publiek 103' i.p.v. 63'.
+test('2e helft: trainerklok 23 min na start = 63', () => {
+  const klok = liveKlokStart(40, T0);
+  testGelijk('2e helft: trainerklok 23 min na start = 63', 63, liveKlokMinuut(klok, T0 + 23 * MIN));
+});
+test('2e helft: publieke pagina 23 min na start = 63', () => {
+  const klok = liveKlokStart(40, T0);
+  testGelijk('2e helft: publieke pagina 23 min na start = 63', 63, publiekeMinuut(liveKlokNaarRemote(klok), T0 + 23 * MIN));
+});
+test('1e helft: 12 min na aftrap = 12', () => {
+  testGelijk('1e helft: 12 min na aftrap = 12', 12, liveKlokMinuut(liveKlokStart(0, T0), T0 + 12 * MIN + 30000));
+});
+
+// Pauze: klok staat stil (ook publiek) en de pauzetijd telt na "Verder" niet mee.
+test('pauze: klok staat stil tijdens pauze', () => {
+  const p = liveKlokPauzeer(liveKlokStart(40, T0), T0 + 23 * MIN);
+  testGelijk('pauze: klok staat stil tijdens pauze', 63, liveKlokMinuut(p, T0 + 30 * MIN));
+});
+test('pauze: publieke pagina toont stilstaande minuut', () => {
+  const p = liveKlokPauzeer(liveKlokStart(40, T0), T0 + 23 * MIN);
+  testGelijk('pauze: publieke pagina toont stilstaande minuut', 63, publiekeMinuut(liveKlokNaarRemote(p), T0 + 30 * MIN));
+});
+test('hervat: pauzetijd telt niet mee', () => {
+  const p = liveKlokPauzeer(liveKlokStart(40, T0), T0 + 23 * MIN);
+  const h = liveKlokHervat(p, T0 + 28 * MIN); // 5 min pauze
+  testGelijk('hervat: pauzetijd telt niet mee', 65, liveKlokMinuut(h, T0 + 30 * MIN));
+});
+test('hervat: publieke pagina telt pauzetijd niet mee', () => {
+  const h = liveKlokHervat(liveKlokPauzeer(liveKlokStart(40, T0), T0 + 23 * MIN), T0 + 28 * MIN);
+  testGelijk('hervat: publieke pagina telt pauzetijd niet mee', 65, publiekeMinuut(liveKlokNaarRemote(h), T0 + 30 * MIN));
+});
+test('pauze: losse seconden gaan niet verloren', () => {
+  const p = liveKlokPauzeer(liveKlokStart(0, T0), T0 + 10 * MIN + 40000); // 10:40
+  const h = liveKlokHervat(p, T0 + 15 * MIN);
+  testGelijk('pauze: losse seconden gaan niet verloren', 11, liveKlokMinuut(h, T0 + 15 * MIN + 25000)); // 11:05
+});
+test('twee pauzes achter elkaar tellen allebei niet mee', () => {
+  let k = liveKlokStart(0, T0);
+  k = liveKlokPauzeer(k, T0 + 10 * MIN);
+  k = liveKlokHervat(k, T0 + 13 * MIN);
+  k = liveKlokPauzeer(k, T0 + 20 * MIN);
+  k = liveKlokHervat(k, T0 + 22 * MIN);
+  testGelijk('twee pauzes achter elkaar tellen allebei niet mee', 20, liveKlokMinuut(k, T0 + 25 * MIN));
+});
+
+// Tweede telefoon pakt een lopende wedstrijd erbij (openLiveTrainer).
+test('overnemen: lopende 2e helft', () => {
+  const remote = liveKlokNaarRemote(liveKlokStart(40, T0));
+  testGelijk('overnemen: lopende 2e helft', 63, liveKlokMinuut(liveKlokUitRemote(remote), T0 + 23 * MIN));
+});
+test('overnemen: gepauzeerde wedstrijd blijft stilstaan', () => {
+  const remote = { helft_start: null, minuut_offset: 63 };
+  testGelijk('overnemen: gepauzeerde wedstrijd blijft stilstaan', 63, liveKlokMinuut(liveKlokUitRemote(remote), T0 + 99 * MIN));
+});
+test('overnemen: gepauzeerd en daarna hervat', () => {
+  const k = liveKlokHervat(liveKlokUitRemote({ helft_start: null, minuut_offset: 63 }), T0);
+  testGelijk('overnemen: gepauzeerd en daarna hervat', 65, liveKlokMinuut(k, T0 + 2 * MIN));
+});
+
+const ul = document.getElementById('uitslag');
+resultaten.forEach(r => {
+  const li = document.createElement('li');
+  li.textContent = (r.ok ? '✅ ' : '❌ ') + r.naam + r.tekst;
+  ul.appendChild(li);
+  console.log(li.textContent);
+});
+const fout = resultaten.filter(r => !r.ok).length;
+document.title = (fout ? '❌ ' + fout + ' fout' : '✅ alles groen') + ' — live-klok';
+window.KLOK_TEST_UITSLAG = { totaal: resultaten.length, fout };
+</script>
+</body>
+</html>

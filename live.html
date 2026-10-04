@@ -104,6 +104,11 @@ function statusChip(w) {
     const helftTxt = w.status === 'live_1e' ? '1e' : '2e';
     return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700"><span class="livedot"></span>${min}' · ${helftTxt}</span>`;
   }
+  // Pauze (sinds 2026-10-04 gepusht door de trainersapp): klok staat stil, geen livedot.
+  if (w.status === 'pauze_1e' || w.status === 'pauze_2e') {
+    const helftTxt = w.status === 'pauze_1e' ? '1e' : '2e';
+    return `<span style="font-size:11.5px;font-weight:700">${live_minuut(w)}' · ${helftTxt} · pauze</span>`;
+  }
   if (w.status === 'rust') return `<span class="tag tag--line">RUST</span>`;
   if (w.status === 'ft')   return `<span class="tag tag--line">FT</span>`;
   return '';
@@ -118,6 +123,8 @@ function live_minuut(w) {
 function statusTekstDetail(w) {
   if (w.status === 'live_1e') return live_minuut(w) + "' · 1e helft";
   if (w.status === 'live_2e') return live_minuut(w) + "' · 2e helft";
+  if (w.status === 'pauze_1e') return live_minuut(w) + "' · 1e helft · gepauzeerd";
+  if (w.status === 'pauze_2e') return live_minuut(w) + "' · 2e helft · gepauzeerd";
   if (w.status === 'rust')    return 'Rust';
   if (w.status === 'ft')      return 'Afgelopen';
   return w.datum + (w.starttijd ? ' · ' + w.starttijd : '');
@@ -184,7 +191,7 @@ function renderMiniField(w) {
 // verder is er geen aparte tussengroep nodig naast toekomstig/gespeeld).
 function wedCategorie(w) {
   if (w.status === 'ft') return 'gespeeld';
-  if (w.status === 'live_1e' || w.status === 'live_2e' || w.status === 'rust') return 'live';
+  if (['live_1e', 'pauze_1e', 'rust', 'live_2e', 'pauze_2e'].includes(w.status)) return 'live';
   return 'toekomst';
 }
 

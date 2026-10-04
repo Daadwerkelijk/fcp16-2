@@ -361,10 +361,41 @@ async function pushLiveScore(id, eigen, tegen) {
   return await sbFetch('live_wedstrijden?id=eq.' + id, 'PATCH', { score_eigen: eigen, score_tegen: tegen });
 }
 
+// ─── Live-klok (pure logica, getest in tests/live-klok-test.html) ───
+// Zelfde contract als live_minuut() in live.html: minuut = offsetMin + hele
+// minuten sinds helftStartTs. helftStartTs is het échte startmoment van de
+// lopende helft (niet teruggerekend), anders telt de offset dubbel (bug
+// 2026-10-03: 2e helft toonde publiek 103' i.p.v. 63').
+function liveKlokStart(offsetMin, nu) {
+  return { helftStartTs: nu, offsetMin };
+}
+function liveKlokMinuut(klok, nu) {
+  if (!klok.helftStartTs) return klok.offsetMin;
+  return klok.offsetMin + Math.max(0, Math.floor((nu - klok.helftStartTs) / 60000));
+}
+// Pauze: helftStartTs=null zodat de publieke pagina de minuut bevriest op
+// offsetMin. minuut_offset is een integer-kolom, dus de losse seconden worden
+// lokaal in restMs bewaard en bij hervatten weer verrekend in helftStartTs.
+function liveKlokPauzeer(klok, nu) {
+  const gespeeldMs = klok.offsetMin * 60000 + (klok.restMs || 0) + (klok.helftStartTs ? Math.max(0, nu - klok.helftStartTs) : 0);
+  return { helftStartTs: null, offsetMin: Math.floor(gespeeldMs / 60000), restMs: gespeeldMs % 60000 };
+}
+function liveKlokHervat(klok, nu) {
+  return { helftStartTs: nu - (klok.restMs || 0), offsetMin: klok.offsetMin };
+}
+function liveKlokNaarRemote(klok) {
+  return { helft_start: klok.helftStartTs ? new Date(klok.helftStartTs).toISOString() : null, minuut_offset: klok.offsetMin };
+}
+function liveKlokUitRemote(remote) {
+  return { helftStartTs: remote.helft_start ? new Date(remote.helft_start).getTime() : null, offsetMin: remote.minuut_offset || 0 };
+}
+
 // ─── Datalaag: Live pushacties ───
 // Zet de status/klok van een lopende wedstrijd op de publieke pagina. helftStartNu (ISO-string
 // of null) en minuutOffset horen bij elkaar: bij start 1e helft helftStartNu=nu, offset=0; bij
-// start 2e helft helftStartNu=nu (opnieuw), offset=45; bij rust/einde helftStartNu=null (klok pauzeert).
+// start 2e helft helftStartNu=nu (opnieuw), offset=minsPerHelft; bij pauze/rust/einde
+// helftStartNu=null en offset=de bevroren minuut. Bereken deze waarden altijd via
+// liveKlokNaarRemote() hierboven, niet met de hand.
 async function setLiveStatus(id, status, helftStartNu, minuutOffset, scoreEigen, scoreTegen) {
   const payload = { status, helft_start: helftStartNu, minuut_offset: minuutOffset };
   if (scoreEigen !== undefined) payload.score_eigen = scoreEigen;

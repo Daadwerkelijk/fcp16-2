@@ -2339,20 +2339,24 @@ async function verwijderOefening(btn) {
 // velden/functies als selectie.html, in het vaste kijk/bewerk-schermpatroon
 // van dit ontwerp i.p.v. de uitklapbare kaarten van de huidige app. ───
 let bewerkSpelerId = null;
-// Klein trendpijltje t.o.v. de vórige trainersbeoordeling van deze ene
-// vaardigheid — bewust geen tekst/aantal niveaus (gebruiker 2026-09-11), dat
-// detail staat al in de Geschiedenis-sheet. Leeg zolang er nog geen 2e
-// trainersmeting is om mee te vergelijken. Alleen trainer, niet speler-zelf —
-// zelfde keuze als de gebruiker bevestigde voor de vergelijkingsbasis.
-function skillTrendPijlHtml(trainerHist, sk) {
-  const metingen = trainerHist.filter(r => r.skills && r.skills[sk]).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+// Klein trendpijltje per bron t.o.v. de vórige invulling van díe bron voor
+// deze ene vaardigheid — bewust geen tekst/aantal niveaus (gebruiker
+// 2026-09-11), dat detail staat al in de Geschiedenis-sheet. Leeg zolang een
+// bron nog geen 2 metingen heeft. Sinds 2026-10-05 ook voor de speler zelf
+// (was alleen trainer): kleur = wie (src-speler zwart / src-trainer groen,
+// zelfde als de stippen), pijl = richting (↑ ↓ =). Rood voor "omlaag" is
+// bewust vervallen (gebruiker 2026-10-05, zie mockup-trendpijlen-speler-trainer.html).
+function skillTrendPijlHtml(hist, sk, skillsVan, bron) {
+  const metingen = hist.filter(r => skillsVan(r)[sk]).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   if (metingen.length < 2) return '';
-  const verschil = SKILL_NIVEAU_PCT_V2[metingen[metingen.length - 1].skills[sk]] - SKILL_NIVEAU_PCT_V2[metingen[metingen.length - 2].skills[sk]];
-  const pijl = verschil > 0 ? '↑' : verschil < 0 ? '↓' : '→';
-  const kleur = verschil > 0 ? 'win' : verschil < 0 ? 'loss' : 'ink3';
-  const label = verschil > 0 ? 'Vooruitgang t.o.v. vorige trainersbeoordeling' : verschil < 0 ? 'Achteruitgang t.o.v. vorige trainersbeoordeling' : 'Gelijk t.o.v. vorige trainersbeoordeling';
-  return '<span aria-label="' + label + '" title="' + label + '" style="color:var(--' + kleur + ');font-weight:700;font-size:13px">' + pijl + '</span>';
+  const verschil = SKILL_NIVEAU_PCT_V2[skillsVan(metingen[metingen.length - 1])[sk]] - SKILL_NIVEAU_PCT_V2[skillsVan(metingen[metingen.length - 2])[sk]];
+  const pijl = verschil > 0 ? '↑' : verschil < 0 ? '↓' : '=';
+  const wie = bron === 'speler' ? 'vorige eigen inschatting' : 'vorige trainersbeoordeling';
+  const label = (verschil > 0 ? 'Omhoog' : verschil < 0 ? 'Omlaag' : 'Gelijk') + ' t.o.v. ' + wie;
+  return '<span class="src-' + bron + '" aria-label="' + label + '" title="' + label + '" style="font-weight:700;font-size:13px">' + pijl + '</span>';
 }
+const spelerSkillsVan = r => (r.data && r.data.skills) || {};
+const trainerSkillsVan = r => r.skills || {};
 // Betrouwbaarheid van speeltijd-data (0 minuten ≠ "geen data") — een wedstrijd
 // kan een basisopstelling én een eindmoment hebben zonder dat de wissel-functie
 // ooit is gebruikt (bv. oude wedstrijden van vóór die feature bestond, waar
@@ -2549,10 +2553,15 @@ async function renderVergelijkingV2(spelerId) {
   // 1024px). Op mobiel blijft de rij puur informatief, alleen het pijltje erbij,
   // geen extra tik-doel (gebruiker 2026-09-11).
   const desktop = window.matchMedia('(min-width:1024px)').matches;
-  let html = '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:6px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>'
+  // Twee vaste pijlkolommen (S = speler, T = trainer), ook als er één leeg is,
+  // zodat de kolommen over alle rijen netjes onder elkaar blijven staan.
+  const PIJL_KOLOM = 'width:34px;flex-shrink:0;display:flex;justify-content:space-between';
+  const PIJL_SLOT = 'width:15px;text-align:center';
+  let html = '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin-bottom:4px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div>'
+    + '<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">Pijlen rechts: verandering t.o.v. de vorige invulling van dezelfde bron.</div>'
     + '<div style="display:flex;gap:10px;margin-bottom:8px"><div style="width:112px;flex-shrink:0"></div>'
     + '<div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:9px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div>'
-    + '<div style="width:18px;flex-shrink:0"></div></div>';
+    + '<div style="' + PIJL_KOLOM + ';font-size:9px;font-weight:700"><span class="src-speler" style="' + PIJL_SLOT + '" title="Speler">S</span><span class="src-trainer" style="' + PIJL_SLOT + '" title="Trainer">T</span></div></div>';
   Object.entries(FORM_SKILLS_V2).forEach(([cat, skills]) => {
     html += '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">' + cat + '</div>';
     skills.forEach(sk => {
@@ -2564,7 +2573,10 @@ async function renderVergelijkingV2(spelerId) {
         + NIVEAU_TICKS.map(([, pct]) => '<div class="trk-tick" style="left:' + pct + '%"></div>').join('')
         + (sv != null ? '<div class="trk-dot src-speler" style="left:' + sv + '%;background:currentColor"></div>' : '')
         + (tv != null ? '<div class="trk-dot src-trainer" style="left:' + tv + '%;background:currentColor"></div>' : '')
-        + '</div><div style="width:18px;flex-shrink:0;text-align:center">' + skillTrendPijlHtml(trainerHist, sk) + '</div></div>';
+        + '</div><div style="' + PIJL_KOLOM + '">'
+        + '<span style="' + PIJL_SLOT + '">' + skillTrendPijlHtml(spelerHist, sk, spelerSkillsVan, 'speler') + '</span>'
+        + '<span style="' + PIJL_SLOT + '">' + skillTrendPijlHtml(trainerHist, sk, trainerSkillsVan, 'trainer') + '</span>'
+        + '</div></div>';
     });
   });
   return html;

@@ -1,4 +1,4 @@
-const CACHE = 'fcp162-v223';
+const CACHE = 'fcp162-v224';
 // Andere apps van de gebruiker draaien op hetzelfde domein (daadwerkelijk.github.io)
 // en delen de cache-opslag: alleen caches met dit voorvoegsel zijn van fcp16-2.
 const VOORVOEGSEL = 'fcp162-';

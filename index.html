@@ -2937,10 +2937,23 @@ let gsSpelerHist = [], gsTrainerHist = [];
 // "Geschiedenis"-knop (die dit argument weglaat) te veranderen.
 function openGeschiedenisSheet(spelerId, vaardigheid) { gsSpelerId = spelerId; renderGsSheet(vaardigheid); document.getElementById('sheet-geschiedenis').classList.remove('verborgen'); }
 function closeGeschiedenisSheet() { document.getElementById('sheet-geschiedenis').classList.add('verborgen'); }
-async function gsIntrekken(id) {
-  await intrekkenTrainerBeoordeling(id);
+// Intrekken verwijdert de HELE trainersbeoordeling-rij (alle vaardigheden van
+// die datum), niet alleen de vaardigheid die je in de sheet bekijkt — daarom
+// sinds 2026-10-06 een tweede tik met een waarschuwing die dat letterlijk zegt
+// (keuze gebruiker: alleen beter waarschuwen, gedrag zelf ongewijzigd). Was
+// één tik zonder bevestiging of foutmelding.
+async function gsIntrekken(btn, id) {
+  const waarschuwing = btn.closest('.note').querySelector('.gs-intrek-waarschuwing');
+  if (!btn.classList.contains('gs-bevestig')) {
+    btn.classList.add('gs-bevestig'); btn.style.color = 'var(--loss)'; waarschuwing.hidden = false;
+    setTimeout(() => { if (btn.isConnected && !btn.disabled) { btn.classList.remove('gs-bevestig'); btn.style.color = ''; waarschuwing.hidden = true; } }, 4000);
+    return;
+  }
+  btn.disabled = true;
+  const res = await intrekkenTrainerBeoordeling(id);
+  if (res && res._error) { showToast('⚠️ Niet ingetrokken: ' + (res.message || res.status)); btn.disabled = false; return; }
   delete beoordelingCacheV2[gsSpelerId];
-  renderGsSheet();
+  renderGsSheet(document.getElementById('gs-vaardigheid-select').value);
 }
 async function renderGsSheet(vaardigheid) {
   document.getElementById('gs-content').innerHTML = '<div style="font-size:13px;color:var(--ink3)">Laden…</div>';
@@ -2968,7 +2981,7 @@ function renderGsTijdlijn() {
   const skill = document.getElementById('gs-vaardigheid-select').value;
   const momenten = [];
   gsSpelerHist.forEach(r => { const w = ((r.data && r.data.skills) || {})[skill]; if (w) momenten.push({ datum: r.created_at, bron: 'speler', waarde: w }); });
-  gsTrainerHist.forEach(r => { const w = (r.skills || {})[skill]; if (w) momenten.push({ datum: r.created_at, bron: 'trainer', id: r.id, waarde: w }); });
+  gsTrainerHist.forEach(r => { const w = (r.skills || {})[skill]; if (w) momenten.push({ datum: r.created_at, bron: 'trainer', id: r.id, waarde: w, aantal: Object.keys(r.skills || {}).length }); });
   momenten.sort((a, b) => new Date(b.datum) - new Date(a.datum)); // nieuwste eerst
   const cont = document.getElementById('gs-content');
   if (!momenten.length) { cont.innerHTML = '<div style="font-size:13px;color:var(--ink3)">Geen geschiedenis voor deze vaardigheid.</div>'; return; }
@@ -2984,10 +2997,14 @@ function renderGsTijdlijn() {
         deltaHtml = '<div style="font-size:11.5px;font-weight:600;color:var(--' + (omhoog ? 'win' : 'loss') + ');margin-top:2px">' + (omhoog ? '↑' : '↓') + ' ' + niveaus + ' niveau' + (niveaus > 1 ? 's' : '') + ' t.o.v. vorige ' + (m.bron === 'speler' ? 'eigen inschatting' : 'trainersbeoordeling') + '</div>';
       }
     }
+    const datumLabel = String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const intrekTekst = 'Wist de trainersbeoordeling van ' + datumLabel + ' voor ' + (m.aantal > 1 ? 'alle ' + m.aantal + ' vaardigheden' : 'deze vaardigheid') + ', niet alleen ' + esc(skill) + '. Tik nogmaals op ✕ om te bevestigen.';
     return '<div class="note" style="margin-bottom:8px">'
-      + '<div class="note-t">' + String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '</div>'
-      + '<div class="note-tx"><b>' + (m.bron === 'trainer' ? 'Trainer' : 'Speler') + '</b> — ' + esc(m.waarde) + deltaHtml + '</div>'
-      + (m.bron === 'trainer' ? '<button class="note-act" onclick="gsIntrekken(\'' + m.id + '\')" aria-label="Intrekken">✕</button>' : '')
+      + '<div class="note-t">' + datumLabel + '</div>'
+      + '<div class="note-tx"><b>' + (m.bron === 'trainer' ? 'Trainer' : 'Speler') + '</b> — ' + esc(m.waarde) + deltaHtml
+      + (m.bron === 'trainer' ? '<div class="gs-intrek-waarschuwing" hidden style="font-size:12px;font-weight:600;color:var(--loss);margin-top:4px">' + intrekTekst + '</div>' : '')
+      + '</div>'
+      + (m.bron === 'trainer' ? '<button class="note-act" onclick="gsIntrekken(this,\'' + m.id + '\')" aria-label="Trainersbeoordeling van ' + datumLabel + ' intrekken">✕</button>' : '')
       + '</div>';
   }).join('');
 }

@@ -171,6 +171,8 @@
 .skillrow:hover{background:var(--surface2)}
 .skillrow:hover .skillrow-chev{opacity:1}
 .skillrow-chev{color:var(--ink3);flex-shrink:0;opacity:0;transition:opacity .12s}
+.skillrow-naam{width:112px;flex-shrink:0}
+@media (min-width:600px){.skillrow-naam{width:170px}}
 
 /* Balken */
 .bar{height:8px;border-radius:var(--r-pill);background:var(--surface2);overflow:hidden;display:flex}

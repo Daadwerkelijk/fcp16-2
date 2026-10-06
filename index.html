@@ -2350,9 +2350,13 @@ function skillTrendPijlHtml(hist, sk, skillsVan, bron) {
   const metingen = hist.filter(r => skillsVan(r)[sk]).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   if (metingen.length < 2) return '';
   const verschil = SKILL_NIVEAU_PCT_V2[skillsVan(metingen[metingen.length - 1])[sk]] - SKILL_NIVEAU_PCT_V2[skillsVan(metingen[metingen.length - 2])[sk]];
-  const pijl = verschil > 0 ? '↑' : verschil < 0 ? '↓' : '=';
-  const wie = bron === 'speler' ? 'vorige eigen inschatting' : 'vorige trainersbeoordeling';
-  const label = (verschil > 0 ? 'Omhoog' : verschil < 0 ? 'Omlaag' : 'Gelijk') + ' t.o.v. ' + wie;
+  return trendPijlSpan(verschil, bron, bron === 'speler' ? 'vorige eigen inschatting' : 'vorige trainersbeoordeling');
+}
+// Gedeelde pijl-opmaak voor spelerscherm én Inzicht → Skills (teamgemiddelde).
+// Kleine drempel zodat afrondingsruis bij gemiddelden niet als ↑/↓ telt.
+function trendPijlSpan(verschil, bron, wie) {
+  const pijl = verschil > 0.5 ? '↑' : verschil < -0.5 ? '↓' : '=';
+  const label = (verschil > 0.5 ? 'Omhoog' : verschil < -0.5 ? 'Omlaag' : 'Gelijk') + ' t.o.v. ' + wie;
   return '<span class="src-' + bron + '" aria-label="' + label + '" title="' + label + '" style="font-weight:700;font-size:13px">' + pijl + '</span>';
 }
 const spelerSkillsVan = r => (r.data && r.data.skills) || {};
@@ -5046,9 +5050,27 @@ async function skillsVergelijkingData() {
       if (sv) { sSom += SKILL_NIVEAU_PCT_V2[sv]; sN++; }
       if (tv) { tSom += SKILL_NIVEAU_PCT_V2[tv]; tN++; }
     });
-    return { sk, sGem: sN ? sSom / sN : null, tGem: tN ? tSom / tN : null };
+    return { sk, sGem: sN ? sSom / sN : null, tGem: tN ? tSom / tN : null,
+      sTrend: teamSkillTrend(alleSpeler, sp, sk, spelerSkillsVan),
+      tTrend: teamSkillTrend(alleTrainer, sp, sk, trainerSkillsVan) };
   });
   return { rijen, sp, laatsteSpelerPerSpeler, laatsteTrainerPerSpeler };
+}
+// Teamtrend per bron voor één vaardigheid (gebruiker 2026-10-06): gemiddelde
+// van ieders laatste invulling minus gemiddelde van ieders vórige invulling,
+// alleen over spelers met ≥2 invullingen van die bron — zelfde basis als de
+// pijl per speler in het spelerscherm. null = nog niemand met 2 metingen.
+function teamSkillTrend(alle, sp, sk, skillsVan) {
+  let laatsteSom = 0, vorigeSom = 0, n = 0;
+  sp.forEach(p => {
+    const metingen = alle.filter(r => r.speler_id === p.id && skillsVan(r)[sk])
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    if (metingen.length < 2) return;
+    laatsteSom += SKILL_NIVEAU_PCT_V2[skillsVan(metingen[metingen.length - 1])[sk]];
+    vorigeSom += SKILL_NIVEAU_PCT_V2[skillsVan(metingen[metingen.length - 2])[sk]];
+    n++;
+  });
+  return n ? (laatsteSom - vorigeSom) / n : null;
 }
 // Eén lange lijst i.p.v. 2 kolommen, zodat elke track de volle breedte van de
 // kaart krijgt — meer ruimte tussen de 4 niveaus, dus duidelijker verschil
@@ -5058,16 +5080,28 @@ async function skillsVergelijkingData() {
 let VD_SKILLS_RAW = null;
 function skillsVerdelingLijstHtml(rijen) {
   const NIVEAU_TICKS = Object.entries(SKILL_NIVEAU_PCT_V2);
+  // Zelfde S/T-pijlkolommen als in het spelerscherm (renderVergelijkingV2),
+  // hier t.o.v. het vorige teamgemiddelde van dezelfde bron.
+  const PIJL_KOLOM = 'width:34px;flex-shrink:0;display:flex;justify-content:space-between';
+  const PIJL_SLOT = 'width:15px;text-align:center';
+  const WIE_S = 'vorig teamgemiddelde eigen inschatting', WIE_T = 'vorig teamgemiddelde trainersbeoordeling';
   return '<div class="card">'
     + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px"><div class="sec" style="margin:0">Vaardigheden</div>'
     + '<div style="display:flex;gap:14px;font-size:11px;color:var(--ink3)"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span></div></div>'
-    + '<div style="display:flex;gap:8px;margin:14px 0 8px"><div style="width:170px;flex-shrink:0"></div><div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:10px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div><div style="width:15px;flex-shrink:0"></div></div>'
+    + '<div style="font-size:11px;color:var(--ink3)">Pijlen rechts: verandering van het teamgemiddelde t.o.v. de vorige invulling van dezelfde bron.</div>'
+    + '<div style="display:flex;gap:8px;margin:14px 0 8px"><div class="skillrow-naam"></div><div style="flex:1;display:flex;justify-content:space-between;padding:0 5px;font-size:10px;font-weight:600;color:var(--ink3)">' + NIVEAU_TICKS.map(([naam]) => '<span>' + naam + '</span>').join('') + '</div>'
+    + '<div style="' + PIJL_KOLOM + ';font-size:10px;font-weight:700"><span class="src-speler" style="' + PIJL_SLOT + '" title="Speler">S</span><span class="src-trainer" style="' + PIJL_SLOT + '" title="Trainer">T</span></div>'
+    + '<div style="width:15px;flex-shrink:0"></div></div>'
     + rijen.map(r => '<div class="skillrow" onclick="openVaardigheidSheet(\'' + esc(r.sk) + '\')">'
-        + '<div style="width:170px;font-size:13px;flex-shrink:0">' + esc(r.sk) + '</div>'
+        + '<div class="skillrow-naam" style="font-size:13px">' + esc(r.sk) + '</div>'
         + '<div class="trk" style="flex:1"><div class="trk-line"></div>'
         + NIVEAU_TICKS.map(([, pct]) => '<div class="trk-tick" style="left:' + pct + '%"></div>').join('')
         + (r.sGem != null ? '<div class="trk-dot src-speler" style="left:' + r.sGem + '%;background:currentColor"></div>' : '')
         + (r.tGem != null ? '<div class="trk-dot src-trainer" style="left:' + r.tGem + '%;background:currentColor"></div>' : '')
+        + '</div>'
+        + '<div style="' + PIJL_KOLOM + '">'
+        + '<span style="' + PIJL_SLOT + '">' + (r.sTrend != null ? trendPijlSpan(r.sTrend, 'speler', WIE_S) : '') + '</span>'
+        + '<span style="' + PIJL_SLOT + '">' + (r.tTrend != null ? trendPijlSpan(r.tTrend, 'trainer', WIE_T) : '') + '</span>'
         + '</div>'
         + '<svg class="skillrow-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>'
         + '</div>').join('')

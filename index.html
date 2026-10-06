@@ -1128,8 +1128,8 @@ async function checkPeriodeAfwezigWedstrijd(w) {
 // (bewerkformulier, container #wb-afwezig), zodat er niet twee keer dezelfde
 // markup onderhouden hoeft te worden.
 function wedAfwezigChipsHtml(w) {
-  return ((w.afwezig || []).length
-    ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + (w.afwezig || []).map(a => {
+  return (afwezigLijst(w).length
+    ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + afwezigLijst(w).map(a => {
         const pid = (a && a.pid) ? a.pid : a;
         const reden = (a && a.reden) || '';
         const p = spelers().find(x => x.id === pid);
@@ -1191,7 +1191,7 @@ function openWedAfwezigSheet(modus) {
   } else {
     const w = wedstrijden().find(x => x.id === huidigWedstrijdId);
     if (!w) return;
-    afwezigeIds = new Set((w.afwezig || []).map(a => (a && a.pid) ? a.pid : a));
+    afwezigeIds = wedstrijdAfwezigeIds(w);
   }
   const sp = actieveSpelers().filter(p => !afwezigeIds.has(p.id));
   document.getElementById('waf-speler').innerHTML = sp.map(p => '<option value="' + p.id + '">' + esc(p.naam) + '</option>').join('');
@@ -1307,7 +1307,7 @@ async function toonWedstrijd(id) {
   html += '<div class="card" style="margin-top:10px"><div class="sec">Selectie</div>'
     + (spTeller.length ? '<div style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1"><div class="bar-fill" style="width:' + Math.round(aanwTal/spTeller.length*100) + '%;background:var(--ink)"></div></div><div class="num" style="font-size:13px;font-weight:700">' + aanwTal + '/' + spTeller.length + '</div></div>' : '<div style="color:var(--ink3);font-size:13px">Nog geen spelers.</div>')
     + '<div style="margin-top:10px" id="w-afwezig">' + wedAfwezigChipsHtml(w) + '</div>'
-    + '<button class="btn btn--ghost btn--sm" style="margin-top:10px" onclick="renderWedOpstelling(\'' + w.id + '\')">Opstelling voor deze wedstrijd →</button>'
+    + '<button class="btn btn--ghost btn--sm" style="margin-top:10px" onclick="openWedOpstelling(\'' + w.id + '\')">Opstelling voor deze wedstrijd →</button>'
     + '</div>';
 
   html += '</div><div>';
@@ -1597,6 +1597,53 @@ async function teamOpstVerwijderFormatie(btn, id) {
 // ─── Opstelling per wedstrijd — los van de team-basisopstelling; dit is
 // waar Live de startopstelling vandaan haalt (met terugval op de
 // team-basis als er nog niets is ingesteld voor deze wedstrijd). ───
+// Bug (gemeld door gebruiker 2026-10-06): de basisopstelling uit Team →
+// Opstelling kwam nooit in een wedstrijd terecht. wedOpstCtx.getLineup() las
+// alleen wed_lineup, en openLiveTrainer()'s terugval `w.wed_lineup ||
+// fcp_lineup` sloeg nooit aan omdat syncFromSupabase() een lege wed_lineup
+// altijd als `{}` (truthy) teruggeeft. Nu: heeft een nog niet gespeelde
+// wedstrijd geen eigen opstelling, dan wordt de basis erin GEKOPIEERD (keuze
+// gebruiker: kopie, geen live-koppeling — latere basiswijzigingen raken deze
+// wedstrijd dan niet meer). Afwezig gemelde en gearchiveerde spelers gaan
+// niet mee. Gespeelde wedstrijden blijven ongemoeid, anders krijgen oude
+// wedstrijden achteraf een opstelling (en speeltijd) die nooit gespeeld is.
+// Puur (geen DOM/opslag) — getest in de TDD-sessie van 2026-10-06.
+// positieIds: alleen de posities van de formatie van DEZE wedstrijd — de
+// basis-lineup deelt sleutels met de fallback-formatie, en berekenSpeeltijd()
+// (app.js) telt iedereen in wed_lineup als basisspeler, ook op een positie die
+// in deze formatie niet bestaat.
+function startOpstellingVoorWedstrijd(w, basisLineup, actieveIds, positieIds) {
+  if (w.gespeeld || Object.values(w.wed_lineup || {}).some(Boolean)) return { lineup: w.wed_lineup || {}, gekopieerd: false };
+  const afwezig = wedstrijdAfwezigeIds(w);
+  const lineup = {};
+  Object.entries(basisLineup).forEach(([pos, spId]) => {
+    if (positieIds && !positieIds.includes(pos)) return;
+    lineup[pos] = (afwezig.has(spId) || (actieveIds && !actieveIds.has(spId))) ? null : spId;
+  });
+  return { lineup, gekopieerd: Object.values(lineup).some(Boolean) };
+}
+// Past startOpstellingVoorWedstrijd() toe en slaat een kopie op (lokaal +
+// wedstrijden.wed_lineup in Supabase). Alleen aanroepen bij het OPENEN van
+// een wedstrijd (Opstelling-scherm, Live), niet vanuit renderWedOpstelling():
+// die draait ook direct na "Wissen" en zou de basis dan meteen terugzetten.
+async function zorgVoorStartOpstelling(wedId) {
+  const lijst = wedstrijden();
+  const w = lijst.find(x => x.id === wedId);
+  if (!w) return;
+  const positieIds = wedOpstCtx(wedId).formatie().pos.map(p => p.id);
+  const { lineup, gekopieerd } = startOpstellingVoorWedstrijd(w, ls('fcp_lineup', '{}'), new Set(actieveSpelers().map(p => p.id)), positieIds);
+  if (!gekopieerd) return;
+  w.wed_lineup = lineup;
+  localStorage.setItem('fcp_wed', JSON.stringify(lijst));
+  if (supabaseReady) {
+    const res = await updateWedstrijd(wedId, { wed_lineup: JSON.stringify(lineup) });
+    if (res && res._error) showToast('⚠️ Basisopstelling niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
+}
+async function openWedOpstelling(wedId) {
+  await zorgVoorStartOpstelling(wedId);
+  renderWedOpstelling(wedId);
+}
 function wedOpstCtx(wedId) {
   return {
     formatie() { const alle = alleFormatiesV2(); const w = wedstrijden().find(x => x.id === wedId); let a = w.formatie || localStorage.getItem('fcp_formatie') || '4222'; if (!alle[a]) a = Object.keys(alle)[0]; return alle[a]; },
@@ -1607,8 +1654,7 @@ function wedOpstCtx(wedId) {
     // basisopstelling-kiezer of wisselspelers-lijst te verschijnen — zelfde
     // categorie fix als renderWisselSheet() tijdens Live (2026-09-19/20).
     afwezigeIds() {
-      const w = wedstrijden().find(x => x.id === wedId);
-      return new Set(((w && w.afwezig) || []).map(a => (a && a.pid) ? a.pid : a));
+      return wedstrijdAfwezigeIds(wedstrijden().find(x => x.id === wedId));
     },
     async remoteSync(lineup) {
       const res = await updateWedstrijd(wedId, { wed_lineup: JSON.stringify(lineup) });
@@ -3625,8 +3671,11 @@ function ltStartTick() {
 }
 async function openLiveTrainer(id) {
   if (!id) return;
+  if (!wedstrijden().find(x => x.id === id)) return;
+  // Basis kopiëren vóór het lezen — de oude `|| fcp_lineup`-terugval hieronder
+  // sloeg nooit aan (lege wed_lineup is `{}`), zie startOpstellingVoorWedstrijd.
+  await zorgVoorStartOpstelling(id);
   const w = wedstrijden().find(x => x.id === id);
-  if (!w) return;
   ltStopTick();
   const startLineup = w.startLineup || w.wed_lineup || ls('fcp_lineup', '{}');
   const startFormatieId = w.formatie || w.startFormatie || localStorage.getItem('fcp_formatie') || '4222';
@@ -4307,7 +4356,7 @@ function renderWisselSheet() {
     // (gemeld door gebruiker 2026-09-19, met harde data teruggevonden:
     // Roan (gearchiveerd) op 28', Milox (afwezig/geblesseerd) op 51').
     const wActief = wedstrijden().find(x => x.id === liveState.wedstrijdId);
-    const afwezigeIds = new Set(((wActief && wActief.afwezig) || []).map(a => (a && a.pid) ? a.pid : a));
+    const afwezigeIds = wedstrijdAfwezigeIds(wActief);
     const bank = actieveSpelers().filter(p => !bezet.has(p.id) && p.id !== wisselStap.uitSpelerId && !afwezigeIds.has(p.id));
     document.getElementById('wis-lijst').innerHTML = bank.length
       ? bank.map(p => '<div class="bench-row" onclick="wisselStap.inSpelerId=\'' + p.id + '\';wisselStap.stap=3;renderWisselSheet()"><div class="bench-nm">' + esc(p.naam) + '</div></div>').join('')
@@ -5267,7 +5316,7 @@ async function topscorersKaartHtml(wed, sp) {
   // berekenSpeeltijd() gebaseerd, wat oudere/niet-Live-wedstrijden ten
   // onrechte als "niet gespeeld" telde (gemeld door gebruiker 2026-09-14).
   wed.forEach(w => {
-    const afwezigIds = new Set((w.afwezig || []).map(a => (a && a.pid) ? a.pid : a));
+    const afwezigIds = wedstrijdAfwezigeIds(w);
     sp.forEach(p => { if (!afwezigIds.has(p.id)) perSpeler[p.id].wedstrijden++; });
   });
   const lijst = Object.values(perSpeler).filter(x => x.goals || x.assists).sort((a, b) => (b.goals - a.goals) || (b.assists - a.assists));
@@ -5316,8 +5365,14 @@ async function kaartenKaartHtml(wed, sp) {
 // hergebruikt om het "aantal wedstrijden"-kolom bij Speeltijd afwezigheid-
 // bewust te maken i.p.v. puur af te leiden uit gemeten minuten (dat zou een
 // wedstrijd zonder Live-tracking ten onrechte ook als "niet gespeeld" tellen).
+// Geen array (corrupte/oude data) → leeg i.p.v. een crash (monkey-vondst
+// 2026-10-06: een string/object in `afwezig` liet o.a. Opstelling openen
+// crashen). Enige plek voor deze omzetting — alle afwezig-lijsten gaan hierdoor.
 function wedstrijdAfwezigeIds(w) {
-  return new Set(((w && w.afwezig) || []).map(a => (a && a.pid) ? a.pid : a));
+  return new Set(afwezigLijst(w).map(a => (a && a.pid) ? a.pid : a));
+}
+function afwezigLijst(w) {
+  return w && Array.isArray(w.afwezig) ? w.afwezig : [];
 }
 // Aantal wedstrijden (binnen de meegegeven, al-bijgehouden lijst) voor één
 // speler. Voor een ACTIEVE speler: hoeveel hij niet als afwezig had gemeld

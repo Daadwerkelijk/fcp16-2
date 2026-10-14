@@ -361,6 +361,23 @@ async function pushLiveScore(id, eigen, tegen) {
   return await sbFetch('live_wedstrijden?id=eq.' + id, 'PATCH', { score_eigen: eigen, score_tegen: tegen });
 }
 
+// ─── Spelers in het team op een datum (pure logica, getest in tests/spelers-op-datum-test.html) ───
+// Voor "X/Y aanwezig" bij een wedstrijd/training: wie zat er op die datum in
+// het team? Actief = altijd; gearchiveerd alleen als de datum "uit team"
+// (status_datum) ná isoDatum ligt. Zo blijft de geschiedenis van vóór het
+// archiveren staan (bug 2026-09-23) en telt een speler daarna niet meer mee
+// (bug 2026-10-14: 12 okt toonde 15/18 i.p.v. 15/17).
+function spelersInTeamOp(lijst, isoDatum) {
+  return lijst.filter(p => (p.status || 'actief') !== 'gearchiveerd' || (p.status_datum && p.status_datum > isoDatum));
+}
+// Afgemelde spelers die op die datum niet (meer) in het team zaten tellen ook
+// niet als afwezig, anders klopt "aanwezig" niet met het totaal.
+function aanwezigTeller(lijst, isoDatum, afwezigIds) {
+  const inTeam = spelersInTeamOp(lijst, isoDatum);
+  const afw = new Set(afwezigIds);
+  return { aanwezig: inTeam.filter(p => !afw.has(p.id)).length, totaal: inTeam.length };
+}
+
 // ─── Live-klok (pure logica, getest in tests/live-klok-test.html) ───
 // Zelfde contract als live_minuut() in live.html: minuut = offsetMin + hele
 // minuten sinds helftStartTs. helftStartTs is het échte startmoment van de

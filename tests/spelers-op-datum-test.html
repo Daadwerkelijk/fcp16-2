@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spelers-op-datum tests</title>
+<style>body{font:14px system-ui,sans-serif;margin:16px;background:#fff;color:#111}li{margin:2px 0}</style>
+</head>
+<body>
+<h1>Spelers-op-datum tests</h1>
+<p>Pure teller-logica uit <code>app.js</code> (spelersInTeamOp). Open via een lokale server, bv. <code>http://localhost:8934/tests/spelers-op-datum-test.html</code>.</p>
+<ul id="uitslag"></ul>
+<script src="../app.js"></script>
+<script>
+const resultaten = [];
+function testGelijk(naam, verwacht, werkelijk) {
+  const ok = JSON.stringify(verwacht) === JSON.stringify(werkelijk);
+  resultaten.push({ naam, ok, tekst: ok ? '' : ' — verwacht ' + JSON.stringify(verwacht) + ', kreeg ' + JSON.stringify(werkelijk) });
+}
+function test(naam, fn) {
+  try { fn(); } catch (e) { resultaten.push({ naam, ok: false, tekst: ' — ' + e.name + ': ' + e.message }); }
+}
+// 17 actieve spelers + 1 die op 2026-10-01 uit het team is gegaan.
+const team = Array.from({ length: 17 }, (_, i) => ({ id: 'p' + i, status: 'actief' }))
+  .concat([{ id: 'weg', status: 'gearchiveerd', status_datum: '2026-10-01' }]);
+
+// Bug 2026-10-14: afgeronde training 12 okt toonde 15/18 i.p.v. 15/17.
+test('na archiveren telt gearchiveerde speler niet mee', () => {
+  testGelijk('na archiveren telt gearchiveerde speler niet mee', 17, spelersInTeamOp(team, '2026-10-12').length);
+});
+// Bug 2026-09-23 mag niet terugkomen: vóór het archiveren zat de speler er nog wél bij.
+test('vóór archiveren telt gearchiveerde speler wél mee', () => {
+  testGelijk('vóór archiveren telt gearchiveerde speler wél mee', 18, spelersInTeamOp(team, '2026-09-20').length);
+});
+test('op de datum "uit team" zelf telt de speler niet meer mee', () => {
+  testGelijk('op de datum "uit team" zelf telt de speler niet meer mee', 17, spelersInTeamOp(team, '2026-10-01').length);
+});
+test('speler zonder status telt als actief', () => {
+  testGelijk('speler zonder status telt als actief', 1, spelersInTeamOp([{ id: 'x' }], '2026-10-12').length);
+});
+test('gearchiveerd zonder datum telt niet mee', () => {
+  testGelijk('gearchiveerd zonder datum telt niet mee', 0, spelersInTeamOp([{ id: 'x', status: 'gearchiveerd' }], '2026-10-12').length);
+});
+// Afmelding van iemand die op die datum al uit het team was telt ook niet als afwezig.
+test('teller 12 okt: 3 afwezig + gearchiveerde afgemeld = 14/17', () => {
+  testGelijk('teller 12 okt: 3 afwezig + gearchiveerde afgemeld = 14/17', { aanwezig: 14, totaal: 17 },
+    aanwezigTeller(team, '2026-10-12', ['p1', 'p2', 'p3', 'weg']));
+});
+test('teller vóór archiveren: gearchiveerde afgemeld telt wél als afwezig', () => {
+  testGelijk('teller vóór archiveren: gearchiveerde afgemeld telt wél als afwezig', { aanwezig: 14, totaal: 18 },
+    aanwezigTeller(team, '2026-09-20', ['p1', 'p2', 'p3', 'weg']));
+});
+
+const ul =document.getElementById('uitslag');
+resultaten.forEach(r => { const li = document.createElement('li'); li.textContent = (r.ok ? '✅ ' : '❌ ') + r.naam + r.tekst; ul.appendChild(li); });
+const fout = resultaten.filter(r => !r.ok).length;
+document.title = (fout ? '❌ ' + fout + ' fout' : '✅ alles groen') + ' — Spelers-op-datum tests';
+console.log(document.title);
+</script>
+</body>
+</html>

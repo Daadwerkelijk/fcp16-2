@@ -904,6 +904,43 @@ function alleAgendaItems() {
   return items;
 }
 
+// ─── Verjaardagen ───
+// Geboortedatum staat alleen in het spelerformulier (speler_beoordelingen.data),
+// dus komt async uit Supabase — hier gecachet zodat renderVandaag()/renderAgenda()
+// synchroon blijven (zelfde reden als checkLiveBannerV2). Alleen spelers die nu in
+// het team zitten. Afgestemd met gebruiker 2026-10-16 (mockup-verjaardagen.html).
+let geboortedataV2 = {}; // speler_id → 'JJJJ-MM-DD'
+async function laadGeboortedataV2() {
+  if (typeof supabaseReady === 'undefined' || !supabaseReady) return;
+  const nieuw = {};
+  (await haalAlleSpelerBeoordelingen()).forEach(r => { if (r.data && r.data.geboortedatum) nieuw[r.speler_id] = r.data.geboortedatum; });
+  geboortedataV2 = nieuw;
+  vulJarigKaartV2();
+  if (document.getElementById('screen-agenda').classList.contains('actief')) renderAgenda();
+}
+function verjaardagenV2() {
+  const vandaag = isoVan(new Date());
+  return volgendeVerjaardagen(spelersInTeamOp(spelers(), vandaag)
+    .map(p => ({ id: p.id, naam: p.naam, geboortedatum: geboortedataV2[p.id] })), vandaag);
+}
+function vulJarigKaartV2() {
+  const el = document.getElementById('v-jarig');
+  if (!el) return;
+  const jarig = verjaardagenV2().filter(v => v.dagen <= 7);
+  el.hidden = !jarig.length;
+  el.innerHTML = !jarig.length ? '' : '<div class="card">'
+    + '<div class="eyebrow" style="margin-bottom:6px">🎂 Jarig deze week</div>'
+    + jarig.map(v => {
+        const d = new Date(v.isoDate);
+        const dagTxt = v.dagen === 0 ? 'Vandaag' : v.dagen === 1 ? 'Morgen'
+          : DAG_KORT[d.getDay()][0].toUpperCase() + DAG_KORT[d.getDay()][1] + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()];
+        return '<div class="jarig-rij"><span style="font-size:15px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.naam) + '</span>'
+          + '<span style="font-size:13px;color:var(--ink3)">wordt ' + v.leeftijd + '</span>'
+          + '<span class="jarig-dag' + (v.dagen === 0 ? ' jarig-dag--vandaag' : '') + '">' + dagTxt + '</span></div>';
+      }).join('')
+    + '</div>';
+}
+
 // ─── Vandaag ───
 function renderVandaag() {
   const nu = new Date();
@@ -968,6 +1005,9 @@ function renderVandaag() {
       + '<button class="btn btn--secondary btn--block btn--sm" style="margin-top:14px" onclick="toonWedstrijd(\'' + w.id + '\')">Wedstrijd bekijken</button></div>';
   }
 
+  // Verjaardagen binnen 7 dagen — gevuld door vulJarigKaartV2(), verborgen als niemand jarig is.
+  html += '<div id="v-jarig" class="w-full" hidden></div>';
+
   const wed = wedstrijden();
   const gespeeld = wed.filter(w => w.gespeeld);
   const wins = gespeeld.filter(w => w.score_eigen > w.score_tegen).length;
@@ -995,6 +1035,7 @@ function renderVandaag() {
 
   html += '</div>';
   document.getElementById('v-content').innerHTML = html;
+  vulJarigKaartV2();
   checkLiveBannerV2();
 }
 // Toont een opvallende snelkoppeling bovenaan Vandaag zodra er ergens (welk
@@ -1033,6 +1074,13 @@ function setAgendaFilter(f) {
 // Inzicht-dashboard. Afgestemd met gebruiker 2026-09-07.
 function rijHtml(item, toonMaand) {
   const d = new Date(item.isoDate);
+  // Verjaardag: puur informatief, bewust niet klikbaar (gebruiker 2026-10-16).
+  if (item.type === 'verjaardag') {
+    return '<div class="row" style="cursor:default">'
+      + '<div class="row-lead datebox"><div class="datebox-d num">' + d.getDate() + '</div><div class="datebox-m">' + (toonMaand ? MAAND_KORT[d.getMonth()] : DAG_KORT[d.getDay()]) + '</div></div>'
+      + '<div class="row-body"><div class="row-title">' + esc(item.titel) + '</div><div class="row-sub">' + item.sub + '</div></div>'
+      + '<span class="tag tag--line">🎂 Jarig</span></div>';
+  }
   const klik = item.type === 'wedstrijd' ? "toonWedstrijd('" + item.wedId + "')" : "openTrainingSessie(" + item.wi + "," + item.si + ")";
   // Wedstrijden en trainingen altijd hetzelfde tweeregelige patroon — stond
   // eerst verschillend (wedstrijd op 1 samengevoegde regel, training op 2),
@@ -1045,13 +1093,19 @@ function rijHtml(item, toonMaand) {
 }
 function renderAgenda() {
   const alle = alleAgendaItems().filter(i => agendaFilterV2 === 'alle' || i.type === agendaFilterV2);
-  const aankomend = alle.filter(i => !i.afgerond);
+  // Eerstvolgende verjaardag per speler, alleen bij "Alle" en alleen bij aankomend
+  // (niet in Afgerond, en niet meegeteld in de "X aankomend"-teller).
+  const jarigItems = agendaFilterV2 !== 'alle' ? [] : verjaardagenV2().map(v => ({
+    type: 'verjaardag', isoDate: v.isoDate, tijd: '', titel: v.naam, sub: 'Wordt ' + v.leeftijd, afgerond: false,
+  }));
+  const aankomend = alle.filter(i => !i.afgerond).concat(jarigItems)
+    .sort((a, b) => a.isoDate.localeCompare(b.isoDate) || a.tijd.localeCompare(b.tijd));
   // Voorheen slice(0,8) — verborg oudere/foutieve wedstrijden waardoor ze
   // nooit opgemerkt (en dus nooit opgeruimd) konden worden. Gemeld door
   // gebruiker 2026-09-14: wil alles zien om onterechte wedstrijden zelf te
   // kunnen verwijderen.
   const afgerond = alle.filter(i => i.afgerond).sort((a, b) => b.isoDate.localeCompare(a.isoDate));
-  document.getElementById('a-sub').textContent = aankomend.length + ' aankomend · ' + afgerond.length + ' afgerond';
+  document.getElementById('a-sub').textContent = (aankomend.length - jarigItems.length) + ' aankomend · ' + afgerond.length + ' afgerond';
 
   if (!aankomend.length && !afgerond.length) {
     document.getElementById('a-lijst').innerHTML = '<div class="pad"><div class="card card--flat" style="text-align:center;color:var(--ink3);padding:28px">Niets gevonden voor dit filter.</div></div>';
@@ -1070,7 +1124,10 @@ function renderAgenda() {
   let huidigeMaand = null;
   aankomend.forEach(item => {
     const d = new Date(item.isoDate);
-    const maandLbl = MAAND_VOL[d.getMonth()][0].toUpperCase() + MAAND_VOL[d.getMonth()].slice(1);
+    // Jaartal erbij buiten het huidige jaar — anders viel bv. een verjaardag in
+    // oktober volgend jaar onder de kop "Oktober" van nu (gezien 2026-10-16).
+    const maandLbl = MAAND_VOL[d.getMonth()][0].toUpperCase() + MAAND_VOL[d.getMonth()].slice(1)
+      + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '');
     if (maandLbl !== huidigeMaand) {
       if (huidigeMaand !== null) aankomendHtml += '</div>';
       aankomendHtml += '<div class="sec"' + (huidigeMaand !== null ? ' style="margin-top:18px"' : '') + '>' + maandLbl + '</div><div class="rows">';
@@ -5583,6 +5640,7 @@ async function gaNaarVandaagOfLiveV2() {
   // toonScherm() hierboven), dan zag hij een he-le-maal lege pagina. Daarom
   // hier altijd renderVandaag() aanroepen, en pas dáárna evt. naar Live gaan.
   renderVandaag();
+  laadGeboortedataV2(); // async, vult daarna de Jarig-kaart/Agenda bij
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     const actief = await haalActieveLiveWedstrijd();
     if (actief) { await openLiveTrainer(actief.id); return; }

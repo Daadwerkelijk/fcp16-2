@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verjaardagen tests</title>
+<style>body{font:14px system-ui,sans-serif;margin:16px;background:#fff;color:#111}li{margin:2px 0}</style>
+</head>
+<body>
+<h1>Verjaardagen tests</h1>
+<p>Pure verjaardag-logica uit <code>app.js</code> (volgendeVerjaardagen). Open via een lokale server, bv. <code>http://localhost:8934/tests/verjaardagen-test.html</code>.</p>
+<ul id="uitslag"></ul>
+<script src="../app.js"></script>
+<script>
+const resultaten = [];
+function testGelijk(naam, verwacht, werkelijk) {
+  const ok = JSON.stringify(verwacht) === JSON.stringify(werkelijk);
+  resultaten.push({ naam, ok, tekst: ok ? '' : ' — verwacht ' + JSON.stringify(verwacht) + ', kreeg ' + JSON.stringify(werkelijk) });
+}
+function test(naam, fn) {
+  try { fn(); } catch (e) { resultaten.push({ naam, ok: false, tekst: ' — ' + e.name + ': ' + e.message }); }
+}
+const kort = r => r.map(v => [v.id, v.isoDate, v.leeftijd, v.dagen]);
+
+test('verjaardag later dit jaar', () => {
+  testGelijk('verjaardag later dit jaar', [['a', '2026-10-22', 16, 6]],
+    kort(volgendeVerjaardagen([{ id: 'a', geboortedatum: '2010-10-22' }], '2026-10-16')));
+});
+test('verjaardag vandaag telt als 0 dagen', () => {
+  testGelijk('verjaardag vandaag telt als 0 dagen', [['a', '2026-10-16', 16, 0]],
+    kort(volgendeVerjaardagen([{ id: 'a', geboortedatum: '2010-10-16' }], '2026-10-16')));
+});
+test('verjaardag al geweest dit jaar → volgend jaar', () => {
+  testGelijk('verjaardag al geweest dit jaar → volgend jaar', [['a', '2027-10-15', 17, 364]],
+    kort(volgendeVerjaardagen([{ id: 'a', geboortedatum: '2010-10-15' }], '2026-10-16')));
+});
+test('over de jaarwisseling heen', () => {
+  testGelijk('over de jaarwisseling heen', [['a', '2027-01-02', 17, 4]],
+    kort(volgendeVerjaardagen([{ id: 'a', geboortedatum: '2010-01-02' }], '2026-12-29')));
+});
+test('29 februari in een niet-schrikkeljaar → 28 februari', () => {
+  testGelijk('29 februari in een niet-schrikkeljaar → 28 februari', [['a', '2027-02-28', 19, 1]],
+    kort(volgendeVerjaardagen([{ id: 'a', geboortedatum: '2008-02-29' }], '2027-02-27')));
+});
+test('29 februari in een schrikkeljaar blijft 29 februari', () => {
+  testGelijk('29 februari in een schrikkeljaar blijft 29 februari', [['a', '2028-02-29', 20, 1]],
+    kort(volgendeVerjaardagen([{ id: 'a', geboortedatum: '2008-02-29' }], '2028-02-28')));
+});
+test('gesorteerd op eerstvolgende', () => {
+  testGelijk('gesorteerd op eerstvolgende', ['b', 'a'],
+    volgendeVerjaardagen([{ id: 'a', geboortedatum: '2010-12-01' }, { id: 'b', geboortedatum: '2011-10-20' }], '2026-10-16').map(v => v.id));
+});
+test('lege of ongeldige geboortedatum wordt overgeslagen', () => {
+  testGelijk('lege of ongeldige geboortedatum wordt overgeslagen', ['c'],
+    volgendeVerjaardagen([{ id: 'a', geboortedatum: '' }, { id: 'b', geboortedatum: 'onzin' }, { id: 'c', geboortedatum: '2010-11-01' }], '2026-10-16').map(v => v.id));
+});
+test('overige velden (naam) blijven behouden', () => {
+  testGelijk('overige velden (naam) blijven behouden', 'Testspeler',
+    volgendeVerjaardagen([{ id: 'a', naam: 'Testspeler', geboortedatum: '2010-11-01' }], '2026-10-16')[0].naam);
+});
+
+const ul = document.getElementById('uitslag');
+resultaten.forEach(r => { const li = document.createElement('li'); li.textContent = (r.ok ? '✅ ' : '❌ ') + r.naam + r.tekst; ul.appendChild(li); });
+const fout = resultaten.filter(r => !r.ok).length;
+document.title = (fout ? '❌ ' + fout + ' fout' : '✅ alles groen') + ' — Verjaardagen tests';
+console.log(document.title);
+</script>
+</body>
+</html>

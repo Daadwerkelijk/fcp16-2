@@ -378,6 +378,29 @@ function aanwezigTeller(lijst, isoDatum, afwezigIds) {
   return { aanwezig: inTeam.filter(p => !afw.has(p.id)).length, totaal: inTeam.length };
 }
 
+// Eerstvolgende verjaardag per speler (pure logica, getest in tests/verjaardagen-test.html).
+// lijst: [{..., geboortedatum: 'JJJJ-MM-DD'}] → zelfde objecten + isoDate/leeftijd/dagen,
+// gesorteerd op eerstvolgende. 29 feb valt in een niet-schrikkeljaar op 28 feb.
+function volgendeVerjaardagen(lijst, vandaagIso) {
+  const dag = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
+  const vandaag = dag(vandaagIso);
+  const jaarNu = +vandaagIso.slice(0, 4);
+  const opDatumIn = (jaar, mm, dd) => {
+    const schrikkel = (jaar % 4 === 0 && jaar % 100 !== 0) || jaar % 400 === 0;
+    return jaar + '-' + mm + '-' + (mm === '02' && dd === '29' && !schrikkel ? '28' : dd);
+  };
+  return lijst
+    .filter(p => /^\d{4}-\d{2}-\d{2}$/.test(p.geboortedatum || ''))
+    .map(p => {
+      const [gj, mm, dd] = p.geboortedatum.split('-');
+      let jaar = jaarNu;
+      let iso = opDatumIn(jaar, mm, dd);
+      if (dag(iso) < vandaag) iso = opDatumIn(++jaar, mm, dd);
+      return Object.assign({}, p, { isoDate: iso, leeftijd: jaar - +gj, dagen: Math.round((dag(iso) - vandaag) / 864e5) });
+    })
+    .sort((a, b) => a.dagen - b.dagen);
+}
+
 // ─── Live-klok (pure logica, getest in tests/live-klok-test.html) ───
 // Zelfde contract als live_minuut() in live.html: minuut = offsetMin + hele
 // minuten sinds helftStartTs. helftStartTs is het échte startmoment van de

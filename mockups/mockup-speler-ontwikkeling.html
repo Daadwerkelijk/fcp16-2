@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Speler ontwikkeling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ui-v2.css">
+<style>
+  /* Alleen preview-chrome voor deze mockup — geen nieuwe ontwerptaal, geen eigen kleuren */
+  html,body{background:var(--surface2)}
+  .mockup-banner{background:var(--accent-soft);color:var(--accent-press);font:600 12px/1.4 var(--font);text-align:center;padding:8px 14px}
+  .frame{max-width:430px;margin:0 auto;background:var(--bg);min-height:100vh}
+  .sk-detail, .inz-detail{display:none}
+</style>
+</head>
+<body class="v2">
+<div class="mockup-banner">Mockup — voorbeelddata, nog niet gekoppeld aan de app</div>
+<div class="frame">
+
+  <div class="appbar">
+    <button class="btn btn--ghost btn--icon" aria-label="Terug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 19l-7-7 7-7"/></svg></button>
+    <div>
+      <div class="appbar-h1" style="font-size:20px">Sem Bakker</div>
+      <div class="appbar-sub">Ontwikkeling · seizoen 2026/2027</div>
+    </div>
+  </div>
+
+  <div class="pad" style="padding-bottom:32px">
+
+    <div id="aanwezigheid-kaart"></div>
+
+    <div style="display:flex;gap:14px;font-size:11px;color:var(--ink3);margin:16px 0 2px">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:5px"></span>Speler (zelfbeoordeling)</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--win);margin-right:5px"></span>Trainer</span>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin:12px 0" id="cat-chips"></div>
+
+    <div id="skills-lijst"></div>
+
+  </div>
+</div>
+
+<script>
+const NIVEAU_PCT = {'Ontwikkel punt':2,'Voldoende':34,'Goed':66,'Zeer goed':98};
+const FORM_SKILLS = {
+  Techniek: ['Balcontrole','Dribbel','Passen van de bal','Schieten op doel'],
+  Tactiek: ['Positiespel','Inzicht','Teamplayer'],
+  Fysiek: ['Conditie','Explosieve kracht','Duel kracht'],
+  Mentaal: ['Gedrag','Motivatie','Aandacht','Discipline','Omgaan met tegenslag'],
+};
+const SEIZOEN_START = '2026-08-25';
+const SEIZOEN_EIND   = '2027-04-15';
+
+// ─── Voorbeelddata (fictief) — 3 trainerbeoordelingen en 2 zelfbeoordelingen
+// over het seizoen, realistische cadans (zie CLAUDE.md: een paar keer per
+// seizoen per speler). Bewust een mix van stijgend, vlak én dalend, niet
+// alles positief — anders is de trend niet geloofwaardig. ───
+const HISTORIE = {
+  'Balcontrole': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Goed'},
+    {datum:'2026-09-05', bron:'speler',  waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'speler',  waarde:'Goed'},
+  ],
+  'Dribbel': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Ontwikkel punt'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2026-09-05', bron:'speler',  waarde:'Ontwikkel punt'},
+    {datum:'2027-02-06', bron:'speler',  waarde:'Voldoende'},
+  ],
+  'Passen van de bal': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Goed'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Goed'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Zeer goed'},
+    {datum:'2026-09-05', bron:'speler',  waarde:'Goed'},
+    {datum:'2027-02-06', bron:'speler',  waarde:'Zeer goed'},
+  ],
+  'Schieten op doel': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2026-09-05', bron:'speler',  waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'speler',  waarde:'Voldoende'},
+  ],
+  'Positiespel': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Goed'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Goed'},
+    {datum:'2026-09-05', bron:'speler',  waarde:'Goed'},
+    {datum:'2027-02-06', bron:'speler',  waarde:'Goed'},
+  ],
+  'Inzicht': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Goed'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Goed'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Zeer goed'},
+    {datum:'2026-09-05', bron:'speler',  waarde:'Goed'},
+    {datum:'2027-02-06', bron:'speler',  waarde:'Zeer goed'},
+  ],
+  'Teamplayer': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Zeer goed'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Zeer goed'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Zeer goed'},
+    {datum:'2026-09-05', bron:'speler',  waarde:'Zeer goed'},
+    {datum:'2027-02-06', bron:'speler',  waarde:'Zeer goed'},
+  ],
+  'Conditie': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Goed'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2026-09-05', bron:'speler',  waarde:'Goed'},
+    {datum:'2027-02-06', bron:'speler',  waarde:'Voldoende'},
+  ],
+  'Explosieve kracht': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Goed'},
+    {datum:'2026-09-05', bron:'speler',  waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'speler',  waarde:'Goed'},
+  ],
+  'Duel kracht': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Goed'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Goed'},
+    {datum:'2026-09-05', bron:'speler',  waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'speler',  waarde:'Goed'},
+  ],
+  'Gedrag': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Zeer goed'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Zeer goed'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Zeer goed'},
+  ],
+  'Motivatie': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Goed'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Zeer goed'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Zeer goed'},
+  ],
+  'Aandacht': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Goed'},
+  ],
+  'Discipline': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Goed'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Goed'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Goed'},
+  ],
+  'Omgaan met tegenslag': [
+    {datum:'2026-09-05', bron:'trainer', waarde:'Ontwikkel punt'},
+    {datum:'2026-11-14', bron:'trainer', waarde:'Voldoende'},
+    {datum:'2027-02-06', bron:'trainer', waarde:'Voldoende'},
+  ],
+};
+
+const AANWEZIGHEID = {
+  totaal: 4,
+  perReden: {Ziek:2, Blessure:1, Anders:1},
+  detail: [
+    {datum:'2026-09-19', reden:'Ziek'},
+    {datum:'2026-10-24', reden:'Blessure'},
+    {datum:'2026-11-14', reden:'Ziek'},
+    {datum:'2027-01-16', reden:'Anders'},
+  ],
+};
+
+function fmtDatum(iso){ const d=new Date(iso); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+
+function pctVoorDatum(iso){
+  const t0=new Date(SEIZOEN_START).getTime(), t1=new Date(SEIZOEN_EIND).getTime(), t=new Date(iso).getTime();
+  return Math.max(0, Math.min(1, (t-t0)/(t1-t0)));
+}
+
+function sparkline(moments){
+  const w=280, h=48, padY=7;
+  const yFor = pct => padY + (h-2*padY) * (1 - pct/100);
+  const xFor = iso => 8 + pctVoorDatum(iso) * (w-16);
+  let svg = '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none" style="display:block">';
+  [2,34,66,98].forEach(t => {
+    const y = yFor(t);
+    svg += '<line x1="8" y1="'+y+'" x2="'+(w-8)+'" y2="'+y+'" stroke="var(--surface3)" stroke-width="1"/>';
+  });
+  ['trainer','speler'].forEach(bron => {
+    const pts = moments.filter(m => m.bron===bron).sort((a,b) => new Date(a.datum)-new Date(b.datum));
+    const kleur = bron==='trainer' ? 'var(--win)' : 'var(--ink)';
+    if (pts.length > 1) {
+      const lijn = pts.map(p => xFor(p.datum)+','+yFor(NIVEAU_PCT[p.waarde])).join(' ');
+      svg += '<polyline points="'+lijn+'" fill="none" stroke="'+kleur+'" stroke-width="2"/>';
+    }
+    pts.forEach(p => {
+      svg += '<circle cx="'+xFor(p.datum)+'" cy="'+yFor(NIVEAU_PCT[p.waarde])+'" r="4.5" fill="'+kleur+'" stroke="var(--surface)" stroke-width="2"/>';
+    });
+  });
+  svg += '</svg>';
+  return svg;
+}
+
+function trendSindsStart(moments){
+  const tr = moments.filter(m => m.bron==='trainer').sort((a,b) => new Date(a.datum)-new Date(b.datum));
+  if (tr.length < 2) return null;
+  const verschil = NIVEAU_PCT[tr[tr.length-1].waarde] - NIVEAU_PCT[tr[0].waarde];
+  if (verschil === 0) return {richting:'gelijk'};
+  return {richting: verschil>0?'omhoog':'omlaag', niveaus: Math.round(Math.abs(verschil)/32)};
+}
+
+function laatsteWaarde(moments){
+  const alles = moments.slice().sort((a,b) => new Date(b.datum)-new Date(a.datum));
+  return alles[0] ? alles[0].waarde : null;
+}
+
+function historieListHtml(moments){
+  const sorted = moments.slice().sort((a,b) => new Date(b.datum)-new Date(a.datum));
+  if (!sorted.length) return '<div style="font-size:12.5px;color:var(--ink3)">Nog geen beoordelingen.</div>';
+  return sorted.map((m,i) => {
+    const vorige = sorted.slice(i+1).find(x => x.bron===m.bron);
+    let deltaHtml = '';
+    if (vorige) {
+      const verschil = NIVEAU_PCT[m.waarde] - NIVEAU_PCT[vorige.waarde];
+      if (verschil !== 0) {
+        const omhoog = verschil > 0;
+        const niveaus = Math.round(Math.abs(verschil)/32);
+        deltaHtml = '<div style="font-size:11px;font-weight:600;color:var(--'+(omhoog?'win':'loss')+');margin-top:2px">'+(omhoog?'↑':'↓')+' '+niveaus+' niveau'+(niveaus>1?'s':'')+' t.o.v. vorige '+(m.bron==='speler'?'eigen inschatting':'trainersbeoordeling')+'</div>';
+      }
+    }
+    return '<div class="note" style="margin-bottom:8px">'
+      + '<div class="note-t">'+fmtDatum(m.datum)+'</div>'
+      + '<div class="note-tx"><b>'+(m.bron==='trainer'?'Trainer':'Speler')+'</b> — '+m.waarde+deltaHtml+'</div>'
+      + '</div>';
+  }).join('');
+}
+
+function skillRowHtml(cat, sk){
+  const moments = HISTORIE[sk] || [];
+  const laatste = laatsteWaarde(moments);
+  const trend = trendSindsStart(moments);
+  let trendHtml;
+  if (!trend) trendHtml = '<span style="font-size:11.5px;color:var(--ink3)">Nog te weinig metingen dit seizoen</span>';
+  else if (trend.richting === 'gelijk') trendHtml = '<span style="font-size:11.5px;font-weight:600;color:var(--ink3)">→ stabiel dit seizoen</span>';
+  else trendHtml = '<span style="font-size:11.5px;font-weight:600;color:var(--'+(trend.richting==='omhoog'?'win':'loss')+')">'+(trend.richting==='omhoog'?'↑':'↓')+' '+trend.niveaus+' niveau'+(trend.niveaus>1?'s':'')+' dit seizoen</span>';
+  const detailId = 'sk-'+sk.replace(/[^a-zA-Z0-9]/g,'');
+  return '<div class="card" style="margin-top:10px" data-cat="'+cat+'">'
+    + '<div style="cursor:pointer" onclick="toggleDetail(\''+detailId+'\')">'
+    +   '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'
+    +     '<div style="font-size:14px;font-weight:600">'+sk+'</div>'
+    +     (laatste ? '<span class="tag tag--neutral">'+laatste+'</span>' : '')
+    +   '</div>'
+    +   '<div style="margin-top:8px">'+sparkline(moments)+'</div>'
+    +   '<div style="margin-top:2px">'+trendHtml+'</div>'
+    + '</div>'
+    + '<div id="'+detailId+'" class="sk-detail" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">'+historieListHtml(moments)+'</div>'
+    + '</div>';
+}
+
+function toggleDetail(id){
+  const el = document.getElementById(id);
+  el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+}
+
+function inzToggle(el){
+  const det = el.nextElementSibling;
+  det.style.display = (det.style.display === 'block') ? 'none' : 'block';
+}
+
+function zetCat(cat, btn){
+  document.querySelectorAll('.cat-chip').forEach(c => c.setAttribute('aria-pressed', c === btn ? 'true' : 'false'));
+  document.querySelectorAll('[data-cat]').forEach(el => {
+    el.style.display = (cat === 'alle' || el.dataset.cat === cat) ? '' : 'none';
+  });
+}
+
+function renderAanwezigheid(){
+  const x = AANWEZIGHEID;
+  document.getElementById('aanwezigheid-kaart').innerHTML =
+    '<div class="card" style="margin-top:14px">'
+    + '<div style="cursor:pointer" onclick="inzToggle(this)">'
+    +   '<div style="display:flex;align-items:center;justify-content:space-between">'
+    +     '<div style="font-size:14px;font-weight:600">Aanwezigheid dit seizoen</div>'
+    +     '<span class="tag tag--line">'+x.totaal+'x afwezig</span>'
+    +   '</div>'
+    +   '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">'+Object.entries(x.perReden).map(([r,n]) => '<span class="tag tag--neutral">'+r+': '+n+'x</span>').join('')+'</div>'
+    + '</div>'
+    + '<div class="inz-detail" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">'
+    +   x.detail.map(d => '<div style="font-size:12.5px;color:var(--ink3);margin-bottom:4px">'+fmtDatum(d.datum)+' · '+d.reden+'</div>').join('')
+    + '</div>'
+    + '</div>';
+}
+
+function renderChips(){
+  const cats = ['alle', ...Object.keys(FORM_SKILLS)];
+  document.getElementById('cat-chips').innerHTML = cats.map(c =>
+    '<button type="button" class="chip cat-chip" aria-pressed="'+(c==='alle')+'" onclick="zetCat(\''+c+'\', this)">'+(c==='alle'?'Alle':c)+'</button>'
+  ).join('');
+}
+
+function renderSkills(){
+  let html = '';
+  Object.entries(FORM_SKILLS).forEach(([cat, skills]) => {
+    html += '<div class="sec" data-cat="'+cat+'" style="margin-top:18px">'+cat+'</div>';
+    skills.forEach(sk => { html += skillRowHtml(cat, sk); });
+  });
+  document.getElementById('skills-lijst').innerHTML = html;
+}
+
+renderAanwezigheid();
+renderChips();
+renderSkills();
+</script>
+</body>
+</html>

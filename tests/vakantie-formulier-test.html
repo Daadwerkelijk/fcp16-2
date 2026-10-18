@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vakantie-uit-formulier tests</title>
+<style>body{font:14px system-ui,sans-serif;margin:16px;background:#fff;color:#111}li{margin:2px 0}</style>
+</head>
+<body>
+<h1>Vakantie-uit-formulier tests</h1>
+<p>Vakantie uit het spelerformulier als afwezigheidsperiode, uit <code>app.js</code> (vakantiePeriodesUitFormulier). Open via een lokale server, bv. <code>http://localhost:8935/tests/vakantie-formulier-test.html</code>.</p>
+<ul id="uitslag"></ul>
+<script src="../app.js"></script>
+<script>
+const resultaten = [];
+function testGelijk(naam, verwacht, werkelijk) {
+  const ok = JSON.stringify(verwacht) === JSON.stringify(werkelijk);
+  resultaten.push({ naam, ok, tekst: ok ? '' : ' — verwacht ' + JSON.stringify(verwacht) + ', kreeg ' + JSON.stringify(werkelijk) });
+}
+function test(naam, fn) {
+  try { fn(); } catch (e) { resultaten.push({ naam, ok: false, tekst: ' — ' + e.name + ': ' + e.message }); }
+}
+const rij = (speler_id, data) => ({ speler_id, data });
+
+test('vakantie ja met van/tot → periode', () => {
+  testGelijk('vakantie ja met van/tot → periode',
+    [{ speler_id: 's1', van: '2026-10-20', tot: '2026-10-27', reden: 'Vakantie' }],
+    vakantiePeriodesUitFormulier([rij('s1', { vakantie: 'ja', vakantie_van: '2026-10-20', vakantie_tot: '2026-10-27' })]));
+});
+test('vakantie nee → geen periode', () => {
+  testGelijk('vakantie nee → geen periode', [],
+    vakantiePeriodesUitFormulier([rij('s1', { vakantie: 'nee', vakantie_van: '2026-10-20', vakantie_tot: '2026-10-27' })]));
+});
+test('vakantie ja zonder tot-datum → geen periode', () => {
+  testGelijk('vakantie ja zonder tot-datum → geen periode', [],
+    vakantiePeriodesUitFormulier([rij('s1', { vakantie: 'ja', vakantie_van: '2026-10-20', vakantie_tot: '' })]));
+});
+
+test('alleen de laatste inzending per speler telt (oud ja, nieuw nee)', () => {
+  testGelijk('alleen de laatste inzending per speler telt (oud ja, nieuw nee)', [],
+    vakantiePeriodesUitFormulier([
+      rij('s1', { vakantie: 'ja', vakantie_van: '2026-10-20', vakantie_tot: '2026-10-27' }),
+      rij('s1', { vakantie: 'nee' }),
+    ]));
+});
+test('laatste inzending per speler, meerdere spelers', () => {
+  testGelijk('laatste inzending per speler, meerdere spelers',
+    [{ speler_id: 's1', van: '2026-12-01', tot: '2026-12-05', reden: 'Vakantie' },
+     { speler_id: 's2', van: '2026-10-20', tot: '2026-10-27', reden: 'Vakantie' }],
+    vakantiePeriodesUitFormulier([
+      rij('s1', { vakantie: 'ja', vakantie_van: '2026-10-20', vakantie_tot: '2026-10-27' }),
+      rij('s2', { vakantie: 'ja', vakantie_van: '2026-10-20', vakantie_tot: '2026-10-27' }),
+      rij('s1', { vakantie: 'ja', vakantie_van: '2026-12-01', vakantie_tot: '2026-12-05' }),
+    ]));
+});
+
+const ul = document.getElementById('uitslag');
+resultaten.forEach(r => { const li = document.createElement('li'); li.textContent = (r.ok ? '✅ ' : '❌ ') + r.naam + r.tekst; ul.appendChild(li); });
+const fout = resultaten.filter(r => !r.ok).length;
+document.title = (fout ? '❌ ' + fout + ' fout' : '✅ alles groen') + ' — Vakantie-uit-formulier tests';
+console.log(document.title);
+</script>
+</body>
+</html>

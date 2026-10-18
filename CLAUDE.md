@@ -71,10 +71,14 @@ ook binnen de policy-check van een andere tabel). De link bevat nu
 mee als `x-deel-token`-header bij elke aanroep. Live tegen de echte database
 geverifieerd (met/zonder/fout token) vóór het in de app is verwerkt.
 
-**Nog openstaand, bewust apart gehouden:** `live_wedstrijden`/`live_updates`
-zijn ook publiek leesbaar en tonen echte spelersnamen in de live-opstelling
-— dit vraagt een productbeslissing (moet het publieke scorebord namen
-tonen?), geen pure code-fix, dus niet meegenomen in deze ronde.
+**Besloten (2026-10-18):** `live_wedstrijden`/`live_updates` zijn publiek
+leesbaar en tonen echte spelersnamen in de live-opstelling — dat mag zo
+blijven, het publieke scorebord toont bewust namen.
+
+## Backlog
+
+Openstaande wensen en genomen besluiten staan in `BACKLOG.md`; mockups in
+`mockups/`.
 
 ## Deploy
 

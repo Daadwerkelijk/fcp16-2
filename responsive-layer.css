@@ -237,8 +237,17 @@ body{margin:0 auto;max-width:480px;padding-bottom:88px;min-height:100dvh}
   .live-2col{grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:12px}
   .live-klok{font-size:34px}
 }
+/* Live-veld: 420px-grens tot 1024px (staand en liggend, zoals altijd). */
+.live-veld{max-width:420px}
 @media (min-width:1024px){
-  .live-2col{grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:20px}
+  /* Veldkolom flexibel, notities vast, en het veld liggend (liveVeldLiggend()
+     in index.html projecteert de posities mee) — met een vaste 380px-
+     veldkolom en een staand veld bleef het op elk desktopscherm ~350px breed
+     ("niet breed genoeg", gemeld 2026-09-13, opgepakt 2026-10-18). Breedte
+     teruggerekend uit de hoogte (aspect 1.62), 320px = alles boven het veld
+     (appbar, score-kaart, kop) plus marge, zodat het above the fold blijft. */
+  .live-2col{grid-template-columns:minmax(0,1fr) minmax(320px,420px);gap:20px}
+  .live-veld{aspect-ratio:1.62;max-width:none;max-height:none;width:min(100%,calc((100dvh - 320px) * 1.62))}
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

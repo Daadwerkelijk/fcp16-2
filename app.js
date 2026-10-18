@@ -537,6 +537,22 @@ async function haalAlleAfwezigheidsperiodes() {
   const res = await sbFetch('afwezigheidsperiodes?select=*&order=van.asc');
   return res && !res._error ? res : [];
 }
+// Vakantie die de speler zelf in het spelerformulier opgaf (speler_beoordelingen.data),
+// in dezelfde vorm als een afwezigheidsperiode — zodat de bestaande checks die
+// gewoon meenemen. Wordt niet naar afwezigheidsperiodes weggeschreven: het
+// formulier houdt zijn eigen veld (gebruiker 2026-09-08), dit leest het alleen.
+// Alleen de laatste inzending per speler telt (rijen oud → nieuw, zoals
+// haalAlleSpelerBeoordelingen ze levert): wie later "nee" invult, is niet meer weg.
+function vakantiePeriodesUitFormulier(rijen) {
+  const laatste = new Map();
+  rijen.forEach(r => laatste.set(r.speler_id, r));
+  return [...laatste.values()].filter(r => r.data.vakantie === 'ja' && r.data.vakantie_van && r.data.vakantie_tot).map(r =>({ speler_id: r.speler_id, van: r.data.vakantie_van, tot: r.data.vakantie_tot, reden: 'Vakantie' }));
+}
+// Trainer-periodes eerst: bij overlap wint hun reden (checks pakken de eerste match).
+async function haalAfwezigheidsperiodesInclFormulier() {
+  const [periodes, formulier] = await Promise.all([haalAlleAfwezigheidsperiodes(), haalAlleSpelerBeoordelingen()]);
+  return periodes.concat(vakantiePeriodesUitFormulier(formulier));
+}
 async function voegAfwezigheidsperiodeToe(spelerId, van, tot, reden) {
   const id = genId();
   const res = await sbWrite('afwezigheidsperiodes', 'POST', { id, speler_id: spelerId, van, tot, reden: reden || '' });

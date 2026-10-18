@@ -1172,7 +1172,7 @@ function renderAgenda() {
 // omgang met het oude bare-pid-formaat als de rest van deze functies elders.
 async function checkPeriodeAfwezigWedstrijd(w) {
   if (typeof supabaseReady === 'undefined' || !supabaseReady || !w.isoDate) return;
-  const periodes = await haalAlleAfwezigheidsperiodes();
+  const periodes = await haalAfwezigheidsperiodesInclFormulier();
   if (!periodes.length) return;
   const afwezig = w.afwezig || [];
   const bekend = new Set(afwezig.map(a => (a && a.pid) ? a.pid : a));
@@ -1525,8 +1525,16 @@ async function kiesOpstSlot(spelerId) {
 function veldLiggend() {
   return window.matchMedia('(orientation:landscape) and (max-height:540px)').matches;
 }
-function veldProjecteer(x, y) {
-  return veldLiggend() ? { x: 100 - y, y: x } : { x, y };
+// liggend is overschrijfbaar: het live-veld ligt ook op desktop (liveVeldLiggend).
+function veldProjecteer(x, y, liggend = veldLiggend()) {
+  return liggend ? { x: 100 - y, y: x } : { x, y };
+}
+// Live-veld op desktop (≥1024px, zelfde grens als responsive-layer.css
+// .live-veld) ook liggend: een staand veld wordt op een laptopscherm door de
+// hoogte begrensd en bleef dan ~350px breed. Liggend past het groot én zonder
+// scrollen (gebruiker 2026-10-18).
+function liveVeldLiggend() {
+  return veldLiggend() || window.matchMedia('(min-width:1024px)').matches;
 }
 function veldProjecteerInverse(x, y) {
   return veldLiggend() ? { x: y, y: 100 - x } : { x, y };
@@ -3074,10 +3082,9 @@ function renderGsTijdlijn() {
 // zoals in de huidige app). Per-blok-URL-overrides (fcp_snotes met
 // sleutel nk+'_b'+i) zijn hier bewust niet overgenomen — dat is een kleine,
 // zelden gebruikte functie bovenop de gewone oefening-url; sessienotities
-// zelf (nk zonder suffix) wél. checkVakantiesEnZetAfwezig (automatisch
-// afwezig zetten op basis van vakantie-opgaven in het spelerformulier) is
-// ook niet overgenomen: dat leest live Supabase-formulierdata die dit
-// prototype niet heeft. ───
+// zelf (nk zonder suffix) wél. Vakantie uit het spelerformulier telt sinds
+// 2026-10-18 mee als afwezigheidsperiode (haalAfwezigheidsperiodesInclFormulier,
+// app.js) in checkPeriodeAfwezigTraining/Wedstrijd hieronder. ───
 // sessieKey() (app.js) zoekt het echte, stabiele sessie-id op i.p.v. een string
 // uit de positie te bouwen — voorkomt dat aanwezigheid/notities naar de
 // verkeerde training gaan wijzen als weken worden herordend/verwijderd.
@@ -3090,7 +3097,7 @@ let huidigTrainingWi = null, huidigTrainingSi = null;
 // volledige rijenset voor deze training-key opnieuw weg.
 async function checkPeriodeAfwezigTraining(nk, isoDate) {
   if (typeof supabaseReady === 'undefined' || !supabaseReady) return;
-  const periodes = await haalAlleAfwezigheidsperiodes();
+  const periodes = await haalAfwezigheidsperiodesInclFormulier();
   if (!periodes.length) return;
   const aanw = aanwAlles();
   aanw[nk] = aanw[nk] || {};
@@ -4331,9 +4338,10 @@ function renderLiveTrainer() {
   let actief = liveState.formatieId || w.formatie || w.startFormatie || localStorage.getItem('fcp_formatie') || '4222';
   if (!alle[actief]) actief = Object.keys(alle)[0];
   const f = alle[actief];
+  const liggend = liveVeldLiggend();
   const slots = f.pos.map(pos => {
     const naam = sp.find(p => p.id === liveState.lineup[pos.id]);
-    const proj = veldProjecteer(pos.x, pos.y);
+    const proj = veldProjecteer(pos.x, pos.y, liggend);
     return '<div class="fslot" style="left:' + proj.x + '%;top:' + proj.y + '%" onclick="openWisselSheet(\'' + pos.id + '\')">'
       + '<div class="ppill' + (naam ? '' : ' ppill--leeg') + '"><span class="ppill-rol ' + ppillRolClassV2(pos.label) + '">' + pos.label + '</span><span class="ppill-nm">' + (naam ? esc(naam.naam.split(' ')[0]) : 'Leeg') + '</span></div></div>';
   }).join('');
@@ -4368,7 +4376,7 @@ function renderLiveTrainer() {
     + '</div>'
     + '<div style="margin-top:14px">' + fases + '</div>'
     + '</div>'
-    + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap" style="max-width:420px;margin:0 auto"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div></div>'
+    + '<div class="card" style="margin-top:10px"><div class="sec">Veld — tik een positie om te wisselen</div><div class="pitch-wrap live-veld" style="margin:0 auto"><div class="pitch" style="position:absolute;inset:0">' + slots + '</div></div></div>'
     + (liveState.status !== 'gepland' ? formatieSnelwisselHtml(actief) : '')
     + (liveState.status !== 'gepland' ? '<div class="card" style="margin-top:10px;display:flex;gap:8px"><button class="btn btn--secondary" style="flex:1" onclick="openPositieSwapSheet()">Posities wisselen</button><button class="btn btn--secondary" style="flex:1" onclick="openFormatieWijzigenSheet()">Formatie wijzigen</button></div>' : '')
     + (liveState.status !== 'gepland' ? '<div class="card" style="margin-top:10px"><button class="btn btn--secondary btn--block" onclick="openKaartSheet()">🟨🟥 Kaart geven</button></div>' : '')
@@ -5688,6 +5696,7 @@ initAuthGateV2();
 // groep zichtbaar is, dus geen JS-herrender nodig bij het kruisen van een
 // breedtegrens.
 window.matchMedia('(min-width:1024px)').addEventListener('change', () => {
+  if (document.getElementById('screen-live-trainer').classList.contains('actief')) renderLiveTrainer();
   if (document.getElementById('screen-speler-bewerk').classList.contains('actief') && bewerkSpelerId) {
     renderVergelijkingV2(bewerkSpelerId).then(html => {
       const el = document.getElementById('sb-vergelijking');

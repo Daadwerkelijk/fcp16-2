@@ -378,6 +378,13 @@ function aanwezigTeller(lijst, isoDatum, afwezigIds) {
   return { aanwezig: inTeam.filter(p => !afw.has(p.id)).length, totaal: inTeam.length };
 }
 
+// De twee kaarten bovenaan Vandaag: de eerste twee niet-afgeronde agenda-items, ongeacht
+// type (pure logica, getest in tests/vandaag-uitgelicht-test.html). Verwacht een al op
+// datum gesorteerde lijst, zoals alleAgendaItems() in index.html die geeft.
+function vandaagUitgelicht(items) {
+  return items.filter(i => !i.afgerond).slice(0, 2);
+}
+
 // Eerstvolgende verjaardag per speler (pure logica, getest in tests/verjaardagen-test.html).
 // lijst: [{..., geboortedatum: 'JJJJ-MM-DD'}] → zelfde objecten + isoDate/leeftijd/dagen,
 // gesorteerd op eerstvolgende. 29 feb valt in een niet-schrikkeljaar op 28 feb.

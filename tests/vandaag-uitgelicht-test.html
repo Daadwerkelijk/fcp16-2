@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vandaag-uitgelicht tests</title>
+<style>body{font:14px system-ui,sans-serif;margin:16px;background:#fff;color:#111}li{margin:2px 0}</style>
+</head>
+<body>
+<h1>Vandaag-uitgelicht tests</h1>
+<p>Pure keuze van de twee kaarten bovenaan Vandaag, uit <code>app.js</code> (vandaagUitgelicht). Open via een lokale server, bv. <code>http://localhost:8935/tests/vandaag-uitgelicht-test.html</code>.</p>
+<ul id="uitslag"></ul>
+<script src="../app.js"></script>
+<script>
+const resultaten = [];
+function testGelijk(naam, verwacht, werkelijk) {
+  const ok = JSON.stringify(verwacht) === JSON.stringify(werkelijk);
+  resultaten.push({ naam, ok, tekst: ok ? '' : ' — verwacht ' + JSON.stringify(verwacht) + ', kreeg ' + JSON.stringify(werkelijk) });
+}
+function test(naam, fn) {
+  try { fn(); } catch (e) { resultaten.push({ naam, ok: false, tekst: ' — ' + e.name + ': ' + e.message }); }
+}
+const id = r => r.map(i => i.id);
+const t = (id, afgerond) => ({ id, type: 'training', afgerond: !!afgerond });
+const w = (id, afgerond) => ({ id, type: 'wedstrijd', afgerond: !!afgerond });
+
+test('twee trainingen zonder wedstrijd → beide getoond', () => {
+  testGelijk('twee trainingen zonder wedstrijd → beide getoond', ['t1', 't2'],
+    id(vandaagUitgelicht([t('t1'), t('t2'), t('t3')])));
+});
+test('wedstrijd verderop telt niet vóór een eerdere training', () => {
+  testGelijk('wedstrijd verderop telt niet vóór een eerdere training', ['t1', 't2'],
+    id(vandaagUitgelicht([t('t1'), t('t2'), w('w1')])));
+});
+test('wedstrijd als tweede item', () => {
+  testGelijk('wedstrijd als tweede item', ['t1', 'w1'],
+    id(vandaagUitgelicht([t('t1'), w('w1'), t('t2')])));
+});
+test('afgeronde items worden overgeslagen', () => {
+  testGelijk('afgeronde items worden overgeslagen', ['t2', 'w1'],
+    id(vandaagUitgelicht([w('w0', true), t('t1', true), t('t2'), w('w1'), t('t3')])));
+});
+test('maar één aankomend item → één', () => {
+  testGelijk('maar één aankomend item → één', ['t1'],
+    id(vandaagUitgelicht([w('w0', true), t('t1')])));
+});
+test('niets aankomend → leeg', () => {
+  testGelijk('niets aankomend → leeg', [],
+    id(vandaagUitgelicht([w('w0', true)])));
+});
+
+const ul = document.getElementById('uitslag');
+resultaten.forEach(r => { const li = document.createElement('li'); li.textContent = (r.ok ? '✅ ' : '❌ ') + r.naam + r.tekst; ul.appendChild(li); });
+const fout = resultaten.filter(r => !r.ok).length;
+document.title = (fout ? '❌ ' + fout + ' fout' : '✅ alles groen') + ' — Vandaag-uitgelicht tests';
+console.log(document.title);
+</script>
+</body>
+</html>

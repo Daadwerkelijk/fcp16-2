@@ -945,9 +945,10 @@ function vulJarigKaartV2() {
 function renderVandaag() {
   const nu = new Date();
   document.getElementById('v-datum').textContent = DAG_VOL[nu.getDay()] + ' ' + nu.getDate() + ' ' + MAAND_VOL[nu.getMonth()] + ' · JO16-2';
-  const items = alleAgendaItems().filter(i => !i.afgerond);
-  const eerste = items[0];
-  const eersteWed = items.find(i => i.type === 'wedstrijd');
+  // Altijd de eerste twee aankomende items naast elkaar (op mobiel onder elkaar),
+  // ongeacht type — voorheen was de tweede kaart alleen de eerstvolgende wedstrijd,
+  // waardoor er zonder wedstrijd maar één kaart stond (gebruiker 2026-10-18).
+  const [eerste, tweede] = vandaagUitgelicht(alleAgendaItems());
   // Dashboard-archetype (responsive-layer.css .grid): live-banner blijft
   // buiten het raster (eigen volle breedte, meestal leeg), de kaarten erin
   // krijgen w-half/w-full zodat ze vanaf 600px naast elkaar kunnen staan
@@ -986,13 +987,29 @@ function renderVandaag() {
     html += '<div class="card card--flat w-full" style="text-align:center;color:var(--ink3);padding:28px 16px">Niets gepland — voeg iets toe via Agenda.</div>';
   }
 
-  if (eersteWed && eersteWed !== eerste) {
-    const w = wedstrijden().find(x => x.id === eersteWed.wedId);
-    const d = new Date(eersteWed.isoDate);
-    html += '<div class="card w-half">'
+  if (tweede && tweede.type === 'training') {
+    const d = new Date(tweede.isoDate);
+    const actie = "openTrainingSessie(" + tweede.wi + "," + tweede.si + ")";
+    const m = /(\d+)\/(\d+)/.exec(tweede.sub);
+    html += '<div class="card w-half" style="cursor:pointer;display:flex;flex-direction:column" onclick="' + actie + '">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">'
+      + '<span class="eyebrow">' + DAG_VOL[d.getDay()][0].toUpperCase() + DAG_VOL[d.getDay()].slice(1) + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + '</span>'
+      + '<span class="tag ' + tweede.tagClass + '">' + tweede.tagTekst + '</span></div>'
+      + '<div style="font-size:15px;font-weight:600;letter-spacing:-.01em">' + esc(tweede.titel) + '</div>'
+      + (m
+        ? '<div style="display:flex;align-items:center;gap:8px;margin-top:10px">'
+          + '<div class="bar" style="flex:1"><div class="bar-fill" style="width:' + Math.round((+m[1] / +m[2]) * 100) + '%"></div></div>'
+          + '<div class="num" style="font-size:13px;font-weight:700">' + m[0] + '</div></div>'
+        : '<div style="font-size:13px;color:var(--ink3);margin-top:2px">' + esc(tweede.sub) + '</div>')
+      // Knop onderaan uitlijnen met die van de Eerstvolgend-kaart ernaast (gelijke hoogte via stretch).
+      + '<div style="margin-top:auto;padding-top:14px"><button class="btn btn--secondary btn--block btn--sm" onclick="event.stopPropagation();' + actie + '">Training bekijken</button></div></div>';
+  } else if (tweede) {
+    const w = wedstrijden().find(x => x.id === tweede.wedId);
+    const d = new Date(tweede.isoDate);
+    html += '<div class="card w-half" style="display:flex;flex-direction:column">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">'
       + '<span class="eyebrow">' + DAG_VOL[d.getDay()][0].toUpperCase() + DAG_VOL[d.getDay()].slice(1) + ' ' + d.getDate() + ' ' + MAAND_KORT[d.getMonth()] + (w.starttijd ? ' · ' + w.starttijd : '') + '</span>'
-      + '<span class="tag ' + eersteWed.tagClass + '">' + eersteWed.tagTekst + '</span></div>'
+      + '<span class="tag ' + tweede.tagClass + '">' + tweede.tagTekst + '</span></div>'
       // Thuisploeg altijd eerst genoemd (staand sportapp-conventie) — .crest had
       // hier nooit eigen afmetingen gekregen (in tegenstelling tot elders waar
       // dezelfde class wél inline gestyled wordt), dus viel terug op ongestylde
@@ -1002,7 +1019,7 @@ function renderVandaag() {
       + '<div style="flex:1;min-width:0;font-size:15px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(w.thuis_uit === 'uit' ? (w.tegenstander || '?') : teamNaamV2()) + '<span style="color:var(--ink3);font-weight:400"> – </span>' + esc(w.thuis_uit === 'uit' ? teamNaamV2() : (w.tegenstander || '?')) + '</div>'
       + '<div class="crest" style="width:26px;height:26px;border-radius:7px;font-size:10px;font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--surface2)">' + esc(w.thuis_uit === 'uit' ? teamCrestV2() : (w.tegenstander || '?').slice(0, 3).toUpperCase()) + '</div>'
       + '</div>'
-      + '<button class="btn btn--secondary btn--block btn--sm" style="margin-top:14px" onclick="toonWedstrijd(\'' + w.id + '\')">Wedstrijd bekijken</button></div>';
+      + '<div style="margin-top:auto;padding-top:14px"><button class="btn btn--secondary btn--block btn--sm" onclick="toonWedstrijd(\'' + w.id + '\')">Wedstrijd bekijken</button></div></div>';
   }
 
   // Verjaardagen binnen 7 dagen — gevuld door vulJarigKaartV2(), verborgen als niemand jarig is.

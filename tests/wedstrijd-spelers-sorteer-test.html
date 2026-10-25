@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wedstrijd-spelers-sorteer tests</title>
+<style>body{font:14px system-ui,sans-serif;margin:16px;background:#fff;color:#111}li{margin:2px 0}</style>
+</head>
+<body>
+<h1>Wedstrijd-spelers-sorteer tests</h1>
+<p>Sortering van de Spelers-tabel op het wedstrijdscherm, uit <code>app.js</code> (sorteerWedstrijdSpelers). Open via een lokale server, bv. <code>http://localhost:8935/tests/wedstrijd-spelers-sorteer-test.html</code>.</p>
+<ul id="uitslag"></ul>
+<script src="../app.js"></script>
+<script>
+const resultaten = [];
+function testGelijk(naam, verwacht, werkelijk) {
+  const ok = JSON.stringify(verwacht) === JSON.stringify(werkelijk);
+  resultaten.push({ naam, ok, tekst: ok ? '' : ' — verwacht ' + JSON.stringify(verwacht) + ', kreeg ' + JSON.stringify(werkelijk) });
+}
+function test(naam, fn) {
+  try { fn(); } catch (e) { resultaten.push({ naam, ok: false, tekst: ' — ' + e.name + ': ' + e.message }); }
+}
+const namen = r => r.map(x => x.naam);
+const r = (naam, minuten, afwezig) => ({ naam, minuten, afwezig: !!afwezig });
+
+test('alfabetisch op naam', () => {
+  testGelijk('alfabetisch op naam', ['Anna', 'Bas', 'Cor'],
+    namen(sorteerWedstrijdSpelers([r('Cor', 10), r('Anna', 70), r('Bas', 35)], 'naam')));
+});
+test('meeste minuten eerst', () => {
+  testGelijk('meeste minuten eerst', ['Cor', 'Anna', 'Bas'],
+    namen(sorteerWedstrijdSpelers([r('Anna', 35), r('Bas', 10), r('Cor', 70)], 'minuten')));
+});
+
+test('onbekende speeltijd (null) onder 0 minuten', () => {
+  testGelijk('onbekende speeltijd (null) onder 0 minuten', ['Cor', 'Bas', 'Anna'],
+    namen(sorteerWedstrijdSpelers([r('Anna', null), r('Bas', 0), r('Cor', 20)], 'minuten')));
+});
+
+test('afwezig onderaan bij alfabetisch', () => {
+  testGelijk('afwezig onderaan bij alfabetisch', ['Bas', 'Cor', 'Anna'],
+    namen(sorteerWedstrijdSpelers([r('Anna', null, true), r('Cor', 10), r('Bas', 70)], 'naam')));
+});
+test('afwezig onderaan bij minuten, ook onder onbekende speeltijd', () => {
+  testGelijk('afwezig onderaan bij minuten, ook onder onbekende speeltijd', ['Cor', 'Bas', 'Anna'],
+    namen(sorteerWedstrijdSpelers([r('Anna', null, true), r('Bas', null), r('Cor', 0)], 'minuten')));
+});
+
+const ul = document.getElementById('uitslag');
+resultaten.forEach(r => { const li = document.createElement('li'); li.textContent = (r.ok ? '✅ ' : '❌ ') + r.naam + r.tekst; ul.appendChild(li); });
+const fout = resultaten.filter(r => !r.ok).length;
+document.title = (fout ? '❌ ' + fout + ' fout' : '✅ alles groen') + ' — Wedstrijd-spelers-sorteer tests';
+console.log(document.title);
+</script>
+</body>
+</html>

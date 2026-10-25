@@ -1335,10 +1335,8 @@ async function toonWedstrijd(id) {
   // in app.js; gemeld 2026-09-23 en 2026-10-14).
   const tel = aanwezigTeller(sp, w.isoDate, (w.afwezig || []).map(a => (a && a.pid) ? a.pid : a));
   const d = new Date(w.isoDate);
-  const cijfers = Object.entries(w.ratings || {}).map(([pid, cijfer]) => ({ speler: sp.find(p => p.id === pid), cijfer })).filter(x => x.speler);
-  cijfers.sort((a, b) => b.cijfer - a.cijfer);
 
-  // Detail-archetype: score+Selectie in de linkerkolom, Cijfers+Wedstrijdverloop
+  // Detail-archetype: score+Selectie+Spelers in de linkerkolom, Wedstrijdverloop
   // in de rechterkolom (vanaf 1024px ernaast, responsive-layer.css .detail-2col).
   let html = '<div class="detail-2col"><div>'
     + '<div class="card">'
@@ -1367,24 +1365,16 @@ async function toonWedstrijd(id) {
     + '<button class="btn btn--ghost btn--sm" style="margin-top:10px" onclick="openWedOpstelling(\'' + w.id + '\')">Opstelling voor deze wedstrijd →</button>'
     + '</div>';
 
+  // Spelers-tabel (cijfer/MOTM/minuten/positie per speler) — vervangt de
+  // vroegere Cijfers-kaart (top 2), gevraagd door gebruiker 2026-10-25.
+  // Minuten/positie vereisen wissels uit Supabase, dus skelet + async vullen,
+  // zelfde patroon als renderSpelerWedstrijdenV2().
+  if (w.gespeeld) html += '<div class="card" style="margin-top:10px;overflow-x:auto" id="w-spelers"><div class="sec">Spelers</div></div>';
+
   html += '</div><div>';
 
   if (w.gespeeld) {
-    html += '<div class="card"><div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><div class="sec" style="margin:0">Cijfers</div><span style="font-size:12px;color:var(--ink3)">' + cijfers.length + ' van ' + sp.length + ' ingevuld</span></div>';
-    if (!cijfers.length) {
-      html += '<div style="color:var(--ink3);font-size:13px">Nog geen cijfers ingevuld.</div>';
-    } else {
-      cijfers.slice(0, 2).forEach((c, i) => {
-        html += '<div style="display:flex;align-items:center;gap:11px;padding:' + (i===0?'0 0 10px':'10px 0') + (i>0?';box-shadow:inset 0 1px 0 var(--line)':'') + '">'
-          + '<div class="crest" style="width:30px;height:30px;border-radius:9px;font-size:11px">' + c.speler.naam.slice(0,2).toUpperCase() + '</div>'
-          + '<div style="flex:1"><div style="font-size:14px;font-weight:600">' + c.speler.naam + '</div>' + (w.motm === c.speler.id ? '<div style="font-size:12px;color:var(--ink3)">Man of the match</div>' : '') + '</div>'
-          + '<div class="num" style="font-size:17px;font-weight:700">' + c.cijfer + '</div></div>';
-      });
-      if (cijfers.length > 2) html += '<button class="btn btn--ghost btn--block btn--sm" style="margin-top:12px" onclick="openWedstrijdBewerken(\'' + w.id + '\')">Alle ' + cijfers.length + ' cijfers</button>';
-    }
-    html += '</div>';
-
-    html += '<div class="card" style="margin-top:10px"><div class="sec">Wedstrijdverloop</div>'
+    html += '<div class="card"><div class="sec">Wedstrijdverloop</div>'
       + (wedVerloopNotities.length
           ? wedVerloopNotities.map(n =>
               '<div class="note' + (n.gedeeld ? ' note--gedeeld' : '') + '" style="margin-bottom:7px"><div class="note-t">' + n.minuut + "'</div><div class=\"note-tx\">" + esc(ltStripAtTekens(n.tekst)) + (n.gedeeld ? ' <span style="color:var(--accent);font-weight:700">· gedeeld</span>' : '') + '</div>'
@@ -1398,6 +1388,7 @@ async function toonWedstrijd(id) {
   html += '</div></div>';
   document.getElementById('w-content').innerHTML = html;
   huidigWedstrijdId = w.id;
+  if (w.gespeeld) renderWedstrijdSpelersV2(w);
   // w-live-btn zit in de vaste schermschil (buiten w-content), dus hier altijd
   // expliciet resetten — anders blijft "Ga verder met Live" van een vorig
   // bezochte, wél live wedstrijd per ongeluk staan op een andere die dat niet is.
@@ -2584,6 +2575,85 @@ function spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd, positieWis
     }
   });
   return [...posities];
+}
+// Spelers-tabel op het wedstrijdscherm (toonWedstrijd): per speler minuten,
+// cijfer, MOTM en gespeelde positie(s) in déze wedstrijd — de omgekeerde blik
+// van renderSpelerWedstrijdenV2() hieronder (één speler, alle wedstrijden),
+// met dezelfde databronnen en dezelfde betrouwbaarheidsregel voor minuten/
+// positie. Wisselbaar tussen meeste minuten en alfabetisch
+// (sorteerWedstrijdSpelers() in app.js). Gevraagd door gebruiker 2026-10-25.
+let wedSpelersSort = 'minuten';
+let wedSpelersRijen = null; // { wedstrijdId, rijen } — bewaard zodat wisselen van sortering niet opnieuw laadt
+async function renderWedstrijdSpelersV2(w) {
+  wedSpelersRijen = null;
+  let alleWissels = [], eindeMomenten = {}, allePositieWissels = [];
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    [alleWissels, eindeMomenten, allePositieWissels] = await Promise.all([haalAlleWissels(), haalAlleEindeMomenten(), haalAllePositieWissels()]);
+  }
+  // Intussen naar een andere wedstrijd genavigeerd → niet over diens scherm heen tekenen.
+  if (huidigWedstrijdId !== w.id || !document.getElementById('w-spelers')) return;
+  const wisselsVoorWedstrijd = alleWissels.filter(ws => ws.wedstrijd_id === w.id);
+  const positieWisselsVoorWedstrijd = allePositieWissels.filter(ps => ps.wedstrijd_id === w.id);
+  const afwezigeIds = wedstrijdAfwezigeIds(w);
+  const ratings = w.ratings || {};
+  // Wie op de wedstrijddatum in het team zat (zelfde regel als de Selectie-
+  // teller), plus wie toch een cijfer kreeg — anders verdwijnt dat cijfer stil.
+  const sp = spelers();
+  const inTeam = spelersInTeamOp(sp, w.isoDate);
+  const lijst = inTeam.concat(sp.filter(p => !inTeam.includes(p) && ratings[p.id] != null));
+  const rijen = lijst.map(p => {
+    const afwezig = afwezigeIds.has(p.id);
+    const betrouwbaar = !afwezig && speeltijdBetrouwbaarVoorSpeler(p.id, w, wisselsVoorWedstrijd, eindeMomenten[w.id]);
+    return {
+      naam: p.naam, afwezig,
+      minuten: betrouwbaar ? berekenSpeeltijd(w.id, p.id, w, wisselsVoorWedstrijd, eindeMomenten[w.id]) : null,
+      posities: betrouwbaar ? spelerPositiesInWedstrijd(p.id, w, wisselsVoorWedstrijd, positieWisselsVoorWedstrijd) : [],
+      cijfer: ratings[p.id], motm: w.motm === p.id,
+    };
+  });
+  wedSpelersRijen = { wedstrijdId: w.id, rijen };
+  tekenWedstrijdSpelersV2();
+}
+function setWedSpelersSort(modus) {
+  wedSpelersSort = modus;
+  tekenWedstrijdSpelersV2();
+}
+function tekenWedstrijdSpelersV2() {
+  const el = document.getElementById('w-spelers');
+  if (!el || !wedSpelersRijen || wedSpelersRijen.wedstrijdId !== huidigWedstrijdId) return;
+  const rijen = sorteerWedstrijdSpelers(wedSpelersRijen.rijen, wedSpelersSort);
+  const kop = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div class="sec" style="margin:0">Spelers</div>'
+    + '<button class="btn btn--ghost btn--sm" onclick="openWedstrijdBewerken(\'' + wedSpelersRijen.wedstrijdId + '\')">Cijfers bewerken</button></div>';
+  if (!rijen.length) {
+    el.innerHTML = kop + '<div style="color:var(--ink3);font-size:13px">Nog geen spelers.</div>';
+    return;
+  }
+  // Zelfde tabelopbouw als renderSpelerWedstrijdenV2(): vaste kolommen die op
+  // telefoonbreedte zonder horizontale scroll passen; alleen Positie mag wrappen.
+  const kolom = 'display:grid;grid-template-columns:1fr 34px 38px 24px 74px;align-items:center;gap:6px';
+  const rij = (r, i) => {
+    const posCel = r.minuten == null || !r.posities.length ? '—' : esc(r.posities.join(', '));
+    return '<div style="' + kolom + ';padding:8px 0;font-size:12.5px' + (i > 0 ? ';border-top:1px solid var(--line)' : '') + (r.afwezig ? ';opacity:.65' : '') + '">'
+      + '<div style="font-size:13.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.naam)
+      + (r.afwezig ? ' <span style="font-size:11px;font-weight:500;color:var(--loss)">afwezig</span>' : '') + '</div>'
+      + '<div class="num" style="text-align:right;color:var(--ink3)">' + (r.minuten == null ? '—' : r.minuten) + '</div>'
+      + '<div class="num" style="text-align:right;' + (r.cijfer != null ? 'font-weight:700' : 'color:var(--ink3)') + '">' + (r.cijfer != null ? Number(r.cijfer).toFixed(1) : '—') + '</div>'
+      + '<div style="text-align:center">' + (r.motm ? '⭐' : '') + '</div>'
+      + '<div style="color:var(--ink3);line-height:1.3;padding-left:8px">' + posCel + '</div>'
+      + '</div>';
+  };
+  const geenSpeeltijd = rijen.every(r => r.afwezig || r.minuten == null);
+  el.innerHTML = kop
+    + '<div class="seg" role="tablist" style="margin-bottom:8px">'
+    + '<button class="seg-opt" role="tab" aria-selected="' + (wedSpelersSort === 'minuten') + '" onclick="setWedSpelersSort(\'minuten\')">Meeste minuten</button>'
+    + '<button class="seg-opt" role="tab" aria-selected="' + (wedSpelersSort === 'naam') + '" onclick="setWedSpelersSort(\'naam\')">A–Z</button>'
+    + '</div>'
+    + '<div style="min-width:300px">'
+    + '<div style="' + kolom + ';font-size:9px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding-bottom:6px;border-bottom:1px solid var(--line)">'
+    + '<span>Speler</span><span style="text-align:right">Min</span><span style="text-align:right">Cijfer</span><span style="text-align:center" title="Man of the match">MotM</span><span style="padding-left:8px">Positie</span></div>'
+    + rijen.map(rij).join('')
+    + '</div>'
+    + (geenSpeeltijd ? '<div style="font-size:11.5px;color:var(--ink3);margin-top:8px">Minuten en positie zijn er alleen voor wedstrijden die via Live zijn bijgehouden.</div>' : '');
 }
 async function renderSpelerWedstrijdenV2(spelerId) {
   const el = document.getElementById('sb-wedstrijden');

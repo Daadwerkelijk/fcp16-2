@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Spelers per wedstrijd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../ui-v2.css">
+<link rel="stylesheet" href="../responsive-layer.css">
+<style>
+  /* Alleen preview-chrome voor deze mockup — geen nieuwe ontwerptaal, geen eigen kleuren */
+  html,body{background:var(--surface2)}
+  .mockup-banner{background:var(--accent-soft);color:var(--accent-press);font:600 12px/1.4 var(--font);text-align:center;padding:8px 14px}
+  .mockup-ctl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:10px 14px;font:500 12px/1 var(--font);color:var(--ink3)}
+  .frame{max-width:430px;margin:0 auto;background:var(--bg);min-height:100vh;transition:max-width .2s}
+  .frame.breed{max-width:1100px}
+  .wsp-kaart-plek{margin-top:10px}
+  @media (min-width:1024px){.wsp-kaart-plek{margin-top:0}}
+</style>
+</head>
+<body class="v2">
+<div class="mockup-banner">Mockup — voorbeelddata, nog niet gekoppeld aan de app</div>
+<div class="mockup-ctl">
+  <span>Preview:</span>
+  <button class="chip" id="ctl-thema" onclick="wisselThema()">Thema: licht</button>
+  <button class="chip" id="ctl-breed" onclick="wisselBreedte()">Breedte: telefoon</button>
+  <button class="chip" id="ctl-data" onclick="wisselData()">Data: via Live bijgehouden</button>
+</div>
+<div class="frame" id="frame">
+
+  <div class="appbar">
+    <button class="btn btn--ghost btn--icon" aria-label="Terug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 19l-7-7 7-7"/></svg></button>
+    <div>
+      <div class="appbar-h1" style="font-size:20px">vs Westfriezen JO16-1</div>
+      <div class="appbar-sub">Za 18 okt · Competitie · 4-3-3</div>
+    </div>
+  </div>
+
+  <div class="pad" style="padding-bottom:32px">
+    <div class="detail-2col">
+      <div>
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between"><span class="eyebrow">ZA 18 OKT · 11:30</span><span class="tag tag--win">Gewonnen</span></div>
+          <div style="text-align:center;margin-top:14px" class="num"><span style="font-size:38px;font-weight:700;letter-spacing:-.04em">3–1</span></div>
+        </div>
+        <div class="card" style="margin-top:10px"><div class="sec">Selectie</div><div style="font-size:13px;color:var(--ink3)">17 van 18 aanwezig · Afwezig: Daan</div></div>
+      </div>
+      <div>
+        <!-- ═══ NIEUWE KAART ═══ -->
+        <div class="card wsp-kaart-plek" id="wsp-kaart" style="overflow-x:auto"></div>
+        <div class="card" style="margin-top:10px"><div class="sec">Cijfers</div><div style="font-size:13px;color:var(--ink3)">(bestaande kaart, ongewijzigd)</div></div>
+        <div class="card" style="margin-top:10px"><div class="sec">Wedstrijdverloop</div><div style="font-size:13px;color:var(--ink3)">(bestaande kaart, ongewijzigd)</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Voorbeelddata (fictief). min/pos komen in de echte app uit berekenSpeeltijd()
+// en spelerPositiesInWedstrijd(); cijfer/MOTM/afwezig uit de wedstrijd zelf.
+const SPELERS = [
+  { naam: 'Sem Bakker',      min: 70, cijfer: 7.5, pos: ['GK'] },
+  { naam: 'Luuk de Vries',   min: 70, cijfer: 7.0, pos: ['LB', 'RB'] },
+  { naam: 'Milan Visser',    min: 70, cijfer: 8.0, pos: ['CV'] },
+  { naam: 'Koen Meijer',     min: 70, cijfer: 7.0, pos: ['MID-R', 'MID-L'] },
+  { naam: 'Finn Mulder',     min: 70, cijfer: 8.5, pos: ['CM'], motm: true },
+  { naam: 'Ruben de Groot',  min: 70, cijfer: 7.5, pos: ['ST'] },
+  { naam: 'Lars Hendriks',   min: 55, cijfer: 6.5, pos: ['RW'] },
+  { naam: 'Thijs Jansen',    min: 50, cijfer: 7.0, pos: ['CV'] },
+  { naam: 'Wout Bos',        min: 45, cijfer: 6.5, pos: ['MID-L', 'MID-R'] },
+  { naam: 'Noah Smit',       min: 35, cijfer: 6.0, pos: ['RB'] },
+  { naam: 'Jesse Peters',    min: 35, cijfer: null, pos: ['LW'] },
+  { naam: 'Bram Dekker',     min: 35, cijfer: 7.0, pos: ['LB'] },
+  { naam: 'Gijs van Dijk',   min: 35, cijfer: 6.5, pos: ['LW'] },
+  { naam: 'Mees Koster',     min: 25, cijfer: 6.5, pos: ['MID-R'] },
+  { naam: 'Olivier Brouwer', min: 20, cijfer: null, pos: ['CV'] },
+  { naam: 'Stijn Willems',   min: 15, cijfer: 6.0, pos: ['RW'] },
+  { naam: 'Tim Verhoeven',   min: 0,  cijfer: null, pos: [] },
+  { naam: 'Daan Hoekstra',   afwezig: true },
+];
+
+let thema = 'licht', breed = false, metData = true;
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+
+// Zelfde tabelopbouw als de "Wedstrijden"-tabel in het spelerprofiel
+// (renderSpelerWedstrijdenV2): grid-kolommen, 9px-kopregel, scheidingslijnen.
+const KOLOM = 'display:grid;grid-template-columns:1fr 34px 38px 20px 74px;align-items:center;gap:6px';
+
+function render() {
+  const el = document.getElementById('wsp-kaart');
+  const rijen = SPELERS.slice().sort((a, b) => (!!a.afwezig - !!b.afwezig) || ((b.min || 0) - (a.min || 0)));
+  const rij = (sp, i) => {
+    const minCel = sp.afwezig || !metData ? '—' : String(sp.min);
+    const posCel = sp.afwezig || !metData || !sp.pos.length ? '—' : esc(sp.pos.join(', '));
+    const cijfer = sp.afwezig ? null : sp.cijfer;
+    return '<div style="' + KOLOM + ';padding:8px 0;font-size:12.5px' + (i > 0 ? ';border-top:1px solid var(--line)' : '') + (sp.afwezig ? ';opacity:.65' : '') + '">'
+      + '<div style="font-size:13.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(sp.naam)
+      + (sp.afwezig ? ' <span style="font-size:11px;font-weight:500;color:var(--loss)">afwezig</span>' : '') + '</div>'
+      + '<div class="num" style="text-align:right;color:var(--ink3)">' + minCel + '</div>'
+      + '<div class="num" style="text-align:right;' + (cijfer != null ? 'font-weight:700' : 'color:var(--ink3)') + '">' + (cijfer != null ? cijfer.toFixed(1) : '—') + '</div>'
+      + '<div style="text-align:center">' + (sp.motm ? '⭐' : '') + '</div>'
+      + '<div style="color:var(--ink3);line-height:1.3;padding-left:8px">' + posCel + '</div>'
+      + '</div>';
+  };
+  el.innerHTML = '<div class="sec" style="display:flex;align-items:baseline;justify-content:space-between"><span>Spelers</span>'
+    + '<span style="font-size:11.5px;color:var(--ink3);text-transform:none;letter-spacing:0">' + (metData ? '2 × 35 min' : 'minuten/posities alleen via Live') + '</span></div>'
+    + '<div style="min-width:300px">'
+    + '<div style="' + KOLOM + ';font-size:9px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding-bottom:6px;border-bottom:1px solid var(--line)">'
+    + '<span>Speler</span><span style="text-align:right">Min</span><span style="text-align:right">Cijfer</span><span style="text-align:center" title="Man of the match">MotM</span><span style="padding-left:8px">Positie</span></div>'
+    + rijen.map(rij).join('')
+    + '</div>';
+}
+function wisselThema() {
+  thema = thema === 'licht' ? 'donker' : 'licht';
+  if (thema === 'donker') document.documentElement.setAttribute('data-thema', 'donker'); else document.documentElement.removeAttribute('data-thema');
+  document.getElementById('ctl-thema').textContent = 'Thema: ' + thema;
+}
+function wisselBreedte() {
+  breed = !breed;
+  document.getElementById('frame').classList.toggle('breed', breed);
+  document.getElementById('ctl-breed').textContent = 'Breedte: ' + (breed ? 'desktop' : 'telefoon');
+}
+function wisselData() {
+  metData = !metData;
+  document.getElementById('ctl-data').textContent = 'Data: ' + (metData ? 'via Live bijgehouden' : 'niet via Live');
+  render();
+}
+// Preview-stand ook via de URL te zetten, bv. #donker,breed,leeg
+const h = location.hash.slice(1).split(',');
+if (h.includes('donker')) wisselThema();
+if (h.includes('breed')) wisselBreedte();
+if (h.includes('leeg')) wisselData();
+render();
+</script>
+</body>
+</html>

@@ -385,6 +385,17 @@ function vandaagUitgelicht(items) {
   return items.filter(i => !i.afgerond).slice(0, 2);
 }
 
+// Sortering van de Spelers-tabel op het wedstrijdscherm (pure logica, getest in
+// tests/wedstrijd-spelers-sorteer-test.html).
+function sorteerWedstrijdSpelers(rijen, modus) {
+  // null = speeltijd onbekend (niet via Live vastgelegd) — onder 0 minuten.
+  const min = r => r.minuten == null ? -1 : r.minuten;
+  return rijen.slice().sort((a, b) =>
+    (!!a.afwezig - !!b.afwezig)
+    || (modus === 'minuten' ? min(b) - min(a) : 0)
+    || a.naam.localeCompare(b.naam, 'nl'));
+}
+
 // Eerstvolgende verjaardag per speler (pure logica, getest in tests/verjaardagen-test.html).
 // lijst: [{..., geboortedatum: 'JJJJ-MM-DD'}] → zelfde objecten + isoDate/leeftijd/dagen,
 // gesorteerd op eerstvolgende. 29 feb valt in een niet-schrikkeljaar op 28 feb.

@@ -385,6 +385,17 @@ function vandaagUitgelicht(items) {
   return items.filter(i => !i.afgerond).slice(0, 2);
 }
 
+// Welke formatie hoort bij een wedstrijd (pure logica, getest in
+// tests/wedstrijd-formatie-test.html): de eigen formatie van de wedstrijd,
+// anders de teamstandaard (fcp_formatie), anders 4-2-2-2 — en bestaat die
+// (niet meer), de eerste beschikbare. Eén regel voor opstelling, Live en de
+// positie-reconstructie; die liepen uiteen (gemeld 2026-10-25: posities
+// ontbraken bij een wedstrijd zonder eigen formatie).
+function wedstrijdFormatieId(w, standaardId, beschikbareIds) {
+  const id = w.formatie || standaardId || '4222';
+  return beschikbareIds.includes(id) ? id : beschikbareIds[0];
+}
+
 // Sortering van de Spelers-tabel op het wedstrijdscherm (pure logica, getest in
 // tests/wedstrijd-spelers-sorteer-test.html).
 function sorteerWedstrijdSpelers(rijen, modus) {

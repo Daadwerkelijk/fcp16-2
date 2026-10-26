@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wedstrijd-formatie tests</title>
+<style>body{font:14px system-ui,sans-serif;margin:16px;background:#fff;color:#111}li{margin:2px 0}</style>
+</head>
+<body>
+<h1>Wedstrijd-formatie tests</h1>
+<p>Welke formatie hoort bij een wedstrijd, uit <code>app.js</code> (wedstrijdFormatieId). Open via een lokale server, bv. <code>http://localhost:8935/tests/wedstrijd-formatie-test.html</code>.</p>
+<ul id="uitslag"></ul>
+<script src="../app.js"></script>
+<script>
+const resultaten = [];
+function testGelijk(naam, verwacht, werkelijk) {
+  const ok = JSON.stringify(verwacht) === JSON.stringify(werkelijk);
+  resultaten.push({ naam, ok, tekst: ok ? '' : ' — verwacht ' + JSON.stringify(verwacht) + ', kreeg ' + JSON.stringify(werkelijk) });
+}
+function test(naam, fn) {
+  try { fn(); } catch (e) { resultaten.push({ naam, ok: false, tekst: ' — ' + e.name + ': ' + e.message }); }
+}
+const ALLE = ['4222', '14231', '442r'];
+
+test('eigen formatie van de wedstrijd', () => {
+  testGelijk('eigen formatie van de wedstrijd', '442r',
+    wedstrijdFormatieId({ formatie: '442r' }, '14231', ALLE));
+});
+
+test('geen eigen formatie → standaardformatie van het team', () => {
+  testGelijk('geen eigen formatie → standaardformatie van het team', '14231',
+    wedstrijdFormatieId({ formatie: null }, '14231', ALLE));
+});
+
+test('geen eigen en geen standaard → 4222', () => {
+  testGelijk('geen eigen en geen standaard → 4222', '4222',
+    wedstrijdFormatieId({ formatie: '' }, null, ALLE));
+});
+test('onbekende formatie (bv. verwijderde eigen formatie) → eerste beschikbare', () => {
+  testGelijk('onbekende formatie (bv. verwijderde eigen formatie) → eerste beschikbare', '14231',
+    wedstrijdFormatieId({ formatie: 'weg' }, null, ['14231', '442r']));
+});
+
+const ul = document.getElementById('uitslag');
+resultaten.forEach(r => { const li = document.createElement('li'); li.textContent = (r.ok ? '✅ ' : '❌ ') + r.naam + r.tekst; ul.appendChild(li); });
+const fout = resultaten.filter(r => !r.ok).length;
+document.title = (fout ? '❌ ' + fout + ' fout' : '✅ alles groen') + ' — Wedstrijd-formatie tests';
+console.log(document.title);
+</script>
+</body>
+</html>

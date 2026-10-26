@@ -1695,6 +1695,7 @@ async function zorgVoorStartOpstelling(wedId) {
     const res = await updateWedstrijd(wedId, { wed_lineup: JSON.stringify(lineup) });
     if (res && res._error) showToast('⚠️ Basisopstelling niet opgeslagen naar Supabase: ' + (res.message || res.status));
   }
+  await legWedFormatieVast(wedId);
 }
 async function openWedOpstelling(wedId) {
   await zorgVoorStartOpstelling(wedId);
@@ -1702,9 +1703,9 @@ async function openWedOpstelling(wedId) {
 }
 function wedOpstCtx(wedId) {
   return {
-    formatie() { const alle = alleFormatiesV2(); const w = wedstrijden().find(x => x.id === wedId); let a = w.formatie || localStorage.getItem('fcp_formatie') || '4222'; if (!alle[a]) a = Object.keys(alle)[0]; return alle[a]; },
+    formatie() { const alle = alleFormatiesV2(); const w = wedstrijden().find(x => x.id === wedId); return alle[wedFormatieIdV2(w, alle)]; },
     getLineup() { const w = wedstrijden().find(x => x.id === wedId); return w.wed_lineup || {}; },
-    setLineup(l) { const lijst = wedstrijden(); const w = lijst.find(x => x.id === wedId); w.wed_lineup = l; localStorage.setItem('fcp_wed', JSON.stringify(lijst)); },
+    setLineup(l) { const lijst = wedstrijden(); const w = lijst.find(x => x.id === wedId); w.wed_lineup = l; localStorage.setItem('fcp_wed', JSON.stringify(lijst)); legWedFormatieVast(wedId); },
     herrender() { renderWedOpstelling(wedId); },
     // Spelers die voor déze wedstrijd afwezig zijn gemeld horen niet in de
     // basisopstelling-kiezer of wisselspelers-lijst te verschijnen — zelfde
@@ -1717,6 +1718,30 @@ function wedOpstCtx(wedId) {
       if (res && res._error) showToast('⚠️ Opstelling niet opgeslagen naar Supabase: ' + (res.message || res.status));
     },
   };
+}
+// Formatie-ID van een wedstrijd volgens wedstrijdFormatieId() (app.js) —
+// alle schermen via deze ene helper, zodat ze dezelfde formatie tonen.
+function wedFormatieIdV2(w, alle) {
+  return wedstrijdFormatieId(w || {}, localStorage.getItem('fcp_formatie'), Object.keys(alle || alleFormatiesV2()));
+}
+// Legt de getoonde formatie vast op de wedstrijd zodra er een opstelling
+// voor wordt opgeslagen of Live start. De keuzelijst slaat alleen op bij een
+// wíjziging, dus een wedstrijd die op de teamstandaard bleef staan had geen
+// eigen formatie — en de posities in de Spelers-tabel/het spelerprofiel
+// ontbraken (gemeld door gebruiker 2026-10-25). Vastleggen i.p.v. alleen
+// terugvallen: anders verandert een oude wedstrijd mee met een latere
+// wijziging van de teamstandaard. formatieId: expliciet (Live), anders wat
+// het opstellingsscherm toont.
+async function legWedFormatieVast(wedId, formatieId) {
+  const lijst = wedstrijden();
+  const w = lijst.find(x => x.id === wedId);
+  if (!w || w.formatie) return;
+  w.formatie = formatieId || wedFormatieIdV2(w, formatiesVoorSpelvorm(alleFormatiesV2(), loadSpelvorm()));
+  localStorage.setItem('fcp_wed', JSON.stringify(lijst));
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const res = await updateWedstrijd(wedId, { formatie: w.formatie });
+    if (res && res._error) showToast('⚠️ Formatie niet opgeslagen naar Supabase: ' + (res.message || res.status));
+  }
 }
 async function wedOpstZetFormatie(wedId, formatieKey) {
   const lijst = wedstrijden();
@@ -1748,8 +1773,7 @@ function renderWedOpstelling(wedId) {
   if (!w) { toonScherm('agenda'); return; }
   huidigWedstrijdId = wedId;
   const alle = formatiesVoorSpelvorm(alleFormatiesV2(), loadSpelvorm());
-  let actief = w.formatie || localStorage.getItem('fcp_formatie') || '4222';
-  if (!alle[actief]) actief = Object.keys(alle)[0];
+  const actief = wedFormatieIdV2(w, alle);
   const f = alle[actief];
   const lineup = wedOpstCtx(wedId).getLineup();
   // Zelfde "In gebruik"-groepering als renderTeamOpstelling: team-hoofd- en
@@ -2505,7 +2529,7 @@ function speeltijdBetrouwbaarVoorSpeler(spelerId, w, wisselsVoorWedstrijd, eindM
 function spelerPositiesInWedstrijd(spelerId, w, wisselsVoorWedstrijd, positieWisselsVoorWedstrijd) {
   if (!w) return [];
   const alle = alleFormatiesV2();
-  const formatie = alle[w.formatie];
+  const formatie = alle[wedFormatieIdV2(w, alle)];
   const geldigePosIds = new Set(formatie ? formatie.pos.map(p => p.id) : []);
   const labelVan = posId => {
     const p = formatie && formatie.pos.find(x => x.id === posId);
@@ -3924,6 +3948,7 @@ async function ltStartHelft(helft) {
     // (mogelijk 2 telefoons tegelijk morgen).
     w.wed_lineup = { ...liveState.lineup };
     localStorage.setItem('fcp_wed', JSON.stringify(lijst));
+    await legWedFormatieVast(liveState.wedstrijdId, liveState.formatieId);
     if (typeof supabaseReady !== 'undefined' && supabaseReady) {
       const res = await updateWedstrijd(liveState.wedstrijdId, { wed_lineup: JSON.stringify(liveState.lineup) });
       if (res && res._error) showToast('⚠️ Opstelling niet gesynchroniseerd: ' + (res.message || res.status));

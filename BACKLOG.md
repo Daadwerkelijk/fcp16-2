@@ -1,7 +1,7 @@
 # Backlog fcp16-2
 
 Wat bewust nog niet gebouwd is, plus genomen besluiten zodat ze niet
-opnieuw ter discussie komen. Bijgewerkt 2026-10-18.
+opnieuw ter discussie komen. Bijgewerkt 2026-11-01.
 
 ## Op de backlog
 
@@ -21,9 +21,37 @@ opnieuw ter discussie komen. Bijgewerkt 2026-10-18.
   positie meeschrijven, plus de startopstelling apart bewaren. Nodig voor
   een analyse per minuut/positie na fase 2 (aanleiding: analyse fase 1,
   2026-10-18).
+- **Wedstrijdverslag delen via WhatsApp** — knop op het wedstrijdscherm,
+  zelfde `wa.me`-patroon als de opstelling/training-deelknoppen. Vóór de
+  wedstrijd: "Volg live" met link; na afloop: eindstand (+ rust),
+  doelpunten met minuut en een link naar
+  `live.html?wedstrijd=<id>` (deeplink bestaat al). Alleen wat ook op de
+  live-pagina staat — geen cijfers, MOTM of minuten per speler (open
+  vraag: MOTM wel of niet). Later eventueel een korte trainersnoot
+  vooraf in te typen. Geen afbeelding/pdf-export. (2026-11-01)
+- **Teamoverzicht per vaardigheid/thema** — aanvulling op de
+  seizoensgrafiek hierboven: vaardigheden van het hele team naast elkaar,
+  gegroepeerd per thema, om te zien waar het team als geheel zwak is en
+  dat terug te laten komen in de trainingsplanning. Data is er al
+  (spelerformulier). Inspiratie: "Player development" van TouchTight.
+  (2026-11-01)
+- **Training kiezen op focus/thema** — trainingen of oefeningen filteren
+  op thema, focus en duur. Alleen nuttig met een eigen
+  oefeningenbibliotheek die bijgehouden wordt. Inspiratie: "The Gaffer"
+  van TouchTight. Lage prioriteit. (2026-11-01)
+- **Bekeken maar afgeraden** (TouchTight, 2026-11-01) — geanimeerde
+  spelsituaties als GIF/MP4 ("Coach Studio": veel werk, weinig winst
+  naast de formatie-editor) en club-curriculum/rollen/compliance (bedoeld
+  voor clubs, niet voor één team; rollenhiërarchie bewust niet).
+  Beschikbaarheid in realtime ("Dugout") is er al via afwezigheid in
+  Supabase. Staat hier zodat het niet opnieuw onderzocht hoeft te worden;
+  nog geen definitief besluit.
 
 ## Besloten
 
+- **Wedstrijdvideo / videomomenten** (link + tijdstip per doelpunt of
+  moment, naar "Replay" van TouchTight) — wordt niet gebruikt, niet
+  bouwen (2026-11-01).
 - **Spelersnamen op het publieke live-scorebord** (`live.html`,
   `live_wedstrijden`/`live_updates`) — mogen blijven (2026-10-18).
 - **Eigen URL per trainingsblok** (naast de URL van de oefening) —

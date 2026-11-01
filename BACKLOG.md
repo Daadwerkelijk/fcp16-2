@@ -14,6 +14,13 @@ opnieuw ter discussie komen. Bijgewerkt 2026-10-18.
   `mockups/mockup-speler-ontwikkeling.html`. Deels gedekt door wat er al
   is (trendpijlen per vaardigheid en de Geschiedenis-tijdlijn), maar de
   seizoensgrafiek zelf is niet gebouwd.
+- **Positie vastleggen bij elke wissel** — een wissel (`wissels`) slaat nu
+  geen positie op en de opgeslagen opstelling wordt achteraf
+  overschreven, waardoor "wie stond wanneer op welke positie" niet
+  betrouwbaar te reconstrueren is. Idee: bij elke wissel en positieruil de
+  positie meeschrijven, plus de startopstelling apart bewaren. Nodig voor
+  een analyse per minuut/positie na fase 2 (aanleiding: analyse fase 1,
+  2026-10-18).
 
 ## Besloten
 
